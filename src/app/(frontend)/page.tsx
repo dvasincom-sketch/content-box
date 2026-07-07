@@ -1,59 +1,98 @@
-import { headers as getHeaders } from 'next/headers.js'
-import Image from 'next/image'
 import { getPayload } from 'payload'
-import React from 'react'
-import { fileURLToPath } from 'url'
-
 import config from '@/payload.config'
+import { getTenantFromHeaders } from '@/lib/tenant'
+import { brandVars } from '@/lib/brand'
+import { HeroBlock } from '@/blocks/HeroBlock'
+import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
+import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
+import { WhyUsBlock } from '@/blocks/WhyUsBlock'
+import { SocialLinksBlock } from '@/blocks/SocialLinksBlock'
+import { BroadcastBannerBlock } from '@/blocks/BroadcastBannerBlock'
 import './styles.css'
 
 export default async function HomePage() {
-  const headers = await getHeaders()
+  const ctx = await getTenantFromHeaders()
+  if (!ctx) {
+    return <div className="p-8">Тенант не определён. Открой сайт по адресу тенанта, напр. http://bts.localhost:3000/</div>
+  }
+  const { tenant, settings } = ctx
+
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
-  const { user } = await payload.auth({ headers })
 
-  const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`
+  const featuredRes = await payload.find({
+    collection: 'publications',
+    where: { and: [{ tenant: { equals: tenant.id } }, { featured: { equals: true } }] },
+    sort: '-publishedAt', depth: 1, limit: 1, overrideAccess: true,
+  })
+  const featured = featuredRes.docs[0] as any
+
+  const latestRes = await payload.find({
+    collection: 'publications',
+    where: { tenant: { equals: tenant.id } },
+    sort: '-publishedAt', depth: 1, limit: 8, overrideAccess: true,
+  })
+  const latest = latestRes.docs as any[]
+
+  const catsRes = await payload.find({
+    collection: 'categories',
+    where: { tenant: { equals: tenant.id } },
+    sort: 'order', depth: 0, limit: 50, overrideAccess: true,
+  })
+  const categories = catsRes.docs as any[]
 
   return (
-    <div className="home">
-      <div className="content">
-        <picture>
-          <source srcSet="https://raw.githubusercontent.com/payloadcms/payload/3.x/packages/ui/src/assets/payload-favicon.svg" />
-          <Image
-            alt="Payload Logo"
-            height={65}
-            src="https://raw.githubusercontent.com/payloadcms/payload/3.x/packages/ui/src/assets/payload-favicon.svg"
-            width={65}
-          />
-        </picture>
-        {!user && <h1>Welcome to your new project.</h1>}
-        {user && <h1>Welcome back, {user.email}</h1>}
-        <div className="links">
-          <a
-            className="admin"
-            href={payloadConfig.routes.admin}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Go to admin panel
-          </a>
-          <a
-            className="docs"
-            href="https://payloadcms.com/docs"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Documentation
-          </a>
-        </div>
+    <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <HeroBlock
+          eyebrow="BTS TV · 24/7 Broadcast"
+          titleLines={['Полные выпуски BTS', 'с русской озвучкой']}
+          tags={['Концерты', 'Weverse Live', 'RUN BTS', 'Документальные фильмы']}
+          featured={featured ? { title: featured.title, badge: 'Новинка', sources: featured.sources } : null}
+        />
+
+        <LatestPublicationsBlock
+          items={latest.map((p) => ({
+            id: p.id, slug: p.slug, title: p.title, publishedAt: p.publishedAt, sources: p.sources,
+          }))}
+        />
+
+        <CategoriesGridBlock
+          items={categories.map((c) => ({ id: c.id, title: c.title, slug: c.slug }))}
+        />
+
+        <WhyUsBlock
+          heading="Почему COCO JAMBO"
+          items={[
+            { icon: 'mic', title: 'Русская озвучка живым голосом', text: 'Качественный перевод и естественная озвучка' },
+            { icon: 'screen', title: 'Тысячи часов контента', text: 'Концерты, шоу, лайвы и эксклюзивы' },
+            { icon: 'clock', title: 'Новые видео каждую неделю', text: 'Мы постоянно работаем для вас' },
+            { icon: 'heart', title: 'Проект от ARMY для ARMY', text: 'С любовью к BTS и каждому зрителю' },
+          ]}
+        />
+
+        <SocialLinksBlock items={(settings?.socials ?? []) as any[]} />
+
+        <BroadcastBannerBlock
+          brandName={tenant.name}
+          tagline="BTS TV"
+          onAirText="ON AIR"
+          navHeading="Навигация"
+          nav={[
+            { label: 'Главная', href: '/' },
+            { label: 'Категории', href: '#categories' },
+            { label: 'Расписание эфира', href: '#schedule' },
+            { label: 'О проекте', href: '#about' },
+          ]}
+          supportHeading="Поддержка"
+          support={[
+            { label: 'FAQ', href: '#faq' },
+            { label: 'Правила', href: '#rules' },
+            { label: 'Обратная связь', href: '#contact' },
+          ]}
+          copyright={`© ${new Date().getFullYear()} ${tenant.name}. Все права защищены.`}
+        />
       </div>
-      <div className="footer">
-        <p>Update this page by editing</p>
-        <a className="codeLink" href={fileURL}>
-          <code>app/(frontend)/page.tsx</code>
-        </a>
-      </div>
-    </div>
+    </main>
   )
 }
