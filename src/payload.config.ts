@@ -60,7 +60,7 @@ export default buildConfig({
       // useTenantAccess:false because the ТЗ uses a single-tenant user model
       // (`user.tenant`) and our own access functions enforce the scoping.
       collections: {
-        'site-settings': { isGlobal: true, useTenantAccess: false },
+        'site-settings': { useTenantAccess: false },
         categories: { useTenantAccess: false },
         publications: { useTenantAccess: false },
         pages: { useTenantAccess: false },
