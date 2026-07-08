@@ -32,10 +32,10 @@ function fontVar(key?: string | null): string {
  * Colors (primary/accent) + typography (fonts/sizes/weights) from the tenant.
  * bg/surface/text switch via .theme-dark/.theme-light classes, not here.
  */
-export function brandVars(theme: Theme): React.CSSProperties {
+export function brandVars(theme: Theme, typography?: Theme extends null ? never : any): React.CSSProperties {
   const primary = theme?.primary || '#7C3AED'
   const accent = theme?.accent || '#EC4899'
-  const t = theme?.typography
+  const t = typography ?? theme?.typography
 
   return {
     ['--brand-primary' as any]: primary,

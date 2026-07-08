@@ -41,7 +41,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       </head>
       <body
         style={{
-          ...brandVars(settings?.theme),
+          ...brandVars(settings?.theme, settings?.typography),
           background: 'var(--brand-bg)',
           color: 'var(--brand-text)',
           fontFamily: 'var(--font-body)',
