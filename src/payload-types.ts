@@ -324,7 +324,7 @@ export interface Publication {
   createdAt: string;
 }
 /**
- * Задел под блочный конструктор — на этапе 1 не редактируется.
+ * Текстовые страницы сайта — редактируются клиентом.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
@@ -333,13 +333,41 @@ export interface Page {
   id: number;
   tenant?: (number | null) | Tenant;
   /**
-   * `home` для главной
+   * Отображается как H1 и в меню.
+   */
+  title: string;
+  /**
+   * Адрес страницы: /page/about, /page/faq и т.д.
    */
   slug: string;
   /**
-   * Наполняется на следующем инкременте.
+   * Тело страницы. Форматирование как в редакторе.
    */
-  blocks?: unknown[] | null;
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  showInMenu?: boolean | null;
+  showInFooter?: boolean | null;
+  /**
+   * Сортировка в меню/футере.
+   */
+  menuOrder?: number | null;
+  seo?: {
+    title?: string | null;
+    description?: string | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -595,8 +623,18 @@ export interface PublicationsSelect<T extends boolean = true> {
  */
 export interface PagesSelect<T extends boolean = true> {
   tenant?: T;
+  title?: T;
   slug?: T;
-  blocks?: T | {};
+  content?: T;
+  showInMenu?: T;
+  showInFooter?: T;
+  menuOrder?: T;
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

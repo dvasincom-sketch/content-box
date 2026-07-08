@@ -186,3 +186,41 @@ svg {
     }
   }
 }
+
+/* ── RichText (контент страниц из Pages.content) ── */
+.rich-text {
+  line-height: 1.7;
+  font-size: var(--text-size, 18px);
+}
+.rich-text > * + * {
+  margin-top: 1em;
+}
+.rich-text h1,
+.rich-text h2,
+.rich-text h3,
+.rich-text h4 {
+  font-family: var(--font-heading);
+  font-weight: var(--heading-weight, 700);
+  line-height: 1.25;
+  margin-top: 1.6em;
+}
+.rich-text h2 { font-size: 1.6em; }
+.rich-text h3 { font-size: 1.3em; }
+.rich-text h4 { font-size: 1.1em; }
+.rich-text ul,
+.rich-text ol {
+  padding-left: 1.4em;
+}
+.rich-text ul { list-style: disc; }
+.rich-text ol { list-style: decimal; }
+.rich-text li + li { margin-top: 0.4em; }
+.rich-text a {
+  color: var(--brand-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rich-text blockquote {
+  border-left: 3px solid color-mix(in srgb, var(--brand-primary) 60%, transparent);
+  padding-left: 1em;
+  opacity: 0.9;
+}
