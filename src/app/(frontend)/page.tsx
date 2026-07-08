@@ -42,7 +42,7 @@ export default async function HomePage() {
   const categories = catsRes.docs as any[]
 
   return (
-    <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
+    <main style={{ ...brandVars(settings?.theme, settings?.typography), background: 'var(--brand-bg)', minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
         <HeroBlock
           eyebrow="BTS TV · 24/7 Broadcast"
