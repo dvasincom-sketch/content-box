@@ -46,8 +46,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const host = stripPort(request.headers.get('host') ?? request.nextUrl.hostname)
+  const host = stripPort(
+    request.headers.get('x-forwarded-host') ??
+    request.headers.get('host') ??
+    request.nextUrl.hostname,
+  )
   const origin = request.nextUrl.origin
+  console.log('[proxy] host=', host, '| origin=', origin, '| xfh=', request.headers.get('x-forwarded-host'), '| raw-host=', request.headers.get('host'))
   const tenant = await resolveTenantByDomain(host, origin)
 
   if (!tenant) {
