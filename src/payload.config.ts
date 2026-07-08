@@ -25,6 +25,12 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    components: {
+      graphics: {
+        Logo: '@/components/admin/EmptyLogo',
+        Icon: '@/components/admin/EmptyIcon',
+      },
+    },
   },
   // Order matters for admin nav; Tenants first (platform), then content.
   i18n: {
