@@ -1,4 +1,4 @@
-import type { Access, FieldAccess } from 'payload'
+import type { Access, FieldAccess, Where} from 'payload'
 
 /**
  * Shared access-control helpers.
@@ -72,10 +72,11 @@ export const superAdminFieldAccess: FieldAccess = ({ req: { user } }) =>
  */
 export const tenantsPublicRead: Access = ({ req: { user } }) => {
   if (isSuperAdmin(user as MaybeUser)) return true
-  return {
+  const query: Where = {
     and: [
       { status: { equals: 'active' } },
       { domainVerified: { equals: true } },
     ],
   }
+  return query
 }

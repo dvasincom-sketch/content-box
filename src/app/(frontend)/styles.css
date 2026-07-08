@@ -4,6 +4,28 @@
   --font-mono: 'Roboto Mono', monospace;
 }
 
+/* ── Theme tokens (visitor-switchable). Brand colors (primary/accent)
+   come from the tenant via brandVars; bg/surface/text switch with theme. ── */
+.theme-dark {
+  --brand-bg: #0F0A1E;
+  --brand-surface: #1A1330;
+  --brand-text: #F5F3FF;
+  --brand-muted: rgba(245, 243, 255, 0.65);
+  --brand-border: rgba(245, 243, 255, 0.12);
+  --brand-card-shadow: none;
+}
+
+.theme-light {
+  --brand-bg: #F7F5FB;
+  --brand-surface: #FFFFFF;
+  --brand-text: #1E1A2E;
+  --brand-muted: rgba(30, 26, 46, 0.60);
+  --brand-border: rgba(30, 26, 46, 0.10);
+  --brand-card-shadow: 0 1px 3px rgba(30, 26, 46, 0.08), 0 4px 16px rgba(124, 58, 237, 0.06);
+}
+
+html { transition: background-color 0.2s ease; }
+
 * {
   box-sizing: border-box;
 }
@@ -12,7 +34,7 @@ html {
   font-size: 18px;
   line-height: 32px;
 
-  background: rgb(0, 0, 0);
+  background: transparent;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -28,7 +50,7 @@ body {
   line-height: 32px;
 
   margin: 0;
-  color: rgb(1000, 1000, 1000);
+  
 
   @media (max-width: 1024px) {
     font-size: 15px;
@@ -136,8 +158,8 @@ svg {
     }
 
     .docs {
-      color: rgb(1000, 1000, 1000);
-      background: rgb(0, 0, 0);
+      
+      background: transparent;
       border: 1px solid rgb(1000, 1000, 1000);
     }
   }

@@ -5,6 +5,7 @@ type Source = { type?: string | null; platform?: string | null; url?: string | n
 
 export type PublicationCard = {
   id: string | number
+  slug: string
   title: string
   publishedAt?: string | null
   sources?: Source[] | null
