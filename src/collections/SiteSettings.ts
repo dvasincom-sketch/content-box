@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { tenantScoped, isSuperAdmin, getUserTenantID } from '../access'
+import { isSuperAdmin, getUserTenantID } from '../access'
 
 /**
  * SiteSettings (ТЗ §3.3) — one record per tenant (branding, theme, SEO
@@ -13,8 +13,10 @@ export const SiteSettings: CollectionConfig = {
   admin: { useAsTitle: 'id' },
   access: {
     read: () => true,
-    create: tenantScoped,
-    update: tenantScoped,
+    create: ({ req: { user } }) =>
+      isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
+    update: ({ req: { user } }) =>
+      isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
     delete: ({ req: { user } }) =>
       isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
   },

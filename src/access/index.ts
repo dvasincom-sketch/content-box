@@ -45,7 +45,6 @@ export const superAdminOnly: Access = ({ req: { user } }) => isSuperAdmin(user a
 export const tenantScoped: Access = ({ req: { user } }) => {
   if (isSuperAdmin(user as MaybeUser)) return true
   const tenantID = getUserTenantID(user as MaybeUser)
-  console.log('[tenantScoped] user.tenant=', JSON.stringify((user as any)?.tenant), '| resolved tenantID=', tenantID)
   if (!tenantID) return false
   return { tenant: { equals: tenantID } }
 }
