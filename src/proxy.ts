@@ -51,14 +51,15 @@ export async function proxy(request: NextRequest) {
     request.headers.get('host') ??
     request.nextUrl.hostname,
   )
-  const origin = request.nextUrl.origin
-  console.log('[proxy] host=', host, '| origin=', origin, '| xfh=', request.headers.get('x-forwarded-host'), '| raw-host=', request.headers.get('host'))
+  const proto = request.headers.get('x-forwarded-proto') ?? 'https'
+  const origin = `${proto}://${host}`
+  console.log('[proxy] host=', host, '| origin=', origin)
   const tenant = await resolveTenantByDomain(host, origin)
 
   if (!tenant) {
     // Unknown / unverified / suspended domain → don't leak another tenant.
     const url = request.nextUrl.clone()
-    url.pathname = '/_domain-not-found'
+    url.pathname = '/domain-not-found'
     const res = NextResponse.rewrite(url)
     res.headers.set('x-tenant-status', 'unresolved')
     return res
