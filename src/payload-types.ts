@@ -202,6 +202,13 @@ export interface SiteSetting {
     surface?: string | null;
     text?: string | null;
   };
+  typography?: {
+    headingFont?: ('inter' | 'montserrat' | 'manrope' | 'golos' | 'ptsans' | 'unbounded' | 'roboto') | null;
+    bodyFont?: ('inter' | 'montserrat' | 'manrope' | 'golos' | 'ptsans' | 'roboto') | null;
+    textSize?: ('18' | '20' | '22' | '24') | null;
+    textWeight?: ('300' | '400') | null;
+    headingWeight?: ('300' | '400' | '500' | '600' | '700') | null;
+  };
   socials?:
     | {
         platform: 'boosty' | 'vk' | 'telegram' | 'youtube' | 'instagram';
@@ -489,6 +496,15 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         background?: T;
         surface?: T;
         text?: T;
+      };
+  typography?:
+    | T
+    | {
+        headingFont?: T;
+        bodyFont?: T;
+        textSize?: T;
+        textWeight?: T;
+        headingWeight?: T;
       };
   socials?:
     | T

@@ -24,7 +24,7 @@ export function WhyUsBlock({ heading = 'Почему мы', items }: WhyUsBlockP
 
   return (
     <section className="mt-14">
-      <h2 className="text-2xl lg:text-3xl font-bold mb-6" style={{ color: 'var(--brand-text)' }}>
+      <h2 className="text-2xl lg:text-3xl font-bold mb-6" style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}>
         {heading}
       </h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

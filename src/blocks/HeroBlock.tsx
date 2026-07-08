@@ -38,7 +38,7 @@ export function HeroBlock({ eyebrow, titleLines, tags = [], featured }: HeroBloc
             {eyebrow}
           </span>
         )}
-        <h1 className="text-4xl lg:text-6xl font-extrabold leading-[1.05] tracking-tight" style={{ margin: 0 }}>
+        <h1 className="text-4xl lg:text-6xl font-extrabold leading-[1.05] tracking-tight" style={{ margin: 0, fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}>
           {titleLines.map((line, i) => (
             <span key={i} className="block">
               {i === titleLines.length - 1 ? (
