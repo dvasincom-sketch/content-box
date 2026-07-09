@@ -31,6 +31,43 @@ export default buildConfig({
         Icon: '@/components/admin/EmptyIcon',
       },
     },
+    // Виджеты панели: разная раскладка для суперадмина и editor'а.
+    dashboard: {
+      widgets: [
+        {
+          slug: 'counters',
+          Component: '@/components/admin/CountersWidget',
+          label: 'Сводка',
+        },
+        {
+          slug: 'quickActions',
+          Component: '@/components/admin/QuickActionsWidget',
+          label: 'Быстрые действия',
+        },
+        {
+          slug: 'recentPublications',
+          Component: '@/components/admin/RecentPublicationsWidget',
+          label: 'Последние публикации',
+        },
+      ],
+      // Раскладка зависит от роли: суперадмин видит платформу, editor — свой контент.
+      defaultLayout: ({ req }) => {
+        const superAdmin = (req.user as any)?.platformRole === 'superadmin'
+        if (superAdmin) {
+          return [
+            { widgetSlug: 'counters', width: 'medium' },
+            { widgetSlug: 'quickActions', width: 'medium' },
+            { widgetSlug: 'collections', width: 'full' },
+          ] as any
+        }
+        return [
+          { widgetSlug: 'quickActions', width: 'medium' },
+          { widgetSlug: 'counters', width: 'medium' },
+          { widgetSlug: 'recentPublications', width: 'full' },
+          { widgetSlug: 'collections', width: 'full' },
+        ] as any
+      },
+    },
   },
   // Order matters for admin nav; Tenants first (platform), then content.
   i18n: {

@@ -26,9 +26,11 @@ import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { default as default_df169085e1718e3a72671875b0d41371 } from '@/components/admin/EmptyIcon'
 import { default as default_a2f8dd5f66a36fcae6b2c266c25dfe44 } from '@/components/admin/EmptyLogo'
-import { GlobalViewRedirect as GlobalViewRedirect_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
 import { TenantSelector as TenantSelector_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
 import { TenantSelectionProvider as TenantSelectionProvider_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
+import { default as default_b6c45dfecbe504ed808d7dd20ad19aac } from '@/components/admin/CountersWidget'
+import { default as default_834b949ae19a75a74dee10b5459fc508 } from '@/components/admin/QuickActionsWidget'
+import { default as default_bebed4f3497c87b70af4d43ad1f9664b } from '@/components/admin/RecentPublicationsWidget'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 /** @type import('payload').ImportMap */
@@ -61,8 +63,10 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@/components/admin/EmptyIcon#default": default_df169085e1718e3a72671875b0d41371,
   "@/components/admin/EmptyLogo#default": default_a2f8dd5f66a36fcae6b2c266c25dfe44,
-  "@payloadcms/plugin-multi-tenant/rsc#GlobalViewRedirect": GlobalViewRedirect_d6d5f193a167989e2ee7d14202901e62,
   "@payloadcms/plugin-multi-tenant/rsc#TenantSelector": TenantSelector_d6d5f193a167989e2ee7d14202901e62,
   "@payloadcms/plugin-multi-tenant/rsc#TenantSelectionProvider": TenantSelectionProvider_d6d5f193a167989e2ee7d14202901e62,
+  "@/components/admin/CountersWidget#default": default_b6c45dfecbe504ed808d7dd20ad19aac,
+  "@/components/admin/QuickActionsWidget#default": default_834b949ae19a75a74dee10b5459fc508,
+  "@/components/admin/RecentPublicationsWidget#default": default_bebed4f3497c87b70af4d43ad1f9664b,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }
