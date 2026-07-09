@@ -24,7 +24,7 @@ export default async function RecentPublicationsWidget({ req }: WidgetServerProp
   const docs = res.docs as any[]
 
   return (
-    <div className="card" style={{ padding: '1.25rem' }}>
+    <div className="card" style={{ padding: '1.25rem', width: '100%', display: 'block' }}>
       <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', color: 'var(--theme-text)' }}>Последние публикации</h3>
       {docs.length === 0 ? (
         <p style={{ margin: 0, opacity: 0.65, fontSize: '0.85rem', color: 'var(--theme-text)' }}>

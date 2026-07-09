@@ -24,7 +24,7 @@ export default function QuickActionsWidget({ req }: WidgetServerProps) {
       ]
 
   return (
-    <div className="card" style={{ padding: '1.25rem' }}>
+    <div className="card" style={{ padding: '1.25rem', width: '100%', display: 'block' }}>
       <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', color: 'var(--theme-text)' }}>Быстрые действия</h3>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
         {actions.map((action) => (
