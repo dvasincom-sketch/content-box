@@ -11,7 +11,7 @@ import { superAdminOnly, tenantsPublicRead } from '../access'
  */
 export const Tenants: CollectionConfig = {
   slug: 'tenants',
-  labels: { singular: 'Tenant', plural: 'Tenants' },
+  labels: { singular: 'Проект', plural: 'Проекты' },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'domain', 'status', 'plan', 'domainVerified'],

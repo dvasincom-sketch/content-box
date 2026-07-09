@@ -21,7 +21,7 @@ const usersScoped: Access = ({ req: { user } }) => {
 export const Users: CollectionConfig = {
   slug: 'users',
   auth: true,
-  labels: { singular: 'User', plural: 'Users' },
+  labels: { singular: 'Пользователь', plural: 'Пользователи' },
   admin: {
     useAsTitle: 'email',
     defaultColumns: ['email', 'platformRole', 'tenantRole', 'tenant'],

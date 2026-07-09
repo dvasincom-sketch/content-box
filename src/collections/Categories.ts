@@ -8,7 +8,7 @@ import { publicReadTenantWrite, getUserTenantID } from '../access'
  */
 export const Categories: CollectionConfig = {
   slug: 'categories',
-  labels: { singular: 'Category', plural: 'Categories' },
+  labels: { singular: 'Категория', plural: 'Категории' },
   admin: { useAsTitle: 'title', defaultColumns: ['title', 'slug', 'order'] },
   access: publicReadTenantWrite,
   fields: [

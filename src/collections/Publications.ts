@@ -12,7 +12,7 @@ import { publicReadTenantWrite, getUserTenantID } from '../access'
  */
 export const Publications: CollectionConfig = {
   slug: 'publications',
-  labels: { singular: 'Publication', plural: 'Publications' },
+  labels: { singular: 'Публикация', plural: 'Публикации' },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'category', 'publishedAt', 'featured'],

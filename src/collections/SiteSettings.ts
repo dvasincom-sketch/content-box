@@ -9,7 +9,7 @@ import { isSuperAdmin, getUserTenantID } from '../access'
  */
 export const SiteSettings: CollectionConfig = {
   slug: 'site-settings',
-  labels: { singular: 'Site Settings', plural: 'Site Settings' },
+  labels: { singular: 'Настройки сайта', plural: 'Настройки сайта' },
   admin: { useAsTitle: 'id' },
   access: {
     read: () => true,

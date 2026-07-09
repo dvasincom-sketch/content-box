@@ -9,7 +9,7 @@ import { publicReadTenantWrite } from '../access'
  */
 export const Media: CollectionConfig = {
   slug: 'media',
-  labels: { singular: 'Media', plural: 'Media' },
+  labels: { singular: 'Медиафайл', plural: 'Медиафайлы' },
   upload: true, // local disk in Stage 1; swap a storage adapter later, same shape
   access: publicReadTenantWrite,
   fields: [
