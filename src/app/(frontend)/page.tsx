@@ -8,7 +8,24 @@ import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { WhyUsBlock } from '@/blocks/WhyUsBlock'
 import { SocialLinksBlock } from '@/blocks/SocialLinksBlock'
 import { BroadcastBannerBlock } from '@/blocks/BroadcastBannerBlock'
+import { buildMetadata } from '@/lib/seo'
+import type { Metadata } from 'next'
 import './styles.css'
+
+/** SEO главной (ТЗ §6): только дефолты тенанта, без titleTemplate. */
+export async function generateMetadata(): Promise<Metadata> {
+  const ctx = await getTenantFromHeaders()
+  if (!ctx) return {}
+  const { tenant, settings } = ctx
+  const defaults = (settings as any)?.seoDefaults
+
+  // На главной шаблон "%s — Бренд" не применяем, иначе выйдет "Бренд — Бренд".
+  return buildMetadata({
+    defaults: { ...defaults, titleTemplate: null },
+    fallbackTitle: (tenant as any)?.name,
+    brandName: (tenant as any)?.name,
+  })
+}
 
 export default async function HomePage() {
   const ctx = await getTenantFromHeaders()

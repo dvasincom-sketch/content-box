@@ -20,10 +20,7 @@ const fontVars = [inter, montserrat, manrope, golos, ptSans, unbounded, roboto]
   .map((f) => f.variable)
   .join(' ')
 
-export const metadata = {
-  description: 'White Label CMS',
-  title: 'COCO JAMBO',
-}
+
 
 const THEME_INIT = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.classList.add('theme-'+t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.classList.add('theme-dark');}})();`
 

@@ -3,10 +3,40 @@ import config from '@/payload.config'
 import { notFound } from 'next/navigation'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
+import { buildMetadata } from '@/lib/seo'
+import type { Metadata } from 'next'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
 import '../../styles.css'
 
 type Params = { slug: string }
+
+/** SEO-каскад (ТЗ §6): дефолт тенанта → категория. */
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const { slug } = await params
+  const ctx = await getTenantFromHeaders()
+  if (!ctx) return {}
+  const { tenant, settings } = ctx
+
+  const payloadConfig = await config
+  const payload = await getPayload({ config: payloadConfig })
+  const res = await payload.find({
+    collection: 'categories',
+    where: { and: [{ tenant: { equals: tenant.id } }, { slug: { equals: slug } }] },
+    limit: 1,
+    depth: 1,
+    overrideAccess: true,
+  })
+
+  const cat = res.docs[0] as any
+  if (!cat) return {}
+
+  return buildMetadata({
+    defaults: (settings as any)?.seoDefaults,
+    levels: [cat.seo],
+    fallbackTitle: cat.title,
+    brandName: (tenant as any)?.name,
+  })
+}
 
 export default async function CategoryPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params

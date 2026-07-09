@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
+import { buildMetadata } from '@/lib/seo'
+import type { Metadata } from 'next'
 import '../../styles.css'
 
 type Params = { slug: string }
@@ -11,6 +13,38 @@ type Params = { slug: string }
 const PLATFORM_LABEL: Record<string, string> = {
   boosty: 'Смотреть на Boosty', vk: 'Смотреть в VK Видео',
   telegram: 'Смотреть в Telegram', youtube: 'Смотреть на YouTube',
+}
+
+/**
+ * SEO-каскад (ТЗ §6): дефолт тенанта → категория → публикация.
+ */
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const { slug } = await params
+  const ctx = await getTenantFromHeaders()
+  if (!ctx) return {}
+  const { tenant, settings } = ctx
+
+  const payloadConfig = await config
+  const payload = await getPayload({ config: payloadConfig })
+  const res = await payload.find({
+    collection: 'publications',
+    where: { and: [{ tenant: { equals: tenant.id } }, { slug: { equals: slug } }] },
+    limit: 1,
+    depth: 2,
+    overrideAccess: true,
+  })
+
+  const pub = res.docs[0] as any
+  if (!pub) return {}
+
+  const category = pub.category && typeof pub.category === 'object' ? pub.category : null
+
+  return buildMetadata({
+    defaults: (settings as any)?.seoDefaults,
+    levels: [category?.seo, pub.seo],
+    fallbackTitle: pub.title,
+    brandName: (tenant as any)?.name,
+  })
 }
 
 export default async function PublicationPage({ params }: { params: Promise<Params> }) {
