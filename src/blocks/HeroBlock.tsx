@@ -114,7 +114,8 @@ export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlo
               <div className="flex flex-wrap gap-3">
                 {external.map((s, i) => (
                   <a key={i} href={s.url!} target="_blank" rel="noopener noreferrer"
-                    className="text-sm font-semibold px-4 py-2 rounded-lg bg-black/50 hover:bg-black/65 backdrop-blur-md transition-colors text-white">
+                    className="text-sm font-semibold px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 backdrop-blur transition-colors"
+                style={{ color: '#fff' }}>
                     {PLATFORM_LABEL[s.platform ?? ''] ?? s.platform}
                   </a>
                 ))}
