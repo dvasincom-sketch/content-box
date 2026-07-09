@@ -4,6 +4,7 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { HeroBlock } from '@/blocks/HeroBlock'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
+import { HeroTeamBlock } from '@/blocks/HeroTeamBlock'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { WhyUsBlock } from '@/blocks/WhyUsBlock'
 import { SocialLinksBlock } from '@/blocks/SocialLinksBlock'
@@ -66,6 +67,11 @@ export default async function HomePage() {
           titleLines={['Полные выпуски BTS', 'с русской озвучкой']}
           tags={['Концерты', 'Weverse Live', 'RUN BTS', 'Документальные фильмы']}
           featured={featured ? { title: featured.title, badge: 'Новинка', sources: featured.sources } : null}
+        />
+
+        <HeroTeamBlock
+          members={((settings as any)?.heroTeam?.members ?? []) as any[]}
+          caption={(settings as any)?.heroTeam?.caption}
         />
 
         <LatestPublicationsBlock

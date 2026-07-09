@@ -107,6 +107,30 @@ export const SiteSettings: CollectionConfig = {
       ],
     },
     {
+      name: 'heroTeam',
+      type: 'group',
+      label: 'Блок участников (главная)',
+      admin: { description: 'Если список участников пуст — блок не отображается.' },
+      fields: [
+        {
+          name: 'members',
+          type: 'array',
+          label: 'Участники',
+          labels: { singular: 'Участник', plural: 'Участники' },
+          fields: [
+            { name: 'photo', type: 'upload', relationTo: 'media', label: 'Фото', required: true },
+            { name: 'name', type: 'text', label: 'Имя', admin: { description: 'Для alt-текста.' } },
+          ],
+        },
+        {
+          name: 'caption',
+          type: 'textarea',
+          label: 'Подпись',
+          admin: { description: 'Текст справа от аватаров. Переносы строк сохраняются.' },
+        },
+      ],
+    },
+    {
       name: 'socials',
       type: 'array',
       label: 'Соцсети',

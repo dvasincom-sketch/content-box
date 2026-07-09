@@ -212,6 +212,25 @@ export interface SiteSetting {
     textWeight?: ('300' | '400') | null;
     headingWeight?: ('300' | '400' | '500' | '600' | '700') | null;
   };
+  /**
+   * Если список участников пуст — блок не отображается.
+   */
+  heroTeam?: {
+    members?:
+      | {
+          photo: number | Media;
+          /**
+           * Для alt-текста.
+           */
+          name?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Текст справа от аватаров. Переносы строк сохраняются.
+     */
+    caption?: string | null;
+  };
   socials?:
     | {
         platform: 'boosty' | 'vk' | 'telegram' | 'youtube' | 'instagram';
@@ -540,6 +559,18 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         textSize?: T;
         textWeight?: T;
         headingWeight?: T;
+      };
+  heroTeam?:
+    | T
+    | {
+        members?:
+          | T
+          | {
+              photo?: T;
+              name?: T;
+              id?: T;
+            };
+        caption?: T;
       };
   socials?:
     | T
