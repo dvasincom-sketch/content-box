@@ -1,11 +1,12 @@
 import React from 'react'
+import Link from 'next/link'
 
 type Source = { type?: string | null; platform?: string | null; url?: string | null }
 
 export type HeroBlockProps = {
   eyebrow?: string
   titleLines: string[]          // строки заголовка-слогана
-  tags?: string[]               // мелкие теги под заголовком
+  chips?: { title: string; slug: string }[]   // категории-чипсы под заголовком
   featured?: {
     title: string
     badge?: string
@@ -20,7 +21,7 @@ const PLATFORM_LABEL: Record<string, string> = {
   youtube: 'YouTube',
 }
 
-export function HeroBlock({ eyebrow, titleLines, tags = [], featured }: HeroBlockProps) {
+export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlockProps) {
   const external = (featured?.sources ?? []).filter((s) => s.type === 'external' && s.url)
 
   return (
@@ -52,10 +53,23 @@ export function HeroBlock({ eyebrow, titleLines, tags = [], featured }: HeroBloc
             </span>
           ))}
         </h1>
-        {tags.length > 0 && (
-          <p className="mt-6 text-sm lg:text-base opacity-80" style={{ marginBottom: 0 }}>
-            {tags.join(' • ')}
-          </p>
+        {chips.length > 0 && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            {chips.map((chip) => (
+              <Link
+                key={chip.slug}
+                href={`/category/${chip.slug}`}
+                className="text-sm px-3.5 py-1.5 rounded-full transition-colors"
+                style={{
+                  color: 'var(--brand-text)',
+                  background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--brand-primary) 30%, transparent)',
+                }}
+              >
+                {chip.title}
+              </Link>
+            ))}
+          </div>
         )}
       </div>
 

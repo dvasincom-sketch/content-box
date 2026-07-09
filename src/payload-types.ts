@@ -232,6 +232,10 @@ export interface SiteSetting {
     caption?: string | null;
     avatarSize?: ('48' | '64' | '96' | '128') | null;
   };
+  /**
+   * Чипсы под заголовком главной. Порядок задаётся перетаскиванием.
+   */
+  heroChips?: (number | Category)[] | null;
   socials?:
     | {
         platform: 'boosty' | 'vk' | 'telegram' | 'youtube' | 'instagram';
@@ -574,6 +578,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         caption?: T;
         avatarSize?: T;
       };
+  heroChips?: T;
   socials?:
     | T
     | {

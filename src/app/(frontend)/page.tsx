@@ -65,7 +65,9 @@ export default async function HomePage() {
         <HeroBlock
           eyebrow="BTS TV · 24/7 Broadcast"
           titleLines={['Полные выпуски BTS', 'с русской озвучкой']}
-          tags={['Концерты', 'Weverse Live', 'RUN BTS', 'Документальные фильмы']}
+          chips={(((settings as any)?.heroChips ?? []) as any[])
+            .filter((c) => c && typeof c === 'object' && c.slug)
+            .map((c) => ({ title: c.title, slug: c.slug }))}
           featured={featured ? { title: featured.title, badge: 'Новинка', sources: featured.sources } : null}
         />
 

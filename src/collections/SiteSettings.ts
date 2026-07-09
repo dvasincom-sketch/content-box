@@ -143,6 +143,16 @@ export const SiteSettings: CollectionConfig = {
       ],
     },
     {
+      name: 'heroChips',
+      type: 'relationship',
+      relationTo: 'categories',
+      hasMany: true,
+      label: 'Категории в шапке',
+      admin: {
+        description: 'Чипсы под заголовком главной. Порядок задаётся перетаскиванием.',
+      },
+    },
+    {
       name: 'socials',
       type: 'array',
       label: 'Соцсети',
