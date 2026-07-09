@@ -230,6 +230,7 @@ export interface SiteSetting {
      * Текст справа от аватаров. Переносы строк сохраняются.
      */
     caption?: string | null;
+    avatarSize?: ('48' | '64' | '96' | '128') | null;
   };
   socials?:
     | {
@@ -571,6 +572,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
               id?: T;
             };
         caption?: T;
+        avatarSize?: T;
       };
   socials?:
     | T

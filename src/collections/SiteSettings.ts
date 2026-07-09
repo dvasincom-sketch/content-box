@@ -128,6 +128,18 @@ export const SiteSettings: CollectionConfig = {
           label: 'Подпись',
           admin: { description: 'Текст справа от аватаров. Переносы строк сохраняются.' },
         },
+        {
+          name: 'avatarSize',
+          type: 'select',
+          label: 'Размер аватаров',
+          defaultValue: '96',
+          options: [
+            { label: 'Мелкие (48px)', value: '48' },
+            { label: 'Средние (64px)', value: '64' },
+            { label: 'Крупные (96px)', value: '96' },
+            { label: 'Очень крупные (128px)', value: '128' },
+          ],
+        },
       ],
     },
     {

@@ -8,6 +8,7 @@ export type TeamMember = {
 export type HeroTeamBlockProps = {
   members?: TeamMember[]
   caption?: string | null
+  avatarSize?: string | null
 }
 
 function photoUrl(photo: TeamMember['photo']): string | null {
@@ -20,9 +21,13 @@ function photoUrl(photo: TeamMember['photo']): string | null {
  * Данные из SiteSettings.heroTeam (ТЗ §1: брендинг — это данные).
  * Не отображается, если участников нет.
  */
-export function HeroTeamBlock({ members = [], caption }: HeroTeamBlockProps) {
+export function HeroTeamBlock({ members = [], caption, avatarSize }: HeroTeamBlockProps) {
   const visible = (members ?? []).filter((m) => photoUrl(m.photo))
   if (visible.length === 0) return null
+
+  const size = Number(avatarSize) || 96
+  const overlap = Math.round(size / 4) // наложение — четверть ширины
+  const border = size >= 96 ? 3 : 2
 
   return (
     <section className="mt-10">
@@ -38,10 +43,10 @@ export function HeroTeamBlock({ members = [], caption }: HeroTeamBlockProps) {
                 title={member.name || undefined}
                 className="rounded-full object-cover"
                 style={{
-                  width: '48px',
-                  height: '48px',
-                  marginLeft: i === 0 ? 0 : '-12px',
-                  border: '2px solid var(--brand-bg)',
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  marginLeft: i === 0 ? 0 : `-${overlap}px`,
+                  border: `${border}px solid var(--brand-bg)`,
                   zIndex: visible.length - i,
                   position: 'relative',
                 }}

@@ -72,6 +72,7 @@ export default async function HomePage() {
         <HeroTeamBlock
           members={((settings as any)?.heroTeam?.members ?? []) as any[]}
           caption={(settings as any)?.heroTeam?.caption}
+          avatarSize={(settings as any)?.heroTeam?.avatarSize}
         />
 
         <LatestPublicationsBlock
