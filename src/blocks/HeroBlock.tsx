@@ -98,7 +98,7 @@ export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlo
             priority
           />
         )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent 60%)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.45) 40%, transparent 75%)' }} />
         {featured ? (
           <div className="relative">
             {featured.badge && (
@@ -114,7 +114,7 @@ export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlo
               <div className="flex flex-wrap gap-3">
                 {external.map((s, i) => (
                   <a key={i} href={s.url!} target="_blank" rel="noopener noreferrer"
-                    className="text-sm font-semibold px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 backdrop-blur transition-colors text-white">
+                    className="text-sm font-semibold px-4 py-2 rounded-lg bg-black/50 hover:bg-black/65 backdrop-blur-md transition-colors text-white">
                     {PLATFORM_LABEL[s.platform ?? ''] ?? s.platform}
                   </a>
                 ))}
