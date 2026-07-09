@@ -6,6 +6,11 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
+// Хост публичного R2-домена для next/image (напр. pub-xxxx.r2.dev).
+const r2Host = process.env.R2_PUBLIC_URL
+  ? new URL(process.env.R2_PUBLIC_URL).hostname
+  : undefined
+
 const nextConfig: NextConfig = {
   images: {
     localPatterns: [
@@ -13,6 +18,15 @@ const nextConfig: NextConfig = {
         pathname: '/api/media/file/**',
       },
     ],
+    remotePatterns: r2Host
+      ? [
+          {
+            protocol: 'https',
+            hostname: r2Host,
+            pathname: '/**',
+          },
+        ]
+      : [],
   },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {

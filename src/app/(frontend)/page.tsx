@@ -55,7 +55,7 @@ export default async function HomePage() {
   const catsRes = await payload.find({
     collection: 'categories',
     where: { tenant: { equals: tenant.id } },
-    sort: 'order', depth: 0, limit: 50, overrideAccess: true,
+    sort: 'order', depth: 1, limit: 50, overrideAccess: true,
   })
   const categories = catsRes.docs as any[]
 
@@ -68,7 +68,7 @@ export default async function HomePage() {
           chips={(((settings as any)?.heroChips ?? []) as any[])
             .filter((c) => c && typeof c === 'object' && c.slug)
             .map((c) => ({ title: c.title, slug: c.slug }))}
-          featured={featured ? { title: featured.title, badge: 'Новинка', sources: featured.sources } : null}
+          featured={featured ? { title: featured.title, badge: 'Новинка', sources: featured.sources, cover: featured.cover } : null}
         />
 
         <HeroTeamBlock
@@ -80,11 +80,12 @@ export default async function HomePage() {
         <LatestPublicationsBlock
           items={latest.map((p) => ({
             id: p.id, slug: p.slug, title: p.title, publishedAt: p.publishedAt, sources: p.sources,
+            cover: p.cover,
           }))}
         />
 
         <CategoriesGridBlock
-          items={categories.map((c) => ({ id: c.id, title: c.title, slug: c.slug }))}
+          items={categories.map((c) => ({ id: c.id, title: c.title, slug: c.slug, cover: c.cover }))}
         />
 
         <WhyUsBlock

@@ -1,9 +1,11 @@
 import React from 'react'
+import Image from 'next/image'
 
 export type CategoryTile = {
   id: string | number
   title: string
   slug: string
+  cover?: { url?: string | null; alt?: string | null } | string | number | null
 }
 
 export type CategoriesGridBlockProps = {
@@ -20,6 +22,11 @@ const GRADIENTS = [
   'linear-gradient(135deg, #3B82F6, #7C3AED)',
   'linear-gradient(135deg, #A855F7, #EC4899)',
 ]
+
+function coverUrl(cover: CategoryTile['cover']): string | null {
+  if (cover && typeof cover === 'object' && cover.url) return cover.url
+  return null
+}
 
 export function CategoriesGridBlock({ heading = 'Категории', items }: CategoriesGridBlockProps) {
   if (!items || items.length === 0) return null
@@ -38,6 +45,15 @@ export function CategoriesGridBlock({ heading = 'Категории', items }: C
             className="relative rounded-2xl overflow-hidden aspect-[4/3] flex items-end p-4 group"
             style={{ background: GRADIENTS[i % GRADIENTS.length] }}
           >
+            {coverUrl(c.cover) && (
+              <Image
+                src={coverUrl(c.cover) as string}
+                alt={(typeof c.cover === 'object' && c.cover?.alt) || c.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              />
+            )}
             <div
               className="absolute inset-0 transition-opacity group-hover:opacity-70"
               style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent 65%)' }}

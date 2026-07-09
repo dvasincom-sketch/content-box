@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 
 type Source = { type?: string | null; platform?: string | null; url?: string | null }
@@ -11,6 +12,7 @@ export type HeroBlockProps = {
     title: string
     badge?: string
     sources?: Source[]
+    cover?: { url?: string | null; alt?: string | null } | string | number | null
   } | null
 }
 
@@ -19,6 +21,13 @@ const PLATFORM_LABEL: Record<string, string> = {
   vk: 'VK Видео',
   telegram: 'Telegram',
   youtube: 'YouTube',
+}
+
+function coverUrl(cover: unknown): string | null {
+  if (cover && typeof cover === 'object' && 'url' in cover && (cover as any).url) {
+    return (cover as any).url
+  }
+  return null
 }
 
 export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlockProps) {
@@ -73,12 +82,22 @@ export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlo
         )}
       </div>
 
-      {/* Правая колонка — карточка featured с градиентом-заглушкой */}
+      {/* Правая колонка — карточка featured; градиент — фолбэк без обложки */}
       <div className="relative rounded-2xl overflow-hidden min-h-[340px] flex flex-col justify-end p-6 lg:p-8"
         style={{
           background: 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-accent) 55%, #F59E0B 100%)',
         }}
       >
+        {coverUrl(featured?.cover) && (
+          <Image
+            src={coverUrl(featured?.cover) as string}
+            alt={featured?.title || ''}
+            fill
+            className="object-cover"
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            priority
+          />
+        )}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent 60%)' }} />
         {featured ? (
           <div className="relative">

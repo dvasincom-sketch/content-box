@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import { relativeDayLabel } from '@/lib/relativeDate'
 
 type Source = { type?: string | null; platform?: string | null; url?: string | null }
@@ -9,6 +10,7 @@ export type PublicationCard = {
   title: string
   publishedAt?: string | null
   sources?: Source[] | null
+  cover?: { url?: string | null; alt?: string | null } | string | number | null
 }
 
 export type LatestPublicationsBlockProps = {
@@ -18,6 +20,11 @@ export type LatestPublicationsBlockProps = {
 
 const PLATFORM_LABEL: Record<string, string> = {
   boosty: 'Boosty', vk: 'VK', telegram: 'Telegram', youtube: 'YouTube',
+}
+
+function coverUrl(cover: PublicationCard['cover']): string | null {
+  if (cover && typeof cover === 'object' && cover.url) return cover.url
+  return null
 }
 
 export function LatestPublicationsBlock({ heading = 'Последние публикации', items }: LatestPublicationsBlockProps) {
@@ -35,9 +42,18 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
           return (
             <article key={p.id} className="rounded-2xl overflow-hidden flex flex-col"
               style={{ background: 'var(--brand-surface)' }}>
-              {/* Обложка-заглушка градиентом (cover пока пустой) */}
+              {/* Обложка публикации; градиент — фолбэк, если cover не задан */}
               <div className="relative h-36"
                 style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}>
+                {coverUrl(p.cover) && (
+                  <Image
+                    src={coverUrl(p.cover) as string}
+                    alt={(typeof p.cover === 'object' && p.cover?.alt) || p.title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  />
+                )}
                 {badge && (
                   <span className="absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full"
                     style={{ background: 'rgba(0,0,0,0.45)', color: '#fff' }}>

@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { notFound } from 'next/navigation'
@@ -85,7 +86,19 @@ export default async function PublicationPage({ params }: { params: Promise<Para
 
         <h1 className="text-3xl lg:text-5xl font-extrabold mb-6" style={{ color: 'var(--brand-text)' }}>{pub.title}</h1>
 
-        <div className="rounded-2xl h-56 mb-8" style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }} />
+        <div className="relative rounded-2xl h-56 lg:h-80 mb-8 overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}>
+          {pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
+            <Image
+              src={pub.cover.url}
+              alt={pub.cover.alt || pub.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 768px"
+              priority
+            />
+          )}
+        </div>
 
         {pub.description && (
           <div className="prose-invert max-w-none mb-8 leading-relaxed" style={{ color: 'var(--brand-text)', opacity: 0.9 }}>
