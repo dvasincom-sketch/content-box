@@ -15,13 +15,6 @@ export type SiteHeaderProps = {
   supportUrl?: string
 }
 
-const DEFAULT_NAV: NavItem[] = [
-  { label: 'Главная', url: '/' },
-  { label: 'Категории', url: '#categories' },
-  { label: 'Расписание эфира', url: '#schedule' },
-  { label: 'О проекте', url: '#about' },
-]
-
 export function SiteHeader({
   logoUrl,
   logoAlt,
@@ -31,7 +24,7 @@ export function SiteHeader({
   supportUrl = '#support',
 }: SiteHeaderProps) {
   const [open, setOpen] = useState(false)
-  const items = nav && nav.length > 0 ? nav : DEFAULT_NAV
+  const items = nav ?? []
 
   const borderSoft = 'color-mix(in srgb, var(--brand-text) 12%, transparent)'
   const supportBorder = 'color-mix(in srgb, var(--brand-primary) 60%, transparent)'

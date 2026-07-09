@@ -364,6 +364,10 @@ export interface Page {
    * Сортировка в меню/футере.
    */
   menuOrder?: number | null;
+  /**
+   * В какой колонке футера показывать страницу.
+   */
+  footerColumn?: ('nav' | 'support') | null;
   seo?: {
     title?: string | null;
     description?: string | null;
@@ -629,6 +633,7 @@ export interface PagesSelect<T extends boolean = true> {
   showInMenu?: T;
   showInFooter?: T;
   menuOrder?: T;
+  footerColumn?: T;
   seo?:
     | T
     | {

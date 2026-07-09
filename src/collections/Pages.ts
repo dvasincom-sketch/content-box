@@ -66,6 +66,20 @@ export const Pages: CollectionConfig = {
       ],
     },
     {
+      name: 'footerColumn',
+      type: 'select',
+      label: 'Колонка футера',
+      defaultValue: 'nav',
+      options: [
+        { label: 'Навигация', value: 'nav' },
+        { label: 'Поддержка', value: 'support' },
+      ],
+      admin: {
+        description: 'В какой колонке футера показывать страницу.',
+        condition: (data) => Boolean(data?.showInFooter),
+      },
+    },
+    {
       name: 'seo',
       type: 'group',
       label: 'SEO',

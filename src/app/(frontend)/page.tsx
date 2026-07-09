@@ -73,25 +73,7 @@ export default async function HomePage() {
 
         <SocialLinksBlock items={(settings?.socials ?? []) as any[]} />
 
-        <BroadcastBannerBlock
-          brandName={tenant.name}
-          tagline="BTS TV"
-          onAirText="ON AIR"
-          navHeading="Навигация"
-          nav={[
-            { label: 'Главная', href: '/' },
-            { label: 'Категории', href: '#categories' },
-            { label: 'Расписание эфира', href: '#schedule' },
-            { label: 'О проекте', href: '#about' },
-          ]}
-          supportHeading="Поддержка"
-          support={[
-            { label: 'FAQ', href: '#faq' },
-            { label: 'Правила', href: '#rules' },
-            { label: 'Обратная связь', href: '#contact' },
-          ]}
-          copyright={`© ${new Date().getFullYear()} ${tenant.name}. Все права защищены.`}
-        />
+        <BroadcastBannerBlock tagline="BTS TV" onAirText="ON AIR" />
       </div>
     </main>
   )

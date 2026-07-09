@@ -4,6 +4,9 @@ import { Inter, Montserrat, Manrope, Golos_Text, PT_Sans, Unbounded, Roboto } fr
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { SiteHeader } from '@/components/SiteHeader'
+import { SiteFooter } from '@/components/SiteFooter'
+import { getPayload } from 'payload'
+import config from '@/payload.config'
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter', display: 'swap' })
 const montserrat = Montserrat({ subsets: ['latin', 'cyrillic'], variable: '--font-montserrat', display: 'swap' })
@@ -29,6 +32,40 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const ctx = await getTenantFromHeaders()
   const tenant = ctx?.tenant as any
   const settings = ctx?.settings as any
+
+  // Меню и футер строятся из страниц (ТЗ §3.6, white-label):
+  // showInMenu → шапка; showInFooter + footerColumn → колонка футера.
+  let navItems: { label: string; url: string }[] = []
+  let footerNav: { label: string; href: string }[] = []
+  let footerSupport: { label: string; href: string }[] = []
+
+  if (tenant?.id) {
+    const payloadConfig = await config
+    const payload = await getPayload({ config: payloadConfig })
+    const pagesRes = await payload.find({
+      collection: 'pages',
+      where: {
+        and: [
+          { tenant: { equals: tenant.id } },
+          { or: [{ showInMenu: { equals: true } }, { showInFooter: { equals: true } }] },
+        ],
+      },
+      sort: 'menuOrder',
+      limit: 50,
+      depth: 0,
+      overrideAccess: true,
+    })
+
+    for (const page of pagesRes.docs as any[]) {
+      const href = `/page/${page.slug}`
+      if (page.showInMenu) navItems.push({ label: page.title, url: href })
+      if (page.showInFooter) {
+        const item = { label: page.title, href }
+        if (page.footerColumn === 'support') footerSupport.push(item)
+        else footerNav.push(item)
+      }
+    }
+  }
 
   const logo = settings?.logo
   const logoUrl = logo && typeof logo === 'object' ? logo.url : null
@@ -56,10 +93,18 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             logoUrl={logoUrl}
             logoAlt={logoAlt}
             brandName={tenant?.name ?? 'COCO JAMBO'}
-            nav={(settings?.navigation ?? []) as any[]}
+            nav={navItems}
           />
         )}
         <main>{children}</main>
+        {ctx && (
+          <SiteFooter
+            brandName={tenant?.name ?? ''}
+            copyright={`© ${new Date().getFullYear()} ${tenant?.name ?? ''}. Все права защищены.`}
+            nav={footerNav}
+            support={footerSupport}
+          />
+        )}
       </body>
     </html>
   )
