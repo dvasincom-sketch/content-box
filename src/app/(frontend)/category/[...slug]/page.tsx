@@ -7,6 +7,7 @@ import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
+import { RichText } from '@/components/RichText'
 import '../../styles.css'
 
 type Params = { slug: string[] }
@@ -135,11 +136,11 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
           {category.title}
         </h1>
 
-        {category.description && (
-          <p className="mb-8 text-base" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
-            {category.description}
-          </p>
-        )}
+        {category.description ? (
+          <div className="mb-10">
+            <RichText data={category.description} />
+          </div>
+        ) : null}
 
         {pubs.length === 0 ? (
           <p style={{ color: 'var(--brand-text)', opacity: 0.7 }}>

@@ -45,7 +45,12 @@ export const Categories: CollectionConfig = {
       },
     },
     { name: 'cover', type: 'upload', relationTo: 'media', label: 'Обложка' },
-    { name: 'description', type: 'textarea' },
+    {
+      name: 'description',
+      type: 'richText',
+      label: 'Описание',
+      admin: { description: 'Текст над списком публикаций. Можно оставить пустым.' },
+    },
     { name: 'order', type: 'number', defaultValue: 0, label: 'Сортировка' },
     {
       name: 'showInHeader',
