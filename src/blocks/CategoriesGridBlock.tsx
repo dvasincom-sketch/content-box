@@ -4,7 +4,7 @@ import Image from 'next/image'
 export type CategoryTile = {
   id: string | number
   title: string
-  slug: string
+  href: string
   cover?: { url?: string | null; alt?: string | null } | string | number | null
 }
 
@@ -41,7 +41,7 @@ export function CategoriesGridBlock({ heading = 'Категории', items }: C
           
           <a
             key={c.id}
-            href={`/category/${c.slug}`}
+            href={c.href}
             className="relative rounded-2xl overflow-hidden aspect-[4/3] flex items-end p-4 group"
             style={{ background: GRADIENTS[i % GRADIENTS.length] }}
           >

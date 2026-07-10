@@ -7,7 +7,7 @@ type Source = { type?: string | null; platform?: string | null; url?: string | n
 export type HeroBlockProps = {
   eyebrow?: string
   titleLines: string[]          // строки заголовка-слогана
-  chips?: { title: string; slug: string }[]   // категории-чипсы под заголовком
+  chips?: { title: string; href: string }[]   // категории-чипсы под заголовком
   featured?: {
     title: string
     badge?: string
@@ -66,8 +66,8 @@ export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlo
           <div className="mt-6 flex flex-wrap gap-2">
             {chips.map((chip) => (
               <Link
-                key={chip.slug}
-                href={`/category/${chip.slug}`}
+                key={chip.href}
+                href={chip.href}
                 className="text-sm px-3.5 py-1.5 rounded-full transition-colors"
                 style={{
                   color: 'var(--brand-text)',

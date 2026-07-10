@@ -10,6 +10,7 @@ import { WhyUsBlock } from '@/blocks/WhyUsBlock'
 import { SocialLinksBlock } from '@/blocks/SocialLinksBlock'
 import { BroadcastBannerBlock } from '@/blocks/BroadcastBannerBlock'
 import { buildMetadata } from '@/lib/seo'
+import { categoryHref } from '@/lib/categoryHref'
 import type { Metadata } from 'next'
 import './styles.css'
 
@@ -61,7 +62,7 @@ export default async function HomePage() {
           titleLines={['Полные выпуски BTS', 'с русской озвучкой']}
           chips={(((settings as any)?.heroChips ?? []) as any[])
             .filter((c) => c && typeof c === 'object' && c.slug)
-            .map((c) => ({ title: c.title, slug: c.slug }))}
+            .map((c) => ({ title: c.title, href: categoryHref(c) }))}
           featured={featured ? { title: featured.title, badge: 'Новинка', sources: featured.sources, cover: featured.cover } : null}
         />
 
@@ -81,7 +82,7 @@ export default async function HomePage() {
         <CategoriesGridBlock
           items={(((settings as any)?.homeCategories ?? []) as any[])
             .filter((c) => c && typeof c === 'object' && c.slug)
-            .map((c) => ({ id: c.id, title: c.title, slug: c.slug, cover: c.cover }))}
+            .map((c) => ({ id: c.id, title: c.title, href: categoryHref(c), cover: c.cover }))}
         />
 
         <WhyUsBlock
