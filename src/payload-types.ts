@@ -236,6 +236,10 @@ export interface SiteSetting {
    * Чипсы под заголовком главной. Порядок задаётся перетаскиванием.
    */
   heroChips?: (number | Category)[] | null;
+  /**
+   * Блок «Категории». Если пусто — блок не отображается.
+   */
+  homeCategories?: (number | Category)[] | null;
   socials?:
     | {
         platform: 'boosty' | 'vk' | 'telegram' | 'youtube' | 'instagram';
@@ -596,6 +600,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         avatarSize?: T;
       };
   heroChips?: T;
+  homeCategories?: T;
   socials?:
     | T
     | {

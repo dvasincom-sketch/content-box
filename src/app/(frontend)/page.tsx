@@ -52,12 +52,6 @@ export default async function HomePage() {
   })
   const latest = latestRes.docs as any[]
 
-  const catsRes = await payload.find({
-    collection: 'categories',
-    where: { tenant: { equals: tenant.id } },
-    sort: 'order', depth: 1, limit: 50, overrideAccess: true,
-  })
-  const categories = catsRes.docs as any[]
 
   return (
     <main style={{ ...brandVars(settings?.theme, settings?.typography), background: 'var(--brand-bg)', minHeight: '100vh' }}>
@@ -85,7 +79,9 @@ export default async function HomePage() {
         />
 
         <CategoriesGridBlock
-          items={categories.map((c) => ({ id: c.id, title: c.title, slug: c.slug, cover: c.cover }))}
+          items={(((settings as any)?.homeCategories ?? []) as any[])
+            .filter((c) => c && typeof c === 'object' && c.slug)
+            .map((c) => ({ id: c.id, title: c.title, slug: c.slug, cover: c.cover }))}
         />
 
         <WhyUsBlock

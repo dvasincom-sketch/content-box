@@ -153,6 +153,16 @@ export const SiteSettings: CollectionConfig = {
       },
     },
     {
+      name: 'homeCategories',
+      type: 'relationship',
+      relationTo: 'categories',
+      hasMany: true,
+      label: 'Категории на главной (плитки)',
+      admin: {
+        description: 'Блок «Категории». Если пусто — блок не отображается.',
+      },
+    },
+    {
       name: 'socials',
       type: 'array',
       label: 'Соцсети',
