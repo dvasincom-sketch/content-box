@@ -120,6 +120,13 @@ export const SiteSettings: CollectionConfig = {
           fields: [
             { name: 'photo', type: 'upload', relationTo: 'media', label: 'Фото', required: true },
             { name: 'name', type: 'text', label: 'Имя', admin: { description: 'Для alt-текста.' } },
+            {
+              name: 'category',
+              type: 'relationship',
+              relationTo: 'categories',
+              label: 'Ссылка на категорию',
+              admin: { description: 'Клик по аватару ведёт на эту категорию. Можно оставить пустым.' },
+            },
           ],
         },
         {

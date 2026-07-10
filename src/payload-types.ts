@@ -223,6 +223,10 @@ export interface SiteSetting {
            * Для alt-текста.
            */
           name?: string | null;
+          /**
+           * Клик по аватару ведёт на эту категорию. Можно оставить пустым.
+           */
+          category?: (number | null) | Category;
           id?: string | null;
         }[]
       | null;
@@ -598,6 +602,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
           | {
               photo?: T;
               name?: T;
+              category?: T;
               id?: T;
             };
         caption?: T;

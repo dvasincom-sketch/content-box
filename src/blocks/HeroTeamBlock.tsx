@@ -1,8 +1,11 @@
 import React from 'react'
+import Link from 'next/link'
+import { categoryHref } from '@/lib/categoryHref'
 
 export type TeamMember = {
   photo?: { url?: string | null; alt?: string | null } | string | number | null
   name?: string | null
+  category?: { slug?: string | null; breadcrumbs?: { url?: string | null }[] | null } | string | number | null
 }
 
 export type HeroTeamBlockProps = {
@@ -35,22 +38,42 @@ export function HeroTeamBlock({ members = [], caption, avatarSize }: HeroTeamBlo
         <div className="flex items-center">
           {visible.map((member, i) => {
             const url = photoUrl(member.photo)
-            return (
+            const cat = member.category
+            const href =
+              cat && typeof cat === 'object' ? categoryHref(cat as any) : null
+
+            const style: React.CSSProperties = {
+              width: `${size}px`,
+              height: `${size}px`,
+              marginLeft: i === 0 ? 0 : `-${overlap}px`,
+              border: `${border}px solid var(--brand-bg)`,
+              zIndex: visible.length - i,
+              position: 'relative',
+            }
+
+            const img = (
               <img
-                key={i}
                 src={url as string}
                 alt={member.name || 'Участник'}
                 title={member.name || undefined}
                 className="rounded-full object-cover"
-                style={{
-                  width: `${size}px`,
-                  height: `${size}px`,
-                  marginLeft: i === 0 ? 0 : `-${overlap}px`,
-                  border: `${border}px solid var(--brand-bg)`,
-                  zIndex: visible.length - i,
-                  position: 'relative',
-                }}
+                style={href ? { ...style, display: 'block' } : style}
               />
+            )
+
+            // Аватар без категории — просто картинка.
+            if (!href) return <React.Fragment key={i}>{img}</React.Fragment>
+
+            return (
+              <Link
+                key={i}
+                href={href}
+                aria-label={member.name || 'Участник'}
+                className="transition-transform hover:-translate-y-1"
+                style={{ display: 'block', lineHeight: 0 }}
+              >
+                {img}
+              </Link>
             )
           })}
         </div>
