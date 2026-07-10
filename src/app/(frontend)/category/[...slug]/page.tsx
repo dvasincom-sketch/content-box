@@ -8,6 +8,8 @@ import { buildMetadata } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
 import { RichText } from '@/components/RichText'
+import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
+import { categoryHref } from '@/lib/categoryHref'
 import '../../styles.css'
 
 type Params = { slug: string[] }
@@ -105,6 +107,19 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
   })
   const pubs = pubsRes.docs as any[]
 
+  // Прямые подкатегории — плитками под публикациями.
+  const childrenRes = await payload.find({
+    collection: 'categories',
+    where: {
+      and: [{ tenant: { equals: tenant.id } }, { parent: { equals: category.id } }],
+    },
+    sort: 'order',
+    limit: 100,
+    depth: 1,
+    overrideAccess: true,
+  })
+  const children = childrenRes.docs as any[]
+
   const crumbs = (category.breadcrumbs ?? []) as { url?: string; label?: string }[]
 
   return (
@@ -143,8 +158,8 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
         ) : null}
 
         {pubs.length === 0 ? (
-          // Если есть статья — раздел не пустой, сообщение не нужно.
-          category.description ? null : (
+          // Если есть статья или подкатегории — раздел не пустой.
+          category.description || children.length > 0 ? null : (
             <p style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
               В этой категории пока нет публикаций.
             </p>
@@ -161,6 +176,21 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
               cover: p.cover,
             }))}
           />
+        )}
+
+        {/* Прямые подкатегории — плитками */}
+        {children.length > 0 && (
+          <div className="mt-14">
+            <CategoriesGridBlock
+              heading="Разделы"
+              items={children.map((c) => ({
+                id: c.id,
+                title: c.title,
+                href: categoryHref(c),
+                cover: c.cover,
+              }))}
+            />
+          </div>
         )}
       </div>
     </main>
