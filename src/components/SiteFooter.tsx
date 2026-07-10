@@ -2,6 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 
 export type FooterItem = { label: string; href: string }
+export type FooterColumn = { heading: string; items: FooterItem[] }
 export type SiteFooterProps = {
   brandName?: string
   copyright?: string
@@ -9,6 +10,7 @@ export type SiteFooterProps = {
   nav?: FooterItem[]
   supportHeading?: string
   support?: FooterItem[]
+  columns?: FooterColumn[]   // колонки категорий (BTS, Дискография, Видеография)
 }
 
 function FooterLinks({ items }: { items: FooterItem[] }) {
@@ -41,10 +43,11 @@ export function SiteFooter({
   nav = [],
   supportHeading = 'Поддержка',
   support = [],
+  columns = [],
 }: SiteFooterProps) {
   return (
     <footer className="max-w-6xl mx-auto px-4 mt-16">
-      <div className="grid gap-8 sm:grid-cols-3 pb-10 border-t pt-10"
+      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5 pb-10 border-t pt-10"
         style={{ borderColor: 'color-mix(in srgb, var(--brand-text) 12%, transparent)' }}
       >
         <div>
@@ -65,6 +68,14 @@ export function SiteFooter({
             <FooterLinks items={nav} />
           </nav>
         )}
+        {columns.map((col) => (
+          <nav key={col.heading}>
+            <h4 className="text-sm font-semibold uppercase tracking-wide mb-4" style={{ color: 'var(--brand-muted)' }}>
+              {col.heading}
+            </h4>
+            <FooterLinks items={col.items} />
+          </nav>
+        ))}
         {support.length > 0 && (
           <nav>
             <h4 className="text-sm font-semibold uppercase tracking-wide mb-4" style={{ color: 'var(--brand-muted)' }}>

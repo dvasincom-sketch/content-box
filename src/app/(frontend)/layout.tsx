@@ -2,7 +2,7 @@ import React from 'react'
 import './styles.css'
 import { Inter, Montserrat, Manrope, Golos_Text, PT_Sans, Unbounded, Roboto } from 'next/font/google'
 import { getTenantFromHeaders } from '@/lib/tenant'
-import { getHeaderMenu, getFooterCategories } from '@/lib/headerMenu'
+import { getHeaderMenu, getFooterCategories, getFooterColumns } from '@/lib/headerMenu'
 import { brandVars } from '@/lib/brand'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -35,6 +35,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   // showInMenu → шапка; showInFooter + footerColumn → колонка футера.
   const menu = tenant ? await getHeaderMenu(tenant.id as number) : []
   const footerCats = tenant ? await getFooterCategories(tenant.id as number) : []
+  const footerColumns = tenant ? await getFooterColumns(tenant.id as number) : []
   let navItems: { label: string; url: string }[] = []
   let footerNav: { label: string; href: string }[] = []
   let footerSupport: { label: string; href: string }[] = []
@@ -103,6 +104,10 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             brandName={tenant?.name ?? ''}
             copyright={`© ${new Date().getFullYear()} ${tenant?.name ?? ''}. Все права защищены.`}
             nav={[...footerNav, ...footerCats.map((c) => ({ label: c.label, href: c.url }))]}
+            columns={footerColumns.map((col) => ({
+              heading: col.heading,
+              items: col.items.map((i) => ({ label: i.label, href: i.url })),
+            }))}
             support={footerSupport}
           />
         )}

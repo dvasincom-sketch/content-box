@@ -309,6 +309,10 @@ export interface Category {
    * Только для категорий верхнего уровня.
    */
   showInHeader?: boolean | null;
+  /**
+   * Показывать в колонке футера (для подкатегорий 2-го уровня).
+   */
+  showInFooter?: boolean | null;
   seo?: {
     title?: string | null;
     description?: string | null;
@@ -644,6 +648,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   description?: T;
   order?: T;
   showInHeader?: T;
+  showInFooter?: T;
   seo?:
     | T
     | {

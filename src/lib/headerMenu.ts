@@ -126,3 +126,63 @@ export async function getFooterCategories(
     }
   })
 }
+
+export type FooterColumn = {
+  heading: string
+  items: { label: string; url: string }[]
+}
+
+/**
+ * Колонки футера: по одной на корневую категорию из шапки.
+ * Внутри — подкатегории 2-го уровня с showInFooter.
+ */
+export async function getFooterColumns(tenantID: number): Promise<FooterColumn[]> {
+  const payloadConfig = await config
+  const payload = await getPayload({ config: payloadConfig })
+
+  const rootsRes = await payload.find({
+    collection: 'categories',
+    where: {
+      and: [{ tenant: { equals: tenantID } }, { showInHeader: { equals: true } }],
+    },
+    sort: 'order',
+    limit: 10,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const roots = rootsRes.docs as any[]
+  if (roots.length === 0) return []
+
+  const columns: FooterColumn[] = []
+
+  for (const root of roots) {
+    const childrenRes = await payload.find({
+      collection: 'categories',
+      where: {
+        and: [
+          { tenant: { equals: tenantID } },
+          { parent: { equals: root.id } },
+          { showInFooter: { equals: true } },
+        ],
+      },
+      sort: 'order',
+      limit: 30,
+      depth: 1,
+      overrideAccess: true,
+    })
+
+    const items = (childrenRes.docs as any[]).map((cat) => {
+      const crumbs = cat.breadcrumbs
+      const last =
+        Array.isArray(crumbs) && crumbs.length > 0 ? crumbs[crumbs.length - 1]?.url : null
+      return {
+        label: cat.title,
+        url: last ? `/category${last}` : `/category/${cat.slug}`,
+      }
+    })
+
+    if (items.length > 0) columns.push({ heading: root.title, items })
+  }
+
+  return columns
+}

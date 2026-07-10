@@ -55,6 +55,13 @@ export const Categories: CollectionConfig = {
       admin: { description: 'Только для категорий верхнего уровня.' },
     },
     {
+      name: 'showInFooter',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'В футере',
+      admin: { description: 'Показывать в колонке футера (для подкатегорий 2-го уровня).' },
+    },
+    {
       name: 'seo',
       type: 'group',
       label: 'SEO (оверрайды)',

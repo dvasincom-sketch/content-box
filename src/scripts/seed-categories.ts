@@ -26,6 +26,12 @@ const LEGACY_MAP: Record<string, string> = {
   audio: 'discography/audio',
 }
 
+// Категории 2-го уровня, которые НЕ показываем в футере.
+const FOOTER_EXCLUDE = new Set([
+  'videography/weverse-live',
+  'videography/bon-voyage',
+])
+
 type Row = { path: string; title: string; showInHeader: boolean }
 
 function parseTree(file: string): Row[] {
@@ -74,6 +80,9 @@ async function main() {
     const parentPath = segments.slice(0, -1).join('/')
     const parentID = parentPath ? idByPath.get(parentPath) : undefined
 
+    // В футер: подкатегории 2-го уровня, кроме исключений.
+    const showInFooter = segments.length === 2 && !FOOTER_EXCLUDE.has(row.path)
+
     if (parentPath && !parentID) {
       throw new Error(`Родитель не найден для ${row.path} (ожидался ${parentPath})`)
     }
@@ -118,7 +127,8 @@ async function main() {
         doc.title !== row.title ||
         doc.slug !== slug ||
         String(doc.parent ?? '') !== String(parentID ?? '') ||
-        Boolean(doc.showInHeader) !== row.showInHeader
+        Boolean(doc.showInHeader) !== row.showInHeader ||
+        Boolean(doc.showInFooter) !== showInFooter
 
       if (needsUpdate) {
         doc = await payload.update({
@@ -129,6 +139,7 @@ async function main() {
             slug,
             parent: (parentID ?? null) as any,
             showInHeader: row.showInHeader,
+            showInFooter,
           },
           depth: 0,
           overrideAccess: true,
@@ -144,6 +155,7 @@ async function main() {
           slug,
           parent: (parentID ?? null) as any,
           showInHeader: row.showInHeader,
+          showInFooter,
         },
         depth: 0,
         overrideAccess: true,
