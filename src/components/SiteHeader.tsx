@@ -4,13 +4,17 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { Menu, X, Star } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { DesktopMenu } from '@/components/DesktopMenu'
+import { MobileMenu } from '@/components/MobileMenu'
+import type { MenuNode } from '@/lib/headerMenu'
 
 export type NavItem = { label: string; url: string }
 export type SiteHeaderProps = {
   logoUrl?: string | null
   logoAlt?: string | null
   brandName: string
-  nav: NavItem[]
+  nav: NavItem[]           // страницы («О проекте»)
+  menu?: MenuNode[]        // дерево категорий
   supportLabel?: string
   supportUrl?: string
 }
@@ -20,6 +24,7 @@ export function SiteHeader({
   logoAlt,
   brandName,
   nav,
+  menu = [],
   supportLabel = 'Поддержать проект',
   supportUrl = '#support',
 }: SiteHeaderProps) {
@@ -54,6 +59,7 @@ export function SiteHeader({
           </Link>
 
           <nav className="hidden lg:flex items-center gap-7">
+            <DesktopMenu nodes={menu} />
             {items.map((item, i) => (
               <Link
                 key={i}
@@ -93,6 +99,7 @@ export function SiteHeader({
             className="lg:hidden pb-4 flex flex-col gap-1 border-t pt-3"
             style={{ borderColor: borderSoft }}
           >
+            <MobileMenu nodes={menu} onNavigate={() => setOpen(false)} />
             {items.map((item, i) => (
               <Link
                 key={i}

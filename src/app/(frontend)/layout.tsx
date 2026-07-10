@@ -2,6 +2,7 @@ import React from 'react'
 import './styles.css'
 import { Inter, Montserrat, Manrope, Golos_Text, PT_Sans, Unbounded, Roboto } from 'next/font/google'
 import { getTenantFromHeaders } from '@/lib/tenant'
+import { getHeaderMenu } from '@/lib/headerMenu'
 import { brandVars } from '@/lib/brand'
 import { SiteHeader } from '@/components/SiteHeader'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -32,6 +33,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
 
   // Меню и футер строятся из страниц (ТЗ §3.6, white-label):
   // showInMenu → шапка; showInFooter + footerColumn → колонка футера.
+  const menu = tenant ? await getHeaderMenu(tenant.id as number) : []
   let navItems: { label: string; url: string }[] = []
   let footerNav: { label: string; href: string }[] = []
   let footerSupport: { label: string; href: string }[] = []
@@ -91,6 +93,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             logoAlt={logoAlt}
             brandName={tenant?.name ?? 'COCO JAMBO'}
             nav={navItems}
+            menu={menu}
           />
         )}
         <main>{children}</main>
