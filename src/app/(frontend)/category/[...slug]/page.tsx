@@ -137,7 +137,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
         </h1>
 
         {category.description ? (
-          <div className="max-w-3xl mb-12">
+          <div className="max-w-3xl mx-auto mb-12">
             <RichText data={category.description} />
           </div>
         ) : null}

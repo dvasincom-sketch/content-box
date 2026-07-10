@@ -60,7 +60,8 @@ export default async function ContentPage({ params }: { params: Promise<Params> 
 
   return (
     <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
-      <div className="max-w-3xl mx-auto px-4 py-10">
+      <div className="max-w-6xl mx-auto px-4 py-10">
+        {/* Крошки и заголовок — во всю ширину, как на странице категории. */}
         <a href="/" className="text-sm inline-block mb-6" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>← На главную</a>
         <h1
           className="text-3xl lg:text-5xl font-extrabold mb-8"
@@ -68,7 +69,10 @@ export default async function ContentPage({ params }: { params: Promise<Params> 
         >
           {page.title}
         </h1>
-        <RichText data={page.content} />
+        {/* Текст — узкая колонка по центру: читаемая длина строки. */}
+        <div className="max-w-3xl mx-auto">
+          <RichText data={page.content} />
+        </div>
       </div>
     </main>
   )
