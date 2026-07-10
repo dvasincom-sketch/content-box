@@ -1,4 +1,6 @@
 import Image from 'next/image'
+import Link from 'next/link'
+import { categoryHref } from '@/lib/categoryHref'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { notFound } from 'next/navigation'
@@ -75,11 +77,24 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   return (
     <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <a href="/" className="text-sm inline-block mb-6" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>← На главную</a>
+        {/* Хлебные крошки: путь категории + сама публикация */}
+        <nav className="text-sm mb-6 flex flex-wrap items-center gap-x-2 gap-y-1"
+          style={{ color: 'var(--brand-text)', opacity: 0.7 }}
+          aria-label="Хлебные крошки">
+          <Link href="/" className="hover:opacity-100">Главная</Link>
+          {((category?.breadcrumbs ?? []) as { url?: string; label?: string }[]).map((crumb, i) => (
+            <span key={crumb.url ?? i} className="flex items-center gap-x-2">
+              <span aria-hidden="true">/</span>
+              <Link href={`/category${crumb.url}`} className="hover:opacity-100">{crumb.label}</Link>
+            </span>
+          ))}
+          <span aria-hidden="true">/</span>
+          <span style={{ opacity: 1 }}>{pub.title}</span>
+        </nav>
 
         <div className="flex items-center gap-3 mb-4 text-sm" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
           {category && (
-            <a href={`/category/${category.slug}`} className="px-3 py-1 rounded-full" style={{ background: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)' }}>{category.title}</a>
+            <Link href={categoryHref(category)} className="px-3 py-1 rounded-full" style={{ background: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)' }}>{category.title}</Link>
           )}
           {dateStr && <span>{dateStr}</span>}
         </div>
