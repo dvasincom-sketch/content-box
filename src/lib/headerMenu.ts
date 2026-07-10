@@ -78,3 +78,51 @@ export async function getHeaderMenu(tenantID: number): Promise<MenuNode[]> {
   const rootIDs = new Set(roots.map((r) => r.id))
   return all.filter((c) => rootIDs.has(c.id)).map((c) => build(c, 1))
 }
+
+/**
+ * Плоский список подкатегорий ветки `others` для футера.
+ * Только второй уровень: События, Библиография, Игры, Бренды...
+ */
+export async function getFooterCategories(
+  tenantID: number,
+  rootSlug = 'others',
+): Promise<{ label: string; url: string }[]> {
+  const payloadConfig = await config
+  const payload = await getPayload({ config: payloadConfig })
+
+  const rootRes = await payload.find({
+    collection: 'categories',
+    where: {
+      and: [
+        { tenant: { equals: tenantID } },
+        { slug: { equals: rootSlug } },
+        { parent: { exists: false } },
+      ],
+    },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const root = (rootRes.docs as any[])[0]
+  if (!root) return []
+
+  const childrenRes = await payload.find({
+    collection: 'categories',
+    where: {
+      and: [{ tenant: { equals: tenantID } }, { parent: { equals: root.id } }],
+    },
+    sort: 'order',
+    limit: 50,
+    depth: 1,
+    overrideAccess: true,
+  })
+
+  return (childrenRes.docs as any[]).map((cat) => {
+    const crumbs = cat.breadcrumbs
+    const last = Array.isArray(crumbs) && crumbs.length > 0 ? crumbs[crumbs.length - 1]?.url : null
+    return {
+      label: cat.title,
+      url: last ? `/category${last}` : `/category/${cat.slug}`,
+    }
+  })
+}
