@@ -137,15 +137,18 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
         </h1>
 
         {category.description ? (
-          <div className="mb-10">
+          <div className="max-w-3xl mb-12">
             <RichText data={category.description} />
           </div>
         ) : null}
 
         {pubs.length === 0 ? (
-          <p style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
-            В этой категории пока нет публикаций.
-          </p>
+          // Если есть статья — раздел не пустой, сообщение не нужно.
+          category.description ? null : (
+            <p style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
+              В этой категории пока нет публикаций.
+            </p>
+          )
         ) : (
           <LatestPublicationsBlock
             heading=""
