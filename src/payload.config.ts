@@ -3,6 +3,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { multiTenantPlugin } from '@payloadcms/plugin-multi-tenant'
 import { s3Storage } from '@payloadcms/storage-s3'
+import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -89,6 +90,15 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
+    // Дерево категорий (ТЗ §3.4). Плагин добавляет `parent` и `breadcrumbs`,
+    // рекурсивно обновляет потомков при смене родителя.
+    nestedDocsPlugin({
+      collections: ['categories'],
+      generateLabel: (_, doc) => doc.title as string,
+      // Полный путь: /category/discography/chapter-1/school-trilogy
+      generateURL: (docs) => docs.reduce((url, doc) => `${url}/${doc.slug}`, ''),
+    }),
+
     // Медиа в Cloudflare R2 (ТЗ §3.7, §9). Локальный диск Render не переживает деплой.
     s3Storage({
       collections: {

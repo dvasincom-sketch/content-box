@@ -294,14 +294,31 @@ export interface Category {
   tenant?: (number | null) | Tenant;
   title: string;
   slug: string;
+  /**
+   * Дискография > Chapter 1 > School Trilogy
+   */
+  fullTitle?: string | null;
   cover?: (number | null) | Media;
   description?: string | null;
   order?: number | null;
+  /**
+   * Только для категорий верхнего уровня.
+   */
+  showInHeader?: boolean | null;
   seo?: {
     title?: string | null;
     description?: string | null;
     ogImage?: (number | null) | Media;
   };
+  parent?: (number | null) | Category;
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | Category;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -617,15 +634,26 @@ export interface CategoriesSelect<T extends boolean = true> {
   tenant?: T;
   title?: T;
   slug?: T;
+  fullTitle?: T;
   cover?: T;
   description?: T;
   order?: T;
+  showInHeader?: T;
   seo?:
     | T
     | {
         title?: T;
         description?: T;
         ogImage?: T;
+      };
+  parent?: T;
+  breadcrumbs?:
+    | T
+    | {
+        doc?: T;
+        url?: T;
+        label?: T;
+        id?: T;
       };
   updatedAt?: T;
   createdAt?: T;

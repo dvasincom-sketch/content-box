@@ -1,0 +1,214 @@
+# Дерево категорий COCO JAMBO
+# Формат: путь|Название|showInHeader(1/0)
+# Порядок строк не важен: скрипт сортирует по глубине.
+
+bts|BTS|1
+bts/members|Участники|0
+bts/members/rm|RM|0
+bts/members/jin|Jin|0
+bts/members/suga|SUGA|0
+bts/members/j-hope|j-hope|0
+bts/members/jimin|Jimin|0
+bts/members/v|V|0
+bts/members/jung-kook|Jung Kook|0
+bts/units|Юниты|0
+bts/army|ARMY|0
+bts/army/army-bomb|Army Bomb|0
+bts/galleries|Галереи|0
+bts/galleries/bts|BTS|0
+bts/galleries/members|Участники|0
+bts/galleries/members/rm|RM|0
+bts/galleries/members/jin|Jin|0
+bts/galleries/members/suga|SUGA|0
+bts/galleries/members/j-hope|j-hope|0
+bts/galleries/members/jimin|Jimin|0
+bts/galleries/members/v|V|0
+bts/galleries/members/jung-kook|Jung Kook|0
+bts/galleries/sns-archives|Архивы соцсетей|0
+bts/galleries/sns-archives/2025|2025|0
+bts/galleries/sns-archives/2024|2024|0
+bts/galleries/sns-archives/2023|2023|0
+bts/galleries/sns-archives/2022|2022|0
+bts/galleries/sns-archives/2021|2021|0
+bts/galleries/sns-archives/2020|2020|0
+bts/galleries/sns-archives/2019|2019|0
+bts/galleries/sns-archives/2018|2018|0
+bts/other-info|Разное|0
+bts/other-info/mics|Микрофоны|0
+bts/other-info/studios|Студии|0
+bts/other-info/pets|Питомцы|0
+bts/other-info/tattoos|Татуировки|0
+discography|Дискография|1
+discography/chronicle|Хроника BTS|0
+discography/chapter-1|Chapter 1|0
+discography/chapter-1/school-trilogy|Школьная трилогия|0
+discography/chapter-1/school-trilogy/2-cool-4-skool|2 COOL 4 SKOOL|0
+discography/chapter-1/school-trilogy/orul82|O!RUL8,2?|0
+discography/chapter-1/school-trilogy/skool-luv-affair|Skool Luv Affair|0
+discography/chapter-1/school-trilogy/dark-and-wild|DARK & WILD|0
+discography/chapter-1/youth-trilogy|Трилогия юности|0
+discography/chapter-1/youth-trilogy/hyyh-pt1|화양연화 Pt.1|0
+discography/chapter-1/youth-trilogy/hyyh-pt2|화양연화 Pt.2|0
+discography/chapter-1/youth-trilogy/young-forever|화양연화 Young Forever|0
+discography/chapter-1/wings-era|Эра Wings|0
+discography/chapter-1/wings-era/wings|WINGS|0
+discography/chapter-1/wings-era/you-never-walk-alone|YOU NEVER WALK ALONE|0
+discography/chapter-1/love-yourself|Love Yourself|0
+discography/chapter-1/love-yourself/her|LOVE YOURSELF 承 'Her'|0
+discography/chapter-1/love-yourself/tear|LOVE YOURSELF 轉 'Tear'|0
+discography/chapter-1/love-yourself/answer|LOVE YOURSELF 結 'Answer'|0
+discography/chapter-1/map-of-the-soul|Map of the Soul|0
+discography/chapter-1/map-of-the-soul/persona|MAP OF THE SOUL : PERSONA|0
+discography/chapter-1/map-of-the-soul/7|MAP OF THE SOUL : 7|0
+discography/chapter-1/dynamite-trilogy|Трилогия Dynamite|0
+discography/chapter-1/dynamite-trilogy/dynamite|Dynamite|0
+discography/chapter-1/dynamite-trilogy/butter|Butter|0
+discography/chapter-1/dynamite-trilogy/permission-to-dance|Permission to Dance|0
+discography/chapter-1/be-era|Эра BE|0
+discography/chapter-1/be-era/be|BE|0
+discography/chapter-1/anthology-era|Эра антологии|0
+discography/chapter-1/anthology-era/proof|PROOF|0
+discography/chapter-2|Chapter 2|0
+discography/chapter-2/arirang-era|Эра ARIRANG|0
+discography/chapter-2/arirang-era/arirang|ARIRANG|0
+discography/solo|Сольные дебюты|0
+discography/solo/j-hope|j-hope|0
+discography/solo/j-hope/jack-in-the-box|Jack In The Box|0
+discography/solo/j-hope/hope-on-the-street-vol1|HOPE ON THE STREET VOL.1|0
+discography/solo/j-hope/sweet-dreams|Sweet Dreams|0
+discography/solo/j-hope/mona-lisa|MONA LISA|0
+discography/solo/j-hope/killin-it-girl|Killin' It Girl|0
+discography/solo/jin|Jin|0
+discography/solo/jin/the-astronaut|The Astronaut|0
+discography/solo/jin/super-tuna|Super Tuna|0
+discography/solo/jin/happy|Happy|0
+discography/solo/jin/echo|Echo|0
+discography/solo/rm|RM|0
+discography/solo/rm/indigo|Indigo|0
+discography/solo/rm/right-place-wrong-person|Right Place, Wrong Person|0
+discography/solo/jimin|Jimin|0
+discography/solo/jimin/face|FACE|0
+discography/solo/jimin/muse|MUSE|0
+discography/solo/agust-d|Agust D|0
+discography/solo/agust-d/d-day|D-DAY|0
+discography/solo/jung-kook|Jung Kook|0
+discography/solo/jung-kook/golden|GOLDEN|0
+discography/solo/jung-kook/never-let-go|Never Let Go|0
+discography/solo/v|V|0
+discography/solo/v/layover|Layover|0
+discography/solo/v/friends|FRI(END)S|0
+discography/solo/bts|BTS (коллаборации)|0
+discography/solo/bts/bad-decisions|Bad Decisions|0
+discography/solo/bts/the-planet|The Planet|0
+discography/solo/bts/take-two|Take Two|0
+discography/solo/bts/capsule-album-vol1|CAPSULE ALBUM Vol.1|0
+discography/solo/bts/ptd-on-stage-live|PTD ON STAGE - LIVE|0
+discography/other-releases|Прочие релизы|0
+discography/other-releases/rm-mixtape|RM (микстейп)|0
+discography/other-releases/agust-d-trilogy|Трилогия Agust D|0
+discography/other-releases/agust-d-trilogy/agust-d|Agust D|0
+discography/other-releases/agust-d-trilogy/d-2|D-2|0
+discography/other-releases/agust-d-trilogy/d-day|D-DAY|0
+discography/other-releases/hope-world|Hope World|0
+discography/other-releases/mono|Mono|0
+discography/other-releases/bts-world-ost|BTS World OST|0
+discography/japanese|Японская дискография|0
+discography/japanese/school-trilogy|Школьная трилогия|0
+discography/japanese/youth-trilogy|Трилогия юности|0
+discography/japanese/wings-era|Эра Wings|0
+discography/japanese/love-yourself|Love Yourself|0
+discography/japanese/map-of-the-soul|Map of the Soul|0
+discography/japanese/anthology-era|Эра антологии|0
+discography/latest|Свежие релизы|0
+discography/unofficial|Неофициальные песни|0
+discography/audio|Аудиофайлы|0
+videography|Видеография|1
+videography/films|Фильмы|0
+videography/films/bts-the-return|BTS: THE RETURN|0
+videography/films/hope-on-the-stage-japan|j-hope Tour 'HOPE ON THE STAGE' in JAPAN|0
+videography/films/rm-right-people|RM: Right People, Wrong Place|0
+videography/films/jung-kook-i-am-still|JUNG KOOK: I AM STILL|0
+videography/films/suga-d-day-movie|SUGA │ Agust D TOUR 'D-DAY' THE MOVIE|0
+videography/films/jimin-production-diary|Jimin's Production Diary|0
+videography/films/suga-road-to-d-day|SUGA: Road to D-DAY|0
+videography/films/j-hope-in-the-box|j-hope IN THE BOX|0
+videography/films/yet-to-come-in-cinemas|BTS: Yet To Come in Cinemas|0
+videography/films/coldplay-buenos-aires|Coldplay: Live from Buenos Aires|0
+videography/television|Телевидение|0
+videography/television/jinnys-kitchen|Jinny's Kitchen|0
+videography/television/dictionary-useless-knowledge|The Dictionary of Useless Knowledge|0
+videography/television/in-the-soop-friendcation|In the SOOP: Friendcation|0
+videography/television/in-the-soop-bts|In the SOOP BTS ver.|0
+videography/web-series|Веб-сериалы|0
+videography/web-series/run-bts|RUN BTS!|0
+videography/web-series/mapler-kim-seokjin|Mapler Kim Seokjin|0
+videography/web-series/are-you-sure|Are You Sure?!|0
+videography/web-series/kians-bizarre-bnb|Kian's Bizarre B&B|0
+videography/web-series/run-jin|Run Jin|0
+videography/web-series/inside-mang|Inside Mang|0
+videography/web-series/message-from-jin|Message from Jin|0
+videography/web-series/all-day-with-namjoon|All Day with Kim Namjoon|0
+videography/web-series/jins-alcohol-journey|Jin's Traditional Alcohol Journey|0
+videography/web-series/mbti-lab|MBTI Lab|0
+videography/web-shows|Веб-шоу|0
+videography/web-shows/bangtan-log|Bangtan Log|0
+videography/web-shows/bts-episode|BTS Episode|0
+videography/web-shows/bangtan-bomb|Bangtan Bomb|0
+videography/web-shows/bts-live|BTS Live|0
+videography/web-shows/eat-jin|Eat Jin|0
+videography/web-shows/hope-on-the-street|Hope On The Street|0
+videography/web-shows/hwagae-market|Hwagae Market|0
+videography/web-shows/gcf|G.C.F|0
+videography/docuseries|Документальные сериалы|0
+videography/docuseries/jung-kook-i-am-still-original|JUNG KOOK: I AM STILL THE ORIGINAL|0
+videography/docuseries/hope-on-the-street|HOPE ON THE STREET|0
+videography/docuseries/bts-monuments|BTS Monuments: Beyond The Star|0
+videography/docuseries/break-the-silence|Break The Silence|0
+videography/docuseries/bring-the-soul|Bring The Soul|0
+videography/docuseries/burn-the-stage|BTS: Burn The Stage|0
+videography/drama-series|Дорамы|0
+videography/drama-series/begins-youth|BEGINS ≠ YOUTH|0
+videography/drama-series/hwarang|Hwarang|0
+videography/media|Медиа|0
+videography/media/bts-7-moments|BTS 7 Moments|0
+videography/media/bts-memories|BTS Memories|0
+videography/media/seasons-greetings|BTS Season's Greetings|0
+videography/media/winter-package|BTS Winter Package|0
+videography/media/summer-package|BTS Summer Package|0
+videography/media/bts-now|BTS Now|0
+videography/animations|Анимации|0
+videography/animations/bt21-universe|BT21 Universe Animation|0
+videography/concerts|Концерты|0
+videography/weverse-live|Weverse Live|0
+videography/bon-voyage|Bon Voyage|0
+others|Разное|0
+others/events|События|0
+others/events/bts-festa|BTS Festa|0
+others/events/concerts|Концерты|0
+others/events/tours|Туры|0
+others/events/musters|Мастеры|0
+others/events/fanmeetings|Фанмитинги|0
+others/events/festivals|Фестивали|0
+others/events/exhibitions|Выставки|0
+others/events/pop-up-exhibitions|Поп-ап выставки|0
+others/bibliography|Библиография|0
+others/bibliography/books|Книги|0
+others/bibliography/photobooks|Фотокниги|0
+others/bibliography/web-novels|Веб-новеллы|0
+others/bibliography/webtoons|Вебтуны|0
+others/games|Игры|0
+others/games/bts-island|BTS Island: In the SEOM|0
+others/games/rhythm-hive|Rhythm Hive|0
+others/games/bts-universe-story|BTS Universe Story|0
+others/games/line-hello-bt21|LINE Hello BT21|0
+others/games/puzzle-star-bt21|Puzzle Star BT21|0
+others/games/bts-world|BTS World|0
+others/games/superstar-bts|SuperStar BTS|0
+others/brands|Бренды|0
+others/brands/tinytan|TinyTAN|0
+others/brands/bt21|BT21|0
+others/brands/hip-hop-monster|Hip Hop Monster|0
+others/original-stories|Original Stories|0
+others/original-stories/bts-universe|BTS Universe|0
+others/original-stories/7fates-chakho|7FATES: CHAKHO|0
+others/endorsements|Рекламные контракты|0
