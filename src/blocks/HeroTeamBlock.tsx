@@ -34,8 +34,21 @@ export function HeroTeamBlock({ members = [], caption, avatarSize }: HeroTeamBlo
 
   return (
     <section className="mt-10">
-      <div className="flex items-center gap-5 flex-wrap">
-        <div className="flex items-center">
+      <style>{`.team-avatar-row::-webkit-scrollbar{display:none}`}</style>
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-5">
+        <div
+          className="team-avatar-row flex items-center overflow-x-auto"
+          style={{
+            // Вынос на края экрана, чтобы скролл шёл «от края до края» на мобиле.
+            paddingBlock: 4,
+            // Немного правого запаса, чтобы последняя аватарка не липла к краю при скролле.
+            paddingInlineEnd: overlap,
+            // iOS-инерция + скрытие скроллбара (вместе с CSS ниже).
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}
+        >
           {visible.map((member, i) => {
             const url = photoUrl(member.photo)
             const cat = member.category

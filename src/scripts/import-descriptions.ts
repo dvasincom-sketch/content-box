@@ -14,6 +14,8 @@ import path from 'path'
  *   npx tsx src/scripts/import-descriptions.ts            (локально)
  *   DATABASE_URL="$PROD_DB" npx tsx src/scripts/import-descriptions.ts   (прод)
  *   npx tsx src/scripts/import-descriptions.ts --only bts__members__rm
+ *   npx tsx src/scripts/import-descriptions.ts --only run-bts,run-jin   (несколько через запятую)
+ *   npx tsx src/scripts/import-descriptions.ts --skip-filled   (не трогать категории с непустым description)
  *   npx tsx src/scripts/import-descriptions.ts --dir content/translated
  */
 
@@ -28,10 +30,37 @@ function pathFromFilename(filename: string): string {
   return filename.replace(/\.md$/, '').replace(/__/g, '/')
 }
 
+/**
+ * Есть ли в Lexical-значении хоть какой-то текст.
+ * Пустой richText — это не null, а { root: { children: [{ type: 'paragraph', children: [] }] } },
+ * поэтому проверяем не на null, а на наличие непробельного текста в дереве.
+ */
+function richTextHasContent(value: any): boolean {
+  if (!value || !value.root) return false
+  let found = false
+  const walk = (node: any) => {
+    if (found || !node) return
+    if (typeof node.text === 'string' && node.text.trim() !== '') {
+      found = true
+      return
+    }
+    if (Array.isArray(node.children)) node.children.forEach(walk)
+  }
+  walk(value.root)
+  return found
+}
+
 async function main() {
   const args = process.argv.slice(2)
   const onlyIdx = args.indexOf('--only')
-  const only = onlyIdx >= 0 ? args[onlyIdx + 1] : null
+  const only =
+    onlyIdx >= 0 && args[onlyIdx + 1]
+      ? args[onlyIdx + 1]
+          .split(',')
+          .map((s) => s.trim().replace(/\.md$/, ''))
+          .filter(Boolean)
+      : null
+  const skipFilled = args.includes('--skip-filled')
   const dirIdx = args.indexOf('--dir')
   const dir = dirIdx >= 0 ? args[dirIdx + 1] : DEFAULT_DIR
 
@@ -50,13 +79,23 @@ async function main() {
   if (!fs.existsSync(absDir)) throw new Error(`Нет папки ${dir}`)
 
   let files = fs.readdirSync(absDir).filter((f) => f.endsWith('.md'))
-  if (only) files = files.filter((f) => f.replace(/\.md$/, '') === only.replace(/\.md$/, ''))
+  if (only) {
+    files = files.filter((f) => {
+      const base = f.replace(/\.md$/, '')
+      const lastSeg = base.split('__').pop() as string
+      // Совпадение по полному имени файла или по последнему сегменту пути.
+      return only.some((o) => o === base || o === lastSeg)
+    })
+  }
 
-  console.log(`Файлов к импорту: ${files.length}\n`)
+  console.log(`Файлов к импорту: ${files.length}`)
+  if (skipFilled) console.log('Режим: --skip-filled (категории с непустым description пропускаются)')
+  console.log('')
 
   let updated = 0
   let notFound = 0
   let failed = 0
+  let skipped = 0
 
   for (const file of files) {
     const catPath = pathFromFilename(file)
@@ -87,6 +126,12 @@ async function main() {
       continue
     }
 
+    if (skipFilled && richTextHasContent(category.description)) {
+      console.log(`  ⊘ ${catPath} → "${category.title}" (уже заполнено, пропуск)`)
+      skipped++
+      continue
+    }
+
     try {
       const raw = fs.readFileSync(path.join(absDir, file), 'utf-8')
       const markdown = stripFrontComment(raw)
@@ -107,7 +152,9 @@ async function main() {
     }
   }
 
-  console.log(`\nГотово. Обновлено: ${updated}, не найдено: ${notFound}, ошибок: ${failed}.`)
+  console.log(
+    `\nГотово. Обновлено: ${updated}, пропущено: ${skipped}, не найдено: ${notFound}, ошибок: ${failed}.`,
+  )
   process.exit(0)
 }
 
