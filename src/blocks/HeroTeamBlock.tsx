@@ -39,6 +39,9 @@ export function HeroTeamBlock({ members = [], caption, avatarSize }: HeroTeamBlo
         <div
           className="team-avatar-row flex items-center overflow-x-auto"
           style={{
+            // Плавное угасание аватарок по краям ряда.
+            maskImage: 'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
             // Вынос на края экрана, чтобы скролл шёл «от края до края» на мобиле.
             paddingBlock: 4,
             // Немного правого запаса, чтобы последняя аватарка не липла к краю при скролле.
