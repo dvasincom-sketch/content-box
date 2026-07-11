@@ -42,13 +42,20 @@ export function HeroTeamBlock({ members = [], caption, avatarSize }: HeroTeamBlo
             const href =
               cat && typeof cat === 'object' ? categoryHref(cat as any) : null
 
-            const style: React.CSSProperties = {
+            const wrapStyle: React.CSSProperties = {
               width: `${size}px`,
               height: `${size}px`,
+              flexShrink: 0,
               marginLeft: i === 0 ? 0 : `-${overlap}px`,
+              borderRadius: '9999px',
               border: `${border}px solid var(--brand-bg)`,
-              zIndex: visible.length - i,
+              boxSizing: 'border-box',
+              overflow: 'hidden',
               position: 'relative',
+              zIndex: visible.length - i,
+              display: 'block',
+              padding: 0,
+              lineHeight: 0,
             }
 
             const img = (
@@ -56,21 +63,32 @@ export function HeroTeamBlock({ members = [], caption, avatarSize }: HeroTeamBlo
                 src={url as string}
                 alt={member.name || 'Участник'}
                 title={member.name || undefined}
-                className="rounded-full object-cover"
-                style={href ? { ...style, display: 'block' } : style}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                  borderRadius: '9999px',
+                }}
               />
             )
 
-            // Аватар без категории — просто картинка.
-            if (!href) return <React.Fragment key={i}>{img}</React.Fragment>
+            // Аватар без категории — статичный кружок.
+            if (!href) {
+              return (
+                <span key={i} style={wrapStyle}>
+                  {img}
+                </span>
+              )
+            }
 
             return (
               <Link
                 key={i}
                 href={href}
                 aria-label={member.name || 'Участник'}
-                className="transition-transform hover:-translate-y-1"
-                style={{ display: 'block', lineHeight: 0 }}
+                className="team-avatar-link transition-transform hover:-translate-y-1"
+                style={wrapStyle}
               >
                 {img}
               </Link>

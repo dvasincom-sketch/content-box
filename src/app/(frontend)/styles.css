@@ -224,3 +224,11 @@ svg {
   padding-left: 1em;
   opacity: 0.9;
 }
+
+/* Аватары участников: обводка на акцент при наведении. */
+.team-avatar-link {
+  transition: border-color 150ms, transform 150ms;
+}
+.team-avatar-link:hover {
+  border-color: var(--brand-accent) !important;
+}
