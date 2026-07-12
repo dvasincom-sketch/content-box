@@ -334,8 +334,17 @@ export interface Category {
    * Показывать в колонке футера (для подкатегорий 2-го уровня).
    */
   showInFooter?: boolean | null;
+  /**
+   * Пусто = сгенерируется автоматически из названия и описания при сохранении.
+   */
   seo?: {
+    /**
+     * Рекомендуется до 60 символов.
+     */
     title?: string | null;
+    /**
+     * Рекомендуется до 160 символов.
+     */
     description?: string | null;
     ogImage?: (number | null) | Media;
   };

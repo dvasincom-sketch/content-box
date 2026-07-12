@@ -32,6 +32,20 @@ export default buildConfig({
         Logo: '@/components/admin/EmptyLogo',
         Icon: '@/components/admin/EmptyIcon',
       },
+      // Пункт бокового меню, ведущий на кастомную SEO-аудит view.
+      beforeNavLinks: ['@/components/SeoAuditNavLink'],
+      // Кастомные root-view.
+      views: {
+        // SEO-аудит: сводная таблица проблем по категориям (/admin/seo-audit).
+        seoAudit: {
+          Component: '@/views/SeoAuditView',
+          path: '/seo-audit',
+          meta: {
+            title: 'SEO-аудит',
+            description: 'Сводка проблем SEO по категориям',
+          },
+        },
+      },
     },
     // Виджеты панели: разная раскладка для суперадмина и editor'а.
     dashboard: {
