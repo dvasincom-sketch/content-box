@@ -80,3 +80,52 @@ export function truncateAtWord(text: string, maxLen: number): string {
   }
   return slice.trimEnd()
 }
+
+/**
+ * Извлекает заголовки (heading-узлы) из Lexical richText с их уровнем.
+ * Возвращает массив { level, text } в порядке появления.
+ * level: 1 для h1, 2 для h2, ... (Lexical хранит tag как 'h2', 'h3').
+ */
+export function extractHeadings(value: unknown): { level: number; text: string }[] {
+  if (!value || typeof value !== 'object') return []
+  const root = (value as { root?: LexicalNode }).root
+  if (!root) return []
+
+  const headings: { level: number; text: string }[] = []
+
+  function collectText(node: LexicalNode, out: string[]): void {
+    if (typeof node.text === 'string') out.push(node.text)
+    if (Array.isArray(node.children)) {
+      for (const ch of node.children) collectText(ch, out)
+    }
+  }
+
+  function walkHeadings(node: LexicalNode | undefined): void {
+    if (!node) return
+    if (node.type === 'heading') {
+      const tag = typeof node.tag === 'string' ? node.tag : ''
+      const level = /^h([1-6])$/.exec(tag)?.[1]
+      const parts: string[] = []
+      if (Array.isArray(node.children)) {
+        for (const ch of node.children) collectText(ch, parts)
+      }
+      headings.push({
+        level: level ? Number(level) : 2,
+        text: parts.join('').trim(),
+      })
+    }
+    if (Array.isArray(node.children)) {
+      for (const ch of node.children) walkHeadings(ch)
+    }
+  }
+
+  walkHeadings(root)
+  return headings
+}
+
+/** Грубый подсчёт слов в тексте (для оценки «длины контента»). */
+export function wordCount(text: string): number {
+  const t = text.trim()
+  if (!t) return 0
+  return t.split(/\s+/).length
+}
