@@ -347,6 +347,15 @@ export interface Category {
      */
     description?: string | null;
     ogImage?: (number | null) | Media;
+    /**
+     * Ключевые поисковые запросы для этой страницы. Заполняется вручную или импортом из Wordstat.
+     */
+    targetKeywords?:
+      | {
+          keyword: string;
+          id?: string | null;
+        }[]
+      | null;
   };
   parent?: (number | null) | Category;
   breadcrumbs?:
@@ -686,6 +695,12 @@ export interface CategoriesSelect<T extends boolean = true> {
         title?: T;
         description?: T;
         ogImage?: T;
+        targetKeywords?:
+          | T
+          | {
+              keyword?: T;
+              id?: T;
+            };
       };
   parent?: T;
   breadcrumbs?:

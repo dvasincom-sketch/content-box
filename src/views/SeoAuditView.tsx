@@ -36,6 +36,7 @@ type Cat = {
   breadcrumbs?: Crumb[] | null
   seo?: { title?: string | null; description?: string | null; ogImage?: unknown } | null
   parent?: unknown
+  targetKeywords?: { keyword?: string | null }[] | null
 }
 
 type IssueKind =
@@ -48,6 +49,7 @@ type IssueKind =
   | 'no-og'
   | 'headings-missing'
   | 'headings-skip'
+  | 'kw-missing'
 
 type Issue = { kind: IssueKind; detail?: string }
 
@@ -61,6 +63,7 @@ const ISSUE_LABEL: Record<IssueKind, string> = {
   'no-og': 'нет OG-картинки',
   'headings-missing': 'нет подзаголовков',
   'headings-skip': 'скачок уровней H',
+  'kw-missing': 'keyword не в title/desc',
 }
 
 // Пустая навигационная категория, которую не нужно аудитить.
@@ -191,6 +194,20 @@ export default async function SeoAuditView(props: AdminViewServerProps) {
           break
         }
         prev = h.level
+      }
+    }
+
+    // Целевые keywords: хотя бы один топовый должен встречаться в title/desc.
+    const kws = (cat.targetKeywords || [])
+      .map((k) => (k.keyword || '').trim().toLowerCase())
+      .filter(Boolean)
+    if (kws.length > 0) {
+      const haystack = `${seoTitle} ${seoDesc}`.toLowerCase()
+      // Берём топ-3 (они первыми в массиве после импорта — по частотности).
+      const primary = kws.slice(0, 3)
+      const covered = primary.some((kw) => haystack.includes(kw))
+      if (!covered) {
+        issues.push({ kind: 'kw-missing', detail: primary.join('; ') })
       }
     }
 

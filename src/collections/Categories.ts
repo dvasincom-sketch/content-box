@@ -10,10 +10,9 @@ import { extractLexicalText, truncateAtWord } from '../utils/lexicalText'
  * `slug` уникален В ПРЕДЕЛАХ РОДИТЕЛЯ: «Members» может быть и в BTS, и в Galleries.
  *
  * SEO: группа `seo` — ручные оверрайды. Если поля пусты, хук `beforeChange`
- * (см. ниже) заполняет их автоматически из fullTitle/title и description.
- * OverviewField/PreviewField дают визуальный аудит (длина, сниппет выдачи)
- * прямо в админке. Плагин SEO в конфиг НЕ ставится — используются только
- * поля напрямую, поэтому схема БД не меняется (миграция не нужна).
+ * заполняет их автоматически из fullTitle/title и description.
+ * OverviewField/PreviewField дают визуальный аудит (длина, сниппет выдачи).
+ * targetKeywords — целевые поисковые запросы (импорт из Wordstat или вручную).
  */
 
 const SEO_TITLE_MAX = 60
@@ -29,8 +28,6 @@ export const Categories: CollectionConfig = {
   },
   access: publicReadTenantWrite,
   fields: [
-    // `tenant` добавляет multi-tenant плагин.
-    // `parent` и `breadcrumbs` добавляет nested-docs плагин.
     { name: 'title', type: 'text', required: true, label: 'Название' },
     {
       name: 'slug',
@@ -88,7 +85,6 @@ export const Categories: CollectionConfig = {
           'Пусто = сгенерируется автоматически из названия и описания при сохранении.',
       },
       fields: [
-        // Визуальный аудит: счётчики длины title/description + подсветка.
         OverviewField({
           titlePath: 'seo.title',
           descriptionPath: 'seo.description',
@@ -98,16 +94,32 @@ export const Categories: CollectionConfig = {
           name: 'title',
           type: 'text',
           label: 'SEO Title',
-          admin: { description: `Рекомендуется до ${SEO_TITLE_MAX} символов.` },
+          admin: { description: 'Рекомендуется до 60 символов.' },
         },
         {
           name: 'description',
           type: 'textarea',
           label: 'SEO Description',
-          admin: { description: `Рекомендуется до ${SEO_DESC_MAX} символов.` },
+          admin: { description: 'Рекомендуется до 160 символов.' },
         },
         { name: 'ogImage', type: 'upload', relationTo: 'media', label: 'OG-изображение' },
-        // Сниппет: как страница будет выглядеть в поисковой выдаче.
+        {
+          name: 'targetKeywords',
+          type: 'array',
+          label: 'Целевые запросы',
+          admin: {
+            description:
+              'Ключевые поисковые запросы для этой страницы. Заполняется вручную или импортом из Wordstat.',
+            initCollapsed: true,
+          },
+          fields: [
+            {
+              name: 'keyword',
+              type: 'text',
+              required: true,
+            },
+          ],
+        },
         PreviewField({
           titlePath: 'seo.title',
           descriptionPath: 'seo.description',
@@ -125,7 +137,6 @@ export const Categories: CollectionConfig = {
           getUserTenantID(req.user as any)
         if (!tenantID) return data
 
-        // Уникальность slug в пределах родителя (дерево).
         const parentID =
           (data.parent && (typeof data.parent === 'object' ? data.parent.id : data.parent)) ??
           originalDoc?.parent ??
@@ -147,29 +158,26 @@ export const Categories: CollectionConfig = {
         const clash = existing.docs.find((d: any) => d.id !== originalDoc?.id)
         if (clash) {
           throw new Error(
-            `Категория со slug "${data.slug}" уже существует на этом уровне вложенности.`,
+            'Категория со slug "' + data.slug + '" уже существует на этом уровне вложенности.',
           )
         }
         return data
       },
     ],
-    // Авто-заполнение пустых SEO-полей. Ручные значения не перезаписываются.
     beforeChange: [
       ({ data }) => {
         if (!data) return data
         const seo = (data as any).seo || ((data as any).seo = {})
 
-        // SEO title: «Полное название | COCO JAMBO» (или title, если крошек нет).
         if (!seo.title) {
           const base = (data as any).fullTitle || (data as any).title
           if (base) {
-            const suffix = ` | ${SITE_NAME}`
+            const suffix = ' | ' + SITE_NAME
             const room = SEO_TITLE_MAX - suffix.length
             seo.title = truncateAtWord(String(base), room) + suffix
           }
         }
 
-        // SEO description: первые ~160 символов из Lexical-описания.
         if (!seo.description) {
           const text = extractLexicalText((data as any).description)
           if (text) {
