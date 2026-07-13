@@ -64,6 +64,7 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    subscribers: SubscriberAuthOperations;
   };
   blocks: {};
   collections: {
@@ -74,6 +75,9 @@ export interface Config {
     publications: Publication;
     pages: Page;
     media: Media;
+    'subscription-tiers': SubscriptionTier;
+    subscribers: Subscriber;
+    videos: Video;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +92,9 @@ export interface Config {
     publications: PublicationsSelect<false> | PublicationsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'subscription-tiers': SubscriptionTiersSelect<false> | SubscriptionTiersSelect<true>;
+    subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
+    videos: VideosSelect<false> | VideosSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -106,13 +113,31 @@ export interface Config {
     recentPublications: RecentPublicationsWidget;
     collections: CollectionsWidget;
   };
-  user: User;
+  user: User | Subscriber;
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
 export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface SubscriberAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -467,6 +492,108 @@ export interface Page {
   createdAt: string;
 }
 /**
+ * Уровни подписки и их настройки.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscription-tiers".
+ */
+export interface SubscriptionTier {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  name: string;
+  /**
+   * Латиницей: ramyeon, soju, samgyeopsal.
+   */
+  slug: string;
+  /**
+   * Чем больше, тем выше уровень. Высший уровень открывает контент низших.
+   */
+  weight: number;
+  priceRub: number;
+  /**
+   * Краткое описание преимуществ уровня.
+   */
+  description?: string | null;
+  /**
+   * Неактивные уровни не показываются для оформления.
+   */
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Все зарегистрированные зрители, включая бесплатных.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers".
+ */
+export interface Subscriber {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  displayName?: string | null;
+  /**
+   * Пусто = бесплатный аккаунт без подписки.
+   */
+  activeTier?: (number | null) | SubscriptionTier;
+  /**
+   * Дата окончания текущей оплаченной подписки.
+   */
+  subscriptionUntil?: string | null;
+  isBlocked?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'subscribers';
+}
+/**
+ * Видеоконтент с доступом по уровню подписки.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos".
+ */
+export interface Video {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  title: string;
+  slug: string;
+  description?: string | null;
+  cover?: (number | null) | Media;
+  /**
+   * Раздел дерева: weverse-live, концерты, участник...
+   */
+  category?: (number | null) | Category;
+  /**
+   * Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.
+   */
+  minTier?: (number | null) | SubscriptionTier;
+  /**
+   * Открыто всем, даже без подписки (перебивает minTier).
+   */
+  isPreview?: boolean | null;
+  /**
+   * Идентификатор видео в хранилище (заполним после выбора R2/Stream). Заглушка.
+   */
+  videoRef?: string | null;
+  durationSec?: number | null;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -517,12 +644,29 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'subscription-tiers';
+        value: number | SubscriptionTier;
+      } | null)
+    | ({
+        relationTo: 'subscribers';
+        value: number | Subscriber;
+      } | null)
+    | ({
+        relationTo: 'videos';
+        value: number | Video;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'subscribers';
+        value: number | Subscriber;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -532,10 +676,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'subscribers';
+        value: number | Subscriber;
+      };
   key?: string | null;
   value?:
     | {
@@ -786,6 +935,67 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscription-tiers_select".
+ */
+export interface SubscriptionTiersSelect<T extends boolean = true> {
+  tenant?: T;
+  name?: T;
+  slug?: T;
+  weight?: T;
+  priceRub?: T;
+  description?: T;
+  isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers_select".
+ */
+export interface SubscribersSelect<T extends boolean = true> {
+  tenant?: T;
+  displayName?: T;
+  activeTier?: T;
+  subscriptionUntil?: T;
+  isBlocked?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos_select".
+ */
+export interface VideosSelect<T extends boolean = true> {
+  tenant?: T;
+  title?: T;
+  slug?: T;
+  description?: T;
+  cover?: T;
+  category?: T;
+  minTier?: T;
+  isPreview?: T;
+  videoRef?: T;
+  durationSec?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

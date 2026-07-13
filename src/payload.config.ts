@@ -17,6 +17,9 @@ import { Categories } from './collections/Categories'
 import { Publications } from './collections/Publications'
 import { Pages } from './collections/Pages'
 import { Media } from './collections/Media'
+import { SubscriptionTiers } from './collections/SubscriptionTiers'
+import { Subscribers } from './collections/Subscribers'
+import { Videos } from './collections/Videos'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -32,8 +35,8 @@ export default buildConfig({
         Logo: '@/components/admin/EmptyLogo',
         Icon: '@/components/admin/EmptyIcon',
       },
-      // Пункт бокового меню, ведущий на кастомную SEO-аудит view.
-      beforeNavLinks: ['@/components/SeoAuditNavLink'],
+      // Пункты бокового меню, ведущие на кастомные view.
+      beforeNavLinks: ['@/components/SeoAuditNavLink', '@/components/StatsNavLink'],
       // Кастомные root-view.
       views: {
         // SEO-аудит: сводная таблица проблем по категориям (/admin/seo-audit).
@@ -43,6 +46,15 @@ export default buildConfig({
           meta: {
             title: 'SEO-аудит',
             description: 'Сводка проблем SEO по категориям',
+          },
+        },
+        // Статистика: заглушка под будущую аналитику (/admin/stats).
+        stats: {
+          Component: '@/views/StatsView',
+          path: '/stats',
+          meta: {
+            title: 'Статистика',
+            description: 'Аналитика по подпискам',
           },
         },
       },
@@ -90,7 +102,18 @@ export default buildConfig({
     supportedLanguages: { ru },
     fallbackLanguage: 'ru',
   },
-  collections: [Tenants, Users, SiteSettings, Categories, Publications, Pages, Media],
+  collections: [
+    Tenants,
+    Users,
+    SiteSettings,
+    Categories,
+    Publications,
+    Pages,
+    Media,
+    SubscriptionTiers,
+    Subscribers,
+    Videos,
+  ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -147,6 +170,9 @@ export default buildConfig({
         publications: { useTenantAccess: false },
         pages: { useTenantAccess: false },
         media: { useTenantAccess: false },
+        'subscription-tiers': { useTenantAccess: false },
+        subscribers: { useTenantAccess: false },
+        videos: { useTenantAccess: false },
       },
     }),
   ],
