@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Menu, X, Star } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DesktopMenu } from '@/components/DesktopMenu'
@@ -9,6 +10,7 @@ import { MobileMenu } from '@/components/MobileMenu'
 import type { MenuNode } from '@/lib/headerMenu'
 
 export type NavItem = { label: string; url: string }
+export type HeaderSubscriber = { email?: string; displayName?: string } | null
 export type SiteHeaderProps = {
   logoUrl?: string | null
   logoAlt?: string | null
@@ -17,6 +19,7 @@ export type SiteHeaderProps = {
   menu?: MenuNode[]        // дерево категорий
   supportLabel?: string
   supportUrl?: string
+  subscriber?: HeaderSubscriber   // текущий залогиненный зритель (или null)
 }
 
 export function SiteHeader({
@@ -27,12 +30,28 @@ export function SiteHeader({
   menu = [],
   supportLabel = 'Поддержать проект',
   supportUrl = '#support',
+  subscriber = null,
 }: SiteHeaderProps) {
   const [open, setOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
+  const router = useRouter()
   const items = nav ?? []
 
   const borderSoft = 'color-mix(in srgb, var(--brand-text) 12%, transparent)'
   const supportBorder = 'color-mix(in srgb, var(--brand-primary) 60%, transparent)'
+
+  async function logout() {
+    setLoggingOut(true)
+    try {
+      await fetch('/api/subscribers/logout', { method: 'POST' })
+      router.push('/')
+      router.refresh()
+    } catch {
+      setLoggingOut(false)
+    }
+  }
+
+  const subscriberName = subscriber?.displayName || subscriber?.email || 'Профиль'
 
   return (
     <header
@@ -73,6 +92,41 @@ export function SiteHeader({
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* Авторизация (десктоп) */}
+            {subscriber ? (
+              <div className="hidden sm:flex items-center gap-3">
+                <span className="text-sm opacity-80" style={{ color: 'var(--brand-text)' }}>
+                  {subscriberName}
+                </span>
+                <button
+                  type="button"
+                  onClick={logout}
+                  disabled={loggingOut}
+                  className="text-sm font-medium underline opacity-80 hover:opacity-100"
+                  style={{ color: 'var(--brand-text)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  {loggingOut ? '…' : 'Выйти'}
+                </button>
+              </div>
+            ) : (
+              <div className="hidden sm:flex items-center gap-3">
+                <Link
+                  href="/login"
+                  className="text-sm font-medium opacity-80 hover:opacity-100"
+                  style={{ color: 'var(--brand-text)' }}
+                >
+                  Войти
+                </Link>
+                <Link
+                  href="/register"
+                  className="text-sm font-semibold px-4 py-2 rounded-full border transition-colors"
+                  style={{ color: 'var(--brand-text)', borderColor: supportBorder }}
+                >
+                  Регистрация
+                </Link>
+              </div>
+            )}
+
             <Link
               href={supportUrl}
               className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border transition-colors"
@@ -111,6 +165,46 @@ export function SiteHeader({
                 {item.label}
               </Link>
             ))}
+
+            {/* Авторизация (мобайл) */}
+            <div className="mt-2 pt-2 border-t flex flex-col gap-1" style={{ borderColor: borderSoft }}>
+              {subscriber ? (
+                <>
+                  <span className="py-2 px-2 text-base opacity-80" style={{ color: 'var(--brand-text)' }}>
+                    {subscriberName}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setOpen(false); logout() }}
+                    disabled={loggingOut}
+                    className="py-2 px-2 rounded-lg text-base font-medium opacity-90 hover:opacity-100 text-left"
+                    style={{ color: 'var(--brand-text)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Выйти
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="py-2 px-2 rounded-lg text-base font-medium opacity-90 hover:opacity-100"
+                    style={{ color: 'var(--brand-text)' }}
+                  >
+                    Войти
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setOpen(false)}
+                    className="py-2 px-2 rounded-lg text-base font-semibold opacity-90 hover:opacity-100"
+                    style={{ color: 'var(--brand-text)' }}
+                  >
+                    Регистрация
+                  </Link>
+                </>
+              )}
+            </div>
+
             <Link
               href={supportUrl}
               onClick={() => setOpen(false)}
