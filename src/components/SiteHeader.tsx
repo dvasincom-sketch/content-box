@@ -92,35 +92,55 @@ export function SiteHeader({
           </nav>
 
           <div className="flex items-center gap-3">
-            {/* Авторизация (десктоп) */}
+            {/* Авторизация (десктоп) — вариант B: аккаунт-блок слитно */}
             {subscriber ? (
               <div className="hidden sm:flex items-center gap-3">
-                <span className="text-sm opacity-80" style={{ color: 'var(--brand-text)' }}>
-                  {subscriberName}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-flex items-center justify-center rounded-full text-sm font-semibold"
+                    style={{
+                      width: 30,
+                      height: 30,
+                      background: 'color-mix(in srgb, var(--brand-primary) 18%, transparent)',
+                      color: 'var(--brand-primary)',
+                    }}
+                  >
+                    {(subscriberName || '?').charAt(0).toUpperCase()}
+                  </span>
+                  <span className="text-sm opacity-90" style={{ color: 'var(--brand-text)' }}>
+                    {subscriberName}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={logout}
                   disabled={loggingOut}
-                  className="text-sm font-medium underline opacity-80 hover:opacity-100"
+                  className="text-sm font-medium opacity-70 hover:opacity-100 transition-opacity"
                   style={{ color: 'var(--brand-text)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   {loggingOut ? '…' : 'Выйти'}
                 </button>
               </div>
             ) : (
-              <div className="hidden sm:flex items-center gap-3">
+              <div
+                className="hidden sm:inline-flex items-center rounded-full overflow-hidden"
+                style={{ border: `1px solid ${supportBorder}` }}
+              >
                 <Link
                   href="/login"
-                  className="text-sm font-medium opacity-80 hover:opacity-100"
+                  className="text-sm font-medium px-4 py-2 transition-colors hover:opacity-100 opacity-80"
                   style={{ color: 'var(--brand-text)' }}
                 >
                   Войти
                 </Link>
+                <span style={{ width: 1, alignSelf: 'stretch', background: supportBorder }} />
                 <Link
                   href="/register"
-                  className="text-sm font-semibold px-4 py-2 rounded-full border transition-colors"
-                  style={{ color: 'var(--brand-text)', borderColor: supportBorder }}
+                  className="text-sm font-semibold px-4 py-2 transition-colors"
+                  style={{
+                    color: 'var(--brand-text)',
+                    background: 'color-mix(in srgb, var(--brand-surface) 60%, transparent)',
+                  }}
                 >
                   Регистрация
                 </Link>
@@ -129,8 +149,8 @@ export function SiteHeader({
 
             <Link
               href={supportUrl}
-              className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border transition-colors"
-              style={{ color: 'var(--brand-text)', borderColor: supportBorder }}
+              className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full transition-colors"
+              style={{ color: '#fff', background: 'var(--brand-primary)', border: 'none' }}
             >
               <Star size={15} />
               {supportLabel}
@@ -208,8 +228,8 @@ export function SiteHeader({
             <Link
               href={supportUrl}
               onClick={() => setOpen(false)}
-              className="mt-2 inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border w-max"
-              style={{ color: 'var(--brand-text)', borderColor: supportBorder }}
+              className="mt-2 inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full w-max"
+              style={{ color: '#fff', background: 'var(--brand-primary)', border: 'none' }}
             >
               <Star size={15} />
               {supportLabel}
