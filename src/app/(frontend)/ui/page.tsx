@@ -1,6 +1,7 @@
 import React from 'react'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
+import { UIShowcaseExtra } from '@/components/UIShowcaseExtra'
 
 /**
  * Витрина UI-компонентов (/ui) — styleguide на реальных брендовых токенах.
@@ -310,6 +311,8 @@ export default async function UIPage() {
             </p>
           </div>
         </section>
+
+        <UIShowcaseExtra />
       </div>
     </main>
   )
