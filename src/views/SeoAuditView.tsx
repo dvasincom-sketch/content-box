@@ -248,8 +248,21 @@ export default async function SeoAuditView(props: AdminViewServerProps) {
         {problems.length === 0 ? (
           <p>Проблем не найдено — контентные категории заполнены корректно.</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+            <table
+              style={{
+                width: '100%',
+                tableLayout: 'fixed',
+                borderCollapse: 'collapse',
+                fontSize: 13,
+              }}
+            >
+              <colgroup>
+                <col style={{ width: '26%' }} />
+                <col style={{ width: '24%' }} />
+                <col style={{ width: '28%' }} />
+                <col style={{ width: '22%' }} />
+              </colgroup>
               <thead>
                 <tr
                   style={{
@@ -277,13 +290,27 @@ export default async function SeoAuditView(props: AdminViewServerProps) {
                         background: 'var(--theme-error-50, rgba(255,0,0,0.03))',
                       }}
                     >
-                      <td style={{ padding: '8px 12px', verticalAlign: 'top' }}>
+                      <td
+                        style={{
+                          padding: '8px 12px',
+                          verticalAlign: 'top',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
                         <a href={editUrl} style={{ fontWeight: 600 }}>
                           {cat.fullTitle || cat.title}
                         </a>
                         <div style={{ opacity: 0.5, fontSize: 11 }}>{href}</div>
                       </td>
-                      <td style={{ padding: '8px 12px', verticalAlign: 'top', maxWidth: 240 }}>
+                      <td
+                        style={{
+                          padding: '8px 12px',
+                          verticalAlign: 'top',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
                         <span
                           style={{
                             color:
@@ -296,7 +323,14 @@ export default async function SeoAuditView(props: AdminViewServerProps) {
                           <div style={{ opacity: 0.5, fontSize: 11 }}>{seoTitle.length} симв.</div>
                         )}
                       </td>
-                      <td style={{ padding: '8px 12px', verticalAlign: 'top', maxWidth: 300 }}>
+                      <td
+                        style={{
+                          padding: '8px 12px',
+                          verticalAlign: 'top',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
                         <span
                           style={{
                             color:
@@ -313,7 +347,7 @@ export default async function SeoAuditView(props: AdminViewServerProps) {
                           <div style={{ opacity: 0.5, fontSize: 11 }}>{seoDesc.length} симв.</div>
                         )}
                       </td>
-                      <td style={{ padding: '8px 12px', verticalAlign: 'top', maxWidth: 280 }}>
+                      <td style={{ padding: '8px 12px', verticalAlign: 'top' }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                           {issues.map((iss, i) => (
                             <span
@@ -326,11 +360,13 @@ export default async function SeoAuditView(props: AdminViewServerProps) {
                                 fontSize: 11,
                                 background: 'var(--theme-error-100, rgba(255,0,0,0.1))',
                                 color: 'var(--theme-error-600, #b00)',
-                                whiteSpace: 'nowrap',
+                                maxWidth: '100%',
+                                wordBreak: 'break-word',
+                                overflowWrap: 'anywhere',
                               }}
                             >
                               {ISSUE_LABEL[iss.kind]}
-                              {iss.detail ? ` (${iss.detail.slice(0, 40)})` : ''}
+                              {iss.detail ? ` (${iss.detail.slice(0, 18)}${iss.detail.length > 18 ? '…' : ''})` : ''}
                             </span>
                           ))}
                         </div>
