@@ -287,7 +287,6 @@ export default async function SeoAuditView(props: AdminViewServerProps) {
                       key={cat.id}
                       style={{
                         borderBottom: '1px solid var(--theme-elevation-100)',
-                        background: 'var(--theme-error-50, rgba(255,0,0,0.03))',
                       }}
                     >
                       <td

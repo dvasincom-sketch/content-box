@@ -21,6 +21,7 @@ export default function SeoAuditNavLink() {
         padding: '8px 0',
         fontWeight: active ? 700 : 400,
         opacity: active ? 1 : 0.8,
+        textDecoration: 'none',
       }}
     >
       SEO-аудит
