@@ -61,8 +61,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '64px auto', padding: '0 16px' }}>
-      <h1 style={{ marginBottom: 24 }}>Регистрация</h1>
+    <div style={{ maxWidth: 420, margin: '64px auto', padding: '32px 28px', borderRadius: 16, background: 'color-mix(in srgb, var(--brand-surface) 40%, transparent)', border: '1px solid color-mix(in srgb, var(--brand-text) 10%, transparent)' }}>
+      <h1 style={{ marginBottom: 24, fontSize: 28, color: 'var(--brand-text)' }}>Регистрация</h1>
 
       <label style={labelStyle}>
         Имя
@@ -122,10 +122,12 @@ const inputStyle: React.CSSProperties = {
   display: 'block',
   width: '100%',
   marginTop: 6,
-  padding: '10px 12px',
+  padding: '11px 14px',
   fontSize: 15,
-  border: '1px solid #ccc',
-  borderRadius: 8,
+  color: 'var(--brand-text)',
+  background: 'color-mix(in srgb, var(--brand-surface) 50%, transparent)',
+  border: '1px solid color-mix(in srgb, var(--brand-text) 20%, transparent)',
+  borderRadius: 10,
   boxSizing: 'border-box',
 }
 const buttonStyle: React.CSSProperties = {
@@ -135,8 +137,8 @@ const buttonStyle: React.CSSProperties = {
   fontSize: 15,
   fontWeight: 600,
   color: '#fff',
-  background: '#111',
+  background: 'var(--brand-primary)',
   border: 'none',
-  borderRadius: 8,
+  borderRadius: 10,
   cursor: 'pointer',
 }
