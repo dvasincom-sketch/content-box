@@ -5,20 +5,24 @@ import config from '@/payload.config'
 /**
  * Регистрация подписчика с СЕРВЕРНОЙ привязкой тенанта.
  *
- * Почему не дефолтный POST /api/subscribers: тот позволил бы клиенту передать
- * любой tenant. Здесь tenant берётся ТОЛЬКО из заголовка x-tenant-id (его
- * ставит proxy.ts по домену запроса) и проставляется через Local API с
- * overrideAccess. Любой tenant из тела запроса игнорируется.
+ * Тенант определяется ПО ДОМЕНУ запроса напрямую (не через x-tenant-id) —
+ * proxy.ts исключает /api/* из своей обработки и заголовок туда не ставит.
+ * Поэтому резолвим тенант здесь той же логикой, что и proxy: active +
+ * domainVerified по host. Любой tenant из тела запроса игнорируется.
  *
  * Тело: { email, password, displayName? }
- * Ответ: { ok: true } | { error: string }
  */
-export async function POST(req: NextRequest) {
-  const tenantHeader = req.headers.get('x-tenant-id')
-  const tenantId = tenantHeader ? Number(tenantHeader) : null
 
-  if (!tenantId || Number.isNaN(tenantId)) {
-    return NextResponse.json({ error: 'Не удалось определить сайт (тенант).' }, { status: 400 })
+function stripPort(host: string | null): string {
+  return (host || '').split(':')[0].toLowerCase()
+}
+
+export async function POST(req: NextRequest) {
+  const host = stripPort(
+    req.headers.get('x-forwarded-host') ?? req.headers.get('host'),
+  )
+  if (!host) {
+    return NextResponse.json({ error: 'Не удалось определить сайт.' }, { status: 400 })
   }
 
   let body: { email?: string; password?: string; displayName?: string }
@@ -32,7 +36,6 @@ export async function POST(req: NextRequest) {
   const password = body.password || ''
   const displayName = (body.displayName || '').trim()
 
-  // Базовая валидация.
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return NextResponse.json({ error: 'Укажите корректный email.' }, { status: 400 })
   }
@@ -43,7 +46,30 @@ export async function POST(req: NextRequest) {
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
 
-  // Проверка на занятый email В ПРЕДЕЛАХ тенанта.
+  // Резолвим тенант по домену: active + domainVerified.
+  const tenantsRes = await payload.find({
+    collection: 'tenants',
+    where: {
+      and: [
+        { domain: { equals: host } },
+        { status: { equals: 'active' } },
+        { domainVerified: { equals: true } },
+      ],
+    },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const tenant = tenantsRes.docs[0] as any
+  if (!tenant) {
+    return NextResponse.json(
+      { error: 'Не удалось определить сайт (домен не распознан).' },
+      { status: 400 },
+    )
+  }
+  const tenantId = tenant.id
+
+  // Занятый email в пределах тенанта.
   const existing = await payload.find({
     collection: 'subscribers',
     where: {
@@ -54,13 +80,9 @@ export async function POST(req: NextRequest) {
     overrideAccess: true,
   })
   if (existing.docs.length > 0) {
-    return NextResponse.json(
-      { error: 'Аккаунт с таким email уже существует.' },
-      { status: 409 },
-    )
+    return NextResponse.json({ error: 'Аккаунт с таким email уже существует.' }, { status: 409 })
   }
 
-  // Создаём подписчика. tenant — ТОЛЬКО серверный, из заголовка.
   try {
     await payload.create({
       collection: 'subscribers',
@@ -73,9 +95,7 @@ export async function POST(req: NextRequest) {
       overrideAccess: true,
     })
   } catch (e) {
-    const msg = (e as Error).message || 'Ошибка регистрации.'
-    // Payload может вернуть ошибку уникальности email (глобальную).
-    return NextResponse.json({ error: msg }, { status: 400 })
+    return NextResponse.json({ error: (e as Error).message || 'Ошибка регистрации.' }, { status: 400 })
   }
 
   return NextResponse.json({ ok: true })
