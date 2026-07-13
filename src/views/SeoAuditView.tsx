@@ -46,7 +46,6 @@ type IssueKind =
   | 'title-long'
   | 'title-dup'
   | 'desc-dup'
-  | 'no-og'
   | 'headings-missing'
   | 'headings-skip'
   | 'kw-missing'
@@ -60,7 +59,6 @@ const ISSUE_LABEL: Record<IssueKind, string> = {
   'title-long': `title > ${TITLE_MAX}`,
   'title-dup': 'дубль title',
   'desc-dup': 'дубль description',
-  'no-og': 'нет OG-картинки',
   'headings-missing': 'нет подзаголовков',
   'headings-skip': 'скачок уровней H',
   'kw-missing': 'keyword не в title/desc',
@@ -77,12 +75,6 @@ function isNavigationalOrGallery(cat: Cat, hasChildren: boolean): boolean {
   return false
 }
 
-function hasOgImage(seo: Cat['seo']): boolean {
-  const og = seo?.ogImage
-  if (!og) return false
-  if (typeof og === 'object') return Boolean((og as { id?: unknown }).id)
-  return Boolean(og)
-}
 
 export default async function SeoAuditView(props: AdminViewServerProps) {
   const { initPageResult, params, searchParams } = props
@@ -175,9 +167,6 @@ export default async function SeoAuditView(props: AdminViewServerProps) {
       if (seoDesc.length < DESC_MIN) issues.push({ kind: 'desc-short' })
       if (seoDesc.length > DESC_MAX) issues.push({ kind: 'desc-long' })
     }
-
-    // OG-изображение.
-    if (!hasOgImage(cat.seo)) issues.push({ kind: 'no-og' })
 
     // Заголовки внутри описания.
     if (text.length > 0) {
