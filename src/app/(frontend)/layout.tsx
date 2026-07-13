@@ -5,6 +5,7 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { getHeaderMenu, getFooterCategories, getFooterColumns } from '@/lib/headerMenu'
 import { brandVars } from '@/lib/brand'
 import { SiteHeader } from '@/components/SiteHeader'
+import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { SiteFooter } from '@/components/SiteFooter'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -30,6 +31,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const ctx = await getTenantFromHeaders()
   const tenant = ctx?.tenant as any
   const settings = ctx?.settings as any
+  const subscriber = await getCurrentSubscriber()
 
   // Меню и футер строятся из страниц (ТЗ §3.6, white-label):
   // showInMenu → шапка; showInFooter + footerColumn → колонка футера.
@@ -96,6 +98,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             brandName={tenant?.name ?? 'COCO JAMBO'}
             nav={navItems}
             menu={menu}
+            subscriber={subscriber}
           />
         )}
         <main>{children}</main>
