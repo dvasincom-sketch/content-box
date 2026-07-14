@@ -27,6 +27,12 @@
    ═══════════════════════════════════════════════════════════ */
 @layer payload-default {
   html[data-theme='light'] {
+    /* ГЛАВНОЕ: primary-акцент Payload = --theme-success-500 (историческое имя).
+       Именно он красит кнопки, активные элементы. Ссылки — --theme-text-link. */
+    --theme-success-500: #7c3aed;
+    --theme-success-600: #6d28d9;
+    --theme-text-link: #7c3aed;
+
     /* Акцент-переменные (фиолетовый бренд) */
     --theme-elevation-800: #7c3aed;
     --theme-elevation-900: #6d28d9;
@@ -76,6 +82,10 @@
 
   /* Кнопки */
   html[data-theme='light'] {
+    .btn--style-primary,
+    .btn--style-primary * {
+      color: #fff !important;
+    }
     .btn--style-primary {
       background: #7c3aed;
       border-radius: 10px;
