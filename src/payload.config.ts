@@ -37,8 +37,8 @@ export default buildConfig({
       },
       // Брендовый блок над формой входа.
       beforeLogin: ['@/components/admin/BeforeLogin'],
-      // Пункты бокового меню, ведущие на кастомные view.
-      beforeNavLinks: ['@/components/SeoAuditNavLink', '@/components/StatsNavLink', '@/components/admin/HelpNavLink'],
+      // Ссылки на кастомные view — ПОСЛЕ коллекций (внизу меню).
+      afterNavLinks: ['@/components/SeoAuditNavLink', '@/components/StatsNavLink', '@/components/admin/HelpNavLink'],
       // Кастомные root-view.
       views: {
         // SEO-аудит: сводная таблица проблем по категориям (/admin/seo-audit).
