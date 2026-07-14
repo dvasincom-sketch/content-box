@@ -31,7 +31,6 @@
        Именно он красит кнопки, активные элементы. Ссылки — --theme-text-link. */
     --theme-success-500: #7c3aed;
     --theme-success-600: #6d28d9;
-    --theme-text-link: #7c3aed;
 
     /* Акцент-переменные (фиолетовый бренд) */
     --theme-elevation-800: #7c3aed;
@@ -131,6 +130,16 @@
     }
   }
 
+  /* Лейблы полей — спокойный тёмно-серый, НЕ фиолетовый */
+  html[data-theme='light'] {
+    .field-label,
+    .render-fields label,
+    .field-type > label,
+    .field-type__label {
+      color: #4a4658;
+    }
+  }
+
   /* Поля ввода */
   html[data-theme='light'] {
     .field-type input,
@@ -169,6 +178,11 @@
 
   /* Логин */
   html[data-theme='light'] {
+    .login__brand,
+    .login .graphic-logo,
+    .login > a:first-child {
+      display: none;
+    }
     .login {
       background:
         radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, #7c3aed 10%, transparent), transparent),
