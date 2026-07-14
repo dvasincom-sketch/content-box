@@ -120,9 +120,9 @@ export function UIShowcaseExtra() {
         <div style={headingStyle}>Карточки тарифов</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
           {tiers.map((t) => (
-            <div key={t.name} style={{ ...card, border: t.accent ? `2px solid var(--brand-primary)` : `1px solid ${soft(10)}`, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+            <div key={t.name} style={{ ...card, border: t.accent ? `2px solid var(--brand-primary)` : `1px solid ${soft(10)}`, position: 'relative', display: 'flex', flexDirection: 'column', paddingTop: t.accent ? 28 : 20 }}>
               {t.accent && (
-                <span style={{ position: 'absolute', top: -10, left: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700, borderRadius: 999, color: '#fff', background: 'var(--brand-primary)' }}>ПОПУЛЯРНЫЙ</span>
+                <span style={{ position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)', padding: '3px 14px', fontSize: 11, fontWeight: 700, letterSpacing: '0.03em', borderRadius: 999, color: '#fff', background: 'var(--brand-primary)', whiteSpace: 'nowrap' }}>ПОПУЛЯРНЫЙ</span>
               )}
               <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 4, color: 'var(--brand-text)' }}>{t.name}</div>
               <div style={{ marginBottom: 14 }}>
