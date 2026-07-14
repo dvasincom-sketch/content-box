@@ -26,13 +26,11 @@ import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { OverviewComponent as OverviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
 import { PreviewComponent as PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860 } from '@payloadcms/plugin-seo/client'
+import { default as default_9870fd18da5f585b086dac7c5b924c68 } from '@/components/admin/CustomNav'
 import { default as default_d9087a380941d12f95aff168665b00b4 } from '@/components/admin/BrandIcon'
 import { default as default_fd0a9bbb35693e340bbbfa9596236d37 } from '@/components/admin/BrandLogo'
 import { default as default_89344134860f9bc63867ffefbf33f214 } from '@/components/admin/BeforeLogin'
 import { TenantSelector as TenantSelector_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
-import { default as default_6b744f701f07efbb47ac8761ce4dbca9 } from '@/components/SeoAuditNavLink'
-import { default as default_8e31d87cf4c21d75ebbfe97b89d562fc } from '@/components/StatsNavLink'
-import { default as default_050b8b1c6d9a3c10e652a8eb94471e38 } from '@/components/admin/HelpNavLink'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 import { TenantSelectionProvider as TenantSelectionProvider_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
 import { default as default_e19c4592462337b3bac19814a8fec69f } from '@/views/SeoAuditView'
@@ -73,13 +71,11 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/plugin-seo/client#OverviewComponent": OverviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
   "@payloadcms/plugin-seo/client#PreviewComponent": PreviewComponent_a8a977ebc872c5d5ea7ee689724c0860,
+  "@/components/admin/CustomNav#default": default_9870fd18da5f585b086dac7c5b924c68,
   "@/components/admin/BrandIcon#default": default_d9087a380941d12f95aff168665b00b4,
   "@/components/admin/BrandLogo#default": default_fd0a9bbb35693e340bbbfa9596236d37,
   "@/components/admin/BeforeLogin#default": default_89344134860f9bc63867ffefbf33f214,
   "@payloadcms/plugin-multi-tenant/rsc#TenantSelector": TenantSelector_d6d5f193a167989e2ee7d14202901e62,
-  "@/components/SeoAuditNavLink#default": default_6b744f701f07efbb47ac8761ce4dbca9,
-  "@/components/StatsNavLink#default": default_8e31d87cf4c21d75ebbfe97b89d562fc,
-  "@/components/admin/HelpNavLink#default": default_050b8b1c6d9a3c10e652a8eb94471e38,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
   "@payloadcms/plugin-multi-tenant/rsc#TenantSelectionProvider": TenantSelectionProvider_d6d5f193a167989e2ee7d14202901e62,
   "@/views/SeoAuditView#default": default_e19c4592462337b3bac19814a8fec69f,
