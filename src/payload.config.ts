@@ -32,9 +32,11 @@ export default buildConfig({
     },
     components: {
       graphics: {
-        Logo: '@/components/admin/EmptyLogo',
-        Icon: '@/components/admin/EmptyIcon',
+        Logo: '@/components/admin/BrandLogo',
+        Icon: '@/components/admin/BrandIcon',
       },
+      // Брендовый блок над формой входа.
+      beforeLogin: ['@/components/admin/BeforeLogin'],
       // Пункты бокового меню, ведущие на кастомные view.
       beforeNavLinks: ['@/components/SeoAuditNavLink', '@/components/StatsNavLink'],
       // Кастомные root-view.

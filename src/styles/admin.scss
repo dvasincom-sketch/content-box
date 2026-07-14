@@ -1,0 +1,207 @@
+/**
+ * Кастомный светлый рестайл админки «Контент Бокс».
+ *
+ * Переопределяем CSS-переменные Payload (шкала elevation, фон, текст, акцент)
+ * + точечные BEM-селекторы для сайдбара, кнопок, карточек, полей.
+ * Всё в @layer payload-default — высший приоритет над дефолтом.
+ *
+ * Заметный светлый стиль: чистый фон, мягкие тени, скругления, фиолетовый
+ * акцент #7C3AED. Ноль JS — грузится мгновенно.
+ *
+ * Подключается через admin.css в payload.config.ts.
+ */
+
+@layer payload-default {
+  html[data-theme='light'] {
+    /* ── Акцент (фиолетовый бренд) ── */
+    --theme-success-500: #7c3aed;
+    --color-base-800: #1e1b2e;
+
+    /* Основной бренд-цвет для кнопок/ссылок/активных состояний.
+       Payload использует --theme-elevation-800 как «primary» для кнопок. */
+    --theme-elevation-800: #7c3aed;
+    --theme-elevation-900: #6d28d9;
+    --theme-elevation-1000: #5b21b6;
+
+    /* ── Фоны (светлая тема, мягкая иерархия) ── */
+    --theme-bg: #f6f6fb;               /* общий фон — чуть холодный светлый */
+    --theme-input-bg: #ffffff;
+
+    /* Elevation-шкала: от фона (0) к поднятым элементам.
+       Карточки/панели чуть белее фона → мягкая глубина. */
+    --theme-elevation-0: #ffffff;
+    --theme-elevation-50: #fbfbfe;
+    --theme-elevation-100: #ffffff;    /* карточки/сайдбар — чистый белый */
+    --theme-elevation-150: #f1f1f7;
+    --theme-elevation-200: #ececf4;
+    --theme-elevation-250: #e5e5ef;
+
+    /* ── Текст ── */
+    --theme-text: #1e1b2e;             /* тёмно-фиолетовый вместо чёрного */
+
+    /* ── Радиусы и переходы ── */
+    --style-radius-s: 8px;
+    --style-radius-m: 12px;
+    --style-radius-l: 16px;
+  }
+
+  /* ─────────────────────────────────────────────
+     САЙДБАР — белый, мягкая правая граница, воздух
+     ───────────────────────────────────────────── */
+  html[data-theme='light'] {
+    .nav {
+      background: var(--theme-elevation-100);
+      border-right: 1px solid var(--theme-elevation-150);
+      box-shadow: 2px 0 16px rgba(30, 27, 46, 0.03);
+    }
+
+    .nav .nav__link,
+    .nav a {
+      border-radius: 8px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav .nav__link:hover,
+    .nav a:hover {
+      background: color-mix(in srgb, #7c3aed 8%, transparent);
+    }
+
+    /* Активный пункт меню */
+    .nav .nav__link--active,
+    .nav a.active {
+      background: color-mix(in srgb, #7c3aed 12%, transparent);
+      color: #7c3aed;
+      font-weight: 600;
+    }
+
+    /* Заголовки групп в сайдбаре */
+    .nav-group__label,
+    .nav__label {
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 11px;
+      opacity: 0.5;
+      font-weight: 600;
+    }
+  }
+
+  /* ─────────────────────────────────────────────
+     КНОПКИ — скругление, фиолетовый primary
+     ───────────────────────────────────────────── */
+  html[data-theme='light'] {
+    .btn--style-primary {
+      background: #7c3aed;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+      transition: background 0.15s, box-shadow 0.15s, transform 0.05s;
+    }
+    .btn--style-primary:hover {
+      background: #6d28d9;
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.32);
+    }
+    .btn--style-primary:active {
+      transform: translateY(1px);
+    }
+    .btn--style-secondary {
+      border-radius: 10px;
+      border-color: var(--theme-elevation-200);
+    }
+    .btn--style-secondary:hover {
+      background: color-mix(in srgb, #7c3aed 6%, transparent);
+      border-color: #7c3aed;
+    }
+  }
+
+  /* ─────────────────────────────────────────────
+     КАРТОЧКИ / ПАНЕЛИ — мягкие тени, скругление
+     ───────────────────────────────────────────── */
+  html[data-theme='light'] {
+    .card,
+    .dashboard__card,
+    .collection-list,
+    .table,
+    .doc-controls,
+    .list-controls {
+      border-radius: 14px;
+    }
+
+    .card,
+    .dashboard__card {
+      background: var(--theme-elevation-100);
+      border: 1px solid var(--theme-elevation-150);
+      box-shadow: 0 1px 3px rgba(30, 27, 46, 0.04), 0 8px 24px rgba(30, 27, 46, 0.04);
+      transition: box-shadow 0.15s, transform 0.1s;
+    }
+    .card:hover,
+    .dashboard__card:hover {
+      box-shadow: 0 2px 6px rgba(30, 27, 46, 0.06), 0 12px 32px rgba(30, 27, 46, 0.07);
+    }
+
+    /* Дашборд — карточки коллекций */
+    .dashboard__group {
+      gap: 16px;
+    }
+  }
+
+  /* ─────────────────────────────────────────────
+     ПОЛЯ ВВОДА — скругление, фокус фиолетовым
+     ───────────────────────────────────────────── */
+  html[data-theme='light'] {
+    .field-type input,
+    .field-type textarea,
+    .field-type .rs__control {
+      border-radius: 10px;
+      border-color: var(--theme-elevation-200);
+      background: var(--theme-elevation-0);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field-type input:focus,
+    .field-type textarea:focus,
+    .field-type .rs__control--is-focused {
+      border-color: #7c3aed;
+      box-shadow: 0 0 0 3px color-mix(in srgb, #7c3aed 15%, transparent);
+    }
+  }
+
+  /* ─────────────────────────────────────────────
+     ТАБЛИЦЫ — чище строки, hover
+     ───────────────────────────────────────────── */
+  html[data-theme='light'] {
+    .table table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .table thead th {
+      background: var(--theme-elevation-50);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      opacity: 0.7;
+    }
+    .table tbody tr {
+      transition: background 0.1s;
+    }
+    .table tbody tr:hover {
+      background: color-mix(in srgb, #7c3aed 4%, transparent);
+    }
+  }
+
+  /* ─────────────────────────────────────────────
+     ЛОГИН — брендовый фон
+     ───────────────────────────────────────────── */
+  html[data-theme='light'] {
+    .login {
+      background:
+        radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, #7c3aed 10%, transparent), transparent),
+        var(--theme-bg);
+    }
+    .login__brand,
+    .login .form-wrap {
+      background: var(--theme-elevation-100);
+      border-radius: 18px;
+      box-shadow: 0 8px 40px rgba(30, 27, 46, 0.10);
+      padding: 32px;
+    }
+  }
+}
