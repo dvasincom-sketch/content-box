@@ -195,21 +195,4 @@
       padding: 32px;
     }
   }
-
-  /* ─────────────────────────────────────────────
-     Единый hover для кастомной навигации
-     ───────────────────────────────────────────── */
-  html[data-theme='light'] {
-    .cb-nav-link:hover {
-      background: color-mix(in srgb, #7c3aed 8%, transparent) !important;
-      color: #7c3aed !important;
-    }
-    .cb-nav-link:hover span {
-      opacity: 1 !important;
-    }
-    .cb-nav-link[data-active='true']:hover {
-      background: color-mix(in srgb, #7c3aed 16%, transparent) !important;
-    }
-  }
-
 }

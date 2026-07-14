@@ -37,8 +37,8 @@ export default buildConfig({
       },
       // Брендовый блок над формой входа.
       beforeLogin: ['@/components/admin/BeforeLogin'],
-      // Кастомная навигация — полностью заменяет штатный сайдбар (группы, иконки, порядок).
-      Nav: '@/components/admin/CustomNav',
+      // Пункты бокового меню, ведущие на кастомные view.
+      beforeNavLinks: ['@/components/SeoAuditNavLink', '@/components/StatsNavLink', '@/components/admin/HelpNavLink'],
       // Кастомные root-view.
       views: {
         // SEO-аудит: сводная таблица проблем по категориям (/admin/seo-audit).
