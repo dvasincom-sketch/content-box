@@ -32,10 +32,12 @@ import { default as default_89344134860f9bc63867ffefbf33f214 } from '@/component
 import { TenantSelector as TenantSelector_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
 import { default as default_6b744f701f07efbb47ac8761ce4dbca9 } from '@/components/SeoAuditNavLink'
 import { default as default_8e31d87cf4c21d75ebbfe97b89d562fc } from '@/components/StatsNavLink'
+import { default as default_050b8b1c6d9a3c10e652a8eb94471e38 } from '@/components/admin/HelpNavLink'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 import { TenantSelectionProvider as TenantSelectionProvider_d6d5f193a167989e2ee7d14202901e62 } from '@payloadcms/plugin-multi-tenant/rsc'
 import { default as default_e19c4592462337b3bac19814a8fec69f } from '@/views/SeoAuditView'
 import { default as default_09cac78ecea1147ae30154bbd2f5c330 } from '@/views/StatsView'
+import { default as default_d2c5ea3ec4c8cdf0a226c51abfd798ad } from '@/views/HelpView'
 import { default as default_b6c45dfecbe504ed808d7dd20ad19aac } from '@/components/admin/CountersWidget'
 import { default as default_834b949ae19a75a74dee10b5459fc508 } from '@/components/admin/QuickActionsWidget'
 import { default as default_bebed4f3497c87b70af4d43ad1f9664b } from '@/components/admin/RecentPublicationsWidget'
@@ -77,10 +79,12 @@ export const importMap = {
   "@payloadcms/plugin-multi-tenant/rsc#TenantSelector": TenantSelector_d6d5f193a167989e2ee7d14202901e62,
   "@/components/SeoAuditNavLink#default": default_6b744f701f07efbb47ac8761ce4dbca9,
   "@/components/StatsNavLink#default": default_8e31d87cf4c21d75ebbfe97b89d562fc,
+  "@/components/admin/HelpNavLink#default": default_050b8b1c6d9a3c10e652a8eb94471e38,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
   "@payloadcms/plugin-multi-tenant/rsc#TenantSelectionProvider": TenantSelectionProvider_d6d5f193a167989e2ee7d14202901e62,
   "@/views/SeoAuditView#default": default_e19c4592462337b3bac19814a8fec69f,
   "@/views/StatsView#default": default_09cac78ecea1147ae30154bbd2f5c330,
+  "@/views/HelpView#default": default_d2c5ea3ec4c8cdf0a226c51abfd798ad,
   "@/components/admin/CountersWidget#default": default_b6c45dfecbe504ed808d7dd20ad19aac,
   "@/components/admin/QuickActionsWidget#default": default_834b949ae19a75a74dee10b5459fc508,
   "@/components/admin/RecentPublicationsWidget#default": default_bebed4f3497c87b70af4d43ad1f9664b,

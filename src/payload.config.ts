@@ -38,7 +38,7 @@ export default buildConfig({
       // Брендовый блок над формой входа.
       beforeLogin: ['@/components/admin/BeforeLogin'],
       // Пункты бокового меню, ведущие на кастомные view.
-      beforeNavLinks: ['@/components/SeoAuditNavLink', '@/components/StatsNavLink'],
+      beforeNavLinks: ['@/components/SeoAuditNavLink', '@/components/StatsNavLink', '@/components/admin/HelpNavLink'],
       // Кастомные root-view.
       views: {
         // SEO-аудит: сводная таблица проблем по категориям (/admin/seo-audit).
@@ -57,6 +57,14 @@ export default buildConfig({
           meta: {
             title: 'Статистика',
             description: 'Аналитика по подпискам',
+          },
+        },
+        help: {
+          Component: '@/views/HelpView',
+          path: '/help',
+          meta: {
+            title: 'Помощь',
+            description: 'Руководство по наполнению сайта',
           },
         },
       },
