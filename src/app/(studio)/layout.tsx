@@ -1,11 +1,15 @@
 import React from 'react'
-import { Inter, Manrope, IBM_Plex_Mono } from 'next/font/google'
+import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
 import './studio.css'
 
-const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter', display: 'swap' })
-const manrope = Manrope({ subsets: ['latin', 'cyrillic'], variable: '--font-manrope', display: 'swap' })
-// IBM Plex Mono — «печатная машинка» с поддержкой кириллицы. Точечный акцент
-// на навигации и подзаголовках студии. Требует явного указания weight.
+// Родная пара IBM Plex: Sans — основной текст и заголовки, Mono — навигация и
+// подзаголовки («печатная машинка»). Оба с кириллицей, требуют явный weight.
+const plexSans = IBM_Plex_Sans({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sans',
+  display: 'swap',
+})
 const plexMono = IBM_Plex_Mono({
   subsets: ['latin', 'cyrillic'],
   weight: ['400', '500', '600'],
@@ -28,7 +32,7 @@ const plexMono = IBM_Plex_Mono({
 const THEME_INIT = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.classList.add('theme-'+t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.classList.add('theme-dark');}})();`
 
 export default function StudioRootLayout({ children }: { children: React.ReactNode }) {
-  const fontVars = `${inter.variable} ${manrope.variable} ${plexMono.variable}`
+  const fontVars = `${plexSans.variable} ${plexMono.variable}`
   return (
     <html lang="ru" className={fontVars} suppressHydrationWarning>
       <head>

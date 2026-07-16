@@ -81,8 +81,8 @@
   /* Типографика: используем шрифтовые переменные, уже подключённые проектом
      (Inter/Manrope и т.д. приходят из next/font в корневом layout). Body —
      Inter, заголовки чуть плотнее. Fallback на системный стек. */
-  --st-font-body: var(--font-inter, ui-sans-serif, system-ui, -apple-system, sans-serif);
-  --st-font-head: var(--font-manrope, var(--font-inter, ui-sans-serif, system-ui, sans-serif));
+  --st-font-body: var(--font-sans, ui-sans-serif, system-ui, -apple-system, sans-serif);
+  --st-font-head: var(--font-sans, ui-sans-serif, system-ui, -apple-system, sans-serif);
   /* IBM Plex Mono — «печатная машинка» для навигации и подзаголовков */
   --st-font-mono: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 
@@ -136,7 +136,7 @@
 .studio-root h2,
 .studio-root h3 {
   font-family: var(--st-font-head);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
   margin: 0;
 }
@@ -208,7 +208,7 @@
 .studio-nav__brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
 .studio-nav__brand-name {
   font-family: var(--st-font-head);
-  font-weight: 650;
+  font-weight: 600;
   font-size: var(--st-text-md);
   white-space: nowrap;
   overflow: hidden;
@@ -557,7 +557,7 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   color: var(--st-text);
   font-family: var(--st-font-head);
   font-size: var(--st-text-2xl);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
   padding: 0;
   margin-bottom: var(--st-space-2);
@@ -1057,7 +1057,7 @@ select.studio-input {
 .dash__stat-value {
   font-family: var(--st-font-head);
   font-size: var(--st-text-2xl);
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1;
 }
