@@ -1,0 +1,390 @@
+/* ============================================================================
+   STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
+   ----------------------------------------------------------------------------
+   Тёмная тема по умолчанию, белый/монохромный акцент (НЕ брендовый тенанта).
+   Семантические переменные заданы для двух тем — переключатель на будущее.
+   Механизм тем консистентен с фронтендом: класс .theme-dark / .theme-light
+   ставится на <html> инлайн-скриптом до рендера (см. layout.tsx студии).
+
+   Все токены namespace'ятся --st-* чтобы НЕ конфликтовать с брендовыми
+   --brand-* фронтенда (студия — отдельная route-группа со своим layout).
+   ============================================================================ */
+
+/* --- Тёмная тема (default) ------------------------------------------------- */
+.theme-dark {
+  /* Поверхности: от самой глубокой к приподнятой */
+  --st-bg:            #0a0a0b;   /* фон страницы */
+  --st-surface:       #131316;   /* карточки, панели */
+  --st-surface-2:     #1a1a1e;   /* вложенные блоки, hover-поверхности */
+  --st-surface-hover: #202027;   /* hover на интерактивных строках */
+
+  /* Границы */
+  --st-border:        #26262c;   /*基本 разделители */
+  --st-border-strong: #35353d;   /* акцентные рамки, focus-контур */
+
+  /* Текст */
+  --st-text:          #f4f4f5;   /* основной */
+  --st-text-muted:    #a1a1aa;   /* вторичный, подписи */
+  --st-text-faint:    #6b6b74;   /* плейсхолдеры, disabled */
+
+  /* Акцент — БЕЛЫЙ (монохром), НЕ коралл/фиолет */
+  --st-accent:        #ffffff;   /* кнопка «Опубликовать», активный пункт */
+  --st-accent-text:   #0a0a0b;   /* текст на белом акценте */
+  --st-accent-hover:  #e4e4e7;   /* hover белой кнопки */
+
+  /* Статусы (приглушённые, чтобы не спорить с монохромом) */
+  --st-success:       #4ade80;
+  --st-danger:        #f87171;
+  --st-warning:       #fbbf24;
+
+  /* Тени */
+  --st-shadow:        0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.25);
+
+  color-scheme: dark;
+}
+
+/* --- Светлая тема (задел, переключатель позже) ----------------------------- */
+.theme-light {
+  --st-bg:            #fafafa;
+  --st-surface:       #ffffff;
+  --st-surface-2:     #f4f4f5;
+  --st-surface-hover: #ececee;
+
+  --st-border:        #e4e4e7;
+  --st-border-strong: #d4d4d8;
+
+  --st-text:          #18181b;
+  --st-text-muted:    #52525b;
+  --st-text-faint:    #a1a1aa;
+
+  /* В светлой теме акцент инвертируется в чёрный, чтобы остаться монохромным */
+  --st-accent:        #18181b;
+  --st-accent-text:   #ffffff;
+  --st-accent-hover:  #27272a;
+
+  --st-success:       #16a34a;
+  --st-danger:        #dc2626;
+  --st-warning:       #d97706;
+
+  --st-shadow:        0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.08);
+
+  color-scheme: light;
+}
+
+/* --- Общие токены (не зависят от темы) ------------------------------------- */
+:root {
+  /* Радиусы */
+  --st-radius-sm: 6px;
+  --st-radius:    10px;
+  --st-radius-lg: 14px;
+
+  /* Типографика: используем шрифтовые переменные, уже подключённые проектом
+     (Inter/Manrope и т.д. приходят из next/font в корневом layout). Body —
+     Inter, заголовки чуть плотнее. Fallback на системный стек. */
+  --st-font-body: var(--font-inter, ui-sans-serif, system-ui, -apple-system, sans-serif);
+  --st-font-head: var(--font-manrope, var(--font-inter, ui-sans-serif, system-ui, sans-serif));
+
+  /* Тайп-шкала */
+  --st-text-xs:   12px;
+  --st-text-sm:   13px;
+  --st-text-base: 14px;
+  --st-text-md:   15px;
+  --st-text-lg:   18px;
+  --st-text-xl:   22px;
+  --st-text-2xl:  28px;
+
+  /* Спейсинг-ритм (кратно 4) */
+  --st-space-1: 4px;
+  --st-space-2: 8px;
+  --st-space-3: 12px;
+  --st-space-4: 16px;
+  --st-space-5: 20px;
+  --st-space-6: 24px;
+  --st-space-8: 32px;
+  --st-space-10: 40px;
+
+  /* Ширины layout */
+  --st-sidebar-w: 240px;
+  --st-content-max: 720px;   /* центральная колонка композера/ленты */
+
+  /* Тайминги */
+  --st-ease: cubic-bezier(.4, 0, .2, 1);
+  --st-dur:  140ms;
+}
+
+/* ============================================================================
+   БАЗОВЫЕ СТИЛИ СТУДИИ
+   Скоупим под .studio-root, чтобы НЕ протекать в остальной сайт/админку.
+   ============================================================================ */
+
+.studio-root {
+  background: var(--st-bg);
+  color: var(--st-text);
+  font-family: var(--st-font-body);
+  font-size: var(--st-text-base);
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.studio-root * { box-sizing: border-box; }
+
+.studio-root h1,
+.studio-root h2,
+.studio-root h3 {
+  font-family: var(--st-font-head);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.studio-root a { color: inherit; text-decoration: none; }
+
+/* Утилита фокуса — видимый контур для доступности */
+.studio-root :focus-visible {
+  outline: 2px solid var(--st-border-strong);
+  outline-offset: 2px;
+  border-radius: var(--st-radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-root * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================================
+   LAYOUT: сайдбар + контент
+   ============================================================================ */
+
+.studio-shell {
+  display: grid;
+  grid-template-columns: var(--st-sidebar-w) 1fr;
+  min-height: 100vh;
+}
+
+.studio-main {
+  min-width: 0;               /* чтобы контент не распирал грид */
+  padding: var(--st-space-8) var(--st-space-8) var(--st-space-10);
+}
+
+/* --- Боковая навигация ----------------------------------------------------- */
+
+.studio-nav {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--st-border);
+  background: var(--st-surface);
+  padding: var(--st-space-5) var(--st-space-3);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.studio-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-3);
+  padding: var(--st-space-2) var(--st-space-3) var(--st-space-6);
+}
+
+.studio-nav__brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--st-radius-sm);
+  background: var(--st-accent);
+  color: var(--st-accent-text);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: var(--st-text-md);
+  flex-shrink: 0;
+}
+
+.studio-nav__brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.studio-nav__brand-name {
+  font-family: var(--st-font-head);
+  font-weight: 650;
+  font-size: var(--st-text-md);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.studio-nav__brand-sub { color: var(--st-text-faint); font-size: var(--st-text-xs); }
+
+.studio-nav__list { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+.studio-nav__item {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-3);
+  padding: var(--st-space-2) var(--st-space-3);
+  border-radius: var(--st-radius-sm);
+  color: var(--st-text-muted);
+  font-size: var(--st-text-base);
+  font-weight: 500;
+  transition: background var(--st-dur) var(--st-ease), color var(--st-dur) var(--st-ease);
+}
+.studio-nav__item:hover { background: var(--st-surface-hover); color: var(--st-text); }
+.studio-nav__item.is-active { background: var(--st-surface-2); color: var(--st-text); font-weight: 600; }
+
+.studio-nav__icon { display: grid; place-items: center; color: currentColor; flex-shrink: 0; }
+
+.studio-nav__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  padding-top: var(--st-space-4);
+  margin-top: var(--st-space-4);
+  border-top: 1px solid var(--st-border);
+}
+.studio-nav__user { display: flex; align-items: center; gap: var(--st-space-2); min-width: 0; flex: 1; }
+.studio-nav__avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--st-surface-2);
+  border: 1px solid var(--st-border);
+  display: grid; place-items: center;
+  font-size: var(--st-text-xs); font-weight: 600;
+  color: var(--st-text-muted); flex-shrink: 0;
+}
+.studio-nav__email {
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.studio-nav__logout {
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  border-radius: var(--st-radius-sm);
+  color: var(--st-text-faint);
+  transition: background var(--st-dur) var(--st-ease), color var(--st-dur) var(--st-ease);
+  flex-shrink: 0;
+}
+.studio-nav__logout:hover { background: var(--st-surface-hover); color: var(--st-danger); }
+
+/* --- Мобилка: сайдбар в строку сверху (простой вариант на Шаг 1) ----------- */
+@media (max-width: 720px) {
+  .studio-shell { grid-template-columns: 1fr; }
+  .studio-nav {
+    flex-direction: row;
+    align-items: center;
+    height: auto;
+    position: static;
+    overflow-x: auto;
+    gap: var(--st-space-2);
+    padding: var(--st-space-3);
+  }
+  .studio-nav__brand { padding: 0 var(--st-space-2) 0 0; }
+  .studio-nav__brand-text { display: none; }
+  .studio-nav__list { flex-direction: row; flex: 1; }
+  .studio-nav__item span:not(.studio-nav__icon) { display: none; }
+  .studio-nav__item { padding: var(--st-space-2); }
+  .studio-nav__footer { border-top: none; margin: 0; padding: 0; border-left: 1px solid var(--st-border); padding-left: var(--st-space-2); }
+  .studio-nav__email { display: none; }
+  .studio-main { padding: var(--st-space-5) var(--st-space-4); }
+}
+
+/* ============================================================================
+   ОБЩИЕ ЭЛЕМЕНТЫ (кнопки, заголовок страницы) — пригодятся на всех экранах
+   ============================================================================ */
+
+.studio-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--st-space-4);
+  margin-bottom: var(--st-space-6);
+}
+.studio-page-head h1 { font-size: var(--st-text-2xl); }
+.studio-page-head__sub { color: var(--st-text-muted); font-size: var(--st-text-base); margin-top: var(--st-space-1); }
+
+.studio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  padding: var(--st-space-2) var(--st-space-4);
+  border-radius: var(--st-radius-sm);
+  font-size: var(--st-text-base);
+  font-weight: 550;
+  font-family: var(--st-font-body);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background var(--st-dur) var(--st-ease), border-color var(--st-dur) var(--st-ease), opacity var(--st-dur) var(--st-ease);
+  white-space: nowrap;
+}
+.studio-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.studio-btn--primary { background: var(--st-accent); color: var(--st-accent-text); }
+.studio-btn--primary:hover:not(:disabled) { background: var(--st-accent-hover); }
+
+.studio-btn--ghost { background: transparent; color: var(--st-text-muted); border-color: var(--st-border); }
+.studio-btn--ghost:hover:not(:disabled) { background: var(--st-surface-hover); color: var(--st-text); }
+
+.studio-card {
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  padding: var(--st-space-6);
+}
+
+/* ============================================================================
+   ПОЛЯ ВВОДА
+   ============================================================================ */
+
+.studio-field { display: flex; flex-direction: column; gap: var(--st-space-2); }
+.studio-field__label { font-size: var(--st-text-sm); font-weight: 550; color: var(--st-text-muted); }
+
+.studio-input,
+.studio-textarea {
+  width: 100%;
+  background: var(--st-bg);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  color: var(--st-text);
+  font-family: var(--st-font-body);
+  font-size: var(--st-text-md);
+  padding: var(--st-space-3) var(--st-space-3);
+  transition: border-color var(--st-dur) var(--st-ease);
+}
+.studio-input::placeholder,
+.studio-textarea::placeholder { color: var(--st-text-faint); }
+.studio-input:focus,
+.studio-textarea:focus { outline: none; border-color: var(--st-border-strong); }
+.studio-input:disabled,
+.studio-textarea:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ============================================================================
+   ЭКРАН ЛОГИНА
+   ============================================================================ */
+
+.studio-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--st-space-6);
+}
+.studio-login__card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-lg);
+  padding: var(--st-space-8);
+  box-shadow: var(--st-shadow);
+}
+.studio-login__head { margin-bottom: var(--st-space-6); }
+.studio-login__head h1 { font-size: var(--st-text-xl); margin-bottom: var(--st-space-2); }
+.studio-login__head p { color: var(--st-text-muted); font-size: var(--st-text-base); margin: 0; }
+
+.studio-login__form { display: flex; flex-direction: column; gap: var(--st-space-4); }
+.studio-login__submit { width: 100%; justify-content: center; margin-top: var(--st-space-2); padding: var(--st-space-3); }
+.studio-login__error {
+  background: color-mix(in srgb, var(--st-danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--st-danger) 35%, transparent);
+  color: var(--st-danger);
+  border-radius: var(--st-radius-sm);
+  padding: var(--st-space-2) var(--st-space-3);
+  font-size: var(--st-text-sm);
+}
