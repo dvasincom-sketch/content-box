@@ -493,23 +493,96 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
    ============================================================================ */
 
 .studio-login {
+  position: relative;
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: var(--st-space-6);
+  overflow: hidden;
 }
+
+/* --- Декоративный фон --- */
+.studio-login__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--st-surface-2) 90%, transparent), transparent),
+    var(--st-bg);
+  pointer-events: none;
+}
+/* Размытые пятна, медленно плавают */
+.studio-login__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.5;
+  will-change: transform;
+}
+.studio-login__blob--1 {
+  width: 420px; height: 420px;
+  top: -120px; left: -80px;
+  background: radial-gradient(circle, color-mix(in srgb, #fff 8%, transparent), transparent 70%);
+  animation: st-blob-1 22s var(--st-ease) infinite;
+}
+.studio-login__blob--2 {
+  width: 360px; height: 360px;
+  bottom: -140px; right: -60px;
+  background: radial-gradient(circle, color-mix(in srgb, #fff 6%, transparent), transparent 70%);
+  animation: st-blob-2 28s var(--st-ease) infinite;
+}
+.studio-login__blob--3 {
+  width: 300px; height: 300px;
+  top: 40%; left: 60%;
+  background: radial-gradient(circle, color-mix(in srgb, #fff 4%, transparent), transparent 70%);
+  animation: st-blob-3 25s var(--st-ease) infinite;
+}
+@keyframes st-blob-1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(60px, 40px) scale(1.12); }
+}
+@keyframes st-blob-2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(-50px, -30px) scale(1.08); }
+}
+@keyframes st-blob-3 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(-40px, 50px) scale(0.9); }
+}
+/* Тонкая сетка поверх — тех-минимализм */
+.studio-login__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--st-border) 40%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--st-border) 40%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 70%);
+  opacity: 0.5;
+}
+
 .studio-login__card {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 380px;
-  background: var(--st-surface);
-  border: 1px solid var(--st-border);
+  background: color-mix(in srgb, var(--st-surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--st-border-strong);
   border-radius: var(--st-radius-lg);
   padding: var(--st-space-8);
   box-shadow: var(--st-shadow);
 }
-.studio-login__head { margin-bottom: var(--st-space-6); }
+.studio-login__head { margin-bottom: var(--st-space-6); text-align: center; }
+.studio-login__logo {
+  display: inline-flex;
+  margin-bottom: var(--st-space-5);
+  color: var(--st-text);
+}
 .studio-login__head h1 { font-size: var(--st-text-xl); margin-bottom: var(--st-space-2); }
-.studio-login__head p { color: var(--st-text-muted); font-size: var(--st-text-base); margin: 0; }
+.studio-login__head p { color: var(--st-text-muted); font-size: var(--st-text-sm); font-family: var(--st-font-mono); margin: 0; }
 
 .studio-login__form { display: flex; flex-direction: column; gap: var(--st-space-4); }
 .studio-login__submit { width: 100%; justify-content: center; margin-top: var(--st-space-2); padding: var(--st-space-3); }
@@ -520,6 +593,10 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   border-radius: var(--st-radius-sm);
   padding: var(--st-space-2) var(--st-space-3);
   font-size: var(--st-text-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-login__blob { animation: none !important; }
 }
 
 /* ============================================================================

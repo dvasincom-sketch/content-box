@@ -1,0 +1,52 @@
+postgresql://contentbox_db_user:pm1DYQuRfLrERYglER3nsQmCejFasPPI@dpg-d973lf6q1p3s738bmq1g-a/contentbox_db
+
+
+DATABASE_URL="<External-URL>" npm run payload migrate
+
+
+
+postgresql://contentbox_db_user:pm1DYQuRfLrERYglER3nsQmCejFasPPI@dpg-d973lf6q1p3s738bmq1g-a.frankfurt-postgres.render.com/contentbox_db
+
+
+export PROD_DB="postgresql://contentbox_db_user:pm1DYQuRfLrERYglER3nsQmCejFasPPI@dpg-d973lf6q1p3s738bmq1g-a.frankfurt-postgres.render.com/contentbox_db?sslmode=require"
+
+
+export PROD_DB="postgresql://contentbox_db_user:pm1DYQuRfLrERYglER3nsQmCejFasPPI@dpg-d973lf6q1p3s738bmq1g-a.frankfurt-postgres.render.com/contentbox_db?sslmode=require"
+
+
+export PROD_DB="postgresql://contentbox_db_user:pm1DYQuRfLrERYglER3nsQmCejFasPPI@dpg-d973lf6q1p3s738bmq1g-a.frankfurt-postgres.render.com/contentbox_db"
+echo "${PROD_DB:+PROD_DB задан, длина ok}"
+
+export PROD_DB="postgresql://contentbox_db_user:pm1DYQuRfLrERYglER3nsQmCejFasPPI@dpg-d973lf6q1p3s738bmq1g-a.frankfurt-postgres.render.com/contentbox_db?sslmode=require"
+DATABASE_URL="$PROD_DB&sslmode=require" npm run payload migrate 2>&1 | tail -15
+
+
+
+
+DATABASE_URL="postgresql://contentbox_db_user:pm1DYQuRfLrERYglER3nsQmCejFasPPI@dpg-d973lf6q1p3s738bmq1g-a.frankfurt-postgres.render.com/contentbox_db?sslmode=require" node --import tsx --env-file=.env -e "import {getPayload} from 'payload'; import config from '@payload-config'; const p=await getPayload({config}); const t=await p.find({collection:'tenants',limit:5,overrideAccess:true}); t.docs.forEach(d=>console.log('id:',d.id,'name:',d.name,'domain:',d.domain,'status:',d.status,'verified:',d.domainVerified)); process.exit(0)"
+
+
+
+DATABASE_URL="postgresql://contentbox_db_user:pm1DYQuRfLrERYglER3nsQmCejFasPPI@dpg-d973lf6q1p3s738bmq1g-a.frankfurt-postgres.render.com/contentbox_db?sslmode=require" PAYLOAD_SECRET="1ac7a89ba4fc05a56871af40499ce5cb6040633900b4c845d8c3bf87c8c1a6dc" node --import tsx src/seed.ts
+
+
+DATABASE_URL="postgresql://contentbox_db_user:pm1DYQuRfLrERYglER3nsQmCejFasPPI@dpg-d973lf6q1p3s738bmq1g-a.frankfurt-postgres.render.com/contentbox_db?sslmode=require" npm run payload migrate
+
+
+
+
+
+
+
+git add -A
+git commit -m "Новая админка для авторов"
+git push
+
+
+
+НОВИНКА
+За кадром: World Tour «Arirang» в Токио
+
+Boosty
+VK Видео
+Telegram
