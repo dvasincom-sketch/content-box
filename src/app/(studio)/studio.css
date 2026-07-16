@@ -1026,3 +1026,10 @@ select.studio-input {
   .settings__tier { grid-template-columns: 1fr; }
   .settings__logo { flex-direction: column; align-items: flex-start; }
 }
+
+/* Кнопка удаления в композере (edit-режим) */
+.composer__delete { margin-right: auto; }
+.composer__delete:hover:not(:disabled) {
+  color: var(--st-danger) !important;
+  border-color: color-mix(in srgb, var(--st-danger) 40%, transparent) !important;
+}
