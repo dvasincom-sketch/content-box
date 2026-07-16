@@ -83,6 +83,8 @@
      Inter, заголовки чуть плотнее. Fallback на системный стек. */
   --st-font-body: var(--font-inter, ui-sans-serif, system-ui, -apple-system, sans-serif);
   --st-font-head: var(--font-manrope, var(--font-inter, ui-sans-serif, system-ui, sans-serif));
+  /* IBM Plex Mono — «печатная машинка» для навигации и подзаголовков */
+  --st-font-mono: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 
   /* Тайп-шкала */
   --st-text-xs:   12px;
@@ -1275,3 +1277,28 @@ select.studio-input {
 .rte__editable li { margin-bottom: var(--st-space-1); }
 .rte__editable strong { font-weight: 700; }
 .rte__editable em { font-style: italic; }
+
+/* ============================================================================
+   IBM PLEX MONO — «печатная машинка» на навигации и подзаголовках
+   Точечный акцент: меню слева + подписи-подзаголовки. Основной текст и
+   крупные заголовки остаются на Inter/Manrope (сохраняем строгость Linear).
+   ============================================================================ */
+
+/* Меню (левая навигация) */
+.studio-nav__item {
+  font-family: var(--st-font-mono);
+  font-size: var(--st-text-sm);
+  letter-spacing: -0.01em;
+}
+.studio-nav__brand-sub { font-family: var(--st-font-mono); }
+
+/* Подзаголовки страниц (подпись под H1) */
+.studio-page-head__sub { font-family: var(--st-font-mono); letter-spacing: -0.01em; }
+
+/* Подзаголовки секций/блоков (настройки, дашборд, профиль) */
+.settings__block-head p,
+.dash__section-head h2,
+.composer__hint,
+.settings__hint {
+  font-family: var(--st-font-mono);
+}
