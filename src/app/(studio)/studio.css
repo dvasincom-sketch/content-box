@@ -501,31 +501,26 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   overflow: hidden;
 }
 
-/* --- Декоративный фон: сетка ярче по краям, мягче к центру (под карточкой) --- */
+/* --- Декоративный фон: чистая глубина (карточка выступает из темноты) --- */
 .studio-login__bg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: var(--st-bg);
+  /* Глубокий тёмный фон + едва уловимое осветление к центру. Два наложенных
+     радиальных градиента дают мягкую «глубину» без сетки и без анимации —
+     фон молчит, чтобы звучали логотип и форма (принцип брендбука). */
+  background:
+    radial-gradient(900px 620px at 50% 40%, color-mix(in srgb, var(--st-surface) 60%, transparent), transparent 72%),
+    radial-gradient(1400px 900px at 50% 42%, color-mix(in srgb, var(--st-surface-2) 40%, transparent), transparent 80%),
+    var(--st-bg);
   pointer-events: none;
   overflow: hidden;
 }
-
-/*
-  Сетка обрамляет вход: отчётливая по периметру, деликатно гаснет к центру
-  под карточкой (инвертированная радиальная маска — прозрачно в центре,
-  непрозрачно к краям). Центрального свечения нет, чтобы не размывать линии.
-*/
+/* Лёгкая виньетка по краям — усиливает ощущение глубины */
 .studio-login__grid {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(color-mix(in srgb, var(--st-border-strong) 75%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--st-border-strong) 75%, transparent) 1px, transparent 1px);
-  background-size: 56px 56px;
-  /* прозрачно в центре (сетка тает под карточкой) → непрозрачно к краям */
-  mask-image: radial-gradient(ellipse 46% 52% at 50% 46%, transparent 30%, #000 78%);
-  -webkit-mask-image: radial-gradient(ellipse 46% 52% at 50% 46%, transparent 30%, #000 78%);
+  background: radial-gradient(ellipse 80% 80% at 50% 42%, transparent 55%, color-mix(in srgb, #000 45%, transparent) 100%);
 }
 
 /* --- Карточка с градиентной обводкой (тёмно-серый → светло-серый) --- */
