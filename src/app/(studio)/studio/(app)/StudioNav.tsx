@@ -50,10 +50,10 @@ export function StudioNav({ authorEmail, brandName }: { authorEmail: string; bra
       </nav>
 
       <div className="studio-nav__footer">
-        <div className="studio-nav__user">
+        <Link href="/studio/profile" className="studio-nav__user" title="Профиль">
           <div className="studio-nav__avatar">{authorEmail.charAt(0).toUpperCase()}</div>
-          <span className="studio-nav__email" title={authorEmail}>{authorEmail}</span>
-        </div>
+          <span className="studio-nav__email">{authorEmail}</span>
+        </Link>
         <a href="/studio/logout" className="studio-nav__logout" title="Выйти">
           <LogOut size={16} />
         </a>

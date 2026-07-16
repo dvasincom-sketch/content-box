@@ -1165,3 +1165,43 @@ select.studio-input {
   .dash__actions { grid-template-columns: 1fr; }
   .dash__mini-cat, .dash__mini-date { display: none; }
 }
+
+/* ============================================================================
+   ПРОФИЛЬ
+   ============================================================================ */
+
+.profile__info { display: flex; flex-direction: column; gap: var(--st-space-1); }
+.profile__info-row {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-3);
+  padding: var(--st-space-3) 0;
+  border-bottom: 1px solid var(--st-border);
+}
+.profile__info-row:last-child { border-bottom: none; }
+.profile__info-icon { color: var(--st-text-faint); flex-shrink: 0; }
+.profile__info-label {
+  width: 60px;
+  font-size: var(--st-text-sm);
+  color: var(--st-text-muted);
+  flex-shrink: 0;
+}
+.profile__info-value {
+  font-size: var(--st-text-base);
+  font-weight: 550;
+  color: var(--st-text);
+  word-break: break-all;
+}
+
+.profile__form { display: flex; flex-direction: column; gap: var(--st-space-4); max-width: 380px; }
+.profile__logout { align-self: flex-start; }
+.profile__logout:hover { color: var(--st-danger) !important; border-color: color-mix(in srgb, var(--st-danger) 40%, transparent) !important; }
+
+/* Кликабельный блок пользователя в сайдбаре */
+.studio-nav__user {
+  border-radius: var(--st-radius-sm);
+  padding: var(--st-space-1);
+  margin: calc(var(--st-space-1) * -1);
+  transition: background var(--st-dur) var(--st-ease);
+}
+.studio-nav__user:hover { background: var(--st-surface-hover); }
