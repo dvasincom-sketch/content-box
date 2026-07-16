@@ -300,6 +300,16 @@
 .studio-page-head h1 { font-size: var(--st-text-2xl); }
 .studio-page-head__sub { color: var(--st-text-muted); font-size: var(--st-text-base); margin-top: var(--st-space-1); }
 
+.studio-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--st-space-1);
+  color: var(--st-text-muted);
+  font-size: var(--st-text-sm);
+  transition: color var(--st-dur) var(--st-ease);
+}
+.studio-back:hover { color: var(--st-text); }
+
 .studio-btn {
   display: inline-flex;
   align-items: center;
@@ -319,6 +329,12 @@
 .studio-btn--primary { background: var(--st-accent); color: var(--st-accent-text); }
 .studio-btn--primary:hover:not(:disabled) { background: var(--st-accent-hover); }
 
+/* Кнопки часто рендерятся как <Link> (=<a>). Правило .studio-root a{color:inherit}
+   перебивало бы цвет текста кнопки — форсируем цвета явно для a.studio-btn. */
+a.studio-btn--primary { color: var(--st-accent-text); }
+a.studio-btn--ghost { color: var(--st-text-muted); }
+a.studio-btn--ghost:hover { color: var(--st-text); }
+
 .studio-btn--ghost { background: transparent; color: var(--st-text-muted); border-color: var(--st-border); }
 .studio-btn--ghost:hover:not(:disabled) { background: var(--st-surface-hover); color: var(--st-text); }
 
@@ -328,6 +344,121 @@
   border-radius: var(--st-radius);
   padding: var(--st-space-6);
 }
+
+/* ============================================================================
+   ЛЕНТА ПУБЛИКАЦИЙ
+   ============================================================================ */
+
+.studio-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+  max-width: 900px;
+}
+
+.studio-row {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-4);
+  padding: var(--st-space-3) var(--st-space-4);
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  transition: background var(--st-dur) var(--st-ease), border-color var(--st-dur) var(--st-ease);
+}
+.studio-row:hover { background: var(--st-surface-2); border-color: var(--st-border-strong); }
+
+.studio-row__cover {
+  width: 56px;
+  height: 42px;
+  border-radius: var(--st-radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--st-surface-2);
+}
+.studio-row__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.studio-row__cover-empty {
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, var(--st-surface-2), var(--st-surface-hover));
+}
+
+.studio-row__main { flex: 1; min-width: 0; }
+.studio-row__title {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  font-size: var(--st-text-md);
+  font-weight: 550;
+  color: var(--st-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.studio-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  margin-top: 2px;
+  font-size: var(--st-text-sm);
+  color: var(--st-text-muted);
+}
+.studio-row__dot { color: var(--st-text-faint); }
+
+/* --- Статусы --------------------------------------------------------------- */
+.studio-status {
+  flex-shrink: 0;
+  font-size: var(--st-text-xs);
+  font-weight: 600;
+  padding: var(--st-space-1) var(--st-space-2);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.studio-status--published {
+  color: var(--st-success);
+  background: color-mix(in srgb, var(--st-success) 12%, transparent);
+}
+.studio-status--draft {
+  color: var(--st-text-muted);
+  background: var(--st-surface-2);
+}
+
+/* --- Теги ------------------------------------------------------------------ */
+.studio-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 1px var(--st-space-2);
+  border-radius: 999px;
+}
+.studio-tag--featured {
+  color: var(--st-accent-text);
+  background: var(--st-accent);
+}
+
+/* --- Пустое состояние ------------------------------------------------------ */
+.studio-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--st-space-3);
+  padding: var(--st-space-10) var(--st-space-6);
+  background: var(--st-surface);
+  border: 1px dashed var(--st-border-strong);
+  border-radius: var(--st-radius-lg);
+  max-width: 480px;
+  margin: var(--st-space-8) auto 0;
+}
+.studio-empty__icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--st-surface-2);
+  color: var(--st-text-muted);
+}
+.studio-empty__title { font-size: var(--st-text-lg); font-weight: 600; }
+.studio-empty__text { color: var(--st-text-muted); font-size: var(--st-text-base); margin-bottom: var(--st-space-2); }
 
 /* ============================================================================
    ПОЛЯ ВВОДА
