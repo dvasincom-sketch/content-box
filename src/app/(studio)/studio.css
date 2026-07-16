@@ -501,7 +501,7 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   overflow: hidden;
 }
 
-/* --- Декоративный фон: подложка + сетка + светящиеся узлы --- */
+/* --- Декоративный фон: подложка + сетка + пробегающее свечение --- */
 .studio-login__bg {
   position: absolute;
   inset: 0;
@@ -510,49 +510,68 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
     radial-gradient(1000px 700px at 50% 30%, color-mix(in srgb, var(--st-surface-2) 70%, transparent), transparent 75%),
     var(--st-bg);
   pointer-events: none;
+  overflow: hidden;
 }
 
-/* Сетка — статичная, с радиальной маской к центру */
+/* Базовая сетка — статичная, тусклая, с радиальной маской к центру */
 .studio-login__grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(color-mix(in srgb, var(--st-border) 55%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--st-border) 55%, transparent) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--st-border) 50%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--st-border) 50%, transparent) 1px, transparent 1px);
   background-size: 54px 54px;
   mask-image: radial-gradient(circle at 50% 42%, #000 0%, transparent 72%);
   -webkit-mask-image: radial-gradient(circle at 50% 42%, #000 0%, transparent 72%);
   opacity: 0.6;
 }
 
-/* Слой узлов */
-.studio-login__nodes { position: absolute; inset: 0; }
-
-/* Светящийся узел: точка + ореол. Анимируется только opacity → плавно, без рывков. */
-.studio-login__node {
+/* Слои свечения: та же сетка, но ЯРКАЯ (белым), показана только узкой
+   движущейся полосой через mask. Полоса едет — свечение «пробегает» по линиям. */
+.studio-login__sweep {
   position: absolute;
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px; /* центрируем на координате */
-  border-radius: 50%;
-  background: var(--st-accent);
-  opacity: 0;
-  animation-name: st-node-glow;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  will-change: opacity;
+  inset: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--st-accent) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--st-accent) 55%, transparent) 1px, transparent 1px);
+  background-size: 54px 54px;
+  will-change: mask-position, -webkit-mask-position;
 }
-/* Ореол вокруг точки */
-.studio-login__node::after {
+
+/* Горизонтальная волна: узкая вертикальная полоса-маска едет слева направо */
+.studio-login__sweep--h {
+  -webkit-mask-image: linear-gradient(90deg, transparent 44%, #000 50%, transparent 56%);
+  mask-image: linear-gradient(90deg, transparent 44%, #000 50%, transparent 56%);
+  -webkit-mask-size: 250% 100%;
+  mask-size: 250% 100%;
+  animation: st-sweep-h 7s linear infinite;
+  opacity: 0.7;
+}
+@keyframes st-sweep-h {
+  0% { -webkit-mask-position: 120% 0; mask-position: 120% 0; }
+  100% { -webkit-mask-position: -20% 0; mask-position: -20% 0; }
+}
+
+/* Диагональная волна: полоса под углом, едет сверху-вниз, другой ритм */
+.studio-login__sweep--d {
+  -webkit-mask-image: linear-gradient(135deg, transparent 46%, #000 50%, transparent 54%);
+  mask-image: linear-gradient(135deg, transparent 46%, #000 50%, transparent 54%);
+  -webkit-mask-size: 220% 220%;
+  mask-size: 220% 220%;
+  animation: st-sweep-d 11s linear infinite;
+  opacity: 0.45;
+}
+@keyframes st-sweep-d {
+  0% { -webkit-mask-position: 0 -20%; mask-position: 0 -20%; }
+  100% { -webkit-mask-position: 100% 120%; mask-position: 100% 120%; }
+}
+
+/* Радиальная маска к центру для всех слоёв свечения — чтобы гасли к краям */
+.studio-login__sweep::after {
   content: '';
   position: absolute;
-  inset: -9px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--st-accent) 55%, transparent), transparent 70%);
-}
-@keyframes st-node-glow {
-  0%, 100% { opacity: 0; transform: scale(0.6); }
-  50% { opacity: 0.9; transform: scale(1); }
+  inset: 0;
+  background: radial-gradient(circle at 50% 42%, transparent 0%, var(--st-bg) 78%);
 }
 
 .studio-login__card {
@@ -589,7 +608,7 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .studio-login__node { animation: none !important; opacity: 0.5 !important; }
+  .studio-login__sweep { animation: none !important; opacity: 0 !important; }
 }
 
 /* ============================================================================
