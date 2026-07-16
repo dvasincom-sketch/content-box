@@ -254,7 +254,12 @@ export function Composer({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
-          {slugText && <div className="composer__slug">/{slugText}</div>}
+          {slugText && (
+            <div className="composer__slug">
+              /{slugText}
+              {!isEdit && <span className="composer__slug-caret" aria-hidden />}
+            </div>
+          )}
 
           {coverUrl ? (
             <div className="composer__cover">

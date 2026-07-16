@@ -1302,3 +1302,123 @@ select.studio-input {
 .settings__hint {
   font-family: var(--st-font-mono);
 }
+
+/* ============================================================================
+   АНИМАЦИИ (сдержанные, Linear-стиль)
+   Всё уважает prefers-reduced-motion (см. правило в начале файла — там
+   transition/animation глушатся; добавим сюда явное отключение для новых).
+   ============================================================================ */
+
+/* --- 1. Появление контента страницы --- */
+@keyframes st-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Заголовок страницы и основные блоки мягко «оседают» при загрузке */
+.studio-main > .studio-page-head,
+.studio-main > .studio-card,
+.studio-main > .settings,
+.studio-main > .dash__stats,
+.studio-main > .dash__actions,
+.studio-main > .dash__section,
+.studio-main > .studio-empty,
+.studio-main > .composer,
+.studio-main > .catmgr__tree,
+.studio-main > .studio-list {
+  animation: st-rise 340ms var(--st-ease) both;
+}
+
+/* Небольшой каскад: блоки после заголовка — с нарастающей задержкой */
+.studio-main > *:nth-child(2) { animation-delay: 40ms; }
+.studio-main > *:nth-child(3) { animation-delay: 80ms; }
+.studio-main > *:nth-child(4) { animation-delay: 120ms; }
+.studio-main > *:nth-child(5) { animation-delay: 160ms; }
+
+/* --- 2. Стаггер списков (лента, дерево, мини-ленты дашборда) --- */
+@keyframes st-item {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.studio-list > .studio-row,
+.dash__mini > .dash__mini-row,
+.catmgr__tree > .catmgr__row {
+  animation: st-item 300ms var(--st-ease) both;
+}
+/* Задержки для первых ~12 строк — дальше все появляются вместе (без «ожидания») */
+.studio-list > .studio-row:nth-child(1),
+.dash__mini > .dash__mini-row:nth-child(1) { animation-delay: 30ms; }
+.studio-list > .studio-row:nth-child(2),
+.dash__mini > .dash__mini-row:nth-child(2) { animation-delay: 55ms; }
+.studio-list > .studio-row:nth-child(3),
+.dash__mini > .dash__mini-row:nth-child(3) { animation-delay: 80ms; }
+.studio-list > .studio-row:nth-child(4),
+.dash__mini > .dash__mini-row:nth-child(4) { animation-delay: 105ms; }
+.studio-list > .studio-row:nth-child(5),
+.dash__mini > .dash__mini-row:nth-child(5) { animation-delay: 130ms; }
+.studio-list > .studio-row:nth-child(6) { animation-delay: 155ms; }
+.studio-list > .studio-row:nth-child(7) { animation-delay: 180ms; }
+.studio-list > .studio-row:nth-child(8) { animation-delay: 205ms; }
+.studio-list > .studio-row:nth-child(9) { animation-delay: 230ms; }
+.studio-list > .studio-row:nth-child(10) { animation-delay: 255ms; }
+
+/* --- 3. Индикатор активного пункта навигации (фирменный штрих) --- */
+/* Белая полоска слева у активного пункта, плавно проявляется */
+.studio-nav__item { position: relative; }
+.studio-nav__item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 0 3px 3px 0;
+  background: var(--st-accent);
+  transform: translateY(-50%);
+  transition: height var(--st-dur) var(--st-ease);
+}
+.studio-nav__item.is-active::before { height: 18px; }
+
+/* --- 4. Микро-фидбек: появление галочек/успеха --- */
+@keyframes st-pop {
+  0%   { opacity: 0; transform: scale(0.7); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.settings__saved,
+.catpick__check {
+  animation: st-pop 260ms var(--st-ease) both;
+}
+
+/* Отключение всех новых анимаций при reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .studio-main > *,
+  .studio-list > *,
+  .dash__mini > *,
+  .catmgr__tree > *,
+  .settings__saved,
+  .catpick__check {
+    animation: none !important;
+  }
+  .studio-nav__item::before { transition: none !important; }
+}
+
+/* --- Эффект «печати» slug в композере: мигающая каретка --- */
+.composer__slug { transition: opacity var(--st-dur) var(--st-ease); }
+.composer__slug-caret {
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: var(--st-text-faint);
+  animation: st-caret 1s steps(1) infinite;
+}
+@keyframes st-caret {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer__slug-caret { animation: none !important; opacity: 0; }
+}
