@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ImagePlus, X, Loader2 } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
+import { CategoryPicker, type CatItem } from './CategoryPicker'
 
-type Category = { id: number | string; title: string }
+type Category = CatItem
 type Tier = { id: number | string; name: string; weight: number; priceRub: number }
 
 export function Composer({ categories, tiers }: { categories: Category[]; tiers: Tier[] }) {
@@ -199,18 +200,11 @@ export function Composer({ categories, tiers }: { categories: Category[]; tiers:
 
           <div className="composer__field">
             <div className="composer__field-label">Категория</div>
-            <select
-              className="studio-input"
+            <CategoryPicker
+              categories={categories}
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              <option value="">Без категории</option>
-              {categories.map((c) => (
-                <option key={c.id} value={String(c.id)}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
+              onChange={setCategoryId}
+            />
           </div>
         </aside>
       </div>
