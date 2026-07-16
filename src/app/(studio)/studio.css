@@ -501,28 +501,31 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   overflow: hidden;
 }
 
-/* --- Декоративный фон: едва заметная статичная сетка --- */
+/* --- Декоративный фон: сетка ярче по краям, мягче к центру (под карточкой) --- */
 .studio-login__bg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background:
-    radial-gradient(1000px 700px at 50% 30%, color-mix(in srgb, var(--st-surface-2) 55%, transparent), transparent 78%),
-    var(--st-bg);
+  background: var(--st-bg);
   pointer-events: none;
   overflow: hidden;
 }
 
-/* Тонкая сплошная сетка, очень низкая яркость, гаснет к краям */
+/*
+  Сетка обрамляет вход: отчётливая по периметру, деликатно гаснет к центру
+  под карточкой (инвертированная радиальная маска — прозрачно в центре,
+  непрозрачно к краям). Центрального свечения нет, чтобы не размывать линии.
+*/
 .studio-login__grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(color-mix(in srgb, var(--st-border) 30%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--st-border) 30%, transparent) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--st-border-strong) 75%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--st-border-strong) 75%, transparent) 1px, transparent 1px);
   background-size: 56px 56px;
-  mask-image: radial-gradient(circle at 50% 42%, #000 0%, transparent 70%);
-  -webkit-mask-image: radial-gradient(circle at 50% 42%, #000 0%, transparent 70%);
+  /* прозрачно в центре (сетка тает под карточкой) → непрозрачно к краям */
+  mask-image: radial-gradient(ellipse 46% 52% at 50% 46%, transparent 30%, #000 78%);
+  -webkit-mask-image: radial-gradient(ellipse 46% 52% at 50% 46%, transparent 30%, #000 78%);
 }
 
 /* --- Карточка с градиентной обводкой (тёмно-серый → светло-серый) --- */
