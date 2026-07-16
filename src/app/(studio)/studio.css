@@ -914,3 +914,115 @@ select.studio-input {
   .catmgr__create-row { grid-template-columns: 1fr; }
   .catmgr__slug { display: none; }
 }
+
+/* ============================================================================
+   НАСТРОЙКИ
+   ============================================================================ */
+
+.settings { max-width: 720px; display: flex; flex-direction: column; gap: var(--st-space-5); }
+
+.settings__block {
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  padding: var(--st-space-6);
+}
+.settings__block-head { margin-bottom: var(--st-space-5); }
+.settings__block-head h2 { font-size: var(--st-text-lg); margin-bottom: var(--st-space-1); }
+.settings__block-head p { color: var(--st-text-muted); font-size: var(--st-text-sm); margin: 0; }
+
+.settings__err {
+  margin-top: var(--st-space-3);
+  color: var(--st-danger);
+  font-size: var(--st-text-sm);
+}
+.settings__hint { color: var(--st-text-faint); font-size: var(--st-text-sm); }
+
+.settings__save-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--st-space-3);
+  margin-top: var(--st-space-4);
+}
+.settings__saved {
+  display: inline-flex; align-items: center; gap: var(--st-space-1);
+  color: var(--st-success); font-size: var(--st-text-sm); font-weight: 550;
+}
+
+/* --- Тема --- */
+.settings__theme { display: flex; gap: var(--st-space-2); }
+.settings__theme-opt {
+  display: inline-flex; align-items: center; gap: var(--st-space-2);
+  padding: var(--st-space-3) var(--st-space-5);
+  background: var(--st-bg);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  color: var(--st-text-muted);
+  font-size: var(--st-text-base); font-weight: 550;
+  cursor: pointer;
+  transition: border-color var(--st-dur) var(--st-ease), color var(--st-dur) var(--st-ease);
+}
+.settings__theme-opt:hover { color: var(--st-text); }
+.settings__theme-opt.is-active {
+  border-color: var(--st-border-strong);
+  color: var(--st-text);
+  background: var(--st-surface-2);
+}
+
+/* --- Логотип --- */
+.settings__logo { display: flex; align-items: center; gap: var(--st-space-5); }
+.settings__logo-preview {
+  width: 120px; height: 60px;
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-bg);
+  display: grid; place-items: center;
+  overflow: hidden;
+}
+.settings__logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.settings__logo-empty {
+  width: 120px; height: 60px;
+  border: 1px dashed var(--st-border-strong);
+  border-radius: var(--st-radius-sm);
+  display: grid; place-items: center;
+  color: var(--st-text-faint);
+  font-size: var(--st-text-xs);
+}
+
+/* --- Соцсети --- */
+.settings__socials { display: flex; flex-direction: column; gap: var(--st-space-3); }
+.settings__social-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  gap: var(--st-space-2);
+  align-items: center;
+}
+.settings__add { align-self: flex-start; }
+
+/* --- Уровни --- */
+.settings__tiers { display: flex; flex-direction: column; gap: var(--st-space-3); }
+.settings__tier {
+  display: grid;
+  grid-template-columns: 1fr 150px auto auto;
+  gap: var(--st-space-3);
+  align-items: center;
+  padding: var(--st-space-3);
+  background: var(--st-bg);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+}
+.settings__tier-price { position: relative; display: flex; align-items: center; gap: var(--st-space-2); }
+.settings__tier-rub { color: var(--st-text-faint); font-size: var(--st-text-sm); white-space: nowrap; }
+.settings__tier-active {
+  display: inline-flex; align-items: center; gap: var(--st-space-2);
+  font-size: var(--st-text-sm); color: var(--st-text-muted);
+  white-space: nowrap; cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .settings__social-row { grid-template-columns: 1fr auto; }
+  .settings__social-platform { grid-column: 1 / -1; }
+  .settings__tier { grid-template-columns: 1fr; }
+  .settings__logo { flex-direction: column; align-items: flex-start; }
+}
