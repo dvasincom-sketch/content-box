@@ -2,18 +2,18 @@
 
 import React, { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  ChevronRight,
-  Plus,
-  Pencil,
-  Trash2,
-  Check,
-  X,
-  Loader2,
-  FolderTree,
-} from 'lucide-react'
+import { ChevronRight, Plus, Pencil, Trash2, Loader2, FolderTree, Image as ImageIcon } from 'lucide-react'
+import { CategoryEditPanel, type EditableCat } from './CategoryEditPanel'
 
-type Cat = { id: number | string; title: string; slug: string; parentId: number | string | null }
+type Cat = {
+  id: number | string
+  title: string
+  slug: string
+  parentId: number | string | null
+  descriptionHtml: string
+  coverId: number | null
+  coverUrl: string | null
+}
 type TreeNode = Cat & { children: TreeNode[] }
 
 function buildTree(items: Cat[]): TreeNode[] {
@@ -37,14 +37,11 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
   const router = useRouter()
   const [cats] = useState<Cat[]>(initialCategories)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [busy, setBusy] = useState<string | null>(null) // id операции
+  const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Инлайн-редактирование: id → черновик названия
-  const [editing, setEditing] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
+  const [editingCat, setEditingCat] = useState<EditableCat | null>(null)
 
-  // Форма создания
   const [creating, setCreating] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newParent, setNewParent] = useState<string>('')
@@ -59,7 +56,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
     })
   }
 
-  async function refresh() {
+  function refresh() {
     router.refresh()
   }
 
@@ -78,13 +75,12 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
         body: JSON.stringify({ title: newTitle.trim(), parentId: newParent || undefined }),
       })
       const json = await res.json()
-      if (!res.ok) {
-        setError(json.error || 'Не удалось создать')
-      } else {
+      if (!res.ok) setError(json.error || 'Не удалось создать')
+      else {
         setNewTitle('')
         setNewParent('')
         setCreating(false)
-        await refresh()
+        refresh()
       }
     } catch {
       setError('Ошибка соединения')
@@ -93,37 +89,15 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
     }
   }
 
-  function startEdit(node: TreeNode) {
-    setEditing(String(node.id))
-    setEditTitle(node.title)
-    setError(null)
-  }
-
-  async function saveEdit(id: string) {
-    if (!editTitle.trim()) {
-      setError('Название не может быть пустым')
-      return
-    }
-    setBusy(id)
-    try {
-      const res = await fetch('/studio/api/categories/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ id, title: editTitle.trim() }),
-      })
-      const json = await res.json()
-      if (!res.ok) {
-        setError(json.error || 'Не удалось сохранить')
-      } else {
-        setEditing(null)
-        await refresh()
-      }
-    } catch {
-      setError('Ошибка соединения')
-    } finally {
-      setBusy(null)
-    }
+  function openEdit(node: TreeNode) {
+    setEditingCat({
+      id: node.id,
+      title: node.title,
+      slug: node.slug,
+      descriptionHtml: node.descriptionHtml,
+      coverId: node.coverId,
+      coverUrl: node.coverUrl,
+    })
   }
 
   async function removeCat(node: TreeNode) {
@@ -139,11 +113,8 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
         body: JSON.stringify({ id: node.id }),
       })
       const json = await res.json()
-      if (!res.ok) {
-        setError(json.error || 'Не удалось удалить')
-      } else {
-        await refresh()
-      }
+      if (!res.ok) setError(json.error || 'Не удалось удалить')
+      else refresh()
     } catch {
       setError('Ошибка соединения')
     } finally {
@@ -172,7 +143,6 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
 
       {error && <div className="studio-login__error" style={{ marginBottom: 'var(--st-space-4)' }}>{error}</div>}
 
-      {/* Форма создания */}
       {creating && (
         <div className="studio-card catmgr__create">
           <div className="catmgr__create-row">
@@ -215,7 +185,6 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
         </div>
       )}
 
-      {/* Дерево */}
       {cats.length === 0 ? (
         <div className="studio-empty">
           <div className="studio-empty__icon">
@@ -233,17 +202,23 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
               depth={0}
               expanded={expanded}
               onToggle={toggle}
-              editing={editing}
-              editTitle={editTitle}
-              setEditTitle={setEditTitle}
-              onStartEdit={startEdit}
-              onSaveEdit={saveEdit}
-              onCancelEdit={() => setEditing(null)}
+              onEdit={openEdit}
               onRemove={removeCat}
               busy={busy}
             />
           ))}
         </div>
+      )}
+
+      {editingCat && (
+        <CategoryEditPanel
+          cat={editingCat}
+          onClose={() => setEditingCat(null)}
+          onSaved={() => {
+            setEditingCat(null)
+            refresh()
+          }}
+        />
       )}
     </>
   )
@@ -254,12 +229,7 @@ function CatRow({
   depth,
   expanded,
   onToggle,
-  editing,
-  editTitle,
-  setEditTitle,
-  onStartEdit,
-  onSaveEdit,
-  onCancelEdit,
+  onEdit,
   onRemove,
   busy,
 }: {
@@ -267,19 +237,13 @@ function CatRow({
   depth: number
   expanded: Set<string>
   onToggle: (id: string) => void
-  editing: string | null
-  editTitle: string
-  setEditTitle: (v: string) => void
-  onStartEdit: (n: TreeNode) => void
-  onSaveEdit: (id: string) => void
-  onCancelEdit: () => void
+  onEdit: (n: TreeNode) => void
   onRemove: (n: TreeNode) => void
   busy: string | null
 }) {
   const id = String(node.id)
   const hasChildren = node.children.length > 0
   const isOpen = expanded.has(id)
-  const isEditing = editing === id
   const isBusy = busy === id
 
   return (
@@ -293,45 +257,31 @@ function CatRow({
           <span className="catmgr__toggle catmgr__toggle--empty" />
         )}
 
-        {isEditing ? (
-          <div className="catmgr__edit">
-            <input
-              className="studio-input"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSaveEdit(id)
-                if (e.key === 'Escape') onCancelEdit()
-              }}
-              autoFocus
-            />
-            <button className="catmgr__icon-btn catmgr__icon-btn--ok" onClick={() => onSaveEdit(id)} disabled={isBusy} title="Сохранить">
-              {isBusy ? <Loader2 size={15} className="spin" /> : <Check size={15} />}
-            </button>
-            <button className="catmgr__icon-btn" onClick={onCancelEdit} title="Отмена">
-              <X size={15} />
-            </button>
-          </div>
+        {node.coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={node.coverUrl} alt="" className="catmgr__thumb" />
         ) : (
-          <>
-            <span className="catmgr__title">{node.title}</span>
-            <span className="catmgr__slug">/{node.slug}</span>
-            {hasChildren && <span className="catmgr__count">{node.children.length}</span>}
-            <div className="catmgr__actions">
-              <button className="catmgr__icon-btn" onClick={() => onStartEdit(node)} title="Переименовать">
-                <Pencil size={15} />
-              </button>
-              <button
-                className="catmgr__icon-btn catmgr__icon-btn--danger"
-                onClick={() => onRemove(node)}
-                disabled={isBusy}
-                title="Удалить"
-              >
-                {isBusy ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
-              </button>
-            </div>
-          </>
+          <span className="catmgr__thumb catmgr__thumb--empty" aria-hidden>
+            <ImageIcon size={12} />
+          </span>
         )}
+
+        <span className="catmgr__title">{node.title}</span>
+        <span className="catmgr__slug">/{node.slug}</span>
+        {hasChildren && <span className="catmgr__count">{node.children.length}</span>}
+        <div className="catmgr__actions">
+          <button className="catmgr__icon-btn" onClick={() => onEdit(node)} title="Редактировать">
+            <Pencil size={15} />
+          </button>
+          <button
+            className="catmgr__icon-btn catmgr__icon-btn--danger"
+            onClick={() => onRemove(node)}
+            disabled={isBusy}
+            title="Удалить"
+          >
+            {isBusy ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />}
+          </button>
+        </div>
       </div>
 
       {hasChildren &&
@@ -343,12 +293,7 @@ function CatRow({
             depth={depth + 1}
             expanded={expanded}
             onToggle={onToggle}
-            editing={editing}
-            editTitle={editTitle}
-            setEditTitle={setEditTitle}
-            onStartEdit={onStartEdit}
-            onSaveEdit={onSaveEdit}
-            onCancelEdit={onCancelEdit}
+            onEdit={onEdit}
             onRemove={onRemove}
             busy={busy}
           />

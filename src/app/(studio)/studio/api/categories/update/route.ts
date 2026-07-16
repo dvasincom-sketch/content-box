@@ -3,9 +3,10 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { slugify } from '@/lib/slugify'
+import { htmlToLexical } from '@/lib/lexical'
 
 /**
- * Редактирование категории: title, slug, parent.
+ * Редактирование категории: title, slug, parent, description, cover.
  *
  * Смена родителя безопасна благодаря nestedDocsPlugin (сам пересчитает
  * breadcrumbs/fullTitle потомков), НО плагин НЕ защищает от цикла (назначить
@@ -44,6 +45,21 @@ export async function POST(req: NextRequest) {
 
   if (typeof data.slug === 'string') {
     patch.slug = slugify(data.slug) || undefined
+  }
+
+  // Описание категории: HTML из редактора → Lexical (как у постов)
+  if (typeof data.description === 'string') {
+    patch.description = htmlToLexical(data.description)
+  }
+
+  // Обложка: число → установить (с проверкой тенанта), null → очистить
+  if ('coverId' in data) {
+    if (data.coverId == null) {
+      patch.cover = null
+    } else {
+      const coverOk = await belongsToTenant(payload, 'media', data.coverId, tenantId)
+      patch.cover = coverOk ? Number(data.coverId) : null
+    }
   }
 
   // Смена родителя
