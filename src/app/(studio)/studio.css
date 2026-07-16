@@ -519,3 +519,140 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   padding: var(--st-space-2) var(--st-space-3);
   font-size: var(--st-text-sm);
 }
+
+/* ============================================================================
+   КОМПОЗЕР
+   ============================================================================ */
+
+.composer { max-width: 1040px; }
+
+.composer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--st-space-4);
+  margin-bottom: var(--st-space-6);
+}
+.composer__actions { display: flex; gap: var(--st-space-2); }
+
+.composer__error { margin-bottom: var(--st-space-4); }
+
+.composer__grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: var(--st-space-6);
+  align-items: start;
+}
+
+/* --- Центр ----------------------------------------------------------------- */
+.composer__main { min-width: 0; }
+
+.composer__title {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--st-text);
+  font-family: var(--st-font-head);
+  font-size: var(--st-text-2xl);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  padding: 0;
+  margin-bottom: var(--st-space-2);
+}
+.composer__title::placeholder { color: var(--st-text-faint); }
+
+.composer__slug {
+  font-size: var(--st-text-sm);
+  color: var(--st-text-faint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  margin-bottom: var(--st-space-5);
+}
+
+/* Обложка */
+.composer__cover-add {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  padding: var(--st-space-3) var(--st-space-4);
+  background: var(--st-surface);
+  border: 1px dashed var(--st-border-strong);
+  border-radius: var(--st-radius);
+  color: var(--st-text-muted);
+  font-size: var(--st-text-base);
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: var(--st-space-5);
+  transition: background var(--st-dur) var(--st-ease), color var(--st-dur) var(--st-ease);
+}
+.composer__cover-add:hover:not(:disabled) { background: var(--st-surface-hover); color: var(--st-text); }
+.composer__cover-add:disabled { opacity: .6; cursor: wait; }
+
+.composer__cover {
+  position: relative;
+  border-radius: var(--st-radius);
+  overflow: hidden;
+  margin-bottom: var(--st-space-5);
+  border: 1px solid var(--st-border);
+  max-width: 100%;
+}
+.composer__cover img { width: 100%; max-height: 360px; object-fit: cover; display: block; }
+.composer__cover-remove {
+  position: absolute;
+  top: var(--st-space-3);
+  right: var(--st-space-3);
+  width: 30px; height: 30px;
+  border-radius: var(--st-radius-sm);
+  border: none;
+  background: rgba(0,0,0,.6);
+  color: #fff;
+  display: grid; place-items: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+.composer__cover-remove:hover { background: rgba(0,0,0,.8); }
+
+/* Тело */
+.composer__body {
+  resize: vertical;
+  min-height: 280px;
+  line-height: 1.6;
+  font-size: var(--st-text-md);
+}
+
+/* --- Правая панель --------------------------------------------------------- */
+.composer__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-5);
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  padding: var(--st-space-5);
+  position: sticky;
+  top: var(--st-space-6);
+}
+.composer__field { display: flex; flex-direction: column; gap: var(--st-space-2); }
+.composer__field-label { font-size: var(--st-text-sm); font-weight: 600; color: var(--st-text); }
+.composer__hint { font-size: var(--st-text-xs); color: var(--st-text-faint); line-height: 1.4; }
+
+/* select наследует .studio-input, добавим стрелку-совместимость */
+select.studio-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--st-space-3) center;
+  padding-right: var(--st-space-8);
+  cursor: pointer;
+}
+
+/* Спиннер */
+.spin { animation: st-spin 0.8s linear infinite; }
+@keyframes st-spin { to { transform: rotate(360deg); } }
+
+/* --- Мобилка композера ----------------------------------------------------- */
+@media (max-width: 860px) {
+  .composer__grid { grid-template-columns: 1fr; }
+  .composer__side { position: static; }
+}

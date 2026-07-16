@@ -406,6 +406,10 @@ export interface Publication {
   cover?: (number | null) | Media;
   publishedAt?: string | null;
   category?: (number | null) | Category;
+  /**
+   * Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.
+   */
+  minTier?: (number | null) | SubscriptionTier;
   description?: {
     root: {
       type: string;
@@ -436,6 +440,36 @@ export interface Publication {
     description?: string | null;
     ogImage?: (number | null) | Media;
   };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Уровни подписки и их настройки.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscription-tiers".
+ */
+export interface SubscriptionTier {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  name: string;
+  /**
+   * Латиницей: ramyeon, soju, samgyeopsal.
+   */
+  slug: string;
+  /**
+   * Чем больше, тем выше уровень. Высший уровень открывает контент низших.
+   */
+  weight: number;
+  priceRub: number;
+  /**
+   * Краткое описание преимуществ уровня.
+   */
+  description?: string | null;
+  /**
+   * Неактивные уровни не показываются для оформления.
+   */
+  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -488,36 +522,6 @@ export interface Page {
     title?: string | null;
     description?: string | null;
   };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Уровни подписки и их настройки.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "subscription-tiers".
- */
-export interface SubscriptionTier {
-  id: number;
-  tenant?: (number | null) | Tenant;
-  name: string;
-  /**
-   * Латиницей: ramyeon, soju, samgyeopsal.
-   */
-  slug: string;
-  /**
-   * Чем больше, тем выше уровень. Высший уровень открывает контент низших.
-   */
-  weight: number;
-  priceRub: number;
-  /**
-   * Краткое описание преимуществ уровня.
-   */
-  description?: string | null;
-  /**
-   * Неактивные уровни не показываются для оформления.
-   */
-  isActive?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -874,6 +878,7 @@ export interface PublicationsSelect<T extends boolean = true> {
   cover?: T;
   publishedAt?: T;
   category?: T;
+  minTier?: T;
   description?: T;
   sources?:
     | T

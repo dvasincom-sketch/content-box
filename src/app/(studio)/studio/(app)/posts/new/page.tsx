@@ -1,29 +1,55 @@
 import React from 'react'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { getPayload } from 'payload'
+import config from '@/payload.config'
+import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { Composer } from './Composer'
 
 /**
- * Заглушка композера. Полноценное создание поста (тело, обложка, категория,
- * уровень доступа, загрузка медиа) — Шаг 3.
+ * Композер (Шаг 3). Серверная часть: подгружает категории и уровни подписки
+ * тенанта автора (scoped), передаёт в клиентский Composer.
  */
-export default function NewPostPage() {
-  return (
-    <>
-      <div className="studio-page-head">
-        <div>
-          <Link href="/studio/posts" className="studio-back">
-            <ArrowLeft size={16} />
-            К публикациям
-          </Link>
-          <h1 style={{ marginTop: 'var(--st-space-2)' }}>Новая публикация</h1>
-        </div>
-      </div>
 
-      <div className="studio-card">
-        <p style={{ margin: 0, color: 'var(--st-text-muted)' }}>
-          Композер появится на Шаге 3: заголовок, тело, обложка, категория и уровень доступа.
-        </p>
-      </div>
-    </>
-  )
+export const dynamic = 'force-dynamic'
+
+export default async function NewPostPage() {
+  const author = await getCurrentAuthor() // guard в (app)/layout гарантирует
+  const payload = await getPayload({ config: await config })
+
+  const [catsRes, tiersRes] = await Promise.all([
+    payload.find({
+      collection: 'categories',
+      where: { tenant: { equals: author!.tenantId } },
+      sort: 'title',
+      limit: 200,
+      depth: 0,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'subscription-tiers',
+      where: {
+        and: [
+          { tenant: { equals: author!.tenantId } },
+          { isActive: { equals: true } },
+        ],
+      },
+      sort: 'weight',
+      limit: 50,
+      depth: 0,
+      overrideAccess: true,
+    }),
+  ])
+
+  const categories = (catsRes.docs as any[]).map((c) => ({
+    id: c.id,
+    title: c.title || c.name || 'Без названия',
+  }))
+
+  const tiers = (tiersRes.docs as any[]).map((t) => ({
+    id: t.id,
+    name: t.name,
+    weight: t.weight,
+    priceRub: t.priceRub,
+  }))
+
+  return <Composer categories={categories} tiers={tiers} />
 }

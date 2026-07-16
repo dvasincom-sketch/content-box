@@ -31,6 +31,15 @@ export const Publications: CollectionConfig = {
     { name: 'cover', type: 'upload', relationTo: 'media', label: 'Обложка карточки' },
     { name: 'publishedAt', type: 'date', label: 'Дата публикации' },
     { name: 'category', type: 'relationship', relationTo: 'categories' },
+    {
+      name: 'minTier',
+      type: 'relationship',
+      relationTo: 'subscription-tiers',
+      label: 'Минимальный уровень доступа',
+      admin: {
+        description: 'Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.',
+      },
+    },
     { name: 'description', type: 'richText' },
     {
       name: 'sources',

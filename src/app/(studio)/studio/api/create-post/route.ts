@@ -1,0 +1,132 @@
+import { NextResponse, type NextRequest } from 'next/server'
+import { getPayload } from 'payload'
+import config from '@/payload.config'
+import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { plainTextToLexical } from '@/lib/lexical'
+import { slugify } from '@/lib/slugify'
+
+/**
+ * Создание публикации. Паттерн как у register-subscriber: серверный роут +
+ * Local API, БЕЗ прямого доступа к БД.
+ *
+ * Безопасность:
+ *  - автор берётся из сессии (getCurrentAuthor) — не из тела запроса;
+ *  - tenant проставляется из author.tenantId, клиент не может его подделать;
+ *  - категория/уровень проверяются на принадлежность тому же тенанту.
+ *
+ * Body (JSON):
+ *  { title, body, slug?, coverId?, categoryId?, minTierId?, publish }
+ *  publish=true → publishedAt=now (опубликовано); false → черновик (без даты).
+ */
+export async function POST(req: NextRequest) {
+  const author = await getCurrentAuthor()
+  if (!author) {
+    return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
+  }
+
+  let data: any
+  try {
+    data = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
+  }
+
+  const title = (data.title || '').trim()
+  if (!title) {
+    return NextResponse.json({ error: 'Укажите заголовок' }, { status: 400 })
+  }
+
+  const payload = await getPayload({ config: await config })
+  const tenantId = author.tenantId
+
+  // slug: из тела или авто из заголовка; гарантируем уникальность в тенанте
+  const baseSlug = slugify(data.slug || title) || 'post'
+  const slug = await ensureUniqueSlug(payload, tenantId, baseSlug)
+
+  // Проверка, что категория принадлежит тенанту автора
+  let categoryId: number | undefined
+  if (data.categoryId) {
+    const ok = await belongsToTenant(payload, 'categories', data.categoryId, tenantId)
+    if (ok) categoryId = Number(data.categoryId)
+  }
+
+  // Проверка, что уровень принадлежит тенанту автора
+  let minTierId: number | undefined
+  if (data.minTierId) {
+    const ok = await belongsToTenant(payload, 'subscription-tiers', data.minTierId, tenantId)
+    if (ok) minTierId = Number(data.minTierId)
+  }
+
+  // Проверка обложки (media тоже tenant-scoped)
+  let coverId: number | undefined
+  if (data.coverId) {
+    const ok = await belongsToTenant(payload, 'media', data.coverId, tenantId)
+    if (ok) coverId = Number(data.coverId)
+  }
+
+  const publish = data.publish === true
+
+  try {
+    const doc = await payload.create({
+      collection: 'publications',
+      data: {
+        title,
+        slug,
+        tenant: tenantId,
+        description: plainTextToLexical(data.body || ''),
+        ...(categoryId ? { category: categoryId } : {}),
+        ...(minTierId ? { minTier: minTierId } : {}),
+        ...(coverId ? { cover: coverId } : {}),
+        ...(publish ? { publishedAt: new Date().toISOString() } : {}),
+      } as any,
+      overrideAccess: true,
+    })
+
+    return NextResponse.json({ ok: true, id: doc.id, slug })
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message || 'Не удалось сохранить публикацию' },
+      { status: 500 },
+    )
+  }
+}
+
+/** Проверяет, что документ существует и принадлежит тенанту. */
+async function belongsToTenant(
+  payload: any,
+  collection: string,
+  id: string | number,
+  tenantId: number,
+): Promise<boolean> {
+  try {
+    const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
+    const docTenant = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
+    return Number(docTenant) === Number(tenantId)
+  } catch {
+    return false
+  }
+}
+
+/** Делает slug уникальным в пределах тенанта: post, post-2, post-3... */
+async function ensureUniqueSlug(
+  payload: any,
+  tenantId: number,
+  base: string,
+): Promise<string> {
+  let candidate = base
+  let n = 1
+  // предохранитель от бесконечного цикла
+  while (n < 100) {
+    const res = await payload.find({
+      collection: 'publications',
+      where: { and: [{ tenant: { equals: tenantId } }, { slug: { equals: candidate } }] },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    if (res.totalDocs === 0) return candidate
+    n += 1
+    candidate = `${base}-${n}`
+  }
+  return `${base}-${Date.now()}`
+}
