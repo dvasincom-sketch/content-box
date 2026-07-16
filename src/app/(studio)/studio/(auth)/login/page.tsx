@@ -6,16 +6,14 @@ import { BrandLogo } from '@/components/studio/BrandLogo'
  * Экран входа автора. Guard в layout редиректит сюда неавторизованных и уводит
  * отсюда авторизованных, поэтому страница рендерит только форму + оформление.
  *
- * Фон: тёмно-серая ПУНКТИРНАЯ сетка, по которой пробегает светлый ИМПУЛЬС
- * (пульсар) — волна подсветки катится по линиям. Анимируется background-position,
- * GPU-дёшево, плавно. Слой декоративный, aria-hidden.
+ * Фон: едва заметная статичная сетка (без анимации). Карточка — с градиентной
+ * обводкой от тёмно-серого к светло-серому. Слой фона декоративный, aria-hidden.
  */
 export default function StudioLoginPage() {
   return (
     <div className="studio-login">
       <div className="studio-login__bg" aria-hidden>
         <span className="studio-login__grid" />
-        <span className="studio-login__pulse" />
       </div>
 
       <div className="studio-login__card">

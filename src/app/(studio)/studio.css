@@ -501,98 +501,68 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   overflow: hidden;
 }
 
-/* --- Декоративный фон: пунктирная сетка + бегущий импульс (пульсар) --- */
+/* --- Декоративный фон: едва заметная статичная сетка --- */
 .studio-login__bg {
   position: absolute;
   inset: 0;
   z-index: 0;
   background:
-    radial-gradient(1000px 700px at 50% 30%, color-mix(in srgb, var(--st-surface-2) 60%, transparent), transparent 75%),
+    radial-gradient(1000px 700px at 50% 30%, color-mix(in srgb, var(--st-surface-2) 55%, transparent), transparent 78%),
     var(--st-bg);
   pointer-events: none;
   overflow: hidden;
 }
 
-/*
-  Пунктирная сетка. repeating-linear-gradient даёт «штрих-пробел» вдоль линии,
-  а второй градиент задаёт шаг между линиями. Тёмно-серый, статичный.
-  Шаг сетки — 54px, штрих 5px / пробел 5px.
-*/
+/* Тонкая сплошная сетка, очень низкая яркость, гаснет к краям */
 .studio-login__grid {
   position: absolute;
   inset: 0;
-  --cell: 54px;
-  --dash: #35353d; /* тёмно-серый пунктир (border-strong) */
   background-image:
-    /* горизонтальные пунктирные линии */
-    repeating-linear-gradient(90deg, var(--dash) 0 5px, transparent 5px 10px),
-    /* вертикальные пунктирные линии */
-    repeating-linear-gradient(0deg, var(--dash) 0 5px, transparent 5px 10px);
-  background-size:
-    100% 1px,
-    1px 100%;
-  /* повторяем линии по шагу сетки через второй слой позиционирования */
-  -webkit-mask-image:
-    repeating-linear-gradient(0deg, #000 0 1px, transparent 1px var(--cell)),
-    repeating-linear-gradient(90deg, #000 0 1px, transparent 1px var(--cell));
-  mask-image:
-    repeating-linear-gradient(0deg, #000 0 1px, transparent 1px var(--cell)),
-    repeating-linear-gradient(90deg, #000 0 1px, transparent 1px var(--cell));
-  -webkit-mask-composite: source-over;
-  mask-composite: add;
-  opacity: 0.9;
+    linear-gradient(color-mix(in srgb, var(--st-border) 30%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--st-border) 30%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(circle at 50% 42%, #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(circle at 50% 42%, #000 0%, transparent 70%);
 }
 
-/*
-  Импульс: та же пунктирная сетка, но СВЕТЛАЯ, показанная только узкой
-  диагональной полосой, которая едет по экрану — «пульсар» бежит по линиям.
-*/
-.studio-login__pulse {
-  position: absolute;
-  inset: 0;
-  --cell: 54px;
-  background-image:
-    repeating-linear-gradient(90deg, var(--st-accent) 0 5px, transparent 5px 10px),
-    repeating-linear-gradient(0deg, var(--st-accent) 0 5px, transparent 5px 10px);
-  background-size: 100% 1px, 1px 100%;
-  /* та же «решётка» из линий, что у сетки */
-  --lines:
-    repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 54px),
-    repeating-linear-gradient(90deg, #000 0 1px, transparent 1px 54px);
-  /* диагональная бегущая полоса × решётка линий = светятся только линии под полосой */
-  -webkit-mask:
-    linear-gradient(135deg, transparent 42%, #000 50%, transparent 58%) 0 0 / 260% 260% no-repeat,
-    repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 54px),
-    repeating-linear-gradient(90deg, #000 0 1px, transparent 1px 54px);
-  -webkit-mask-composite: source-in, source-over;
-  mask:
-    linear-gradient(135deg, transparent 42%, #000 50%, transparent 58%) 0 0 / 260% 260% no-repeat,
-    repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 54px),
-    repeating-linear-gradient(90deg, #000 0 1px, transparent 1px 54px);
-  mask-composite: intersect, add;
-  opacity: 0.85;
-  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--st-accent) 60%, transparent));
-  animation: st-pulse 6s linear infinite;
-  will-change: -webkit-mask-position, mask-position;
-}
-@keyframes st-pulse {
-  0%   { -webkit-mask-position: 130% 130%, 0 0, 0 0; mask-position: 130% 130%, 0 0, 0 0; }
-  100% { -webkit-mask-position: -30% -30%, 0 0, 0 0; mask-position: -30% -30%, 0 0, 0 0; }
-}
-
+/* --- Карточка с градиентной обводкой (тёмно-серый → светло-серый) --- */
 .studio-login__card {
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: 380px;
-  background: color-mix(in srgb, var(--st-surface) 85%, transparent);
+  background: color-mix(in srgb, var(--st-surface) 88%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--st-border-strong);
   border-radius: var(--st-radius-lg);
   padding: var(--st-space-8);
   box-shadow: var(--st-shadow);
+  /* прозрачная граница — под неё подкладываем градиент через ::before */
+  border: 1px solid transparent;
 }
+/* Градиентная обводка: слой чуть больше карточки, виден только по рамке
+   благодаря mask с вырезанием внутренней области. */
+.studio-login__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px; /* толщина обводки */
+  background: linear-gradient(145deg,
+    var(--st-border) 0%,
+    var(--st-border-strong) 45%,
+    color-mix(in srgb, var(--st-text) 55%, var(--st-border-strong)) 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 .studio-login__head { margin-bottom: var(--st-space-6); text-align: center; }
 .studio-login__logo {
   display: inline-flex;
@@ -611,10 +581,6 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   border-radius: var(--st-radius-sm);
   padding: var(--st-space-2) var(--st-space-3);
   font-size: var(--st-text-sm);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .studio-login__pulse { animation: none !important; opacity: 0 !important; }
 }
 
 /* ============================================================================
