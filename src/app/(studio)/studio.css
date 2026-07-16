@@ -1205,3 +1205,73 @@ select.studio-input {
   transition: background var(--st-dur) var(--st-ease);
 }
 .studio-nav__user:hover { background: var(--st-surface-hover); }
+
+/* ============================================================================
+   RICH EDITOR (тело публикации)
+   ============================================================================ */
+
+.rte {
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  background: var(--st-bg);
+  overflow: hidden;
+  margin-bottom: var(--st-space-5);
+}
+
+.rte__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: var(--st-space-2);
+  border-bottom: 1px solid var(--st-border);
+  background: var(--st-surface);
+}
+
+.rte__btn {
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  border: none; background: transparent;
+  color: var(--st-text-muted);
+  border-radius: var(--st-radius-sm);
+  cursor: pointer;
+  transition: background var(--st-dur) var(--st-ease), color var(--st-dur) var(--st-ease);
+}
+.rte__btn:hover { background: var(--st-surface-hover); color: var(--st-text); }
+.rte__btn.is-active { background: var(--st-surface-2); color: var(--st-text); }
+
+.rte__divider {
+  width: 1px;
+  height: 20px;
+  background: var(--st-border);
+  margin: 0 var(--st-space-2);
+}
+
+.rte__wrap { position: relative; }
+
+.rte__placeholder {
+  position: absolute;
+  top: var(--st-space-4);
+  left: var(--st-space-4);
+  color: var(--st-text-faint);
+  font-size: var(--st-text-md);
+  pointer-events: none;
+}
+
+.rte__editable {
+  min-height: 260px;
+  padding: var(--st-space-4);
+  font-size: var(--st-text-md);
+  line-height: 1.6;
+  color: var(--st-text);
+  outline: none;
+}
+.rte__editable:focus { outline: none; }
+
+/* Внутренняя типографика редактора */
+.rte__editable p { margin: 0 0 var(--st-space-3); }
+.rte__editable p:last-child { margin-bottom: 0; }
+.rte__editable ul,
+.rte__editable ol { margin: 0 0 var(--st-space-3); padding-left: var(--st-space-6); }
+.rte__editable li { margin-bottom: var(--st-space-1); }
+.rte__editable strong { font-weight: 700; }
+.rte__editable em { font-style: italic; }

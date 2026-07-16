@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
-import { lexicalToPlainText } from '@/lib/lexical'
+import { lexicalToHtml } from '@/lib/lexical'
 import { Composer, type PostInitial } from '../new/Composer'
 
 /**
@@ -83,7 +83,7 @@ export default async function EditPostPage({
   const initial: PostInitial = {
     id: post.id,
     title: post.title || '',
-    body: lexicalToPlainText(post.description),
+    body: lexicalToHtml(post.description),
     slug: post.slug || '',
     categoryId,
     minTierId,

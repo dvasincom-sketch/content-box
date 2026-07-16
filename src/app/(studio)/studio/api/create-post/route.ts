@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
-import { plainTextToLexical } from '@/lib/lexical'
+import { htmlToLexical } from '@/lib/lexical'
 import { slugify } from '@/lib/slugify'
 
 /**
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         title,
         slug,
         tenant: tenantId,
-        description: plainTextToLexical(data.body || ''),
+        description: htmlToLexical(data.body || ''),
         ...(categoryId ? { category: categoryId } : {}),
         ...(minTierId ? { minTier: minTierId } : {}),
         ...(coverId ? { cover: coverId } : {}),

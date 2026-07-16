@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
-import { plainTextToLexical } from '@/lib/lexical'
+import { htmlToLexical } from '@/lib/lexical'
 import { slugify } from '@/lib/slugify'
 
 /**
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (typeof data.body === 'string') {
-    patch.description = plainTextToLexical(data.body)
+    patch.description = htmlToLexical(data.body)
   }
 
   // Связи: null очищает, число ставит (с проверкой тенанта), undefined пропускает

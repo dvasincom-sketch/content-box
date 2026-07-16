@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, ImagePlus, X, Loader2, Trash2 } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
+import { RichEditor } from './RichEditor'
 
 type Category = CatItem
 type Tier = { id: number | string; name: string; weight: number; priceRub: number }
@@ -281,12 +282,10 @@ export function Composer({
             style={{ display: 'none' }}
           />
 
-          <textarea
-            className="studio-textarea composer__body"
-            placeholder="Текст публикации. Разделяйте абзацы пустой строкой."
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={14}
+          <RichEditor
+            initialHtml={initial?.body || ''}
+            onChange={setBody}
+            placeholder="Текст публикации. Выделите текст и примените форматирование."
           />
         </div>
 
