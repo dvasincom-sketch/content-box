@@ -266,16 +266,74 @@ function b64urlBytes(bytes: Uint8Array): string {
 
 /** Импорт PKCS8 PEM в CryptoKey для RS256-подписи */
 async function importPkcs8(pem: string): Promise<CryptoKey> {
+  const isPkcs1 = pem.includes('BEGIN RSA PRIVATE KEY')
+
   const body = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/-----BEGIN (RSA )?PRIVATE KEY-----/, '')
+    .replace(/-----END (RSA )?PRIVATE KEY-----/, '')
     .replace(/\s+/g, '')
-  const der = Buffer.from(body, 'base64')
-  return crypto.subtle.importKey(
-    'pkcs8',
-    der,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  )
+
+  if (!body) {
+    throw new Error('ключ пуст после очистки заголовков')
+  }
+
+  let der: Buffer
+  try {
+    der = Buffer.from(body, 'base64')
+  } catch {
+    throw new Error('тело ключа не является base64')
+  }
+
+  // WebCrypto понимает только PKCS8. Если ключ в PKCS1 (RSA PRIVATE KEY),
+  // оборачиваем DER в PKCS8-конверт.
+  const finalDer = isPkcs1 ? wrapPkcs1AsPkcs8(der) : der
+
+  try {
+    return await crypto.subtle.importKey(
+      'pkcs8',
+      finalDer,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    )
+  } catch (e: any) {
+    // диагностика без утечки ключа: только метаданные
+    throw new Error(
+      `importKey failed (${e?.message || 'unknown'}); ` +
+        `format=${isPkcs1 ? 'PKCS1' : 'PKCS8'}, derBytes=${finalDer.length}`,
+    )
+  }
+}
+
+/**
+ * Оборачивает PKCS1 RSA-ключ (DER) в PKCS8-конверт, чтобы WebCrypto его принял.
+ * PKCS8 = SEQUENCE { version=0, AlgorithmIdentifier(rsaEncryption), OCTET STRING(pkcs1) }
+ */
+function wrapPkcs1AsPkcs8(pkcs1: Buffer): Buffer {
+  // AlgorithmIdentifier для rsaEncryption + version INTEGER 0
+  const rsaOid = Buffer.from([
+    0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00,
+  ])
+  const version = Buffer.from([0x02, 0x01, 0x00])
+  const octetString = derWrap(0x04, pkcs1)
+  const inner = Buffer.concat([version, rsaOid, octetString])
+  return derWrap(0x30, inner)
+}
+
+/** Оборачивает содержимое в DER TLV с заданным тегом и корректной длиной. */
+function derWrap(tag: number, content: Buffer): Buffer {
+  const len = content.length
+  let lenBytes: Buffer
+  if (len < 0x80) {
+    lenBytes = Buffer.from([len])
+  } else {
+    const arr: number[] = []
+    let n = len
+    while (n > 0) {
+      arr.unshift(n & 0xff)
+      n >>= 8
+    }
+    lenBytes = Buffer.from([0x80 | arr.length, ...arr])
+  }
+  return Buffer.concat([Buffer.from([tag]), lenBytes, content])
 }
