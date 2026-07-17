@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import * as tus from 'tus-js-client'
 import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
-  Upload, X, Play, Folder, FolderPlus, MoreHorizontal, Pencil, Trash2, ChevronRight,
+  Upload, X, Play, Folder, FolderPlus, Pencil, Trash2, ChevronRight, ChevronDown,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 
@@ -192,6 +193,100 @@ export function VideosManager({
 }
 
 /* ============================================================================
+   ДРОПДАУН ПАПОК (переиспользуемый; меню через портал, position:fixed —
+   не режется overflow таблицы и авто-переворачивается вверх у края экрана)
+   ============================================================================ */
+type DropItem = { value: string; label: string; depth: number; active?: boolean }
+
+function FolderDropdown({
+  items,
+  triggerClass,
+  triggerContent,
+  emptyText,
+  onSelect,
+}: {
+  items: DropItem[]
+  triggerClass: string
+  triggerContent: React.ReactNode
+  emptyText?: string
+  onSelect: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const [pos, setPos] = useState<{ left: number; top: number; width: number; up: boolean } | null>(null)
+
+  useLayoutEffect(() => {
+    if (!open || !btnRef.current) return
+    const r = btnRef.current.getBoundingClientRect()
+    const menuH = Math.min(280, 44 + items.length * 34)
+    const spaceBelow = window.innerHeight - r.bottom
+    const up = spaceBelow < menuH && r.top > spaceBelow
+    setPos({
+      left: r.left,
+      top: up ? r.top : r.bottom,
+      width: Math.max(r.width, 180),
+      up,
+    })
+  }, [open, items.length])
+
+  useEffect(() => {
+    if (!open) return
+    const close = () => setOpen(false)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => {
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [open])
+
+  return (
+    <>
+      <button ref={btnRef} className={triggerClass} onClick={() => setOpen((v) => !v)}>
+        {triggerContent}
+      </button>
+      {open &&
+        pos &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <>
+            <div className="vidmenu__backdrop" onClick={() => setOpen(false)} />
+            <div
+              className="vidmenu"
+              style={{
+                left: pos.left,
+                width: pos.width,
+                ...(pos.up
+                  ? { bottom: window.innerHeight - pos.top + 4 }
+                  : { top: pos.top + 4 }),
+              }}
+            >
+              {items.length === 0 ? (
+                <div className="vidmenu__empty">{emptyText || 'Пусто'}</div>
+              ) : (
+                items.map((it) => (
+                  <button
+                    key={it.value}
+                    className={`vidmenu__item${it.active ? ' is-active' : ''}`}
+                    style={{ paddingLeft: `${12 + it.depth * 14}px` }}
+                    onClick={() => {
+                      setOpen(false)
+                      onSelect(it.value)
+                    }}
+                  >
+                    {it.label}
+                  </button>
+                ))
+              )}
+            </div>
+          </>,
+          document.body,
+        )}
+    </>
+  )
+}
+
+/* ============================================================================
    СТРОКА ТАБЛИЦЫ
    ============================================================================ */
 function VideoRow({
@@ -208,7 +303,6 @@ function VideoRow({
   const [ready, setReady] = useState<boolean | null>(null)
   const [pct, setPct] = useState<string | null>(null)
   const [playing, setPlaying] = useState(false)
-  const [folderMenu, setFolderMenu] = useState(false)
   const timer = useRef<any>(null)
 
   useEffect(() => {
@@ -241,7 +335,6 @@ function VideoRow({
   }, [video.id, video.videoRef])
 
   async function assignFolder(folderId: number | string | null) {
-    setFolderMenu(false)
     // оптимистично
     const prev = video.folderId
     onFolderChange(video.id, folderId)
@@ -322,45 +415,27 @@ function VideoRow({
 
       {/* Папка */}
       <td className="vidtable__folder-cell">
-        <div className="vidtable__folder">
-          <button
-            className={`vidtable__folder-btn${folderName ? '' : ' is-empty'}`}
-            onClick={() => setFolderMenu((v) => !v)}
-          >
-            {folderName ? (
+        <FolderDropdown
+          triggerClass={`vidtable__folder-btn${folderName ? '' : ' is-empty'}`}
+          triggerContent={
+            folderName ? (
               <><Folder size={13} /> <span className="vidtable__folder-name">{folderName}</span></>
             ) : (
               <span className="vidtable__folder-empty">— выбрать —</span>
-            )}
-          </button>
-          {folderMenu && (
-            <>
-              <div className="vidtable__menu-backdrop" onClick={() => setFolderMenu(false)} />
-              <div className="vidtable__menu">
-                <button
-                  className={`vidtable__menu-item${video.folderId == null ? ' is-active' : ''}`}
-                  onClick={() => assignFolder(null)}
-                >
-                  Без папки
-                </button>
-                {flatFolders.length === 0 ? (
-                  <div className="vidtable__menu-empty">Папок пока нет</div>
-                ) : (
-                  flatFolders.map((f) => (
-                    <button
-                      key={f.id}
-                      className={`vidtable__menu-item${String(video.folderId) === String(f.id) ? ' is-active' : ''}`}
-                      style={{ paddingLeft: `${12 + f.depth * 14}px` }}
-                      onClick={() => assignFolder(f.id)}
-                    >
-                      {f.title}
-                    </button>
-                  ))
-                )}
-              </div>
-            </>
-          )}
-        </div>
+            )
+          }
+          emptyText="Папок пока нет"
+          items={[
+            { value: '', label: 'Без папки', depth: 0, active: video.folderId == null },
+            ...flatFolders.map((f) => ({
+              value: String(f.id),
+              label: f.title,
+              depth: f.depth,
+              active: String(video.folderId) === String(f.id),
+            })),
+          ]}
+          onSelect={(val) => assignFolder(val === '' ? null : val)}
+        />
       </td>
 
       {/* Дата */}
@@ -397,23 +472,38 @@ function FolderBar({
 }) {
   const [managing, setManaging] = useState(false)
 
+  const filterLabel = useMemo(() => {
+    if (filter === FILTER_ALL) return `Все видео (${counts.all})`
+    if (filter === FILTER_NONE) return `Без папки (${counts.none})`
+    const f = flatFolders.find((x) => String(x.id) === filter)
+    return f ? f.title : 'Все видео'
+  }, [filter, flatFolders, counts])
+
   return (
     <div className="folderbar">
       <div className="folderbar__filter">
         <span className="folderbar__label">Папка:</span>
-        <select
-          className="studio-input folderbar__select"
-          value={filter}
-          onChange={(e) => onFilter(e.target.value)}
-        >
-          <option value={FILTER_ALL}>Все видео ({counts.all})</option>
-          <option value={FILTER_NONE}>Без папки ({counts.none})</option>
-          {flatFolders.map((f) => (
-            <option key={f.id} value={String(f.id)}>
-              {'\u00A0'.repeat(f.depth * 2)}{f.title}
-            </option>
-          ))}
-        </select>
+        <FolderDropdown
+          triggerClass="folderbar__select-btn"
+          triggerContent={
+            <>
+              <Folder size={14} />
+              <span className="folderbar__select-label">{filterLabel}</span>
+              <ChevronDown size={15} className="folderbar__select-caret" />
+            </>
+          }
+          items={[
+            { value: FILTER_ALL, label: `Все видео (${counts.all})`, depth: 0, active: filter === FILTER_ALL },
+            { value: FILTER_NONE, label: `Без папки (${counts.none})`, depth: 0, active: filter === FILTER_NONE },
+            ...flatFolders.map((f) => ({
+              value: String(f.id),
+              label: f.title,
+              depth: f.depth,
+              active: filter === String(f.id),
+            })),
+          ]}
+          onSelect={onFilter}
+        />
       </div>
       <button
         className="studio-btn studio-btn--ghost folderbar__manage"
