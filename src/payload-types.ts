@@ -470,6 +470,16 @@ export interface SubscriptionTier {
    * Неактивные уровни не показываются для оформления.
    */
   isActive?: boolean | null;
+  /**
+   * Список преимуществ уровня для витрины подписки. Иконка задаётся типом.
+   */
+  perks?:
+    | {
+        type: 'included' | 'star' | 'warning' | 'info';
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -953,6 +963,13 @@ export interface SubscriptionTiersSelect<T extends boolean = true> {
   priceRub?: T;
   description?: T;
   isActive?: T;
+  perks?:
+    | T
+    | {
+        type?: T;
+        text?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

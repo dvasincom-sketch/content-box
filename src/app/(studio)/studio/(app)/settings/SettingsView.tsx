@@ -2,15 +2,20 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ImagePlus, Loader2, Plus, Trash2, Check, Sun, Moon } from 'lucide-react'
+import { ImagePlus, Loader2, Plus, Trash2, Check, Sun, Moon, ChevronDown, GripVertical } from 'lucide-react'
+import { PerkIcon, PERK_TYPES, type PerkType } from '@/components/studio/PerkIcon'
 
 type Social = { platform: string; url: string }
+type Perk = { type: PerkType; text: string }
 type Tier = {
   id: number | string
   name: string
+  slug: string
   weight: number
   priceRub: number
+  description: string
   isActive: boolean
+  perks: Perk[]
 }
 
 const PLATFORMS = [
@@ -281,98 +286,282 @@ function SocialsBlock({ initial }: { initial: Social[] }) {
 function TiersBlock({ initial }: { initial: Tier[] }) {
   const router = useRouter()
   const [tiers, setTiers] = useState<Tier[]>(initial)
-  const [savingId, setSavingId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [savedId, setSavedId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | number | null>(null)
+  const [creating, setCreating] = useState(false)
 
-  function edit(id: string | number, patch: Partial<Tier>) {
-    setTiers((ts) => ts.map((t) => (String(t.id) === String(id) ? { ...t, ...patch } : t)))
-    setSavedId(null)
-  }
-
-  async function saveTier(t: Tier) {
-    setError(null)
-    setSavedId(null)
-    setSavingId(String(t.id))
-    try {
-      const res = await fetch('/studio/api/settings/tier', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          id: t.id,
-          name: t.name,
-          priceRub: t.priceRub,
-          isActive: t.isActive,
-        }),
-      })
-      const json = await res.json()
-      if (!res.ok) setError(json.error || 'Не удалось сохранить')
-      else {
-        setSavedId(String(t.id))
-        router.refresh()
-      }
-    } catch {
-      setError('Ошибка соединения')
-    } finally {
-      setSavingId(null)
-    }
+  function refresh() {
+    router.refresh()
   }
 
   return (
-    <section className="settings__block">
-      <div className="settings__block-head">
-        <h2>Уровни подписки</h2>
-        <p>Название, цена и активность. Иерархия (вес) меняется в админке.</p>
+    <section className="settings__card">
+      <div className="settings__card-head">
+        <h2>Подписки</h2>
+        <button
+          className="studio-btn studio-btn--ghost settings__add-tier"
+          onClick={() => {
+            setCreating((v) => !v)
+            setOpenId(null)
+          }}
+        >
+          <Plus size={16} /> Новый уровень
+        </button>
       </div>
 
-      {tiers.length === 0 ? (
-        <div className="settings__hint">Уровней подписки пока нет.</div>
+      {creating && (
+        <TierEditor
+          mode="create"
+          onSaved={() => {
+            setCreating(false)
+            refresh()
+          }}
+          onCancel={() => setCreating(false)}
+        />
+      )}
+
+      {tiers.length === 0 && !creating ? (
+        <p className="settings__hint">Уровней пока нет. Создайте первый — например, РАМЁН.</p>
       ) : (
-        <div className="settings__tiers">
+        <div className="settings__tiers-list">
           {tiers.map((t) => (
-            <div key={t.id} className="settings__tier">
-              <input
-                className="studio-input settings__tier-name"
-                value={t.name}
-                onChange={(e) => edit(t.id, { name: e.target.value })}
-              />
-              <div className="settings__tier-price">
-                <input
-                  className="studio-input"
-                  type="number"
-                  min={0}
-                  value={t.priceRub}
-                  onChange={(e) => edit(t.id, { priceRub: Number(e.target.value) })}
-                />
-                <span className="settings__tier-rub">₽/мес</span>
-              </div>
-              <label className="settings__tier-active">
-                <input
-                  type="checkbox"
-                  checked={t.isActive}
-                  onChange={(e) => edit(t.id, { isActive: e.target.checked })}
-                />
-                Активен
-              </label>
+            <div key={t.id} className="settings__tier-row">
               <button
-                className="studio-btn studio-btn--ghost settings__tier-save"
-                onClick={() => saveTier(t)}
-                disabled={savingId === String(t.id)}
+                className="settings__tier-summary"
+                onClick={() => setOpenId(openId === t.id ? null : t.id)}
               >
-                {savingId === String(t.id) ? (
-                  <Loader2 size={15} className="spin" />
-                ) : savedId === String(t.id) ? (
-                  <Check size={15} />
-                ) : null}
-                Сохранить
+                <ChevronDown
+                  size={16}
+                  className={openId === t.id ? 'settings__tier-chev is-open' : 'settings__tier-chev'}
+                />
+                <span className="settings__tier-name-txt">{t.name}</span>
+                <span className="settings__tier-weight">вес {t.weight}</span>
+                <span className="settings__tier-price-txt">{t.priceRub} ₽/мес</span>
+                {!t.isActive && <span className="settings__tier-off">выкл</span>}
+                {t.perks?.length > 0 && (
+                  <span className="settings__tier-perks-count">{t.perks.length} плюшек</span>
+                )}
               </button>
+              {openId === t.id && (
+                <TierEditor
+                  mode="edit"
+                  tier={t}
+                  onSaved={refresh}
+                  onCancel={() => setOpenId(null)}
+                />
+              )}
             </div>
           ))}
         </div>
       )}
-
-      {error && <div className="settings__err">{error}</div>}
     </section>
+  )
+}
+
+/* Редактор одного тарифа: создание или редактирование */
+function TierEditor({
+  mode,
+  tier,
+  onSaved,
+  onCancel,
+}: {
+  mode: 'create' | 'edit'
+  tier?: Tier
+  onSaved: () => void
+  onCancel: () => void
+}) {
+  const [name, setName] = useState(tier?.name || '')
+  const [slug, setSlug] = useState(tier?.slug || '')
+  const [weight, setWeight] = useState(String(tier?.weight ?? ''))
+  const [priceRub, setPriceRub] = useState(String(tier?.priceRub ?? ''))
+  const [description, setDescription] = useState(tier?.description || '')
+  const [isActive, setIsActive] = useState(tier?.isActive ?? true)
+  const [perks, setPerks] = useState<Perk[]>(tier?.perks || [])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function addPerk() {
+    setPerks((p) => [...p, { type: 'included', text: '' }])
+  }
+  function editPerk(i: number, patch: Partial<Perk>) {
+    setPerks((p) => p.map((perk, idx) => (idx === i ? { ...perk, ...patch } : perk)))
+  }
+  function removePerk(i: number) {
+    setPerks((p) => p.filter((_, idx) => idx !== i))
+  }
+  function movePerk(i: number, dir: -1 | 1) {
+    setPerks((p) => {
+      const next = [...p]
+      const j = i + dir
+      if (j < 0 || j >= next.length) return p
+      ;[next[i], next[j]] = [next[j], next[i]]
+      return next
+    })
+  }
+
+  async function save() {
+    setError(null)
+    if (!name.trim()) return setError('Укажите название')
+    if (weight === '' || Number.isNaN(Number(weight))) return setError('Укажите вес (число)')
+    if (priceRub === '' || Number.isNaN(Number(priceRub))) return setError('Укажите цену (число)')
+
+    const cleanPerks = perks.filter((p) => p.text.trim())
+
+    setBusy(true)
+    try {
+      const url = mode === 'create' ? '/studio/api/settings/tier-create' : '/studio/api/settings/tier'
+      const body: any = {
+        name: name.trim(),
+        slug: slug.trim(),
+        weight: Number(weight),
+        priceRub: Number(priceRub),
+        description,
+        isActive,
+        perks: cleanPerks,
+      }
+      if (mode === 'edit') body.id = tier!.id
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error || 'Не удалось сохранить')
+        setBusy(false)
+        return
+      }
+      onSaved()
+    } catch {
+      setError('Ошибка соединения')
+      setBusy(false)
+    }
+  }
+
+  async function remove() {
+    if (!tier) return
+    if (!window.confirm(`Удалить уровень «${tier.name}»?`)) return
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/settings/tier-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id: tier.id }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error || 'Не удалось удалить')
+        setBusy(false)
+        return
+      }
+      onSaved()
+    } catch {
+      setError('Ошибка соединения')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="tier-editor">
+      <div className="tier-editor__grid">
+        <label className="studio-field">
+          <span className="studio-field__label">Название</span>
+          <input className="studio-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="РАМЁН" />
+        </label>
+        <label className="studio-field">
+          <span className="studio-field__label">Slug (латиницей)</span>
+          <input className="studio-input" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="ramyeon" />
+        </label>
+        <label className="studio-field">
+          <span className="studio-field__label">Вес (иерархия)</span>
+          <input className="studio-input" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="10" />
+        </label>
+        <label className="studio-field">
+          <span className="studio-field__label">Цена, ₽/мес</span>
+          <input className="studio-input" type="number" value={priceRub} onChange={(e) => setPriceRub(e.target.value)} placeholder="350" />
+        </label>
+      </div>
+
+      <label className="studio-field">
+        <span className="studio-field__label">Краткое описание</span>
+        <textarea
+          className="studio-input tier-editor__desc"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          placeholder="Короткое описание уровня для витрины."
+        />
+      </label>
+
+      {/* Плюшки */}
+      <div className="tier-editor__perks">
+        <div className="tier-editor__perks-head">
+          <span className="studio-field__label">Что входит (плюшки)</span>
+          <button className="studio-btn studio-btn--ghost tier-editor__perk-add" onClick={addPerk}>
+            <Plus size={14} /> Добавить
+          </button>
+        </div>
+
+        {perks.length === 0 ? (
+          <p className="settings__hint">Плюшек нет. Добавьте — например, «Доступ ко всему архиву».</p>
+        ) : (
+          <div className="tier-editor__perk-list">
+            {perks.map((perk, i) => (
+              <div key={i} className="tier-editor__perk">
+                <div className="tier-editor__perk-move">
+                  <button onClick={() => movePerk(i, -1)} disabled={i === 0} title="Выше">↑</button>
+                  <button onClick={() => movePerk(i, 1)} disabled={i === perks.length - 1} title="Ниже">↓</button>
+                </div>
+                <div className="tier-editor__perk-type">
+                  <span className="tier-editor__perk-icon"><PerkIcon type={perk.type} size={16} /></span>
+                  <select
+                    className="studio-input"
+                    value={perk.type}
+                    onChange={(e) => editPerk(i, { type: e.target.value as PerkType })}
+                  >
+                    {PERK_TYPES.map((pt) => (
+                      <option key={pt.value} value={pt.value}>{pt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <input
+                  className="studio-input tier-editor__perk-text"
+                  value={perk.text}
+                  onChange={(e) => editPerk(i, { text: e.target.value })}
+                  placeholder="Текст преимущества"
+                />
+                <button className="catmgr__icon-btn catmgr__icon-btn--danger" onClick={() => removePerk(i)} title="Убрать">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <label className="settings__tier-active">
+        <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+        Активен (показывается для оформления)
+      </label>
+
+      {error && <div className="studio-login__error">{error}</div>}
+
+      <div className="tier-editor__actions">
+        {mode === 'edit' && (
+          <button className="studio-btn studio-btn--ghost tier-editor__delete" onClick={remove} disabled={busy}>
+            <Trash2 size={15} /> Удалить
+          </button>
+        )}
+        <div className="tier-editor__actions-right">
+          <button className="studio-btn studio-btn--ghost" onClick={onCancel}>Отмена</button>
+          <button className="studio-btn studio-btn--primary" onClick={save} disabled={busy}>
+            {busy ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
+            {mode === 'create' ? 'Создать' : 'Сохранить'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

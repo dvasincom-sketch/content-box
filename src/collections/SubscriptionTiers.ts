@@ -76,6 +76,35 @@ export const SubscriptionTiers: CollectionConfig = {
       label: 'Активен',
       admin: { description: 'Неактивные уровни не показываются для оформления.' },
     },
+    {
+      name: 'perks',
+      type: 'array',
+      label: 'Что входит (плюшки)',
+      admin: {
+        description: 'Список преимуществ уровня для витрины подписки. Иконка задаётся типом.',
+      },
+      fields: [
+        {
+          name: 'type',
+          type: 'select',
+          required: true,
+          defaultValue: 'included',
+          label: 'Тип',
+          options: [
+            { label: 'Входит (галочка)', value: 'included' },
+            { label: 'Особое (звезда)', value: 'star' },
+            { label: 'Предупреждение', value: 'warning' },
+            { label: 'Информация', value: 'info' },
+          ],
+        },
+        {
+          name: 'text',
+          type: 'text',
+          required: true,
+          label: 'Текст',
+        },
+      ],
+    },
     // `tenant` инжектит multi-tenant плагин (см. payload.config.ts).
   ],
   timestamps: true,

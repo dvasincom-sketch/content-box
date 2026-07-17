@@ -44,9 +44,14 @@ export default async function SettingsPage() {
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     id: t.id,
     name: t.name,
+    slug: t.slug || '',
     weight: t.weight,
     priceRub: t.priceRub,
+    description: t.description || '',
     isActive: t.isActive !== false,
+    perks: Array.isArray(t.perks)
+      ? t.perks.map((p: any) => ({ type: p.type || 'included', text: p.text || '' }))
+      : [],
   }))
 
   return <SettingsView logoUrl={logoUrl} socials={socials} tiers={tiers} />

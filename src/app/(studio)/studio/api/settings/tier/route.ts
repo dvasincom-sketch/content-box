@@ -57,6 +57,28 @@ export async function POST(req: NextRequest) {
     patch.isActive = data.isActive
   }
 
+  if (data.weight !== undefined) {
+    const w = Number(data.weight)
+    if (Number.isNaN(w) || w < 0) {
+      return NextResponse.json({ error: 'Вес должен быть числом ≥ 0' }, { status: 400 })
+    }
+    patch.weight = w
+  }
+
+  if (typeof data.slug === 'string') {
+    const slug = data.slug.trim()
+    if (slug) patch.slug = slug
+  }
+
+  if (typeof data.description === 'string') {
+    patch.description = data.description
+  }
+
+  // Плюшки: массив { type, text }. Санитайзим типы и обрезаем пустые.
+  if (Array.isArray(data.perks)) {
+    patch.perks = normalizePerks(data.perks)
+  }
+
   try {
     await payload.update({
       collection: 'subscription-tiers',
@@ -71,4 +93,17 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     )
   }
+}
+
+const PERK_TYPES = ['included', 'star', 'warning', 'info']
+
+/** Санитайзинг плюшек: валидный тип, непустой текст, максимум 20 штук. */
+export function normalizePerks(raw: any[]): { type: string; text: string }[] {
+  return raw
+    .filter((p) => p && typeof p.text === 'string' && p.text.trim())
+    .slice(0, 20)
+    .map((p) => ({
+      type: PERK_TYPES.includes(p.type) ? p.type : 'included',
+      text: String(p.text).trim().slice(0, 200),
+    }))
 }

@@ -1834,3 +1834,105 @@ select.studio-input {
   color: var(--st-text-faint);
   max-width: 380px;
 }
+
+/* ============================================================================
+   РЕДАКТОР ПОДПИСОК (тарифы + плюшки)
+   ============================================================================ */
+
+.settings__card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--st-space-4);
+}
+.settings__add-tier { flex-shrink: 0; }
+
+.settings__tiers-list { display: flex; flex-direction: column; gap: var(--st-space-2); }
+.settings__tier-row {
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  overflow: hidden;
+}
+.settings__tier-summary {
+  width: 100%;
+  display: flex; align-items: center; gap: var(--st-space-3);
+  padding: var(--st-space-3) var(--st-space-4);
+  background: var(--st-surface);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--st-text);
+  transition: background var(--st-dur) var(--st-ease);
+}
+.settings__tier-summary:hover { background: var(--st-surface-hover); }
+.settings__tier-chev { color: var(--st-text-muted); transition: transform var(--st-dur) var(--st-ease); flex-shrink: 0; }
+.settings__tier-chev.is-open { transform: rotate(180deg); }
+.settings__tier-name-txt { font-weight: 600; }
+.settings__tier-weight,
+.settings__tier-price-txt,
+.settings__tier-perks-count {
+  font-family: var(--st-font-mono);
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+}
+.settings__tier-price-txt { margin-left: auto; }
+.settings__tier-off {
+  font-family: var(--st-font-mono);
+  font-size: var(--st-text-xs);
+  color: var(--st-warning);
+  border: 1px solid color-mix(in srgb, var(--st-warning) 40%, transparent);
+  padding: 1px 6px; border-radius: 4px;
+}
+
+/* Редактор */
+.tier-editor {
+  padding: var(--st-space-5);
+  border-top: 1px solid var(--st-border);
+  display: flex; flex-direction: column; gap: var(--st-space-4);
+  background: var(--st-bg);
+}
+.tier-editor__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--st-space-4);
+}
+.tier-editor__desc { resize: vertical; min-height: 56px; font-family: var(--st-font-body); }
+
+.tier-editor__perks { display: flex; flex-direction: column; gap: var(--st-space-3); }
+.tier-editor__perks-head { display: flex; align-items: center; justify-content: space-between; }
+.tier-editor__perk-add { flex-shrink: 0; }
+.tier-editor__perk-list { display: flex; flex-direction: column; gap: var(--st-space-2); }
+.tier-editor__perk {
+  display: flex; align-items: center; gap: var(--st-space-2);
+}
+.tier-editor__perk-move {
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+}
+.tier-editor__perk-move button {
+  border: none; background: transparent;
+  color: var(--st-text-faint);
+  cursor: pointer;
+  font-size: 11px; line-height: 1;
+  padding: 1px 4px;
+}
+.tier-editor__perk-move button:hover:not(:disabled) { color: var(--st-text); }
+.tier-editor__perk-move button:disabled { opacity: 0.3; cursor: default; }
+.tier-editor__perk-type {
+  display: flex; align-items: center; gap: var(--st-space-2);
+  flex-shrink: 0;
+}
+.tier-editor__perk-icon { color: var(--st-text); display: inline-flex; }
+.tier-editor__perk-type select { width: auto; min-width: 110px; }
+.tier-editor__perk-text { flex: 1; }
+
+.tier-editor__actions {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: var(--st-space-2);
+}
+.tier-editor__actions-right { display: flex; gap: var(--st-space-2); margin-left: auto; }
+.tier-editor__delete { color: var(--st-danger); }
+
+@media (max-width: 560px) {
+  .tier-editor__grid { grid-template-columns: 1fr; }
+  .tier-editor__perk { flex-wrap: wrap; }
+  .tier-editor__perk-text { width: 100%; flex-basis: 100%; }
+}

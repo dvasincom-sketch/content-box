@@ -12,6 +12,7 @@ import * as migration_20260710_153109 from './20260710_153109';
 import * as migration_20260713_063233 from './20260713_063233';
 import * as migration_20260713_111430 from './20260713_111430';
 import * as migration_20260716_093732_add_pub_min_tier from './20260716_093732_add_pub_min_tier';
+import * as migration_20260717_080538_tiers_perks from './20260717_080538_tiers_perks';
 
 export const migrations = [
   {
@@ -82,6 +83,11 @@ export const migrations = [
   {
     up: migration_20260716_093732_add_pub_min_tier.up,
     down: migration_20260716_093732_add_pub_min_tier.down,
-    name: '20260716_093732_add_pub_min_tier'
+    name: '20260716_093732_add_pub_min_tier',
+  },
+  {
+    up: migration_20260717_080538_tiers_perks.up,
+    down: migration_20260717_080538_tiers_perks.down,
+    name: '20260717_080538_tiers_perks'
   },
 ];
