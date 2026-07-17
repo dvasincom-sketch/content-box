@@ -8,6 +8,10 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
+import { checkPublicationAccess } from '@/lib/publicationAccess'
+import { checkVideoAccess } from '@/lib/videoAccess'
+import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
+import { Lock } from 'lucide-react'
 import type { Metadata } from 'next'
 import '../../styles.css'
 
@@ -74,6 +78,21 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     ? new Date(pub.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
 
+  // Гейтинг публикации: если minTier задан и нет доступа — вся публикация под замком
+  const pubAccess = await checkPublicationAccess(pub)
+
+  // Прикреплённые видео: для каждого проверяем доступ отдельно (по его minTier)
+  const relatedRaw = Array.isArray(pub.relatedVideos) ? pub.relatedVideos : []
+  const relatedVideos = pubAccess.allowed
+    ? await Promise.all(
+        relatedRaw.map(async (v: any) => {
+          const id = v && typeof v === 'object' ? v.id : v
+          const access = await checkVideoAccess({ id })
+          return { video: access.video || v, allowed: access.allowed, access }
+        }),
+      )
+    : []
+
   return (
     <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
@@ -115,22 +134,119 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           )}
         </div>
 
-        {pub.description && (
-          <div className="prose-invert max-w-none mb-8 leading-relaxed" style={{ color: 'var(--brand-text)', opacity: 0.9 }}>
-            <RichText data={pub.description} />
-          </div>
-        )}
+        {pubAccess.allowed ? (
+          <>
+            {/* Прикреплённые видео — до описания, каждое со своим гейтингом */}
+            {relatedVideos.length > 0 && (
+              <div className="flex flex-col gap-6 mb-8">
+                {relatedVideos.map(({ video, allowed, access }, i) => (
+                  <div key={video?.id ?? i}>
+                    {video?.title && (
+                      <div className="text-lg font-semibold mb-2" style={{ color: 'var(--brand-text)' }}>{video.title}</div>
+                    )}
+                    {allowed ? (
+                      <VideoPlayer videoId={video.id} />
+                    ) : (
+                      <VideoLockInline
+                        reason={(access as any).reason}
+                        requiredTierName={(access as any).requiredTierName}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
-        {external.length > 0 && (
-          <div className="flex flex-wrap gap-3">
-            {external.map((s: any, i: number) => (
-              <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold px-5 py-3 rounded-xl transition-transform hover:-translate-y-0.5" style={{ background: 'var(--brand-primary)', color: '#fff' }}>
-                {PLATFORM_LABEL[s.platform] ?? s.platform}
-              </a>
-            ))}
-          </div>
+            {pub.description && (
+              <div className="prose-invert max-w-none mb-8 leading-relaxed" style={{ color: 'var(--brand-text)', opacity: 0.9 }}>
+                <RichText data={pub.description} />
+              </div>
+            )}
+
+            {external.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {external.map((s: any, i: number) => (
+                  <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold px-5 py-3 rounded-xl transition-transform hover:-translate-y-0.5" style={{ background: 'var(--brand-primary)', color: '#fff' }}>
+                    {PLATFORM_LABEL[s.platform] ?? s.platform}
+                  </a>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <PublicationLock reason={pubAccess.reason} requiredTierName={pubAccess.requiredTierName} />
         )}
       </div>
     </main>
+  )
+}
+
+/* Замок всей публикации — тизер уже показан выше (заголовок, обложка) */
+function PublicationLock({
+  reason,
+  requiredTierName,
+}: {
+  reason: 'need-login' | 'need-subscription' | 'expired' | 'blocked'
+  requiredTierName: string | null
+}) {
+  const heading =
+    reason === 'need-login' ? 'Войдите, чтобы читать'
+    : reason === 'expired' ? 'Подписка истекла'
+    : reason === 'blocked' ? 'Доступ ограничен'
+    : 'Доступно по подписке'
+  const text =
+    reason === 'need-login' ? 'Эта публикация доступна подписчикам. Войдите или оформите подписку.'
+    : reason === 'expired' ? 'Продлите подписку, чтобы снова открыть этот и весь премиум-материал.'
+    : reason === 'blocked' ? 'Ваш аккаунт временно ограничен. Свяжитесь с поддержкой.'
+    : requiredTierName ? `Публикация открыта на уровне «${requiredTierName}» и выше.`
+    : 'Эта публикация доступна подписчикам.'
+
+  return (
+    <div className="rounded-2xl p-8 lg:p-12 text-center"
+      style={{ background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--brand-primary) 30%, transparent)' }}>
+      <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4"
+        style={{ background: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)' }}>
+        <Lock size={24} style={{ color: 'var(--brand-text)' }} />
+      </div>
+      <div className="text-2xl font-bold mb-2" style={{ color: 'var(--brand-text)' }}>{heading}</div>
+      <p className="mb-6 text-sm max-w-md mx-auto" style={{ color: 'var(--brand-text)', opacity: 0.75 }}>{text}</p>
+      {reason !== 'blocked' && (
+        <Link href="/subscribe" className="inline-block text-sm font-semibold px-6 py-3 rounded-xl transition-transform hover:-translate-y-0.5"
+          style={{ background: 'var(--brand-primary)', color: '#fff' }}>
+          {reason === 'expired' ? 'Продлить подписку' : reason === 'need-login' ? 'Войти или подписаться' : 'Оформить подписку'}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+/* Компактный замок для закрытого прикреплённого видео внутри открытой публикации */
+function VideoLockInline({
+  reason,
+  requiredTierName,
+}: {
+  reason: string
+  requiredTierName?: string | null
+}) {
+  const text =
+    reason === 'need-login' ? 'Видео доступно подписчикам — войдите или оформите подписку.'
+    : reason === 'expired' ? 'Подписка истекла — продлите, чтобы смотреть.'
+    : requiredTierName ? `Видео открыто на уровне «${requiredTierName}» и выше.`
+    : 'Видео доступно подписчикам.'
+  return (
+    <div className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center text-center px-6"
+      style={{ paddingTop: '0', minHeight: '200px', background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}>
+      <div className="py-10">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-3"
+          style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(6px)' }}>
+          <Lock size={20} color="#fff" />
+        </div>
+        <p className="mb-4 text-sm max-w-xs mx-auto" style={{ color: '#fff', opacity: 0.92 }}>{text}</p>
+        <Link href="/subscribe" className="inline-block text-sm font-semibold px-5 py-2.5 rounded-xl"
+          style={{ background: '#fff', color: 'var(--brand-primary)' }}>
+          Оформить подписку
+        </Link>
+      </div>
+    </div>
   )
 }
