@@ -24,7 +24,7 @@ export default async function EditPostPage({
 
   // Пост
   const post: any = await payload
-    .findByID({ collection: 'publications', id, depth: 1, overrideAccess: true })
+    .findByID({ collection: 'publications', id, depth: 2, overrideAccess: true })
     .catch(() => null)
 
   if (!post) notFound()
@@ -32,7 +32,7 @@ export default async function EditPostPage({
   if (Number(postTenant) !== Number(author!.tenantId)) notFound()
 
   // Категории, уровни и видео (как в композере создания)
-  const [catsRes, tiersRes, videosRes] = await Promise.all([
+  const [catsRes, tiersRes, videosRes, galFoldersRes] = await Promise.all([
     payload.find({
       collection: 'categories',
       where: { tenant: { equals: author!.tenantId } },
@@ -56,6 +56,14 @@ export default async function EditPostPage({
       where: { tenant: { equals: author!.tenantId } },
       sort: '-createdAt',
       limit: 500,
+      depth: 0,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'gallery-folders',
+      where: { tenant: { equals: author!.tenantId } },
+      sort: 'title',
+      limit: 1000,
       depth: 0,
       overrideAccess: true,
     }),
@@ -93,6 +101,25 @@ export default async function EditPostPage({
 
   // relatedVideos (hasMany) → массив id в текущем порядке.
   // depth:1 → элементы могут быть объектами; нормализуем к id.
+  // Галерея: array {image, caption} → {imageId, url, width, height, caption}.
+  // depth:2 → image populate'ится как объект с url/width/height.
+  const gallery = Array.isArray(post.gallery)
+    ? post.gallery
+        .map((row: any) => {
+          const img = row?.image
+          if (!img) return null
+          const imageId = typeof img === 'object' ? img.id : img
+          return {
+            imageId,
+            url: typeof img === 'object' ? img.url || null : null,
+            width: typeof img === 'object' ? img.width || null : null,
+            height: typeof img === 'object' ? img.height || null : null,
+            caption: row?.caption || '',
+          }
+        })
+        .filter((x: any) => x != null)
+    : []
+
   const relatedVideoIds: (number | string)[] = Array.isArray(post.relatedVideos)
     ? post.relatedVideos
         .map((r: any) => (r && typeof r === 'object' ? r.id : r))
@@ -113,7 +140,23 @@ export default async function EditPostPage({
     coverUrl,
     isPublished,
     relatedVideoIds,
+    gallery,
   }
 
-  return <Composer categories={categories} tiers={tiers} videos={videos} initial={initial} />
+  const galleryFolders = (galFoldersRes.docs as any[]).map((f) => {
+    const rawParent = f.parent
+    const parentId =
+      rawParent && typeof rawParent === 'object' ? rawParent.id : (rawParent ?? null)
+    return { id: f.id, title: f.title || 'Без названия', parentId: parentId ?? null }
+  })
+
+  return (
+    <Composer
+      categories={categories}
+      tiers={tiers}
+      videos={videos}
+      galleryFolders={galleryFolders}
+      initial={initial}
+    />
+  )
 }

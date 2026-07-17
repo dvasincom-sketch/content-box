@@ -78,6 +78,11 @@ export async function POST(req: NextRequest) {
     patch.relatedVideos = await filterTenantVideos(payload, data.relatedVideoIds, tenantId)
   }
 
+  // Галерея: если ключ передан — заменяем целиком (пустой массив = очистить)
+  if ('gallery' in data) {
+    patch.gallery = await buildGallery(payload, data.gallery, tenantId)
+  }
+
   // Статус
   if (data.publish === true) {
     // публикуем: ставим дату, если её не было
@@ -152,6 +157,39 @@ async function filterTenantVideos(
       }
     } catch {
       // видео не найдено — пропускаем
+    }
+  }
+  return out
+}
+
+/**
+ * Из массива {imageId, caption} строит строки галереи {image, caption},
+ * оставляя только изображения тенанта, в исходном порядке.
+ */
+async function buildGallery(
+  payload: any,
+  rows: any,
+  tenantId: number,
+): Promise<{ image: number; caption?: string }[]> {
+  if (!Array.isArray(rows) || rows.length === 0) return []
+  const out: { image: number; caption?: string }[] = []
+  for (const r of rows) {
+    const imageId = Number(r?.imageId)
+    if (!Number.isFinite(imageId)) continue
+    try {
+      const doc = await payload.findByID({
+        collection: 'gallery-images',
+        id: imageId,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
+      if (Number(t) === Number(tenantId)) {
+        const caption = typeof r?.caption === 'string' ? r.caption.trim() : ''
+        out.push({ image: imageId, ...(caption ? { caption } : {}) })
+      }
+    } catch {
+      // изображение не найдено — пропускаем
     }
   }
   return out

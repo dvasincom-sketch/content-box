@@ -18,7 +18,7 @@ export default async function NewPostPage() {
   const author = await getCurrentAuthor() // guard в (app)/layout гарантирует
   const payload = await getPayload({ config: await config })
 
-  const [catsRes, tiersRes, videosRes] = await Promise.all([
+  const [catsRes, tiersRes, videosRes, galFoldersRes] = await Promise.all([
     payload.find({
       collection: 'categories',
       where: { tenant: { equals: author!.tenantId } },
@@ -45,6 +45,14 @@ export default async function NewPostPage() {
       where: { tenant: { equals: author!.tenantId } },
       sort: '-createdAt',
       limit: 500,
+      depth: 0,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'gallery-folders',
+      where: { tenant: { equals: author!.tenantId } },
+      sort: 'title',
+      limit: 1000,
       depth: 0,
       overrideAccess: true,
     }),
@@ -75,5 +83,19 @@ export default async function NewPostPage() {
     addedAt: v.publishedAt || v.createdAt || null,
   }))
 
-  return <Composer categories={categories} tiers={tiers} videos={videos} />
+  const galleryFolders = (galFoldersRes.docs as any[]).map((f) => {
+    const rawParent = f.parent
+    const parentId =
+      rawParent && typeof rawParent === 'object' ? rawParent.id : (rawParent ?? null)
+    return { id: f.id, title: f.title || 'Без названия', parentId: parentId ?? null }
+  })
+
+  return (
+    <Composer
+      categories={categories}
+      tiers={tiers}
+      videos={videos}
+      galleryFolders={galleryFolders}
+    />
+  )
 }

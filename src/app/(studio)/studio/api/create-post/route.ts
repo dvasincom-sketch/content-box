@@ -67,6 +67,9 @@ export async function POST(req: NextRequest) {
   // Прикреплённые видео: фильтруем по тенанту, сохраняем порядок, убираем дубли
   const relatedVideos = await filterTenantVideos(payload, data.relatedVideoIds, tenantId)
 
+  // Галерея: массив {imageId, caption} → строки {image, caption} с проверкой тенанта
+  const gallery = await buildGallery(payload, data.gallery, tenantId)
+
   const publish = data.publish === true
 
   try {
@@ -81,6 +84,7 @@ export async function POST(req: NextRequest) {
         ...(minTierId ? { minTier: minTierId } : {}),
         ...(coverId ? { cover: coverId } : {}),
         ...(relatedVideos.length ? { relatedVideos } : {}),
+        ...(gallery.length ? { gallery } : {}),
         ...(publish ? { publishedAt: new Date().toISOString() } : {}),
       } as any,
       overrideAccess: true,
@@ -130,6 +134,40 @@ async function filterTenantVideos(
     if (ok) {
       seen.add(vid)
       out.push(vid)
+    }
+  }
+  return out
+}
+
+/**
+ * Из массива {imageId, caption} строит строки галереи {image, caption},
+ * оставляя только изображения тенанта, в исходном порядке. Дубли допускаются
+ * (одно фото может встречаться дважды намеренно — но обычно нет; не режем).
+ */
+async function buildGallery(
+  payload: any,
+  rows: any,
+  tenantId: number,
+): Promise<{ image: number; caption?: string }[]> {
+  if (!Array.isArray(rows) || rows.length === 0) return []
+  const out: { image: number; caption?: string }[] = []
+  for (const r of rows) {
+    const imageId = Number(r?.imageId)
+    if (!Number.isFinite(imageId)) continue
+    try {
+      const doc = await payload.findByID({
+        collection: 'gallery-images',
+        id: imageId,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
+      if (Number(t) === Number(tenantId)) {
+        const caption = typeof r?.caption === 'string' ? r.caption.trim() : ''
+        out.push({ image: imageId, ...(caption ? { caption } : {}) })
+      }
+    } catch {
+      // изображение не найдено — пропускаем
     }
   }
   return out

@@ -8,8 +8,10 @@ import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
 import { RichEditor } from './RichEditor'
 import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
+import { GalleryComposer, type GalleryItem } from './GalleryComposer'
 
 type Category = CatItem
+type GalleryFolder = { id: number | string; title: string; parentId: number | string | null }
 type Tier = { id: number | string; name: string; weight: number; priceRub: number }
 
 export type PostInitial = {
@@ -23,17 +25,20 @@ export type PostInitial = {
   coverUrl: string | null
   isPublished: boolean
   relatedVideoIds: (number | string)[]
+  gallery: GalleryItem[]
 }
 
 export function Composer({
   categories,
   tiers,
   videos = [],
+  galleryFolders = [],
   initial,
 }: {
   categories: Category[]
   tiers: Tier[]
   videos?: VideoOption[]
+  galleryFolders?: GalleryFolder[]
   initial?: PostInitial
 }) {
   const router = useRouter()
@@ -51,6 +56,7 @@ export function Composer({
   const [relatedVideoIds, setRelatedVideoIds] = useState<(number | string)[]>(
     initial?.relatedVideoIds ?? [],
   )
+  const [gallery, setGallery] = useState<GalleryItem[]>(initial?.gallery ?? [])
 
   const [saving, setSaving] = useState<false | 'draft' | 'publish' | 'save' | 'unpublish'>(false)
   const [deleting, setDeleting] = useState(false)
@@ -120,6 +126,13 @@ export function Composer({
       relatedVideoIds: isEdit
         ? relatedVideoIds
         : (relatedVideoIds.length ? relatedVideoIds : undefined),
+      // галерея: массив {imageId, caption} в текущем порядке.
+      // в edit всегда шлём (пустой = очистить); в create — только если есть
+      gallery: isEdit
+        ? gallery.map((g) => ({ imageId: g.imageId, caption: g.caption }))
+        : (gallery.length
+            ? gallery.map((g) => ({ imageId: g.imageId, caption: g.caption }))
+            : undefined),
     }
     if (isEdit) payload.id = initial!.id
     if (publish !== undefined) payload.publish = publish
@@ -304,6 +317,18 @@ export function Composer({
             onChange={setBody}
             placeholder="Текст публикации. Выделите текст и примените форматирование."
           />
+
+          <div className="composer__gallery">
+            <div className="composer__field-label composer__gallery-label">Галерея</div>
+            <GalleryComposer
+              value={gallery}
+              onChange={setGallery}
+              folders={galleryFolders}
+            />
+            <div className="composer__hint">
+              Изображения показываются сеткой на странице публикации. Доступ — по уровню самой публикации. Порядок — перетаскиванием.
+            </div>
+          </div>
         </div>
 
         <aside className="composer__side">
