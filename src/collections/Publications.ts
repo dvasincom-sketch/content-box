@@ -50,6 +50,25 @@ export const Publications: CollectionConfig = {
         description: 'Видео, показываемые в публикации (до описания). Доступ каждого — по его собственному уровню.',
       },
     },
+    {
+      name: 'gallery',
+      type: 'array',
+      label: 'Галерея',
+      labels: { singular: 'Изображение', plural: 'Изображения' },
+      admin: {
+        description: 'Фото-галерея публикации. Доступна по уровню самой публикации (minTier).',
+      },
+      fields: [
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'gallery-images',
+          required: true,
+          label: 'Изображение',
+        },
+        { name: 'caption', type: 'text', label: 'Подпись' },
+      ],
+    },
     { name: 'description', type: 'richText' },
     {
       name: 'sources',

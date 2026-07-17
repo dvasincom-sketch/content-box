@@ -21,6 +21,8 @@ import { SubscriptionTiers } from './collections/SubscriptionTiers'
 import { Subscribers } from './collections/Subscribers'
 import { Videos } from './collections/Videos'
 import { VideoFolders } from './collections/VideoFolders'
+import { GalleryImages } from './collections/GalleryImages'
+import { GalleryFolders } from './collections/GalleryFolders'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -125,6 +127,8 @@ export default buildConfig({
     Subscribers,
     Videos,
     VideoFolders,
+    GalleryImages,
+    GalleryFolders,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -142,7 +146,7 @@ export default buildConfig({
     // Дерево категорий (ТЗ §3.4). Плагин добавляет `parent` и `breadcrumbs`,
     // рекурсивно обновляет потомков при смене родителя.
     nestedDocsPlugin({
-      collections: ['categories', 'video-folders'],
+      collections: ['categories', 'video-folders', 'gallery-folders'],
       generateLabel: (_, doc) => doc.title as string,
       // Полный путь: /category/discography/chapter-1/school-trilogy
       generateURL: (docs) => docs.reduce((url, doc) => `${url}/${doc.slug}`, ''),
@@ -154,6 +158,11 @@ export default buildConfig({
         media: {
           // Файлы отдаются напрямую с публичного R2-домена (CDN Cloudflare),
           // минуя Render. Для публичных картинок access control не нужен.
+          disablePayloadAccessControl: true,
+          generateFileURL: ({ filename }) => `${process.env.R2_PUBLIC_URL}/${filename}`,
+        },
+        'gallery-images': {
+          // Фото галерей — та же схема отдачи, что и media (публичный R2-домен).
           disablePayloadAccessControl: true,
           generateFileURL: ({ filename }) => `${process.env.R2_PUBLIC_URL}/${filename}`,
         },
@@ -186,6 +195,8 @@ export default buildConfig({
         subscribers: { useTenantAccess: false },
         videos: { useTenantAccess: false },
         'video-folders': { useTenantAccess: false },
+        'gallery-images': { useTenantAccess: false },
+        'gallery-folders': { useTenantAccess: false },
       },
     }),
   ],

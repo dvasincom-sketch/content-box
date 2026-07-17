@@ -79,6 +79,8 @@ export interface Config {
     subscribers: Subscriber;
     videos: Video;
     'video-folders': VideoFolder;
+    'gallery-images': GalleryImage;
+    'gallery-folders': GalleryFolder;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -97,6 +99,8 @@ export interface Config {
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     videos: VideosSelect<false> | VideosSelect<true>;
     'video-folders': VideoFoldersSelect<false> | VideoFoldersSelect<true>;
+    'gallery-images': GalleryImagesSelect<false> | GalleryImagesSelect<true>;
+    'gallery-folders': GalleryFoldersSelect<false> | GalleryFoldersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -416,6 +420,16 @@ export interface Publication {
    * Видео, показываемые в публикации (до описания). Доступ каждого — по его собственному уровню.
    */
   relatedVideos?: (number | Video)[] | null;
+  /**
+   * Фото-галерея публикации. Доступна по уровню самой публикации (minTier).
+   */
+  gallery?:
+    | {
+        image: number | GalleryImage;
+        caption?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   description?: {
     root: {
       type: string;
@@ -542,6 +556,55 @@ export interface VideoFolder {
   breadcrumbs?:
     | {
         doc?: (number | null) | VideoFolder;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Фото для галерей публикаций.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gallery-images".
+ */
+export interface GalleryImage {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  alt?: string | null;
+  /**
+   * Папка библиотеки для группировки. Одно изображение — одна папка.
+   */
+  folder?: (number | null) | GalleryFolder;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Папки для группировки изображений (дерево).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gallery-folders".
+ */
+export interface GalleryFolder {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  title: string;
+  slug: string;
+  parent?: (number | null) | GalleryFolder;
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | GalleryFolder;
         url?: string | null;
         label?: string | null;
         id?: string | null;
@@ -707,6 +770,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'video-folders';
         value: number | VideoFolder;
+      } | null)
+    | ({
+        relationTo: 'gallery-images';
+        value: number | GalleryImage;
+      } | null)
+    | ({
+        relationTo: 'gallery-folders';
+        value: number | GalleryFolder;
       } | null);
   globalSlug?: string | null;
   user:
@@ -927,6 +998,13 @@ export interface PublicationsSelect<T extends boolean = true> {
   category?: T;
   minTier?: T;
   relatedVideos?: T;
+  gallery?:
+    | T
+    | {
+        image?: T;
+        caption?: T;
+        id?: T;
+      };
   description?: T;
   sources?:
     | T
@@ -1063,6 +1141,46 @@ export interface VideosSelect<T extends boolean = true> {
  * via the `definition` "video-folders_select".
  */
 export interface VideoFoldersSelect<T extends boolean = true> {
+  tenant?: T;
+  title?: T;
+  slug?: T;
+  parent?: T;
+  breadcrumbs?:
+    | T
+    | {
+        doc?: T;
+        url?: T;
+        label?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gallery-images_select".
+ */
+export interface GalleryImagesSelect<T extends boolean = true> {
+  tenant?: T;
+  alt?: T;
+  folder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gallery-folders_select".
+ */
+export interface GalleryFoldersSelect<T extends boolean = true> {
   tenant?: T;
   title?: T;
   slug?: T;
