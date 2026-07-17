@@ -5,7 +5,7 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { VideosManager } from './VideosManager'
 
 /**
- * Экран «Видео» студии. Список видео тенанта + добавление по ссылке.
+ * Экран «Видео» студии. Таблица видео тенанта + папки (дерево) + добавление.
  * Статус кодирования подтягивается клиентом с роута status.
  */
 export const dynamic = 'force-dynamic'
@@ -18,7 +18,7 @@ export default async function VideosPage() {
     collection: 'videos',
     where: { tenant: { equals: author!.tenantId } },
     sort: '-createdAt',
-    limit: 100,
+    limit: 500,
     depth: 1,
     overrideAccess: true,
   })
@@ -32,6 +32,8 @@ export default async function VideosPage() {
       v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug : null,
     durationSec: v.durationSec || null,
     coverUrl: v.cover && typeof v.cover === 'object' ? v.cover.url : null,
+    folderId: v.folder ? (typeof v.folder === 'object' ? v.folder.id : v.folder) : null,
+    addedAt: v.publishedAt || v.createdAt || null,
   }))
 
   // уровни подписки для селектора доступа
@@ -48,5 +50,25 @@ export default async function VideosPage() {
     name: t.name || t.slug || `Уровень ${t.id}`,
   }))
 
-  return <VideosManager initialVideos={videos} tiers={tiers} />
+  // Папки (дерево). parent придёт как id при depth:0 — строим дерево на клиенте.
+  const foldersRes = await payload.find({
+    collection: 'video-folders',
+    where: { tenant: { equals: author!.tenantId } },
+    sort: 'title',
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const folders = (foldersRes.docs as any[]).map((f) => {
+    const rawParent = f.parent
+    const parentId =
+      rawParent && typeof rawParent === 'object' ? rawParent.id : (rawParent ?? null)
+    return {
+      id: f.id,
+      title: f.title || 'Без названия',
+      parentId: parentId ?? null,
+    }
+  })
+
+  return <VideosManager initialVideos={videos} tiers={tiers} folders={folders} />
 }

@@ -1,12 +1,16 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import * as tus from 'tus-js-client'
-import { Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock, Upload, X, Play } from 'lucide-react'
+import {
+  Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
+  Upload, X, Play, Folder, FolderPlus, MoreHorizontal, Pencil, Trash2, ChevronRight,
+} from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 
 type Tier = { id: number | string; name: string }
+type FolderItem = { id: number | string; title: string; parentId: number | string | null }
 type Vid = {
   id: number | string
   title: string
@@ -15,7 +19,12 @@ type Vid = {
   minTierName: string | null
   durationSec: number | null
   coverUrl: string | null
+  folderId: number | string | null
+  addedAt: string | null
 }
+
+const FILTER_ALL = '__all__'
+const FILTER_NONE = '__none__'
 
 function fmtDur(sec: number | null): string {
   if (!sec) return ''
@@ -24,23 +33,83 @@ function fmtDur(sec: number | null): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
+function fmtDate(iso: string | null): string {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleDateString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Раскладывает дерево папок в плоский список с уровнем вложенности (для
+ * отступов в селекторах/меню). Порядок — родитель, затем его дети рекурсивно.
+ */
+function flattenFolders(
+  folders: FolderItem[],
+): { id: number | string; title: string; depth: number }[] {
+  const byParent = new Map<string, FolderItem[]>()
+  for (const f of folders) {
+    const key = f.parentId == null ? 'root' : String(f.parentId)
+    if (!byParent.has(key)) byParent.set(key, [])
+    byParent.get(key)!.push(f)
+  }
+  const out: { id: number | string; title: string; depth: number }[] = []
+  function walk(key: string, depth: number) {
+    const kids = byParent.get(key) || []
+    for (const k of kids) {
+      out.push({ id: k.id, title: k.title, depth })
+      walk(String(k.id), depth + 1)
+    }
+  }
+  walk('root', 0)
+  return out
+}
+
 export function VideosManager({
   initialVideos,
   tiers,
+  folders: initialFolders,
 }: {
   initialVideos: Vid[]
   tiers: Tier[]
+  folders: FolderItem[]
 }) {
   const router = useRouter()
   const [videos, setVideos] = useState<Vid[]>(initialVideos)
+  const [folders, setFolders] = useState<FolderItem[]>(initialFolders)
 
-  // после router.refresh() приходят свежие initialVideos — синхронизируем,
-  // иначе useState держит старый снимок и новое видео не появляется без
-  // полной перезагрузки страницы
-  useEffect(() => {
-    setVideos(initialVideos)
-  }, [initialVideos])
+  // после router.refresh() приходят свежие данные — синхронизируем
+  useEffect(() => setVideos(initialVideos), [initialVideos])
+  useEffect(() => setFolders(initialFolders), [initialFolders])
+
   const [adding, setAdding] = useState(false)
+  const [filter, setFilter] = useState<string>(FILTER_ALL) // FILTER_ALL | FILTER_NONE | folderId
+
+  const flatFolders = useMemo(() => flattenFolders(folders), [folders])
+  const folderNameById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const f of folders) m.set(String(f.id), f.title)
+    return m
+  }, [folders])
+
+  const visibleVideos = useMemo(() => {
+    if (filter === FILTER_ALL) return videos
+    if (filter === FILTER_NONE) return videos.filter((v) => v.folderId == null)
+    return videos.filter((v) => String(v.folderId) === filter)
+  }, [videos, filter])
+
+  // Оптимистично меняем папку видео локально (без полного refresh)
+  function applyFolderLocally(videoId: number | string, folderId: number | string | null) {
+    setVideos((prev) =>
+      prev.map((v) => (String(v.id) === String(videoId) ? { ...v, folderId } : v)),
+    )
+  }
 
   return (
     <>
@@ -66,34 +135,85 @@ export function VideosManager({
         />
       )}
 
+      <FolderBar
+        folders={folders}
+        flatFolders={flatFolders}
+        filter={filter}
+        onFilter={setFilter}
+        counts={{
+          all: videos.length,
+          none: videos.filter((v) => v.folderId == null).length,
+        }}
+        onChanged={() => router.refresh()}
+      />
+
       {videos.length === 0 ? (
         <div className="studio-empty">
           <div className="studio-empty__icon"><VideoIcon size={28} /></div>
           <div className="studio-empty__title">Видео пока нет</div>
           <div className="studio-empty__text">Добавьте первое видео по ссылке из вашего хранилища.</div>
         </div>
+      ) : visibleVideos.length === 0 ? (
+        <div className="studio-empty">
+          <div className="studio-empty__icon"><Folder size={28} /></div>
+          <div className="studio-empty__title">В этой папке пусто</div>
+          <div className="studio-empty__text">Назначьте видео эту папку через столбец «Папка».</div>
+        </div>
       ) : (
-        <div className="vid__grid">
-          {videos.map((v) => (
-            <VideoCard key={v.id} video={v} />
-          ))}
+        <div className="vidtable__wrap">
+          <table className="vidtable">
+            <thead>
+              <tr>
+                <th className="vidtable__th-thumb"></th>
+                <th>Название</th>
+                <th className="vidtable__th-dur">Длительность</th>
+                <th className="vidtable__th-tier">Уровень</th>
+                <th className="vidtable__th-status">Статус</th>
+                <th className="vidtable__th-folder">Папка</th>
+                <th className="vidtable__th-date">Добавлено</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleVideos.map((v) => (
+                <VideoRow
+                  key={v.id}
+                  video={v}
+                  flatFolders={flatFolders}
+                  folderName={v.folderId != null ? folderNameById.get(String(v.folderId)) || null : null}
+                  onFolderChange={applyFolderLocally}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </>
   )
 }
 
-/* Карточка видео со статусом кодирования */
-function VideoCard({ video }: { video: Vid }) {
+/* ============================================================================
+   СТРОКА ТАБЛИЦЫ
+   ============================================================================ */
+function VideoRow({
+  video,
+  flatFolders,
+  folderName,
+  onFolderChange,
+}: {
+  video: Vid
+  flatFolders: { id: number | string; title: string; depth: number }[]
+  folderName: string | null
+  onFolderChange: (videoId: number | string, folderId: number | string | null) => void
+}) {
   const [ready, setReady] = useState<boolean | null>(null)
   const [pct, setPct] = useState<string | null>(null)
   const [playing, setPlaying] = useState(false)
+  const [folderMenu, setFolderMenu] = useState(false)
   const timer = useRef<any>(null)
 
   useEffect(() => {
     if (!video.videoRef) return
     let stopped = false
-
     async function poll() {
       try {
         const res = await fetch(`/studio/api/videos/status?id=${video.id}`, {
@@ -104,7 +224,7 @@ function VideoCard({ video }: { video: Vid }) {
         if (json.ready) {
           setReady(true)
           setPct(null)
-          return // готово — прекращаем опрос
+          return
         }
         setReady(false)
         setPct(json.pct || null)
@@ -120,46 +240,131 @@ function VideoCard({ video }: { video: Vid }) {
     }
   }, [video.id, video.videoRef])
 
-  return (
-    <div className="vid__card">
-      <div className="vid__thumb">
-        {video.coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={video.coverUrl} alt="" />
-        ) : (
-          <div className="vid__thumb-empty"><VideoIcon size={26} /></div>
-        )}
-        {video.durationSec ? <span className="vid__dur">{fmtDur(video.durationSec)}</span> : null}
-        {ready === true && (
-          <button className="vid__play" onClick={() => setPlaying(true)} title="Смотреть">
-            <Play size={22} />
-          </button>
-        )}
-      </div>
-      <div className="vid__body">
-        <div className="vid__title">{video.title}</div>
-        <div className="vid__meta">
-          {video.isPreview ? (
-            <span className="vid__badge vid__badge--free"><Unlock size={12} /> Бесплатно</span>
-          ) : video.minTierName ? (
-            <span className="vid__badge"><Lock size={12} /> {video.minTierName}</span>
-          ) : (
-            <span className="vid__badge"><Unlock size={12} /> Все</span>
-          )}
+  async function assignFolder(folderId: number | string | null) {
+    setFolderMenu(false)
+    // оптимистично
+    const prev = video.folderId
+    onFolderChange(video.id, folderId)
+    try {
+      const res = await fetch('/studio/api/videos/set-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ videoId: video.id, folderId: folderId ?? null }),
+      })
+      if (!res.ok) onFolderChange(video.id, prev) // откат
+    } catch {
+      onFolderChange(video.id, prev)
+    }
+  }
 
+  return (
+    <tr className="vidtable__row">
+      {/* Тумба-превью */}
+      <td className="vidtable__thumb-cell">
+        <button
+          className="vidtable__thumb"
+          onClick={() => ready && setPlaying(true)}
+          disabled={ready !== true}
+          title={ready === true ? 'Смотреть' : 'Видео ещё кодируется'}
+        >
+          {video.coverUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={video.coverUrl} alt="" />
+          ) : (
+            <span className="vidtable__thumb-empty"><VideoIcon size={16} /></span>
+          )}
           {ready === true && (
-            <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
+            <span className="vidtable__thumb-play"><Play size={14} /></span>
           )}
-          {ready === false && (
-            <span className="vid__status vid__status--wait">
-              <Loader2 size={13} className="spin" /> Кодируется{pct ? ` ${pct}%` : ''}
-            </span>
-          )}
-          {ready === null && video.videoRef && (
-            <span className="vid__status"><Clock size={13} /> Проверка…</span>
+          {video.durationSec ? (
+            <span className="vidtable__thumb-dur">{fmtDur(video.durationSec)}</span>
+          ) : null}
+        </button>
+      </td>
+
+      {/* Название */}
+      <td className="vidtable__title-cell">
+        <span className="vidtable__title" title={video.title}>{video.title}</span>
+      </td>
+
+      {/* Длительность */}
+      <td className="vidtable__dur-cell">{fmtDur(video.durationSec) || '—'}</td>
+
+      {/* Уровень */}
+      <td>
+        {video.isPreview ? (
+          <span className="vid__badge vid__badge--free"><Unlock size={12} /> Бесплатно</span>
+        ) : video.minTierName ? (
+          <span className="vid__badge"><Lock size={12} /> {video.minTierName}</span>
+        ) : (
+          <span className="vid__badge"><Unlock size={12} /> Все</span>
+        )}
+      </td>
+
+      {/* Статус */}
+      <td>
+        {ready === true && (
+          <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
+        )}
+        {ready === false && (
+          <span className="vid__status vid__status--wait">
+            <Loader2 size={13} className="spin" /> Кодируется{pct ? ` ${pct}%` : ''}
+          </span>
+        )}
+        {ready === null && video.videoRef && (
+          <span className="vid__status"><Clock size={13} /> Проверка…</span>
+        )}
+        {ready === null && !video.videoRef && (
+          <span className="vid__status vid__status--wait"><Clock size={13} /> Нет файла</span>
+        )}
+      </td>
+
+      {/* Папка */}
+      <td className="vidtable__folder-cell">
+        <div className="vidtable__folder">
+          <button
+            className={`vidtable__folder-btn${folderName ? '' : ' is-empty'}`}
+            onClick={() => setFolderMenu((v) => !v)}
+          >
+            {folderName ? (
+              <><Folder size={13} /> <span className="vidtable__folder-name">{folderName}</span></>
+            ) : (
+              <span className="vidtable__folder-empty">— выбрать —</span>
+            )}
+          </button>
+          {folderMenu && (
+            <>
+              <div className="vidtable__menu-backdrop" onClick={() => setFolderMenu(false)} />
+              <div className="vidtable__menu">
+                <button
+                  className={`vidtable__menu-item${video.folderId == null ? ' is-active' : ''}`}
+                  onClick={() => assignFolder(null)}
+                >
+                  Без папки
+                </button>
+                {flatFolders.length === 0 ? (
+                  <div className="vidtable__menu-empty">Папок пока нет</div>
+                ) : (
+                  flatFolders.map((f) => (
+                    <button
+                      key={f.id}
+                      className={`vidtable__menu-item${String(video.folderId) === String(f.id) ? ' is-active' : ''}`}
+                      style={{ paddingLeft: `${12 + f.depth * 14}px` }}
+                      onClick={() => assignFolder(f.id)}
+                    >
+                      {f.title}
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
           )}
         </div>
-      </div>
+      </td>
+
+      {/* Дата */}
+      <td className="vidtable__date-cell">{fmtDate(video.addedAt) || '—'}</td>
 
       {playing && (
         <VideoPreviewModal
@@ -168,11 +373,245 @@ function VideoCard({ video }: { video: Vid }) {
           onClose={() => setPlaying(false)}
         />
       )}
+    </tr>
+  )
+}
+
+/* ============================================================================
+   ПАНЕЛЬ ПАПОК: фильтр + управление (создать / переименовать / удалить)
+   ============================================================================ */
+function FolderBar({
+  folders,
+  flatFolders,
+  filter,
+  onFilter,
+  counts,
+  onChanged,
+}: {
+  folders: FolderItem[]
+  flatFolders: { id: number | string; title: string; depth: number }[]
+  filter: string
+  onFilter: (v: string) => void
+  counts: { all: number; none: number }
+  onChanged: () => void
+}) {
+  const [managing, setManaging] = useState(false)
+
+  return (
+    <div className="folderbar">
+      <div className="folderbar__filter">
+        <span className="folderbar__label">Папка:</span>
+        <select
+          className="studio-input folderbar__select"
+          value={filter}
+          onChange={(e) => onFilter(e.target.value)}
+        >
+          <option value={FILTER_ALL}>Все видео ({counts.all})</option>
+          <option value={FILTER_NONE}>Без папки ({counts.none})</option>
+          {flatFolders.map((f) => (
+            <option key={f.id} value={String(f.id)}>
+              {'\u00A0'.repeat(f.depth * 2)}{f.title}
+            </option>
+          ))}
+        </select>
+      </div>
+      <button
+        className="studio-btn studio-btn--ghost folderbar__manage"
+        onClick={() => setManaging((v) => !v)}
+      >
+        <Folder size={15} />
+        Управление папками
+        <ChevronRight size={14} className={managing ? 'folderbar__chev is-open' : 'folderbar__chev'} />
+      </button>
+
+      {managing && (
+        <FolderManager
+          folders={folders}
+          flatFolders={flatFolders}
+          onChanged={onChanged}
+        />
+      )}
     </div>
   )
 }
 
-/* Панель добавления с выбором способа: по ссылке / загрузить файл */
+/* Управление папками: список + создание + переименование + удаление */
+function FolderManager({
+  folders,
+  flatFolders,
+  onChanged,
+}: {
+  folders: FolderItem[]
+  flatFolders: { id: number | string; title: string; depth: number }[]
+  onChanged: () => void
+}) {
+  const [newTitle, setNewTitle] = useState('')
+  const [newParent, setNewParent] = useState<string>('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+
+  async function createFolder() {
+    setError(null)
+    if (!newTitle.trim()) return setError('Укажите название папки')
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/video-folders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ title: newTitle.trim(), parentId: newParent || null }),
+      })
+      const json = await res.json()
+      if (!res.ok) setError(json.error || 'Не удалось создать папку')
+      else {
+        setNewTitle('')
+        setNewParent('')
+        onChanged()
+      }
+    } catch {
+      setError('Ошибка соединения')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function renameFolder(id: number | string) {
+    setError(null)
+    if (!editTitle.trim()) return setError('Укажите название папки')
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/video-folders/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id, title: editTitle.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) setError(json.error || 'Не удалось переименовать')
+      else {
+        setEditingId(null)
+        setEditTitle('')
+        onChanged()
+      }
+    } catch {
+      setError('Ошибка соединения')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function deleteFolder(id: number | string, title: string) {
+    if (!window.confirm(`Удалить папку «${title}»? Видео из неё не удалятся, а станут «без папки».`)) return
+    setError(null)
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/video-folders/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id }),
+      })
+      const json = await res.json()
+      if (!res.ok) setError(json.error || 'Не удалось удалить папку')
+      else onChanged()
+    } catch {
+      setError('Ошибка соединения')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="foldermgr">
+      {/* Создание */}
+      <div className="foldermgr__create">
+        <input
+          className="studio-input"
+          placeholder="Название новой папки"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && createFolder()}
+        />
+        <select
+          className="studio-input foldermgr__parent"
+          value={newParent}
+          onChange={(e) => setNewParent(e.target.value)}
+        >
+          <option value="">Корень (без родителя)</option>
+          {flatFolders.map((f) => (
+            <option key={f.id} value={String(f.id)}>
+              {'\u00A0'.repeat(f.depth * 2)}{f.title}
+            </option>
+          ))}
+        </select>
+        <button className="studio-btn studio-btn--primary" onClick={createFolder} disabled={busy}>
+          {busy ? <Loader2 size={15} className="spin" /> : <FolderPlus size={15} />}
+          Создать
+        </button>
+      </div>
+
+      {error && <div className="studio-login__error foldermgr__error">{error}</div>}
+
+      {/* Список папок */}
+      {flatFolders.length === 0 ? (
+        <div className="foldermgr__empty">Папок пока нет. Создайте первую выше.</div>
+      ) : (
+        <ul className="foldermgr__list">
+          {flatFolders.map((f) => (
+            <li key={f.id} className="foldermgr__item" style={{ paddingLeft: `${f.depth * 16}px` }}>
+              <Folder size={14} className="foldermgr__item-icon" />
+              {editingId === f.id ? (
+                <>
+                  <input
+                    className="studio-input foldermgr__edit-input"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') renameFolder(f.id)
+                      if (e.key === 'Escape') setEditingId(null)
+                    }}
+                    autoFocus
+                  />
+                  <button className="catmgr__icon-btn" onClick={() => renameFolder(f.id)} title="Сохранить" disabled={busy}>
+                    <Check size={15} />
+                  </button>
+                  <button className="catmgr__icon-btn" onClick={() => setEditingId(null)} title="Отмена">
+                    <X size={15} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="foldermgr__item-title">{f.title}</span>
+                  <button
+                    className="catmgr__icon-btn"
+                    onClick={() => { setEditingId(f.id); setEditTitle(f.title); setError(null) }}
+                    title="Переименовать"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    className="catmgr__icon-btn foldermgr__del"
+                    onClick={() => deleteFolder(f.id, f.title)}
+                    title="Удалить"
+                    disabled={busy}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+/* ============================================================================
+   ДОБАВЛЕНИЕ ВИДЕО (без изменений — перенесено как есть)
+   ============================================================================ */
 function AddPanel({
   tiers,
   onDone,
@@ -209,7 +648,6 @@ function AddPanel({
   )
 }
 
-/* Загрузка локального файла через TUS (резюмируемая, с прогрессом) */
 function UploadFileForm({
   tiers,
   onDone,
@@ -249,7 +687,6 @@ function UploadFileForm({
     setTotal(file.size)
 
     try {
-      // 1) получаем одноразовый TUS upload-URL с сервера
       const res = await fetch('/studio/api/videos/tus-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -264,10 +701,9 @@ function UploadFileForm({
       }
       const { uploadURL, uid } = json
 
-      // 2) льём файл кусками напрямую в Cloudflare
       const upload = new tus.Upload(file, {
         uploadUrl: uploadURL,
-        chunkSize: 50 * 1024 * 1024, // 50 МБ (минимум CF — 5 МБ)
+        chunkSize: 50 * 1024 * 1024,
         retryDelays: [0, 3000, 5000, 10000, 20000],
         metadata: { filename: file.name, filetype: file.type },
         onError(err) {
@@ -280,7 +716,6 @@ function UploadFileForm({
           setPct(Math.round((bytesUploaded / bytesTotal) * 100))
         },
         async onSuccess() {
-          // 3) фиксируем запись Videos на сервере
           try {
             const cr = await fetch('/studio/api/videos/create-from-upload', {
               method: 'POST',
@@ -426,7 +861,6 @@ function UploadFileForm({
   )
 }
 
-/* Поля добавления по ссылке (вынесено из формы для переиспользования в панели) */
 function UrlFields({
   tiers,
   onDone,

@@ -2187,3 +2187,349 @@ select.studio-input {
   color: var(--st-text-faint);
   text-align: center;
 }
+/* ============================================================================
+   ТАБЛИЦА ВИДЕО + ПАПКИ (задача 5.4)
+   ============================================================================ */
+
+/* --- Панель папок (фильтр + вход в управление) ------------------------------ */
+.folderbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--st-space-3);
+  margin-bottom: var(--st-space-5);
+}
+
+.folderbar__filter {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+}
+
+.folderbar__label {
+  font-size: var(--st-text-sm);
+  color: var(--st-text-muted);
+  font-weight: 600;
+}
+
+.folderbar__select {
+  width: auto;
+  min-width: 200px;
+}
+
+.folderbar__manage {
+  margin-left: auto;
+}
+
+.folderbar__chev {
+  transition: transform var(--st-dur) var(--st-ease);
+}
+.folderbar__chev.is-open {
+  transform: rotate(90deg);
+}
+
+/* --- Управление папками ----------------------------------------------------- */
+.foldermgr {
+  width: 100%;
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  padding: var(--st-space-4);
+  margin-top: calc(var(--st-space-2) * -1);
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-3);
+}
+
+.foldermgr__create {
+  display: flex;
+  gap: var(--st-space-2);
+  align-items: stretch;
+}
+.foldermgr__create .studio-input {
+  flex: 1;
+}
+.foldermgr__parent {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 180px;
+}
+.foldermgr__create .studio-btn {
+  flex-shrink: 0;
+}
+
+.foldermgr__error {
+  margin: 0;
+}
+
+.foldermgr__empty {
+  font-size: var(--st-text-sm);
+  color: var(--st-text-faint);
+  padding: var(--st-space-2) 0;
+}
+
+.foldermgr__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.foldermgr__item {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  padding: var(--st-space-2) var(--st-space-2);
+  border-radius: var(--st-radius-sm);
+  transition: background var(--st-dur) var(--st-ease);
+}
+.foldermgr__item:hover {
+  background: var(--st-surface-2);
+}
+
+.foldermgr__item-icon {
+  color: var(--st-text-faint);
+  flex-shrink: 0;
+}
+
+.foldermgr__item-title {
+  flex: 1;
+  font-size: var(--st-text-sm);
+  color: var(--st-text);
+}
+
+.foldermgr__edit-input {
+  flex: 1;
+  padding: var(--st-space-1) var(--st-space-2);
+  font-size: var(--st-text-sm);
+}
+
+.foldermgr__del:hover {
+  color: var(--st-danger);
+}
+
+/* --- Таблица видео ---------------------------------------------------------- */
+.vidtable__wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  background: var(--st-surface);
+}
+
+.vidtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--st-text-sm);
+}
+
+.vidtable thead th {
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--st-text-xs);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--st-text-faint);
+  padding: var(--st-space-3) var(--st-space-3);
+  border-bottom: 1px solid var(--st-border);
+  white-space: nowrap;
+}
+
+.vidtable__th-thumb { width: 76px; }
+.vidtable__th-dur,
+.vidtable__th-date { width: 120px; }
+.vidtable__th-tier { width: 130px; }
+.vidtable__th-status { width: 150px; }
+.vidtable__th-folder { width: 180px; }
+
+.vidtable__row {
+  border-bottom: 1px solid var(--st-border);
+  transition: background var(--st-dur) var(--st-ease);
+}
+.vidtable__row:last-child {
+  border-bottom: none;
+}
+.vidtable__row:hover {
+  background: var(--st-surface-2);
+}
+
+.vidtable td {
+  padding: var(--st-space-2) var(--st-space-3);
+  vertical-align: middle;
+  color: var(--st-text);
+}
+
+/* Тумба-превью */
+.vidtable__thumb-cell {
+  padding: var(--st-space-2) var(--st-space-3);
+}
+.vidtable__thumb {
+  position: relative;
+  display: block;
+  width: 60px;
+  height: 40px;
+  border-radius: var(--st-radius-sm);
+  overflow: hidden;
+  border: none;
+  padding: 0;
+  background: var(--st-surface-2);
+  cursor: pointer;
+}
+.vidtable__thumb:disabled {
+  cursor: default;
+}
+.vidtable__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.vidtable__thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--st-text-faint);
+}
+.vidtable__thumb-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(0, 0, 0, .35);
+  opacity: 0;
+  transition: opacity var(--st-dur) var(--st-ease);
+}
+.vidtable__thumb:hover:not(:disabled) .vidtable__thumb-play {
+  opacity: 1;
+}
+.vidtable__thumb-dur {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  font-size: 10px;
+  font-family: var(--st-font-mono);
+  color: #fff;
+  background: rgba(0, 0, 0, .7);
+  padding: 0 3px;
+  border-radius: 3px;
+  line-height: 1.4;
+}
+
+/* Название */
+.vidtable__title-cell {
+  max-width: 320px;
+}
+.vidtable__title {
+  display: block;
+  font-weight: 500;
+  color: var(--st-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vidtable__dur-cell,
+.vidtable__date-cell {
+  font-family: var(--st-font-mono);
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+  white-space: nowrap;
+}
+
+/* Папка (кнопка + меню) */
+.vidtable__folder-cell {
+  position: relative;
+}
+.vidtable__folder {
+  position: relative;
+}
+.vidtable__folder-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--st-space-1);
+  max-width: 160px;
+  padding: var(--st-space-1) var(--st-space-2);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-bg);
+  color: var(--st-text);
+  font-size: var(--st-text-xs);
+  cursor: pointer;
+  transition: border-color var(--st-dur) var(--st-ease);
+}
+.vidtable__folder-btn:hover {
+  border-color: var(--st-border-strong);
+}
+.vidtable__folder-btn.is-empty {
+  color: var(--st-text-faint);
+  border-style: dashed;
+}
+.vidtable__folder-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vidtable__folder-empty {
+  white-space: nowrap;
+}
+
+.vidtable__menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.vidtable__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 41;
+  min-width: 180px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--st-surface);
+  border: 1px solid var(--st-border-strong);
+  border-radius: var(--st-radius-sm);
+  box-shadow: var(--st-shadow);
+  padding: var(--st-space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.vidtable__menu-item {
+  text-align: left;
+  padding: var(--st-space-2) var(--st-space-3);
+  border: none;
+  background: transparent;
+  color: var(--st-text);
+  font-size: var(--st-text-sm);
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: background var(--st-dur) var(--st-ease);
+}
+.vidtable__menu-item:hover {
+  background: var(--st-surface-hover);
+}
+.vidtable__menu-item.is-active {
+  background: var(--st-surface-2);
+  font-weight: 600;
+}
+.vidtable__menu-empty {
+  padding: var(--st-space-2) var(--st-space-3);
+  font-size: var(--st-text-xs);
+  color: var(--st-text-faint);
+}
+
+/* Мобилка: прячем менее важные колонки */
+@media (max-width: 860px) {
+  .vidtable__th-date,
+  .vidtable__date-cell { display: none; }
+  .foldermgr__create { flex-wrap: wrap; }
+  .foldermgr__parent { width: 100%; min-width: 0; }
+}
