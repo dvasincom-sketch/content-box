@@ -5,8 +5,8 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { Composer } from './Composer'
 
 /**
- * Композер (Шаг 3). Серверная часть: подгружает категории и уровни подписки
- * тенанта автора (scoped), передаёт в клиентский Composer.
+ * Композер (Шаг 3). Серверная часть: подгружает категории, уровни подписки
+ * и видео тенанта автора (scoped), передаёт в клиентский Composer.
  *
  * Категории тянем с parent (nestedDocsPlugin) для построения дерева на клиенте.
  * limit поднят выше реального числа категорий (210+), чтобы ничего не срезалось.
@@ -18,7 +18,7 @@ export default async function NewPostPage() {
   const author = await getCurrentAuthor() // guard в (app)/layout гарантирует
   const payload = await getPayload({ config: await config })
 
-  const [catsRes, tiersRes] = await Promise.all([
+  const [catsRes, tiersRes, videosRes] = await Promise.all([
     payload.find({
       collection: 'categories',
       where: { tenant: { equals: author!.tenantId } },
@@ -37,6 +37,14 @@ export default async function NewPostPage() {
       },
       sort: 'weight',
       limit: 50,
+      depth: 0,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'videos',
+      where: { tenant: { equals: author!.tenantId } },
+      sort: '-createdAt',
+      limit: 500,
       depth: 0,
       overrideAccess: true,
     }),
@@ -61,5 +69,11 @@ export default async function NewPostPage() {
     priceRub: t.priceRub,
   }))
 
-  return <Composer categories={categories} tiers={tiers} />
+  const videos = (videosRes.docs as any[]).map((v) => ({
+    id: v.id,
+    title: v.title || 'Без названия',
+    addedAt: v.publishedAt || v.createdAt || null,
+  }))
+
+  return <Composer categories={categories} tiers={tiers} videos={videos} />
 }

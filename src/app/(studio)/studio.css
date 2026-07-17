@@ -1936,3 +1936,254 @@ select.studio-input {
   .tier-editor__perk { flex-wrap: wrap; }
   .tier-editor__perk-text { width: 100%; flex-basis: 100%; }
 }
+/* ============================================================================
+   ПРИКРЕПЛЕНИЕ ВИДЕО К ПУБЛИКАЦИИ (композер)
+   ============================================================================ */
+
+.vpick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+}
+
+/* --- Список прикреплённых --------------------------------------------------- */
+.vpick__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-1);
+}
+
+.vpick__item {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  padding: var(--st-space-2) var(--st-space-2);
+  background: var(--st-bg);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+}
+
+.vpick__item-icon {
+  display: inline-flex;
+  color: var(--st-text-faint);
+  flex-shrink: 0;
+}
+
+.vpick__item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.vpick__item-title {
+  font-size: var(--st-text-sm);
+  color: var(--st-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vpick__item-date {
+  font-size: var(--st-text-xs);
+  color: var(--st-text-faint);
+  font-family: var(--st-font-mono);
+}
+
+.vpick__item-order {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.vpick__ord-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 15px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--st-text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease);
+}
+.vpick__ord-btn:hover:not(:disabled) {
+  color: var(--st-text);
+  background: var(--st-surface-hover);
+}
+.vpick__ord-btn:disabled {
+  opacity: .3;
+  cursor: not-allowed;
+}
+
+.vpick__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--st-text-faint);
+  cursor: pointer;
+  border-radius: var(--st-radius-sm);
+  flex-shrink: 0;
+  transition: color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease);
+}
+.vpick__remove:hover {
+  color: var(--st-danger);
+  background: var(--st-surface-hover);
+}
+
+/* --- Кнопка «Прикрепить видео» ---------------------------------------------- */
+.vpick__add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  padding: var(--st-space-2) var(--st-space-3);
+  background: var(--st-bg);
+  border: 1px dashed var(--st-border-strong);
+  border-radius: var(--st-radius-sm);
+  color: var(--st-text-muted);
+  font-family: var(--st-font-body);
+  font-size: var(--st-text-sm);
+  cursor: pointer;
+  transition: color var(--st-dur) var(--st-ease), border-color var(--st-dur) var(--st-ease);
+}
+.vpick__add-btn:hover {
+  color: var(--st-text);
+  border-color: var(--st-text-muted);
+}
+
+/* --- Поиск ------------------------------------------------------------------ */
+.vpick__search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-1);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-surface);
+  overflow: hidden;
+}
+
+.vpick__search-field {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  padding: var(--st-space-2) var(--st-space-2);
+  border-bottom: 1px solid var(--st-border);
+}
+
+.vpick__search-icon {
+  color: var(--st-text-faint);
+  flex-shrink: 0;
+}
+
+.vpick__search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--st-text);
+  font-family: var(--st-font-body);
+  font-size: var(--st-text-sm);
+  outline: none;
+}
+.vpick__search-input::placeholder {
+  color: var(--st-text-faint);
+}
+
+.vpick__search-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--st-text-faint);
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease);
+}
+.vpick__search-close:hover {
+  color: var(--st-text);
+  background: var(--st-surface-hover);
+}
+
+/* --- Результаты ------------------------------------------------------------- */
+.vpick__results {
+  list-style: none;
+  margin: 0;
+  padding: var(--st-space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.vpick__result {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  width: 100%;
+  padding: var(--st-space-2) var(--st-space-2);
+  border: none;
+  background: transparent;
+  color: var(--st-text);
+  cursor: pointer;
+  border-radius: var(--st-radius-sm);
+  text-align: left;
+  transition: background var(--st-dur) var(--st-ease);
+}
+.vpick__result:hover {
+  background: var(--st-surface-hover);
+}
+
+.vpick__result-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.vpick__result-title {
+  font-size: var(--st-text-sm);
+  color: var(--st-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vpick__result-date {
+  font-size: var(--st-text-xs);
+  color: var(--st-text-faint);
+  font-family: var(--st-font-mono);
+}
+
+.vpick__result-add {
+  color: var(--st-text-faint);
+  flex-shrink: 0;
+}
+.vpick__result:hover .vpick__result-add {
+  color: var(--st-text);
+}
+
+.vpick__empty {
+  padding: var(--st-space-3) var(--st-space-2);
+  font-size: var(--st-text-sm);
+  color: var(--st-text-faint);
+  text-align: center;
+}

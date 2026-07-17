@@ -12,10 +12,10 @@ import { slugify } from '@/lib/slugify'
  * Безопасность:
  *  - автор берётся из сессии (getCurrentAuthor) — не из тела запроса;
  *  - tenant проставляется из author.tenantId, клиент не может его подделать;
- *  - категория/уровень проверяются на принадлежность тому же тенанту.
+ *  - категория/уровень/видео проверяются на принадлежность тому же тенанту.
  *
  * Body (JSON):
- *  { title, body, slug?, coverId?, categoryId?, minTierId?, publish }
+ *  { title, body, slug?, coverId?, categoryId?, minTierId?, relatedVideoIds?, publish }
  *  publish=true → publishedAt=now (опубликовано); false → черновик (без даты).
  */
 export async function POST(req: NextRequest) {
@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
     if (ok) coverId = Number(data.coverId)
   }
 
+  // Прикреплённые видео: фильтруем по тенанту, сохраняем порядок, убираем дубли
+  const relatedVideos = await filterTenantVideos(payload, data.relatedVideoIds, tenantId)
+
   const publish = data.publish === true
 
   try {
@@ -77,6 +80,7 @@ export async function POST(req: NextRequest) {
         ...(categoryId ? { category: categoryId } : {}),
         ...(minTierId ? { minTier: minTierId } : {}),
         ...(coverId ? { cover: coverId } : {}),
+        ...(relatedVideos.length ? { relatedVideos } : {}),
         ...(publish ? { publishedAt: new Date().toISOString() } : {}),
       } as any,
       overrideAccess: true,
@@ -105,6 +109,30 @@ async function belongsToTenant(
   } catch {
     return false
   }
+}
+
+/**
+ * Из массива id видео оставляет только принадлежащие тенанту, в исходном
+ * порядке, без дублей. Возвращает массив number, готовый для relatedVideos.
+ */
+async function filterTenantVideos(
+  payload: any,
+  ids: any,
+  tenantId: number,
+): Promise<number[]> {
+  if (!Array.isArray(ids) || ids.length === 0) return []
+  const seen = new Set<number>()
+  const out: number[] = []
+  for (const raw of ids) {
+    const vid = Number(raw)
+    if (!Number.isFinite(vid) || seen.has(vid)) continue
+    const ok = await belongsToTenant(payload, 'videos', vid, tenantId)
+    if (ok) {
+      seen.add(vid)
+      out.push(vid)
+    }
+  }
+  return out
 }
 
 /** Делает slug уникальным в пределах тенанта: post, post-2, post-3... */

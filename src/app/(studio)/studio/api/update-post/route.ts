@@ -12,11 +12,14 @@ import { slugify } from '@/lib/slugify'
  *   - publish=false → publishedAt = null (снять с публикации → черновик)
  *   - publish не передан → publishedAt не трогаем
  *
- * Body: { id, title, body, coverId?, categoryId?, minTierId?, publish? }
+ * Body: { id, title, body, coverId?, categoryId?, minTierId?, relatedVideoIds?, publish? }
  * Значения coverId/categoryId/minTierId:
  *   - число  → установить
  *   - null   → очистить поле
  *   - undefined/отсутствует → не трогать
+ * relatedVideoIds:
+ *   - массив → заменить набор прикреплённых видео (порядок значим; фильтр по тенанту)
+ *   - отсутствует → не трогать
  */
 export async function POST(req: NextRequest) {
   const author = await getCurrentAuthor()
@@ -70,6 +73,11 @@ export async function POST(req: NextRequest) {
     patch.cover = await resolveRel(payload, 'media', data.coverId, tenantId)
   }
 
+  // Прикреплённые видео: если ключ передан — заменяем набор целиком (пустой = открепить все)
+  if ('relatedVideoIds' in data) {
+    patch.relatedVideos = await filterTenantVideos(payload, data.relatedVideoIds, tenantId)
+  }
+
   // Статус
   if (data.publish === true) {
     // публикуем: ставим дату, если её не было
@@ -113,4 +121,38 @@ async function resolveRel(
   } catch {
     return null
   }
+}
+
+/**
+ * Из массива id видео оставляет только принадлежащие тенанту, в исходном
+ * порядке, без дублей. Возвращает массив number для relatedVideos.
+ */
+async function filterTenantVideos(
+  payload: any,
+  ids: any,
+  tenantId: number,
+): Promise<number[]> {
+  if (!Array.isArray(ids) || ids.length === 0) return []
+  const seen = new Set<number>()
+  const out: number[] = []
+  for (const raw of ids) {
+    const vid = Number(raw)
+    if (!Number.isFinite(vid) || seen.has(vid)) continue
+    try {
+      const doc = await payload.findByID({
+        collection: 'videos',
+        id: vid,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
+      if (Number(t) === Number(tenantId)) {
+        seen.add(vid)
+        out.push(vid)
+      }
+    } catch {
+      // видео не найдено — пропускаем
+    }
+  }
+  return out
 }

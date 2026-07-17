@@ -7,6 +7,7 @@ import { ArrowLeft, ImagePlus, X, Loader2, Trash2 } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
 import { RichEditor } from './RichEditor'
+import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 
 type Category = CatItem
 type Tier = { id: number | string; name: string; weight: number; priceRub: number }
@@ -21,15 +22,18 @@ export type PostInitial = {
   coverId: number | null
   coverUrl: string | null
   isPublished: boolean
+  relatedVideoIds: (number | string)[]
 }
 
 export function Composer({
   categories,
   tiers,
+  videos = [],
   initial,
 }: {
   categories: Category[]
   tiers: Tier[]
+  videos?: VideoOption[]
   initial?: PostInitial
 }) {
   const router = useRouter()
@@ -43,6 +47,10 @@ export function Composer({
   const [coverId, setCoverId] = useState<number | null>(initial?.coverId ?? null)
   const [coverUrl, setCoverUrl] = useState<string | null>(initial?.coverUrl ?? null)
   const [uploading, setUploading] = useState(false)
+
+  const [relatedVideoIds, setRelatedVideoIds] = useState<(number | string)[]>(
+    initial?.relatedVideoIds ?? [],
+  )
 
   const [saving, setSaving] = useState<false | 'draft' | 'publish' | 'save' | 'unpublish'>(false)
   const [deleting, setDeleting] = useState(false)
@@ -108,6 +116,10 @@ export function Composer({
       categoryId: isEdit ? (categoryId || null) : (categoryId || undefined),
       minTierId: isEdit ? (minTierId || null) : (minTierId || undefined),
       coverId: isEdit ? (coverId ?? null) : (coverId || undefined),
+      // в edit всегда шлём массив (пустой = открепить все); в create — только если есть
+      relatedVideoIds: isEdit
+        ? relatedVideoIds
+        : (relatedVideoIds.length ? relatedVideoIds : undefined),
     }
     if (isEdit) payload.id = initial!.id
     if (publish !== undefined) payload.publish = publish
@@ -317,6 +329,18 @@ export function Composer({
           <div className="composer__field">
             <div className="composer__field-label">Категория</div>
             <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+          </div>
+
+          <div className="composer__field">
+            <div className="composer__field-label">Прикреплённые видео</div>
+            <VideoAttachPicker
+              videos={videos}
+              value={relatedVideoIds}
+              onChange={setRelatedVideoIds}
+            />
+            <div className="composer__hint">
+              Видео появятся на странице публикации в указанном порядке — до описания.
+            </div>
           </div>
         </aside>
       </div>

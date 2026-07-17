@@ -7,8 +7,8 @@ import { lexicalToHtml } from '@/lib/lexical'
 import { Composer, type PostInitial } from '../new/Composer'
 
 /**
- * Редактирование публикации. Грузит пост тенанта автора, категории и уровни,
- * разворачивает Lexical-описание обратно в текст, передаёт в Composer (edit).
+ * Редактирование публикации. Грузит пост тенанта автора, категории, уровни и
+ * видео, разворачивает Lexical-описание обратно в текст, передаёт в Composer (edit).
  */
 
 export const dynamic = 'force-dynamic'
@@ -31,8 +31,8 @@ export default async function EditPostPage({
   const postTenant = post.tenant && typeof post.tenant === 'object' ? post.tenant.id : post.tenant
   if (Number(postTenant) !== Number(author!.tenantId)) notFound()
 
-  // Категории и уровни (как в композере создания)
-  const [catsRes, tiersRes] = await Promise.all([
+  // Категории, уровни и видео (как в композере создания)
+  const [catsRes, tiersRes, videosRes] = await Promise.all([
     payload.find({
       collection: 'categories',
       where: { tenant: { equals: author!.tenantId } },
@@ -51,6 +51,14 @@ export default async function EditPostPage({
       depth: 0,
       overrideAccess: true,
     }),
+    payload.find({
+      collection: 'videos',
+      where: { tenant: { equals: author!.tenantId } },
+      sort: '-createdAt',
+      limit: 500,
+      depth: 0,
+      overrideAccess: true,
+    }),
   ])
 
   const categories = (catsRes.docs as any[]).map((c) => {
@@ -66,6 +74,12 @@ export default async function EditPostPage({
     priceRub: t.priceRub,
   }))
 
+  const videos = (videosRes.docs as any[]).map((v) => ({
+    id: v.id,
+    title: v.title || 'Без названия',
+    addedAt: v.publishedAt || v.createdAt || null,
+  }))
+
   // Разворачиваем текущие значения поста
   const cover = post.cover
   const coverId = cover ? (typeof cover === 'object' ? cover.id : cover) : null
@@ -76,6 +90,14 @@ export default async function EditPostPage({
 
   const minTier = post.minTier
   const minTierId = minTier ? String(typeof minTier === 'object' ? minTier.id : minTier) : ''
+
+  // relatedVideos (hasMany) → массив id в текущем порядке.
+  // depth:1 → элементы могут быть объектами; нормализуем к id.
+  const relatedVideoIds: (number | string)[] = Array.isArray(post.relatedVideos)
+    ? post.relatedVideos
+        .map((r: any) => (r && typeof r === 'object' ? r.id : r))
+        .filter((x: any) => x != null)
+    : []
 
   const isPublished =
     !!post.publishedAt && new Date(post.publishedAt).getTime() <= Date.now()
@@ -90,7 +112,8 @@ export default async function EditPostPage({
     coverId: coverId != null ? Number(coverId) : null,
     coverUrl,
     isPublished,
+    relatedVideoIds,
   }
 
-  return <Composer categories={categories} tiers={tiers} initial={initial} />
+  return <Composer categories={categories} tiers={tiers} videos={videos} initial={initial} />
 }
