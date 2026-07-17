@@ -204,8 +204,11 @@ export async function streamSignToken(
   const encPayload = b64url(JSON.stringify(payload))
   const signingInput = `${encHeader}.${encPayload}`
 
-  // pem приходит base64 — раскодируем в обычный PEM-текст
-  const pem = Buffer.from(pemB64, 'base64').toString('utf-8')
+  // Ключ может лежать в двух видах:
+  //  - чистый PEM ("-----BEGIN PRIVATE KEY-----\n...")
+  //  - base64 от PEM (как отдаёт CF в некоторых случаях)
+  // Определяем и приводим к чистому PEM.
+  const pem = resolvePem(pemB64)
 
   const key = await importPkcs8(pem)
   const sig = await crypto.subtle.sign(
@@ -216,6 +219,32 @@ export async function streamSignToken(
   const encSig = b64urlBytes(new Uint8Array(sig))
 
   return `${signingInput}.${encSig}`
+}
+
+/**
+ * Приводит значение ключа к чистому PEM.
+ * Если это уже PEM (содержит "BEGIN") — возвращаем как есть.
+ * Если base64 от PEM — раскодируем. Если base64 «голого» DER без заголовков —
+ * оборачиваем в PEM-конверт.
+ */
+function resolvePem(raw: string): string {
+  const val = (raw || '').trim()
+  if (val.includes('BEGIN') && val.includes('PRIVATE KEY')) {
+    // уже чистый PEM (возможно с \n или буквальными \n)
+    return val.replace(/\\n/g, '\n')
+  }
+  // пробуем раскодировать base64 → вдруг там PEM-текст
+  try {
+    const decoded = Buffer.from(val, 'base64').toString('utf-8')
+    if (decoded.includes('BEGIN') && decoded.includes('PRIVATE KEY')) {
+      return decoded.replace(/\\n/g, '\n')
+    }
+  } catch {
+    /* ignore */
+  }
+  // считаем, что это base64 от DER без обёртки — оборачиваем в PEM
+  const lines = val.replace(/\s+/g, '').match(/.{1,64}/g) || [val]
+  return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----`
 }
 
 /** base64url из строки */
