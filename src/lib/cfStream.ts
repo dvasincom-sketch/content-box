@@ -172,3 +172,81 @@ export function buildUploadMetadata(fields: {
   }
   return parts.join(',')
 }
+
+/**
+ * Генерация подписанного токена (signed URL) для защищённого видео — локально,
+ * без вызова Cloudflare. Токен = JWT (RS256), подписанный приватным ключом.
+ *
+ * Ключи из окружения:
+ *   CF_STREAM_KEY_ID       — id signing key (kid)
+ *   CF_STREAM_SIGNING_KEY  — приватный ключ PEM, base64-кодированный (как отдал CF)
+ *
+ * Используем нативный WebCrypto (без внешних JWT-библиотек).
+ *
+ * @param videoUid — uid видео (поле sub)
+ * @param ttlSeconds — время жизни токена в секундах (по умолчанию 2 часа)
+ */
+export async function streamSignToken(
+  videoUid: string,
+  ttlSeconds = 2 * 60 * 60,
+): Promise<string> {
+  const keyId = process.env.CF_STREAM_KEY_ID
+  const pemB64 = process.env.CF_STREAM_SIGNING_KEY
+  if (!keyId) throw new Error('CF_STREAM_KEY_ID не задан')
+  if (!pemB64) throw new Error('CF_STREAM_SIGNING_KEY не задан')
+
+  const exp = Math.floor(Date.now() / 1000) + ttlSeconds
+
+  const header = { alg: 'RS256', kid: keyId }
+  const payload = { sub: videoUid, kid: keyId, exp }
+
+  const encHeader = b64url(JSON.stringify(header))
+  const encPayload = b64url(JSON.stringify(payload))
+  const signingInput = `${encHeader}.${encPayload}`
+
+  // pem приходит base64 — раскодируем в обычный PEM-текст
+  const pem = Buffer.from(pemB64, 'base64').toString('utf-8')
+
+  const key = await importPkcs8(pem)
+  const sig = await crypto.subtle.sign(
+    { name: 'RSASSA-PKCS1-v1_5' },
+    key,
+    new TextEncoder().encode(signingInput),
+  )
+  const encSig = b64urlBytes(new Uint8Array(sig))
+
+  return `${signingInput}.${encSig}`
+}
+
+/** base64url из строки */
+function b64url(input: string): string {
+  return Buffer.from(input, 'utf-8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+}
+/** base64url из байтов */
+function b64urlBytes(bytes: Uint8Array): string {
+  return Buffer.from(bytes)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+}
+
+/** Импорт PKCS8 PEM в CryptoKey для RS256-подписи */
+async function importPkcs8(pem: string): Promise<CryptoKey> {
+  const body = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s+/g, '')
+  const der = Buffer.from(body, 'base64')
+  return crypto.subtle.importKey(
+    'pkcs8',
+    der,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+}

@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import * as tus from 'tus-js-client'
-import { Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock, Upload, X } from 'lucide-react'
+import { Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock, Upload, X, Play } from 'lucide-react'
+import { VideoPreviewModal } from './VideoPreviewModal'
 
 type Tier = { id: number | string; name: string }
 type Vid = {
@@ -79,6 +80,7 @@ export function VideosManager({
 function VideoCard({ video }: { video: Vid }) {
   const [ready, setReady] = useState<boolean | null>(null)
   const [pct, setPct] = useState<string | null>(null)
+  const [playing, setPlaying] = useState(false)
   const timer = useRef<any>(null)
 
   useEffect(() => {
@@ -121,6 +123,11 @@ function VideoCard({ video }: { video: Vid }) {
           <div className="vid__thumb-empty"><VideoIcon size={26} /></div>
         )}
         {video.durationSec ? <span className="vid__dur">{fmtDur(video.durationSec)}</span> : null}
+        {ready === true && (
+          <button className="vid__play" onClick={() => setPlaying(true)} title="Смотреть">
+            <Play size={22} />
+          </button>
+        )}
       </div>
       <div className="vid__body">
         <div className="vid__title">{video.title}</div>
@@ -146,6 +153,14 @@ function VideoCard({ video }: { video: Vid }) {
           )}
         </div>
       </div>
+
+      {playing && (
+        <VideoPreviewModal
+          videoId={video.id}
+          title={video.title}
+          onClose={() => setPlaying(false)}
+        />
+      )}
     </div>
   )
 }
