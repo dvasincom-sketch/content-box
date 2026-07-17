@@ -32,7 +32,14 @@ export function VideosManager({
   tiers: Tier[]
 }) {
   const router = useRouter()
-  const [videos] = useState<Vid[]>(initialVideos)
+  const [videos, setVideos] = useState<Vid[]>(initialVideos)
+
+  // после router.refresh() приходят свежие initialVideos — синхронизируем,
+  // иначе useState держит старый снимок и новое видео не появляется без
+  // полной перезагрузки страницы
+  useEffect(() => {
+    setVideos(initialVideos)
+  }, [initialVideos])
   const [adding, setAdding] = useState(false)
 
   return (
