@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { Lock } from 'lucide-react'
 
 /**
  * Строка публикации в ленте. Статус выводим из publishedAt:
@@ -16,6 +17,7 @@ type PubDoc = {
   featured?: boolean
   cover?: any
   category?: any
+  minTier?: any
 }
 
 function statusOf(doc: PubDoc): { label: string; kind: 'published' | 'draft' } {
@@ -39,6 +41,10 @@ export function PostRow({ doc }: { doc: PubDoc }) {
   const categoryTitle =
     doc.category && typeof doc.category === 'object'
       ? doc.category.title || doc.category.name
+      : null
+  const minTierName =
+    doc.minTier && typeof doc.minTier === 'object'
+      ? doc.minTier.name || doc.minTier.slug
       : null
 
   return (
@@ -64,6 +70,11 @@ export function PostRow({ doc }: { doc: PubDoc }) {
         </div>
       </div>
 
+      {minTierName && (
+        <span className="vid__badge" style={{ marginRight: 'var(--st-space-2)' }}>
+          <Lock size={12} /> {minTierName}
+        </span>
+      )}
       <span className={`studio-status studio-status--${status.kind}`}>{status.label}</span>
     </Link>
   )

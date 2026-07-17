@@ -25,6 +25,7 @@ type PubDoc = {
   featured?: boolean
   cover?: any
   category?: any
+  minTier?: any
 }
 
 export default async function StudioPostsPage() {
