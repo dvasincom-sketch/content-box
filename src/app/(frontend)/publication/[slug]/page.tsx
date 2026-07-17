@@ -11,6 +11,7 @@ import { buildMetadata } from '@/lib/seo'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
+import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
 import { Lock } from 'lucide-react'
 import type { Metadata } from 'next'
 import '../../styles.css'
@@ -87,6 +88,24 @@ export default async function PublicationPage({ params }: { params: Promise<Para
       )
     : []
 
+  // Галерея: доступна только если публикация открыта (наследует её minTier).
+  // depth:2 → gallery.image populate'ится объектом с url/width/height.
+  const galleryItems: PublicGalleryItem[] = pubAccess.allowed && Array.isArray(pub.gallery)
+    ? pub.gallery
+        .map((row: any) => {
+          const img = row?.image
+          if (!img || typeof img !== 'object' || !img.url) return null
+          return {
+            url: img.url as string,
+            width: img.width || null,
+            height: img.height || null,
+            caption: row?.caption || '',
+            alt: img.alt || row?.caption || '',
+          }
+        })
+        .filter((x: any): x is PublicGalleryItem => x != null)
+    : []
+
   return (
     <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
@@ -155,6 +174,26 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               <div className="prose-invert max-w-none mb-8 leading-relaxed" style={{ color: 'var(--brand-text)', opacity: 0.9 }}>
                 <RichText data={pub.description} />
               </div>
+            )}
+
+            {galleryItems.length > 0 && (
+              <section
+                className="cgal-section"
+                style={{
+                  color: 'var(--brand-text)',
+                  marginLeft: 'calc(50% - 50vw)',
+                  marginRight: 'calc(50% - 50vw)',
+                  width: '100vw',
+                  paddingLeft: 'clamp(12px, 4vw, 64px)',
+                  paddingRight: 'clamp(12px, 4vw, 64px)',
+                  marginTop: '2.5rem',
+                }}
+              >
+                <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--brand-text)' }}>
+                  Галерея
+                </h2>
+                <PublicGallery items={galleryItems} />
+              </section>
             )}
           </>
         ) : (

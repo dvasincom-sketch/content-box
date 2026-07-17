@@ -232,3 +232,179 @@ svg {
 .team-avatar-link:hover {
   border-color: var(--brand-accent) !important;
 }
+
+/* ============================================================================
+   ПУБЛИЧНАЯ ВИТРИНА ГАЛЕРЕИ (justified grid + lightbox + защита)
+   ============================================================================ */
+
+.cgal {
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cgal__row {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.cgal__cell {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+  flex-shrink: 0;
+}
+.cgal__cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;      /* клики/контекст-меню перехватывает shield */
+  -webkit-user-drag: none;
+  user-select: none;
+  transition: transform .4s ease;
+}
+.cgal__cell:hover img {
+  transform: scale(1.04);
+}
+
+/* Прозрачный щит поверх фото — блокирует «сохранить картинку» и drag */
+.cgal__shield {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.cgal__cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 18px 10px 8px;
+  font-size: 12px;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0,0,0,.65), transparent);
+  opacity: 0;
+  transition: opacity .3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cgal__cell:hover .cgal__cap {
+  opacity: 1;
+}
+
+/* --- Lightbox --------------------------------------------------------------- */
+.cgal__lb {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, .92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.cgal__lb-fig {
+  position: relative;
+  margin: 0;
+  max-width: 92vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cgal__lb-fig img {
+  max-width: 92vw;
+  max-height: 82vh;
+  object-fit: contain;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+  border-radius: 6px;
+}
+.cgal__lb-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.cgal__lb-cap {
+  margin-top: 14px;
+  color: #fff;
+  font-size: 14px;
+  text-align: center;
+  opacity: .85;
+  max-width: 80vw;
+}
+
+.cgal__lb-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+.cgal__lb-close:hover {
+  background: rgba(255, 255, 255, .2);
+}
+
+.cgal__lb-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 52px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+.cgal__lb-nav:hover {
+  background: rgba(255, 255, 255, .2);
+}
+.cgal__lb-prev { left: 20px; }
+.cgal__lb-next { right: 20px; }
+
+.cgal__lb-counter {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  color: #fff;
+  font-size: 13px;
+  opacity: .7;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+  .cgal__lb { padding: 12px; }
+  .cgal__lb-nav { width: 42px; height: 42px; }
+  .cgal__lb-prev { left: 8px; }
+  .cgal__lb-next { right: 8px; }
+}
