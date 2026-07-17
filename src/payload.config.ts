@@ -20,6 +20,7 @@ import { Media } from './collections/Media'
 import { SubscriptionTiers } from './collections/SubscriptionTiers'
 import { Subscribers } from './collections/Subscribers'
 import { Videos } from './collections/Videos'
+import { VideoFolders } from './collections/VideoFolders'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -123,6 +124,7 @@ export default buildConfig({
     SubscriptionTiers,
     Subscribers,
     Videos,
+    VideoFolders,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -140,7 +142,7 @@ export default buildConfig({
     // Дерево категорий (ТЗ §3.4). Плагин добавляет `parent` и `breadcrumbs`,
     // рекурсивно обновляет потомков при смене родителя.
     nestedDocsPlugin({
-      collections: ['categories'],
+      collections: ['categories', 'video-folders'],
       generateLabel: (_, doc) => doc.title as string,
       // Полный путь: /category/discography/chapter-1/school-trilogy
       generateURL: (docs) => docs.reduce((url, doc) => `${url}/${doc.slug}`, ''),
@@ -183,6 +185,7 @@ export default buildConfig({
         'subscription-tiers': { useTenantAccess: false },
         subscribers: { useTenantAccess: false },
         videos: { useTenantAccess: false },
+        'video-folders': { useTenantAccess: false },
       },
     }),
   ],

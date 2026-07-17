@@ -78,6 +78,7 @@ export interface Config {
     'subscription-tiers': SubscriptionTier;
     subscribers: Subscriber;
     videos: Video;
+    'video-folders': VideoFolder;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -95,6 +96,7 @@ export interface Config {
     'subscription-tiers': SubscriptionTiersSelect<false> | SubscriptionTiersSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     videos: VideosSelect<false> | VideosSelect<true>;
+    'video-folders': VideoFoldersSelect<false> | VideoFoldersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -505,6 +507,10 @@ export interface Video {
    */
   category?: (number | null) | Category;
   /**
+   * Папка для группировки видео в студии. Одно видео — одна папка.
+   */
+  folder?: (number | null) | VideoFolder;
+  /**
    * Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.
    */
   minTier?: (number | null) | SubscriptionTier;
@@ -518,6 +524,29 @@ export interface Video {
   videoRef?: string | null;
   durationSec?: number | null;
   publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Папки для группировки видео (дерево).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "video-folders".
+ */
+export interface VideoFolder {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  title: string;
+  slug: string;
+  parent?: (number | null) | VideoFolder;
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | VideoFolder;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -674,6 +703,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'videos';
         value: number | Video;
+      } | null)
+    | ({
+        relationTo: 'video-folders';
+        value: number | VideoFolder;
       } | null);
   globalSlug?: string | null;
   user:
@@ -1016,11 +1049,32 @@ export interface VideosSelect<T extends boolean = true> {
   description?: T;
   cover?: T;
   category?: T;
+  folder?: T;
   minTier?: T;
   isPreview?: T;
   videoRef?: T;
   durationSec?: T;
   publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "video-folders_select".
+ */
+export interface VideoFoldersSelect<T extends boolean = true> {
+  tenant?: T;
+  title?: T;
+  slug?: T;
+  parent?: T;
+  breadcrumbs?:
+    | T
+    | {
+        doc?: T;
+        url?: T;
+        label?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

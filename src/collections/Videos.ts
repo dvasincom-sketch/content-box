@@ -63,6 +63,15 @@ export const Videos: CollectionConfig = {
       admin: { description: 'Раздел дерева: weverse-live, концерты, участник...' },
     },
     {
+      name: 'folder',
+      type: 'relationship',
+      relationTo: 'video-folders',
+      label: 'Папка',
+      admin: {
+        description: 'Папка для группировки видео в студии. Одно видео — одна папка.',
+      },
+    },
+    {
       name: 'minTier',
       type: 'relationship',
       relationTo: 'subscription-tiers',
