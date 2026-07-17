@@ -180,19 +180,16 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               <section
                 className="cgal-section"
                 style={{
-                  color: 'var(--brand-text)',
                   marginLeft: 'calc(50% - 50vw)',
                   marginRight: 'calc(50% - 50vw)',
                   width: '100vw',
-                  paddingLeft: 'clamp(12px, 4vw, 64px)',
-                  paddingRight: 'clamp(12px, 4vw, 64px)',
                   marginTop: '2.5rem',
                 }}
               >
-                <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--brand-text)' }}>
-                  Галерея
-                </h2>
-                <PublicGallery items={galleryItems} />
+                <div className="cgal-plate">
+                  <h2 className="cgal-plate__title">Галерея</h2>
+                  <PublicGallery items={galleryItems} />
+                </div>
               </section>
             )}
           </>

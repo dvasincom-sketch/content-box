@@ -237,6 +237,28 @@ svg {
    ПУБЛИЧНАЯ ВИТРИНА ГАЛЕРЕИ (justified grid + lightbox + защита)
    ============================================================================ */
 
+/* Подложка секции: контраст к фону страницы.
+   Светлая тема — графитовая тёмная плашка (фото «выступают»).
+   Тёмная тема — приподнятый серый (чуть светлее фона страницы). */
+.cgal-plate {
+  padding: clamp(20px, 4vw, 48px);
+  border-radius: 20px;
+}
+.theme-light .cgal-plate {
+  background: #2A2A2E;
+}
+.theme-dark .cgal-plate {
+  background: #241C3D; /* приподнятый над --brand-bg (#0F0A1E) */
+}
+
+.cgal-plate__title {
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 clamp(14px, 2vw, 22px);
+  color: #F5F3FF; /* светлый на тёмной подложке в обеих темах */
+}
+
 .cgal {
   width: 100%;
   user-select: none;
