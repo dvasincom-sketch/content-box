@@ -37,41 +37,47 @@ export function PublicGallery({ items }: { items: PublicGalleryItem[] }) {
     return () => ro.disconnect()
   }, [])
 
-  const TARGET_ROW_H = 260 // целевая высота строки, px
-  const GAP = 8
+  // Число колонок сетки — адаптивно по ширине контейнера.
+  const cols = useMemo(() => {
+    if (containerWidth >= 1100) return 4
+    if (containerWidth >= 700) return 3
+    return 2
+  }, [containerWidth])
 
-  // Раскладка в строки: копим фото, пока суммарная ширina (при целевой высоте)
-  // не превысит ширину контейнера, затем масштабируем строку по ширине.
-  const rows = useMemo(() => {
-    if (!containerWidth || items.length === 0) return []
+  // Для каждого фото считаем span по колонкам/строкам исходя из пропорций —
+  // плотная мозаика: широкие занимают 2 колонки, высокие 2 строки, панорамные
+  // изредка на всю ширину. grid-auto-flow:dense сам заполняет дырки.
+  const tiles = useMemo(() => {
     const ar = (it: PublicGalleryItem) =>
       it.width && it.height ? it.width / it.height : 3 / 2
 
-    const result: { item: PublicGalleryItem; index: number; w: number; h: number }[][] = []
-    let row: { item: PublicGalleryItem; index: number; ar: number }[] = []
-    let arSum = 0
-
-    items.forEach((item, index) => {
+    return items.map((item, index) => {
       const a = ar(item)
-      row.push({ item, index, ar: a })
-      arSum += a
-      // ширина строки при целевой высоте
-      const rowWidth = arSum * TARGET_ROW_H + (row.length - 1) * GAP
-      if (rowWidth >= containerWidth) {
-        const h = (containerWidth - (row.length - 1) * GAP) / arSum
-        result.push(row.map((r) => ({ item: r.item, index: r.index, w: r.ar * h, h })))
-        row = []
-        arSum = 0
+      let colSpan = 1
+      let rowSpan = 1
+
+      if (a >= 2.4) {
+        // панорама — широкий акцент (2 колонки, но невысокий)
+        colSpan = Math.min(2, cols)
+        rowSpan = 1
+      } else if (a >= 1.4) {
+        // landscape — 2 колонки
+        colSpan = Math.min(2, cols)
+        rowSpan = 1
+      } else if (a <= 0.7) {
+        // portrait — 2 строки (вытянутое вверх)
+        colSpan = 1
+        rowSpan = 2
+      } else {
+        // ~квадрат — обычная клетка, но каждое 7-е делаем крупным акцентом
+        if (cols >= 3 && index % 7 === 3) {
+          colSpan = 2
+          rowSpan = 2
+        }
       }
+      return { item, index, colSpan, rowSpan }
     })
-    // последняя неполная строка — по целевой высоте (не растягиваем на всю ширину)
-    if (row.length) {
-      result.push(
-        row.map((r) => ({ item: r.item, index: r.index, w: r.ar * TARGET_ROW_H, h: TARGET_ROW_H })),
-      )
-    }
-    return result
-  }, [items, containerWidth])
+  }, [items, cols])
 
   const close = useCallback(() => setLightbox(null), [])
   const prev = useCallback(
@@ -99,30 +105,31 @@ export function PublicGallery({ items }: { items: PublicGalleryItem[] }) {
   if (items.length === 0) return null
 
   return (
-    <div className="cgal" ref={containerRef} onContextMenu={noContext}>
-      {rows.map((row, ri) => (
-        <div key={ri} className="cgal__row" style={{ gap: `${GAP}px`, marginBottom: `${GAP}px` }}>
-          {row.map(({ item, index, w, h }) => (
-            <button
-              key={index}
-              className="cgal__cell"
-              style={{ width: `${w}px`, height: `${h}px` }}
-              onClick={() => setLightbox(index)}
-              aria-label={item.caption || item.alt || `Фото ${index + 1}`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.url}
-                alt={item.alt || item.caption || ''}
-                loading="lazy"
-                draggable={false}
-                onContextMenu={noContext}
-              />
-              <span className="cgal__shield" onContextMenu={noContext} aria-hidden />
-              {item.caption && <span className="cgal__cap">{item.caption}</span>}
-            </button>
-          ))}
-        </div>
+    <div
+      className="cgal"
+      ref={containerRef}
+      onContextMenu={noContext}
+      style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+    >
+      {tiles.map(({ item, index, colSpan, rowSpan }) => (
+        <button
+          key={index}
+          className="cgal__cell"
+          style={{ gridColumn: `span ${colSpan}`, gridRow: `span ${rowSpan}` }}
+          onClick={() => setLightbox(index)}
+          aria-label={item.caption || item.alt || `Фото ${index + 1}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={item.url}
+            alt={item.alt || item.caption || ''}
+            loading="lazy"
+            draggable={false}
+            onContextMenu={noContext}
+          />
+          <span className="cgal__shield" onContextMenu={noContext} aria-hidden />
+          {item.caption && <span className="cgal__cap">{item.caption}</span>}
+        </button>
       ))}
 
       {lightbox !== null && items[lightbox] && (
