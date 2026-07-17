@@ -1684,3 +1684,77 @@ select.studio-input {
 @media (max-width: 560px) {
   .vid__form-row { flex-direction: column; align-items: stretch; }
 }
+
+/* ============================================================================
+   ЗАГРУЗКА ВИДЕО (TUS): табы, файл-пикер, прогресс
+   ============================================================================ */
+
+.vid__tabs {
+  display: flex;
+  gap: var(--st-space-1);
+  padding: var(--st-space-1);
+  background: var(--st-surface-2);
+  border-radius: var(--st-radius-sm);
+  margin-bottom: var(--st-space-2);
+}
+.vid__tab {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--st-space-2);
+  padding: var(--st-space-2) var(--st-space-3);
+  border: none; background: transparent;
+  color: var(--st-text-muted);
+  font-family: var(--st-font-mono);
+  font-size: var(--st-text-sm);
+  border-radius: var(--st-radius-sm);
+  cursor: pointer;
+  transition: background var(--st-dur) var(--st-ease), color var(--st-dur) var(--st-ease);
+}
+.vid__tab:hover { color: var(--st-text); }
+.vid__tab.is-active { background: var(--st-surface); color: var(--st-text); }
+
+/* Файл-пикер */
+.vid__drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--st-space-2);
+  padding: var(--st-space-8);
+  border: 1px dashed var(--st-border-strong);
+  border-radius: var(--st-radius);
+  background: var(--st-surface-2);
+  color: var(--st-text-muted);
+  cursor: pointer;
+  transition: border-color var(--st-dur) var(--st-ease), color var(--st-dur) var(--st-ease);
+}
+.vid__drop:hover { border-color: var(--st-text-faint); color: var(--st-text); }
+.vid__drop-hint { font-size: var(--st-text-xs); color: var(--st-text-faint); }
+
+.vid__file {
+  display: flex; align-items: center; gap: var(--st-space-3);
+  padding: var(--st-space-3) var(--st-space-4);
+  background: var(--st-surface-2);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  color: var(--st-text);
+}
+.vid__file-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--st-text-sm); }
+.vid__file-size { font-family: var(--st-font-mono); font-size: var(--st-text-xs); color: var(--st-text-muted); flex-shrink: 0; }
+
+/* Прогресс */
+.vid__progress { display: flex; flex-direction: column; gap: var(--st-space-2); }
+.vid__progress-bar {
+  height: 8px;
+  background: var(--st-surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.vid__progress-fill {
+  height: 100%;
+  background: var(--st-accent);
+  border-radius: 999px;
+  transition: width .3s var(--st-ease);
+}
+.vid__progress-text {
+  font-family: var(--st-font-mono);
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+  text-align: right;
+}

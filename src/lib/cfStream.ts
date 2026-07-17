@@ -110,3 +110,65 @@ function normalizeVideo(r: any): StreamVideo {
     meta: r.meta,
   }
 }
+
+/**
+ * Запрос одноразового TUS upload-URL (Direct Creator Upload).
+ * POST на /stream?direct_user=true с TUS-заголовками. Cloudflare возвращает
+ * в заголовке Location одноразовую ссылку, которую безопасно отдать браузеру:
+ * по ней tus-js-client льёт файл кусками, наш API-токен НЕ участвует.
+ *
+ * uploadLength — размер файла в байтах.
+ * uploadMetadata — уже собранная строка Upload-Metadata (base64-пары),
+ *   формируется на сервере, включает requiresignedurls для защиты.
+ *
+ * Возвращает { uploadURL, uid }. uid берём из заголовка stream-media-id.
+ */
+export async function streamCreateTusUpload(params: {
+  uploadLength: number
+  uploadMetadata: string
+}): Promise<{ uploadURL: string; uid: string }> {
+  const res = await fetch(
+    `${CF_BASE}/accounts/${accountId()}/stream?direct_user=true`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiToken()}`,
+        'Tus-Resumable': '1.0.0',
+        'Upload-Length': String(params.uploadLength),
+        'Upload-Metadata': params.uploadMetadata,
+      },
+    },
+  )
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`TUS upload init failed (${res.status}) ${text.slice(0, 200)}`)
+  }
+
+  const uploadURL = res.headers.get('Location')
+  const uid = res.headers.get('stream-media-id') || ''
+  if (!uploadURL) throw new Error('Cloudflare не вернул Location для загрузки')
+
+  return { uploadURL, uid }
+}
+
+/**
+ * Собирает строку Upload-Metadata по TUS-спецификации:
+ * пары "ключ base64(значение)", разделённые запятыми. Булевы флаги без значения.
+ * Пример: "name <b64>,requiresignedurls"
+ */
+export function buildUploadMetadata(fields: {
+  name?: string
+  requireSignedURLs?: boolean
+}): string {
+  const parts: string[] = []
+  if (fields.name) {
+    const b64 = Buffer.from(fields.name, 'utf-8').toString('base64')
+    parts.push(`name ${b64}`)
+  }
+  if (fields.requireSignedURLs) {
+    // булев флаг передаётся как ключ без значения
+    parts.push('requiresignedurls')
+  }
+  return parts.join(',')
+}
