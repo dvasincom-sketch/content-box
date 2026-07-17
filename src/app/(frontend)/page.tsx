@@ -29,6 +29,14 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
+/** Имя уровня доступа из minTier (relationship, depth>=1). */
+function minTierName(p: any): string | null {
+  const mt = p?.minTier
+  if (!mt) return null
+  if (typeof mt === 'object') return mt.name || mt.slug || null
+  return null
+}
+
 export default async function HomePage() {
   const ctx = await getTenantFromHeaders()
   if (!ctx) {
@@ -63,7 +71,7 @@ export default async function HomePage() {
           chips={(((settings as any)?.heroChips ?? []) as any[])
             .filter((c) => c && typeof c === 'object' && c.slug)
             .map((c) => ({ title: c.title, href: categoryHref(c) }))}
-          featured={featured ? { title: featured.title, badge: 'Новинка', sources: featured.sources, cover: featured.cover } : null}
+          featured={featured ? { title: featured.title, badge: 'Новинка', cover: featured.cover } : null}
         />
 
         <HeroTeamBlock
@@ -74,7 +82,8 @@ export default async function HomePage() {
 
         <LatestPublicationsBlock
           items={latest.map((p) => ({
-            id: p.id, slug: p.slug, title: p.title, publishedAt: p.publishedAt, sources: p.sources,
+            id: p.id, slug: p.slug, title: p.title, publishedAt: p.publishedAt,
+            minTierName: minTierName(p),
             cover: p.cover,
           }))}
         />

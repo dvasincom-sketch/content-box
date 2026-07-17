@@ -172,7 +172,10 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
               slug: p.slug,
               title: p.title,
               publishedAt: p.publishedAt,
-              sources: p.sources,
+              minTierName:
+                p.minTier && typeof p.minTier === 'object'
+                  ? p.minTier.name || p.minTier.slug || null
+                  : null,
               cover: p.cover,
             }))}
           />

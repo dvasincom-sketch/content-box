@@ -17,11 +17,6 @@ import '../../styles.css'
 
 type Params = { slug: string }
 
-const PLATFORM_LABEL: Record<string, string> = {
-  boosty: 'Смотреть на Boosty', vk: 'Смотреть в VK Видео',
-  telegram: 'Смотреть в Telegram', youtube: 'Смотреть на YouTube',
-}
-
 /**
  * SEO-каскад (ТЗ §6): дефолт тенанта → категория → публикация.
  */
@@ -73,7 +68,6 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   if (!pub) notFound()
 
   const category = pub.category && typeof pub.category === 'object' ? pub.category : null
-  const external = (pub.sources ?? []).filter((s: any) => s.type === 'external' && s.url)
   const dateStr = pub.publishedAt
     ? new Date(pub.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
@@ -160,16 +154,6 @@ export default async function PublicationPage({ params }: { params: Promise<Para
             {pub.description && (
               <div className="prose-invert max-w-none mb-8 leading-relaxed" style={{ color: 'var(--brand-text)', opacity: 0.9 }}>
                 <RichText data={pub.description} />
-              </div>
-            )}
-
-            {external.length > 0 && (
-              <div className="flex flex-wrap gap-3">
-                {external.map((s: any, i: number) => (
-                  <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold px-5 py-3 rounded-xl transition-transform hover:-translate-y-0.5" style={{ background: 'var(--brand-primary)', color: '#fff' }}>
-                    {PLATFORM_LABEL[s.platform] ?? s.platform}
-                  </a>
-                ))}
               </div>
             )}
           </>
