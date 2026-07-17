@@ -13,6 +13,7 @@ import * as migration_20260713_063233 from './20260713_063233';
 import * as migration_20260713_111430 from './20260713_111430';
 import * as migration_20260716_093732_add_pub_min_tier from './20260716_093732_add_pub_min_tier';
 import * as migration_20260717_080538_tiers_perks from './20260717_080538_tiers_perks';
+import * as migration_20260717_091412_related_videos from './20260717_091412_related_videos';
 
 export const migrations = [
   {
@@ -88,6 +89,11 @@ export const migrations = [
   {
     up: migration_20260717_080538_tiers_perks.up,
     down: migration_20260717_080538_tiers_perks.down,
-    name: '20260717_080538_tiers_perks'
+    name: '20260717_080538_tiers_perks',
+  },
+  {
+    up: migration_20260717_091412_related_videos.up,
+    down: migration_20260717_091412_related_videos.down,
+    name: '20260717_091412_related_videos'
   },
 ];

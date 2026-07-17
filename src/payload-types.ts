@@ -410,6 +410,10 @@ export interface Publication {
    * Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.
    */
   minTier?: (number | null) | SubscriptionTier;
+  /**
+   * Видео, показываемые в публикации (до описания). Доступ каждого — по его собственному уровню.
+   */
+  relatedVideos?: (number | Video)[] | null;
   description?: {
     root: {
       type: string;
@@ -480,6 +484,40 @@ export interface SubscriptionTier {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Видеоконтент с доступом по уровню подписки.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos".
+ */
+export interface Video {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  title: string;
+  slug: string;
+  description?: string | null;
+  cover?: (number | null) | Media;
+  /**
+   * Раздел дерева: weverse-live, концерты, участник...
+   */
+  category?: (number | null) | Category;
+  /**
+   * Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.
+   */
+  minTier?: (number | null) | SubscriptionTier;
+  /**
+   * Открыто всем, даже без подписки (перебивает minTier).
+   */
+  isPreview?: boolean | null;
+  /**
+   * Идентификатор видео в хранилище (заполним после выбора R2/Stream). Заглушка.
+   */
+  videoRef?: string | null;
+  durationSec?: number | null;
+  publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -572,40 +610,6 @@ export interface Subscriber {
     | null;
   password?: string | null;
   collection: 'subscribers';
-}
-/**
- * Видеоконтент с доступом по уровню подписки.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "videos".
- */
-export interface Video {
-  id: number;
-  tenant?: (number | null) | Tenant;
-  title: string;
-  slug: string;
-  description?: string | null;
-  cover?: (number | null) | Media;
-  /**
-   * Раздел дерева: weverse-live, концерты, участник...
-   */
-  category?: (number | null) | Category;
-  /**
-   * Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.
-   */
-  minTier?: (number | null) | SubscriptionTier;
-  /**
-   * Открыто всем, даже без подписки (перебивает minTier).
-   */
-  isPreview?: boolean | null;
-  /**
-   * Идентификатор видео в хранилище (заполним после выбора R2/Stream). Заглушка.
-   */
-  videoRef?: string | null;
-  durationSec?: number | null;
-  publishedAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -889,6 +893,7 @@ export interface PublicationsSelect<T extends boolean = true> {
   publishedAt?: T;
   category?: T;
   minTier?: T;
+  relatedVideos?: T;
   description?: T;
   sources?:
     | T

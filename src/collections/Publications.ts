@@ -40,6 +40,16 @@ export const Publications: CollectionConfig = {
         description: 'Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.',
       },
     },
+    {
+      name: 'relatedVideos',
+      type: 'relationship',
+      relationTo: 'videos',
+      hasMany: true,
+      label: 'Прикреплённые видео',
+      admin: {
+        description: 'Видео, показываемые в публикации (до описания). Доступ каждого — по его собственному уровню.',
+      },
+    },
     { name: 'description', type: 'richText' },
     {
       name: 'sources',
