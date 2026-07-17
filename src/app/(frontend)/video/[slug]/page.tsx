@@ -31,9 +31,12 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
   // Проверка доступа (гейтинг по подписке) — единый источник правды
   const access = await checkVideoAccess({ slug, tenantId: tenant.id })
 
-  if (access.reason === 'not-found') notFound()
+  // not-found встречается только в ветке allowed:false — сужаем тип корректно
+  if (!access.allowed && access.reason === 'not-found') notFound()
 
-  const video = access.video
+  // сюда попадаем, если allowed:true ИЛИ allowed:false с другой причиной —
+  // в обоих случаях video присутствует
+  const video = access.video!
   const category = video.category && typeof video.category === 'object' ? video.category : null
   const dateStr = video.publishedAt
     ? new Date(video.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -91,7 +94,7 @@ function VideoLock({
   cover,
   settings,
 }: {
-  reason: 'need-login' | 'need-subscription' | 'expired' | 'blocked'
+  reason: 'not-found' | 'need-login' | 'need-subscription' | 'expired' | 'blocked'
   requiredTierName?: string | null
   cover?: any
   settings?: any
