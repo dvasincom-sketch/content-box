@@ -337,3 +337,48 @@ function derWrap(tag: number, content: Buffer): Buffer {
   }
   return Buffer.concat([Buffer.from([tag]), lenBytes, content])
 }
+
+/**
+ * Резолв прямой download-ссылки для внешнего URL.
+ *
+ * Яндекс.Диск (disk.yandex.ru / yadi.sk) отдаёт ссылку на СТРАНИЦУ, а не на
+ * файл — Cloudflare Stream по ней скачать не может. Для публичных ресурсов у
+ * Яндекса есть официальный API (без токена), который по публичной ссылке
+ * возвращает временную прямую ссылку на скачивание. Её и отдаём Stream.
+ *
+ * Для остальных URL (Object Storage, R2, S3, любые прямые) — возвращаем как есть.
+ */
+export async function resolveDirectUrl(inputUrl: string): Promise<string> {
+  let host = ''
+  try {
+    host = new URL(inputUrl).hostname.toLowerCase()
+  } catch {
+    return inputUrl // невалидный URL — пусть дальше отвалится с понятной ошибкой
+  }
+
+  const isYandexDisk =
+    host === 'disk.yandex.ru' ||
+    host === 'disk.yandex.com' ||
+    host === 'yadi.sk' ||
+    host.endsWith('.yadi.sk')
+
+  if (!isYandexDisk) return inputUrl
+
+  // официальный API: прямая ссылка по публичному ключу (сам URL как public_key)
+  const api =
+    'https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=' +
+    encodeURIComponent(inputUrl)
+
+  const res = await fetch(api, { headers: { Accept: 'application/json' } })
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error('Файл на Яндекс.Диске не найден или не расшарен публично')
+    }
+    throw new Error(`Яндекс.Диск API вернул ${res.status}`)
+  }
+  const json = await res.json()
+  if (!json?.href) {
+    throw new Error('Яндекс.Диск не вернул прямую ссылку (возможно, запрещено скачивание)')
+  }
+  return json.href as string
+}

@@ -466,8 +466,8 @@ function UrlFields({
   return (
     <>
       <p className="vid__form-hint">
-        Прямая ссылка на видеофайл в вашем хранилище (Яндекс Object Storage, R2, S3).
-        Cloudflare Stream скачает и подготовит его сам.
+        Ссылка на видео из вашего хранилища: Яндекс.Диск (публичная ссылка),
+        Яндекс Object Storage, R2 или S3. Cloudflare Stream скачает и подготовит сам.
       </p>
       <label className="studio-field">
         <span className="studio-field__label">Название</span>
@@ -477,7 +477,7 @@ function UrlFields({
         <span className="studio-field__label">Ссылка на видео</span>
         <input
           className="studio-input"
-          placeholder="https://storage.yandexcloud.net/.../video.mp4"
+          placeholder="https://disk.yandex.ru/i/... или https://storage.yandexcloud.net/.../video.mp4"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
