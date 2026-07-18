@@ -273,10 +273,14 @@
     flex-direction: row;
     align-items: center;
     height: auto;
-    position: static;
+    position: sticky;
+    top: 0;
+    z-index: 50;
     overflow-x: auto;
     gap: var(--st-space-2);
     padding: var(--st-space-3);
+    border-right: none;
+    border-bottom: 1px solid var(--st-border);
   }
   .studio-nav__brand { padding: 0 var(--st-space-2) 0 0; }
   .studio-nav__brand-text { display: none; }
