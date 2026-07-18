@@ -1,4 +1,4 @@
-/* BUILD-MARKER: video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -132,7 +132,26 @@
   text-rendering: optimizeLegibility;
 }
 
-/* Красим сам корень документа в фон сайта. Иначе на iOS Safari области
+/* Обёртка для контента, вынесенного через createPortal в body (модалки,
+   выдвижные панели). Портал выпадает из .studio-root и теряет шрифт студии
+   (он скоуплен под .studio-root). Токены темы (--st-*) при этом доступны —
+   класс темы висит на <html> выше body. Возвращаем только шрифт/сглаживание,
+   без min-height/фона, чтобы не перекрывать экран. */
+.studio-portal {
+  font-family: var(--st-font-body);
+  color: var(--st-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.studio-portal * { box-sizing: border-box; }
+.studio-portal h1,
+.studio-portal h2,
+.studio-portal h3 {
+  font-family: var(--st-font-head);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
    safe-area (под статус-баром и за плавающей адресной строкой) и зона
    оверскролла показывают дефолтный чёрный #000 браузера — он темнее
    #0a0a0b и выглядит как чёрные полосы сверху/снизу. Значение прямое

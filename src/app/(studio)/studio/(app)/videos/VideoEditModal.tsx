@@ -75,50 +75,52 @@ export function VideoEditModal({
   if (!mounted) return null
 
   return createPortal(
-    <div className="catedit__overlay" onClick={onClose}>
-      <div className="catedit" onClick={(e) => e.stopPropagation()}>
-        <div className="catedit__head">
-          <h3>Редактирование видео</h3>
-          <button className="catmgr__icon-btn" onClick={onClose} title="Закрыть">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="catedit__body">
-          <div className="studio-field">
-            <span className="studio-field__label">Название</span>
-            <input
-              className="studio-input"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              autoFocus
-            />
+    <div className="studio-portal">
+      <div className="catedit__overlay" onClick={onClose}>
+        <div className="catedit" onClick={(e) => e.stopPropagation()}>
+          <div className="catedit__head">
+            <h3>Редактирование видео</h3>
+            <button className="catmgr__icon-btn" onClick={onClose} title="Закрыть">
+              <X size={18} />
+            </button>
           </div>
 
-          <div className="studio-field">
-            <span className="studio-field__label">Уровень доступа</span>
-            <StudioSelect
-              value={minTierId}
-              onChange={setMinTierId}
-              options={[
-                { value: '', label: 'Все подписчики / бесплатно' },
-                ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
-              ]}
-              ariaLabel="Уровень доступа"
-            />
+          <div className="catedit__body">
+            <div className="studio-field">
+              <span className="studio-field__label">Название</span>
+              <input
+                className="studio-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="studio-field">
+              <span className="studio-field__label">Уровень доступа</span>
+              <StudioSelect
+                value={minTierId}
+                onChange={setMinTierId}
+                options={[
+                  { value: '', label: 'Все подписчики / бесплатно' },
+                  ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
+                ]}
+                ariaLabel="Уровень доступа"
+              />
+            </div>
+
+            {error && <div className="studio-login__error">{error}</div>}
           </div>
 
-          {error && <div className="studio-login__error">{error}</div>}
-        </div>
-
-        <div className="catedit__foot">
-          <button className="studio-btn studio-btn--ghost" onClick={onClose}>
-            Отмена
-          </button>
-          <button className="studio-btn studio-btn--primary" onClick={save} disabled={saving}>
-            {saving ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
-            Сохранить
-          </button>
+          <div className="catedit__foot">
+            <button className="studio-btn studio-btn--ghost" onClick={onClose}>
+              Отмена
+            </button>
+            <button className="studio-btn studio-btn--primary" onClick={save} disabled={saving}>
+              {saving ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
+              Сохранить
+            </button>
+          </div>
         </div>
       </div>
     </div>,

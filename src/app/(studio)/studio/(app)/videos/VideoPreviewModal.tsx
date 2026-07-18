@@ -58,35 +58,37 @@ export function VideoPreviewModal({
   if (!mounted) return null
 
   return createPortal(
-    <div className="vidplay__overlay" onClick={onClose}>
-      <div className="vidplay" onClick={(e) => e.stopPropagation()}>
-        <div className="vidplay__head">
-          <span className="vidplay__title">{title}</span>
-          <button className="catmgr__icon-btn" onClick={onClose} title="Закрыть">
-            <X size={18} />
-          </button>
-        </div>
+    <div className="studio-portal">
+      <div className="vidplay__overlay" onClick={onClose}>
+        <div className="vidplay" onClick={(e) => e.stopPropagation()}>
+          <div className="vidplay__head">
+            <span className="vidplay__title">{title}</span>
+            <button className="catmgr__icon-btn" onClick={onClose} title="Закрыть">
+              <X size={18} />
+            </button>
+          </div>
 
-        <div className="vidplay__frame">
-          {error ? (
-            <div className="vidplay__msg vidplay__msg--error">
-              <AlertCircle size={22} />
-              <span>{error}</span>
-            </div>
-          ) : !src ? (
-            <div className="vidplay__msg">
-              <Loader2 size={22} className="spin" />
-              <span>Загрузка плеера…</span>
-            </div>
-          ) : (
-            <iframe
-              src={src}
-              style={{ border: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-              allowFullScreen
-              title={title}
-            />
-          )}
+          <div className="vidplay__frame">
+            {error ? (
+              <div className="vidplay__msg vidplay__msg--error">
+                <AlertCircle size={22} />
+                <span>{error}</span>
+              </div>
+            ) : !src ? (
+              <div className="vidplay__msg">
+                <Loader2 size={22} className="spin" />
+                <span>Загрузка плеера…</span>
+              </div>
+            ) : (
+              <iframe
+                src={src}
+                style={{ border: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                allowFullScreen
+                title={title}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>,
