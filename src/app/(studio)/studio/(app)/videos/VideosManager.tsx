@@ -7,6 +7,7 @@ import * as tus from 'tus-js-client'
 import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
   Upload, X, Play, Folder, FolderPlus, Pencil, Trash2, ChevronRight, ChevronDown,
+  MapPin, Globe,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { StudioSelect } from '../_ui/StudioSelect'
@@ -760,7 +761,9 @@ function AddPanel({
             className={`vid__provider-opt${provider === 'kinescope' ? ' is-active' : ''}`}
             onClick={() => setProvider('kinescope')}
           >
-            <span className="vid__provider-title">🇷🇺 Российское (Kinescope)</span>
+            <span className="vid__provider-title">
+              <MapPin size={15} className="vid__provider-icon" /> Для России
+            </span>
             <span className="vid__provider-hint">Работает в РФ без VPN. Рекомендуется.</span>
           </button>
           <button
@@ -768,7 +771,9 @@ function AddPanel({
             className={`vid__provider-opt${provider === 'stream' ? ' is-active' : ''}`}
             onClick={() => setProvider('stream')}
           >
-            <span className="vid__provider-title">🌍 Зарубежное (Cloudflare)</span>
+            <span className="vid__provider-title">
+              <Globe size={15} className="vid__provider-icon" /> Для заграницы
+            </span>
             <span className="vid__provider-hint">Для зарубежной аудитории. В РФ нужен VPN.</span>
           </button>
         </div>
@@ -969,7 +974,7 @@ function UploadFileForm({
   return (
     <>
       <p className="vid__form-hint">
-        Загрузка идёт напрямую в Cloudflare Stream, минуя наш сервер. Большие файлы
+        Загрузка идёт напрямую в хранилище, минуя наш сервер. Большие файлы
         докачиваются при обрыве связи.
       </p>
 
@@ -1118,8 +1123,8 @@ function UrlFields({
     <>
       <p className="vid__form-hint">
         {provider === 'kinescope'
-          ? 'Ссылка на видео: Яндекс.Диск (публичная), Object Storage, S3, YouTube. Kinescope скачает и подготовит сам.'
-          : 'Ссылка на видео из вашего хранилища: Яндекс.Диск (публичная ссылка), Яндекс Object Storage, R2 или S3. Cloudflare Stream скачает и подготовит сам.'}
+          ? 'Ссылка на видео: Яндекс.Диск (публичная), Object Storage, S3, YouTube. Хранилище скачает и подготовит само.'
+          : 'Ссылка на видео из вашего хранилища: Яндекс.Диск (публичная ссылка), Яндекс Object Storage, R2 или S3. Хранилище скачает и подготовит само.'}
       </p>
       <label className="studio-field">
         <span className="studio-field__label">Название</span>

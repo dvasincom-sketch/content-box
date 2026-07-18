@@ -3185,10 +3185,14 @@ select.studio-input {
   background: var(--st-surface-2);
 }
 .vid__provider-title {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
   font-size: var(--st-text-sm);
   font-weight: 600;
   color: var(--st-text);
 }
+.vid__provider-icon { color: var(--st-text-muted); flex-shrink: 0; }
 .vid__provider-hint {
   font-size: var(--st-text-xs);
   color: var(--st-text-faint);
