@@ -9,6 +9,7 @@ import { CategoryPicker, type CatItem } from './CategoryPicker'
 import { RichEditor } from './RichEditor'
 import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
+import { StudioSelect } from '../../_ui/StudioSelect'
 
 type Category = CatItem
 type GalleryFolder = { id: number | string; title: string; parentId: number | string | null }
@@ -334,18 +335,15 @@ export function Composer({
         <aside className="composer__side">
           <div className="composer__field">
             <div className="composer__field-label">Уровень доступа</div>
-            <select
-              className="studio-input"
+            <StudioSelect
               value={minTierId}
-              onChange={(e) => setMinTierId(e.target.value)}
-            >
-              <option value="">Бесплатно — для всех</option>
-              {tiers.map((t) => (
-                <option key={t.id} value={String(t.id)}>
-                  {t.name} · {t.priceRub}₽
-                </option>
-              ))}
-            </select>
+              onChange={setMinTierId}
+              options={[
+                { value: '', label: 'Бесплатно — для всех' },
+                ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} · ${t.priceRub}₽` })),
+              ]}
+              ariaLabel="Уровень доступа"
+            />
             <div className="composer__hint">
               Публикация будет доступна подписчикам этого уровня и выше.
             </div>

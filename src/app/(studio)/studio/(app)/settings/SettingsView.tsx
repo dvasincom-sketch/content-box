@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ImagePlus, Loader2, Plus, Trash2, Check, Sun, Moon, ChevronDown, GripVertical } from 'lucide-react'
 import { PerkIcon, PERK_TYPES, type PerkType } from '@/components/studio/PerkIcon'
+import { StudioSelect } from '../_ui/StudioSelect'
 
 type Social = { platform: string; url: string }
 type Perk = { type: PerkType; text: string }
@@ -238,17 +239,13 @@ function SocialsBlock({ initial }: { initial: Social[] }) {
         )}
         {rows.map((row, i) => (
           <div key={i} className="settings__social-row">
-            <select
-              className="studio-input settings__social-platform"
+            <StudioSelect
+              className="settings__social-platform"
               value={row.platform}
-              onChange={(e) => update(i, { platform: e.target.value })}
-            >
-              {PLATFORMS.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => update(i, { platform: v })}
+              options={PLATFORMS.map((p) => ({ value: p.value, label: p.label }))}
+              ariaLabel="Платформа"
+            />
             <input
               className="studio-input"
               placeholder="https://…"
@@ -516,15 +513,12 @@ function TierEditor({
                 </div>
                 <div className="tier-editor__perk-type">
                   <span className="tier-editor__perk-icon"><PerkIcon type={perk.type} size={16} /></span>
-                  <select
-                    className="studio-input"
+                  <StudioSelect
                     value={perk.type}
-                    onChange={(e) => editPerk(i, { type: e.target.value as PerkType })}
-                  >
-                    {PERK_TYPES.map((pt) => (
-                      <option key={pt.value} value={pt.value}>{pt.label}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => editPerk(i, { type: v as PerkType })}
+                    options={PERK_TYPES.map((pt) => ({ value: pt.value, label: pt.label }))}
+                    ariaLabel="Тип преимущества"
+                  />
                 </div>
                 <input
                   className="studio-input tier-editor__perk-text"
