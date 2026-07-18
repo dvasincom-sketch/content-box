@@ -268,7 +268,15 @@
 
 /* --- Мобилка: сайдбар в строку сверху (простой вариант на Шаг 1) ----------- */
 @media (max-width: 720px) {
-  .studio-shell { grid-template-columns: 1fr; }
+  /* Явные строки: nav = auto (по своей высоте), контент = 1fr.
+     align-items: start не даёт строке nav растягиваться под высоту
+     контента — иначе sticky-«клетка» шапки менялась бы от страницы
+     к странице, и шапка «прыгала» бы по вертикали. */
+  .studio-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    align-items: start;
+  }
   .studio-nav {
     flex-direction: row;
     align-items: center;
