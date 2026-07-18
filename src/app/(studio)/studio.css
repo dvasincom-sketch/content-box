@@ -1,3 +1,5 @@
+/* BUILD-MARKER: mobile-rows-v2 — если этой строки нет в CSS на проде,
+   значит задеплоился старый файл (проверь путь и Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
    ----------------------------------------------------------------------------
@@ -268,10 +270,6 @@
 
 /* --- Мобилка: сайдбар в строку сверху (простой вариант на Шаг 1) ----------- */
 @media (max-width: 720px) {
-  /* Явные строки: nav = auto (по своей высоте), контент = 1fr.
-     align-items: start не даёт строке nav растягиваться под высоту
-     контента — иначе sticky-«клетка» шапки менялась бы от страницы
-     к странице, и шапка «прыгала» бы по вертикали. */
   .studio-shell {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
@@ -301,14 +299,12 @@
 
   /* Строка публикации на мобиле (Вариант А): обложка слева, справа —
      заголовок ЦЕЛИКОМ, под ним категория и дата в столбик; теги (РАМЁН +
-     статус) отдельной строкой снизу на всю ширину. Высота карточки свободная.
+     статус) отдельной строкой снизу на всю ширину. Высота свободная.
 
-     Важно: у .studio-row ТРИ прямых ребёнка (cover, main, tags), а колонок
-     две. Поэтому каждому ребёнку задаём grid-column/grid-row ЯВНО — иначе
-     третий ребёнок (tags) уходит в автопоток и встаёт справа в первой строке
-     (именно это ломало карточки с бейджем РАМЁН). Порядок детей в разметке
-     больше ни на что не влияет. */
-  .studio-row {
+     Селектор усилен до .studio-list .studio-row (специфичность 0-2-0),
+     чтобы гарантированно перебить десктопную базу .studio-row (0-1-0) —
+     иначе flex-раскладка десктопа могла оставаться в силе. */
+  .studio-list .studio-row {
     display: grid;
     grid-template-columns: 52px minmax(0, 1fr);
     grid-template-rows: auto auto;
@@ -317,26 +313,28 @@
     row-gap: var(--st-space-3);
     padding: var(--st-space-3) var(--st-space-4);
   }
-  .studio-row__cover {
+  .studio-list .studio-row__cover {
     grid-column: 1;
     grid-row: 1;
     width: 52px;
     height: 52px;
     align-self: start;
   }
-  .studio-row__main {
+  .studio-list .studio-row__main {
     grid-column: 2;
     grid-row: 1;
     min-width: 0;                 /* обязательно: даёт заголовку переноситься */
     display: flex;
     flex-direction: column;
+    align-items: flex-start;      /* всё в колонке — по левому краю */
     gap: var(--st-space-1);
   }
-  /* Заголовок целиком — сбрасываем flex/nowrap/ellipsis десктоп-базы,
-     без line-clamp: показываем сколько нужно строк. overflow-wrap ломает
-     длинные слова/URL, чтобы они не распирали колонку. */
-  .studio-row__title {
+  /* Заголовок целиком — сбрасываем flex/nowrap/ellipsis/центрирование базы.
+     Один размер шрифта для всех строк, перенос по словам, без обрезки. */
+  .studio-list .studio-row__title {
     display: block;
+    width: 100%;
+    text-align: left;
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
@@ -346,19 +344,20 @@
     font-size: var(--st-text-md);
   }
   /* Featured-тег внутри заголовка — инлайново, не ломает перенос */
-  .studio-row__title .studio-tag { margin-left: var(--st-space-2); }
-  /* Мета в столбик: категория сверху, дата снизу. Точку-разделитель прячем. */
-  .studio-row__meta {
+  .studio-list .studio-row__title .studio-tag { margin-left: var(--st-space-2); }
+  /* Мета в столбик по левому краю: категория сверху, дата снизу. Точку прячем. */
+  .studio-list .studio-row__meta {
+    display: flex;
     flex-direction: column;
     align-items: flex-start;
+    text-align: left;
     gap: 2px;
     margin-top: 0;
   }
-  .studio-row__dot { display: none; }
-  /* Теги: РАМЁН и статус — отдельной строкой снизу, во всю ширину.
-     grid-column: 1 / -1 растягивает на обе колонки, grid-row: 2 опускает
-     под обложку и текст. */
-  .studio-row__tags {
+  .studio-list .studio-row__dot { display: none; }
+  /* Теги: РАМЁН + статус — отдельной строкой снизу, во всю ширину.
+     grid-column: 1 / -1 растягивает на обе колонки, grid-row: 2 опускает вниз. */
+  .studio-list .studio-row__tags {
     grid-column: 1 / -1;
     grid-row: 2;
     display: flex;
@@ -367,9 +366,8 @@
     align-items: center;
     gap: var(--st-space-2);
   }
-  /* Бейдж и статус не должны сжиматься в ниточку при переносе */
-  .studio-row__tags .vid__badge,
-  .studio-row__tags .studio-status { flex-shrink: 0; }
+  .studio-list .studio-row__tags .vid__badge,
+  .studio-list .studio-row__tags .studio-status { flex-shrink: 0; }
 }
 
 /* ============================================================================
