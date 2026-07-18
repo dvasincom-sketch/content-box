@@ -1,4 +1,4 @@
-/* BUILD-MARKER: portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -2651,6 +2651,18 @@ select.studio-input {
   flex: 1;
   font-size: var(--st-text-sm);
   color: var(--st-text);
+}
+/* Группа действий папки: отделена от кликабельной части строки, чтобы
+   ховер-заливка строки не «наезжала» на иконки ✏️/🗑 (паттерн как в
+   .catmgr__actions). margin-left: auto прижимает вправо, padding-left
+   даёт воздух между текстом и кнопками. */
+.foldermgr__item-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  padding-left: var(--st-space-2);
+  flex-shrink: 0;
 }
 
 .foldermgr__edit-input {

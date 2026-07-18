@@ -709,21 +709,23 @@ function FolderManager({
               ) : (
                 <>
                   <span className="foldermgr__item-title">{f.title}</span>
-                  <button
-                    className="catmgr__icon-btn"
-                    onClick={() => { setEditingId(f.id); setEditTitle(f.title); setError(null) }}
-                    title="Переименовать"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    className="catmgr__icon-btn foldermgr__del"
-                    onClick={() => deleteFolder(f.id, f.title)}
-                    title="Удалить"
-                    disabled={busy}
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="foldermgr__item-actions">
+                    <button
+                      className="catmgr__icon-btn"
+                      onClick={() => { setEditingId(f.id); setEditTitle(f.title); setError(null) }}
+                      title="Переименовать"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      className="catmgr__icon-btn foldermgr__del"
+                      onClick={() => deleteFolder(f.id, f.title)}
+                      title="Удалить"
+                      disabled={busy}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </>
               )}
             </li>
