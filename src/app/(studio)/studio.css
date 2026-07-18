@@ -1,4 +1,4 @@
-/* BUILD-MARKER: select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -925,7 +925,9 @@ select.studio-input {
    через :has(). Позиционируем relative + z-index только когда селект открыт. */
 .studio-field:has(.studio-select.is-open),
 .vid__form-row:has(.studio-select.is-open),
-.composer__field:has(.studio-select.is-open) {
+.composer__field:has(.studio-select.is-open),
+.glib__foldermgr:has(.studio-select.is-open),
+.glib__move:has(.studio-select.is-open) {
   position: relative;
   z-index: 60;
 }
@@ -3235,9 +3237,31 @@ select.studio-input {
 .glib__foot {
   display: flex; align-items: center; gap: var(--st-space-3);
   padding: var(--st-space-3) var(--st-space-4); border-top: 1px solid var(--st-border);
+  flex-wrap: wrap;
 }
 .glib__selected-count { font-size: var(--st-text-sm); color: var(--st-text-muted); }
 .glib__foot-actions { margin-left: auto; display: flex; gap: var(--st-space-2); }
+
+/* Кнопка «Управление папками» в шапке библиотеки */
+.glib__manage-btn { flex-shrink: 0; }
+.glib__manage-btn.is-active {
+  background: var(--st-surface-2);
+  border-color: var(--st-border-strong);
+  color: var(--st-text);
+}
+/* Блок управления папками внутри модалки библиотеки */
+.glib__foldermgr {
+  margin: 0 var(--st-space-4) var(--st-space-2);
+  width: auto;
+}
+/* Массовый перенос выделенных изображений (в футере) */
+.glib__move {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+}
+.glib__move-icon { color: var(--st-text-muted); flex-shrink: 0; }
+.glib__move-select { width: auto; min-width: 180px; }
 
 @media (max-width: 560px) {
   .gcomp__grid, .glib__grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }

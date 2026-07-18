@@ -1,8 +1,10 @@
 'use client'
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   ImagePlus, X, Loader2, GripVertical, Library, Upload, Check, AlertCircle,
+  Folder, FolderPlus, Pencil, Trash2, FolderInput,
 } from 'lucide-react'
 import { StudioSelect } from '../../_ui/StudioSelect'
 
@@ -303,6 +305,186 @@ export function GalleryComposer({
 /* ============================================================================
    МОДАЛКА «ИЗ БИБЛИОТЕКИ»
    ============================================================================ */
+/* ============================================================================
+   Менеджер папок галереи: создать / переименовать / удалить.
+   Использует готовые роуты gallery-folders/{create,update,delete}.
+   Паттерн — как foldermgr у видео.
+   ============================================================================ */
+function GalleryFolderManager({
+  folders,
+  onChanged,
+}: {
+  folders: { id: number | string; title: string; depth: number }[]
+  onChanged: () => void
+}) {
+  const [newTitle, setNewTitle] = useState('')
+  const [newParent, setNewParent] = useState('')
+  const [editingId, setEditingId] = useState<number | string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function createFolder() {
+    if (!newTitle.trim()) return setError('Укажите название папки')
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch('/studio/api/gallery-folders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ title: newTitle.trim(), parentId: newParent || null }),
+      })
+      const json = await res.json()
+      if (!res.ok) setError(json.error || 'Не удалось создать папку')
+      else {
+        setNewTitle('')
+        setNewParent('')
+        onChanged()
+      }
+    } catch {
+      setError('Ошибка соединения')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function renameFolder(id: number | string) {
+    if (!editTitle.trim()) return setError('Укажите название папки')
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch('/studio/api/gallery-folders/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id, title: editTitle.trim() }),
+      })
+      const json = await res.json()
+      if (!res.ok) setError(json.error || 'Не удалось переименовать')
+      else {
+        setEditingId(null)
+        setEditTitle('')
+        onChanged()
+      }
+    } catch {
+      setError('Ошибка соединения')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function deleteFolder(id: number | string, title: string) {
+    if (!window.confirm(`Удалить папку «${title}»? Изображения из неё не удалятся — открепятся.`)) return
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch('/studio/api/gallery-folders/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id }),
+      })
+      const json = await res.json()
+      if (!res.ok) setError(json.error || 'Не удалось удалить папку')
+      else onChanged()
+    } catch {
+      setError('Ошибка соединения')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="foldermgr glib__foldermgr">
+      <div className="foldermgr__create">
+        <input
+          className="studio-input"
+          placeholder="Название новой папки"
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && createFolder()}
+        />
+        <StudioSelect
+          className="foldermgr__parent"
+          value={newParent}
+          onChange={setNewParent}
+          options={[
+            { value: '', label: 'Корень (без родителя)' },
+            ...folders.map((f) => ({ value: String(f.id), label: f.title, depth: f.depth })),
+          ]}
+          ariaLabel="Родительская папка"
+        />
+        <button className="studio-btn studio-btn--primary" onClick={createFolder} disabled={busy}>
+          {busy ? <Loader2 size={15} className="spin" /> : <FolderPlus size={15} />}
+          Создать
+        </button>
+      </div>
+
+      {error && <div className="studio-login__error foldermgr__error">{error}</div>}
+
+      {folders.length === 0 ? (
+        <div className="foldermgr__empty">Папок пока нет. Создайте первую выше.</div>
+      ) : (
+        <ul className="foldermgr__list">
+          {folders.map((f) => (
+            <li
+              key={f.id}
+              className="foldermgr__item"
+              style={{ paddingLeft: `calc(var(--st-space-2) + ${f.depth * 16}px)` }}
+            >
+              <Folder size={14} className="foldermgr__item-icon" />
+              {editingId === f.id ? (
+                <>
+                  <input
+                    className="studio-input foldermgr__edit-input"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') renameFolder(f.id)
+                      if (e.key === 'Escape') setEditingId(null)
+                    }}
+                    autoFocus
+                  />
+                  <div className="foldermgr__item-actions">
+                    <button className="catmgr__icon-btn" onClick={() => renameFolder(f.id)} title="Сохранить" disabled={busy}>
+                      <Check size={15} />
+                    </button>
+                    <button className="catmgr__icon-btn" onClick={() => setEditingId(null)} title="Отмена">
+                      <X size={15} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="foldermgr__item-title">{f.title}</span>
+                  <div className="foldermgr__item-actions">
+                    <button
+                      className="catmgr__icon-btn"
+                      onClick={() => { setEditingId(f.id); setEditTitle(f.title); setError(null) }}
+                      title="Переименовать"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      className="catmgr__icon-btn foldermgr__del"
+                      onClick={() => deleteFolder(f.id, f.title)}
+                      title="Удалить"
+                      disabled={busy}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function LibraryModal({
   folders,
   alreadyIn,
@@ -317,12 +499,40 @@ function LibraryModal({
   onAdd: (imgs: LibImage[]) => void
 }) {
   const flat = flattenFolders(folders)
+  const router = useRouter()
   const [folder, setFolder] = useState<string>('all')
   const [images, setImages] = useState<LibImage[]>([])
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [managing, setManaging] = useState(false)
+  const [moveTarget, setMoveTarget] = useState('')
+  const [moving, setMoving] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  async function moveSelected() {
+    if (selected.size === 0) return
+    setMoving(true)
+    const folderId = moveTarget === 'none' ? null : moveTarget || null
+    try {
+      for (const imageId of selected) {
+        await fetch('/studio/api/gallery-images/set-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ imageId, folderId }),
+        })
+      }
+      setSelected(new Set())
+      setMoveTarget('')
+      setPage(1)
+      setImages([])
+      setReloadKey((k) => k + 1) // форсируем перечитку списка
+    } finally {
+      setMoving(false)
+    }
+  }
 
   useEffect(() => {
     let stop = false
@@ -342,7 +552,7 @@ function LibraryModal({
     return () => {
       stop = true
     }
-  }, [folder, page])
+  }, [folder, page, reloadKey])
 
   // при смене папки — сброс на 1 страницу
   useEffect(() => {
@@ -388,10 +598,27 @@ function LibraryModal({
               ariaLabel="Папка"
             />
           </div>
+          <button
+            className={`studio-btn studio-btn--ghost glib__manage-btn${managing ? ' is-active' : ''}`}
+            onClick={() => setManaging((v) => !v)}
+            title="Управление папками"
+          >
+            <Folder size={15} /> Управление папками
+          </button>
           <button className="catmgr__icon-btn" onClick={onClose} title="Закрыть">
             <X size={18} />
           </button>
         </div>
+
+        {managing && (
+          <GalleryFolderManager
+            folders={flat}
+            onChanged={() => {
+              router.refresh()
+              setReloadKey((k) => k + 1)
+            }}
+          />
+        )}
 
         <div className="glib__body">
           {images.length === 0 && !loading ? (
@@ -443,6 +670,30 @@ function LibraryModal({
             Выбрано: {selected.size}
             {remaining < 999 ? ` (можно ещё ${remaining})` : ''}
           </span>
+          {selected.size > 0 && (
+            <div className="glib__move">
+              <FolderInput size={15} className="glib__move-icon" />
+              <StudioSelect
+                className="glib__move-select"
+                value={moveTarget}
+                onChange={setMoveTarget}
+                options={[
+                  { value: '', label: 'Переместить в…' },
+                  { value: 'none', label: 'Без папки' },
+                  ...flat.map((f) => ({ value: String(f.id), label: f.title, depth: f.depth })),
+                ]}
+                ariaLabel="Переместить в папку"
+              />
+              <button
+                className="studio-btn studio-btn--ghost"
+                onClick={moveSelected}
+                disabled={moving || moveTarget === ''}
+              >
+                {moving ? <Loader2 size={15} className="spin" /> : null}
+                Переместить
+              </button>
+            </div>
+          )}
           <div className="glib__foot-actions">
             <button className="studio-btn studio-btn--ghost" onClick={onClose}>Отмена</button>
             <button
