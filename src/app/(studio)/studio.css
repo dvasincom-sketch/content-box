@@ -301,13 +301,21 @@
 
   /* Строка публикации на мобиле (Вариант А): обложка слева, справа —
      заголовок ЦЕЛИКОМ, под ним категория и дата в столбик; теги (РАМЁН +
-     статус) отдельной строкой снизу на всю ширину. Высота карточки свободная. */
+     статус) отдельной строкой снизу на всю ширину. Высота карточки свободная.
+
+     Важно: у .studio-row ТРИ прямых ребёнка (cover, main, tags), а колонок
+     две. Поэтому каждому ребёнку задаём grid-column/grid-row ЯВНО — иначе
+     третий ребёнок (tags) уходит в автопоток и встаёт справа в первой строке
+     (именно это ломало карточки с бейджем РАМЁН). Порядок детей в разметке
+     больше ни на что не влияет. */
   .studio-row {
     display: grid;
-    grid-template-columns: 52px 1fr;
+    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-rows: auto auto;
     align-items: start;
     column-gap: var(--st-space-3);
     row-gap: var(--st-space-3);
+    padding: var(--st-space-3) var(--st-space-4);
   }
   .studio-row__cover {
     grid-column: 1;
@@ -319,19 +327,23 @@
   .studio-row__main {
     grid-column: 2;
     grid-row: 1;
-    min-width: 0;
+    min-width: 0;                 /* обязательно: даёт заголовку переноситься */
     display: flex;
     flex-direction: column;
     gap: var(--st-space-1);
   }
   /* Заголовок целиком — сбрасываем flex/nowrap/ellipsis десктоп-базы,
-     без line-clamp: показываем сколько нужно строк. */
+     без line-clamp: показываем сколько нужно строк. overflow-wrap ломает
+     длинные слова/URL, чтобы они не распирали колонку. */
   .studio-row__title {
     display: block;
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     line-height: 1.3;
+    font-size: var(--st-text-md);
   }
   /* Featured-тег внутри заголовка — инлайново, не ломает перенос */
   .studio-row__title .studio-tag { margin-left: var(--st-space-2); }
@@ -343,15 +355,21 @@
     margin-top: 0;
   }
   .studio-row__dot { display: none; }
-  /* Теги: РАМЁН и статус — отдельной строкой снизу, во всю ширину */
+  /* Теги: РАМЁН и статус — отдельной строкой снизу, во всю ширину.
+     grid-column: 1 / -1 растягивает на обе колонки, grid-row: 2 опускает
+     под обложку и текст. */
   .studio-row__tags {
     grid-column: 1 / -1;
     grid-row: 2;
+    display: flex;
     flex-wrap: wrap;
     justify-content: flex-start;
     align-items: center;
     gap: var(--st-space-2);
   }
+  /* Бейдж и статус не должны сжиматься в ниточку при переносе */
+  .studio-row__tags .vid__badge,
+  .studio-row__tags .studio-status { flex-shrink: 0; }
 }
 
 /* ============================================================================
