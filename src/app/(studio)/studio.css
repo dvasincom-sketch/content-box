@@ -1,4 +1,4 @@
-/* BUILD-MARKER: studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -885,6 +885,14 @@ select.studio-input {
   position: relative;
   width: 100%;
 }
+/* Когда открыт — поднимаем весь селект над соседними карточками.
+   Карточки списка ниже создают собственные stacking-контексты (backdrop-filter
+   у стекла + transform в анимациях появления), поэтому z-index на самом
+   списке не помогает — он заперт внутри контекста селекта. Поднимаем
+   контейнер целиком. */
+.studio-select.is-open {
+  z-index: 60;
+}
 .studio-select__trigger {
   width: 100%;
   display: flex;
@@ -1174,6 +1182,10 @@ select.studio-input {
    ============================================================================ */
 
 .catmgr__create { margin-bottom: var(--st-space-5); max-width: 700px; }
+/* Пока внутри карточки открыт селект — поднимаем её над деревом ниже
+   (у дерева свой stacking-контекст из-за transform-анимаций). */
+.catmgr__create { position: relative; }
+.catmgr__create:has(.studio-select.is-open) { z-index: 60; }
 .catmgr__create-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2529,6 +2541,7 @@ select.studio-input {
 /* --- Управление папками ----------------------------------------------------- */
 .foldermgr {
   width: 100%;
+  position: relative;
   background: var(--st-surface);
   border: 1px solid var(--st-border);
   border-radius: var(--st-radius);
@@ -2538,6 +2551,8 @@ select.studio-input {
   flex-direction: column;
   gap: var(--st-space-3);
 }
+/* Пока внутри открыт селект — над таблицей видео ниже */
+.foldermgr:has(.studio-select.is-open) { z-index: 60; }
 
 .foldermgr__create {
   display: flex;
