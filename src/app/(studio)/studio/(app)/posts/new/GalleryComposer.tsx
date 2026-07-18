@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react'
 import {
   ImagePlus, X, Loader2, GripVertical, Library, Upload, Check, AlertCircle,
 } from 'lucide-react'
+import { StudioSelect } from '../../_ui/StudioSelect'
 
 export type GalleryItem = {
   imageId: number | string
@@ -371,19 +372,21 @@ function LibraryModal({
         <div className="glib__head">
           <span className="glib__title">Библиотека изображений</span>
           <div className="glib__folder">
-            <select
-              className="studio-input glib__folder-select"
+            <StudioSelect
+              className="glib__folder-select"
               value={folder}
-              onChange={(e) => setFolder(e.target.value)}
-            >
-              <option value="all">Все папки</option>
-              <option value="none">Без папки</option>
-              {flat.map((f) => (
-                <option key={f.id} value={String(f.id)}>
-                  {'\u00A0'.repeat(f.depth * 2)}{f.title}
-                </option>
-              ))}
-            </select>
+              onChange={setFolder}
+              options={[
+                { value: 'all', label: 'Все папки' },
+                { value: 'none', label: 'Без папки' },
+                ...flat.map((f) => ({
+                  value: String(f.id),
+                  label: f.title,
+                  depth: f.depth,
+                })),
+              ]}
+              ariaLabel="Папка"
+            />
           </div>
           <button className="catmgr__icon-btn" onClick={onClose} title="Закрыть">
             <X size={18} />

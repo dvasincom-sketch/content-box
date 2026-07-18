@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Plus, Pencil, Trash2, Loader2, FolderTree, Image as ImageIcon } from 'lucide-react'
 import { CategoryEditPanel, type EditableCat } from './CategoryEditPanel'
+import { StudioSelect } from '../_ui/StudioSelect'
 
 type Cat = {
   id: number | string
@@ -153,21 +154,18 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
               onChange={(e) => setNewTitle(e.target.value)}
               autoFocus
             />
-            <select
-              className="studio-input"
+            <StudioSelect
               value={newParent}
-              onChange={(e) => setNewParent(e.target.value)}
-            >
-              <option value="">Корневая (без родителя)</option>
-              {cats
-                .slice()
-                .sort((a, b) => a.title.localeCompare(b.title, 'ru'))
-                .map((c) => (
-                  <option key={c.id} value={String(c.id)}>
-                    {c.title}
-                  </option>
-                ))}
-            </select>
+              onChange={setNewParent}
+              options={[
+                { value: '', label: 'Корневая (без родителя)' },
+                ...cats
+                  .slice()
+                  .sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+                  .map((c) => ({ value: String(c.id), label: c.title })),
+              ]}
+              ariaLabel="Родительская категория"
+            />
           </div>
           <div className="catmgr__create-actions">
             <button className="studio-btn studio-btn--ghost" onClick={() => setCreating(false)}>
