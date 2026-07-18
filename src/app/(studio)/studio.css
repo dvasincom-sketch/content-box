@@ -1,4 +1,4 @@
-/* BUILD-MARKER: video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -1576,7 +1576,21 @@ select.studio-input {
 }
 
 @media (max-width: 720px) {
-  .dash__stats { grid-template-columns: 1fr; }
+  /* Три инфографики в один ряд. Компактнее, чтобы влезли на узком экране:
+     меньше паддинг, число чуть мельче, подпись не переносится. */
+  .dash__stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--st-space-2);
+  }
+  .dash__stat { padding: var(--st-space-3); }
+  .dash__stat-value { font-size: var(--st-text-xl); }
+  .dash__stat-label {
+    margin-top: var(--st-space-1);
+    font-size: var(--st-text-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .dash__actions { grid-template-columns: 1fr; }
   .dash__mini-cat, .dash__mini-date { display: none; }
 }
