@@ -26,7 +26,35 @@ export function StudioNav({ authorEmail, brandName }: { authorEmail: string; bra
   return (
     <aside className="studio-nav">
       <div className="studio-nav__brand">
-        <div className="studio-nav__brand-mark">{brandName.charAt(0).toUpperCase()}</div>
+        <div className="studio-nav__brand-mark" aria-label={brandName}>
+          <svg
+            className="studio-nav__logo"
+            width="24"
+            height="24"
+            viewBox="0 0 52 52"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            role="img"
+            aria-hidden="true"
+          >
+            <g transform="translate(26 26)">
+              <path
+                className="studio-nav__logo-a"
+                d="M-16 -16 H16 V0 L0 16 H-16 Z"
+                fill="currentColor"
+                opacity="0.9"
+              />
+              <path
+                className="studio-nav__logo-b"
+                d="M16 -16 V16 H-16 L16 -16 Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
+            </g>
+          </svg>
+        </div>
         <div className="studio-nav__brand-text">
           <span className="studio-nav__brand-name">{brandName}</span>
           <span className="studio-nav__brand-sub">Студия</span>

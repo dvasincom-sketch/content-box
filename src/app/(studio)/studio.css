@@ -1,4 +1,4 @@
-/* BUILD-MARKER: gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -299,13 +299,28 @@ body {
   width: 32px;
   height: 32px;
   border-radius: var(--st-radius-sm);
-  background: var(--st-accent);
-  color: var(--st-accent-text);
+  background: var(--st-surface-2);
+  color: var(--st-accent);
   display: grid;
   place-items: center;
-  font-weight: 700;
-  font-size: var(--st-text-md);
   flex-shrink: 0;
+}
+/* Знак «Контент Бокс»: диагональное расщепление модуля. Монохром через
+   currentColor (белый в тёмной теме / чёрный в светлой — от --st-accent).
+   Анимация — только при наведении на плашку бренда: в покое статичный знак,
+   оживает при взаимодействии. Уважает prefers-reduced-motion. */
+.studio-nav__logo-a,
+.studio-nav__logo-b {
+  transform: translate(0, 0);
+  transition: transform 0.45s var(--st-ease);
+}
+.studio-nav__brand:hover .studio-nav__logo-a { transform: translate(-2px, -2px); }
+.studio-nav__brand:hover .studio-nav__logo-b { transform: translate(2px, 2px); }
+@media (prefers-reduced-motion: reduce) {
+  .studio-nav__logo-a,
+  .studio-nav__logo-b { transition: none; }
+  .studio-nav__brand:hover .studio-nav__logo-a,
+  .studio-nav__brand:hover .studio-nav__logo-b { transform: translate(0, 0); }
 }
 
 .studio-nav__brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
