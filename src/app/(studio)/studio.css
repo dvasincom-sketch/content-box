@@ -1,5 +1,5 @@
-/* BUILD-MARKER: login-clean-v1 + mobile-rows-v2 — если этих строк нет в CSS
-   на проде, значит задеплоился старый файл (проверь путь и Clear build cache). */
+/* BUILD-MARKER: ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 — если этих
+   строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
    ----------------------------------------------------------------------------
@@ -297,6 +297,15 @@
   .studio-nav__email { display: none; }
   .studio-main { padding: var(--st-space-5) var(--st-space-4); }
 
+  /* iOS Safari зумит страницу при фокусе на поле с font-size < 16px.
+     На мобиле поднимаем инпуты/textarea/select до 16px — это убирает
+     автозум (после которого «съезжали края»). Десктоп остаётся 15px. */
+  .studio-input,
+  .studio-textarea,
+  select.studio-input {
+    font-size: 16px;
+  }
+
   /* Строка публикации на мобиле (Вариант А): обложка слева, справа —
      заголовок ЦЕЛИКОМ, под ним категория и дата в столбик; теги (РАМЁН +
      статус) отдельной строкой снизу на всю ширину. Высота свободная.
@@ -592,8 +601,6 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   background: var(--st-bg);
   pointer-events: none;
 }
-/* Едва заметная сетка-паттерн — «технологичность» без грязи. Очень бледные
-   линии на фоне, равномерные, без градиентов и виньеток. */
 .studio-login__grid {
   position: absolute;
   inset: 0;
@@ -601,7 +608,6 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
     linear-gradient(to right, color-mix(in srgb, var(--st-border) 55%, transparent) 1px, transparent 1px),
     linear-gradient(to bottom, color-mix(in srgb, var(--st-border) 55%, transparent) 1px, transparent 1px);
   background-size: 44px 44px;
-  /* Плавно гасим сетку к краям, чтобы не было резкой кромки паттерна */
   -webkit-mask: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 75%);
   mask: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 75%);
   pointer-events: none;
