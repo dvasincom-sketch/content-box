@@ -1,5 +1,5 @@
-/* BUILD-MARKER: mobile-rows-v2 — если этой строки нет в CSS на проде,
-   значит задеплоился старый файл (проверь путь и Clear build cache). */
+/* BUILD-MARKER: login-clean-v1 + mobile-rows-v2 — если этих строк нет в CSS
+   на проде, значит задеплоился старый файл (проверь путь и Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
    ----------------------------------------------------------------------------
@@ -300,10 +300,8 @@
   /* Строка публикации на мобиле (Вариант А): обложка слева, справа —
      заголовок ЦЕЛИКОМ, под ним категория и дата в столбик; теги (РАМЁН +
      статус) отдельной строкой снизу на всю ширину. Высота свободная.
-
-     Селектор усилен до .studio-list .studio-row (специфичность 0-2-0),
-     чтобы гарантированно перебить десктопную базу .studio-row (0-1-0) —
-     иначе flex-раскладка десктопа могла оставаться в силе. */
+     Селектор усилен до .studio-list .studio-row (0-2-0), чтобы перебить
+     десктопную flex-базу .studio-row (0-1-0). */
   .studio-list .studio-row {
     display: grid;
     grid-template-columns: 52px minmax(0, 1fr);
@@ -323,14 +321,12 @@
   .studio-list .studio-row__main {
     grid-column: 2;
     grid-row: 1;
-    min-width: 0;                 /* обязательно: даёт заголовку переноситься */
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;      /* всё в колонке — по левому краю */
+    align-items: flex-start;
     gap: var(--st-space-1);
   }
-  /* Заголовок целиком — сбрасываем flex/nowrap/ellipsis/центрирование базы.
-     Один размер шрифта для всех строк, перенос по словам, без обрезки. */
   .studio-list .studio-row__title {
     display: block;
     width: 100%;
@@ -343,9 +339,7 @@
     line-height: 1.3;
     font-size: var(--st-text-md);
   }
-  /* Featured-тег внутри заголовка — инлайново, не ломает перенос */
   .studio-list .studio-row__title .studio-tag { margin-left: var(--st-space-2); }
-  /* Мета в столбик по левому краю: категория сверху, дата снизу. Точку прячем. */
   .studio-list .studio-row__meta {
     display: flex;
     flex-direction: column;
@@ -355,8 +349,6 @@
     margin-top: 0;
   }
   .studio-list .studio-row__dot { display: none; }
-  /* Теги: РАМЁН + статус — отдельной строкой снизу, во всю ширину.
-     grid-column: 1 / -1 растягивает на обе колонки, grid-row: 2 опускает вниз. */
   .studio-list .studio-row__tags {
     grid-column: 1 / -1;
     grid-row: 2;
@@ -591,64 +583,45 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   overflow: hidden;
 }
 
-/* --- Декоративный фон: чистая глубина (карточка выступает из темноты) --- */
+/* --- Фон: чистый технологичный. Один спокойный слой без тёмных mix-градиентов
+   и без чёрной виньетки (они давали грязные серые пятна на светлой теме). --- */
 .studio-login__bg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  /* Глубокий тёмный фон + едва уловимое осветление к центру. Два наложенных
-     радиальных градиента дают мягкую «глубину» без сетки и без анимации —
-     фон молчит, чтобы звучали логотип и форма (принцип брендбука). */
-  background:
-    radial-gradient(900px 620px at 50% 40%, color-mix(in srgb, var(--st-surface) 60%, transparent), transparent 72%),
-    radial-gradient(1400px 900px at 50% 42%, color-mix(in srgb, var(--st-surface-2) 40%, transparent), transparent 80%),
-    var(--st-bg);
+  background: var(--st-bg);
   pointer-events: none;
-  overflow: hidden;
 }
-/* Лёгкая виньетка по краям — усиливает ощущение глубины */
+/* Едва заметная сетка-паттерн — «технологичность» без грязи. Очень бледные
+   линии на фоне, равномерные, без градиентов и виньеток. */
 .studio-login__grid {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 80% 80% at 50% 42%, transparent 55%, color-mix(in srgb, #000 45%, transparent) 100%);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--st-border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--st-border) 55%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  /* Плавно гасим сетку к краям, чтобы не было резкой кромки паттерна */
+  -webkit-mask: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 75%);
+  mask: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 75%);
+  pointer-events: none;
 }
 
-/* --- Карточка с градиентной обводкой (тёмно-серый → светло-серый) --- */
+/* --- Карточка входа: сплошной фон, одна аккуратная рамка, мягкая тень.
+   Убрали backdrop-filter и градиентную ::before-обводку через mask-composite —
+   на мобильном WebKit они давали сабпиксельный сдвиг и «двойную» кромку. --- */
 .studio-login__card {
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: 380px;
-  background: color-mix(in srgb, var(--st-surface) 88%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
   border-radius: var(--st-radius-lg);
   padding: var(--st-space-8);
-  box-shadow: var(--st-shadow);
-  /* прозрачная граница — под неё подкладываем градиент через ::before */
-  border: 1px solid transparent;
-}
-/* Градиентная обводка: слой чуть больше карточки, виден только по рамке
-   благодаря mask с вырезанием внутренней области. */
-.studio-login__card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px; /* толщина обводки */
-  background: linear-gradient(145deg,
-    var(--st-border) 0%,
-    var(--st-border-strong) 45%,
-    color-mix(in srgb, var(--st-text) 55%, var(--st-border-strong)) 100%);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, #000 5%, transparent),
+    0 12px 32px color-mix(in srgb, #000 8%, transparent);
 }
 
 .studio-login__head { margin-bottom: var(--st-space-6); text-align: center; }
