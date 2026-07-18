@@ -2776,3 +2776,47 @@ select.studio-input {
 @media (max-width: 560px) {
   .gcomp__grid, .glib__grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
 }
+
+/* ВЫБОР ВИДЕОПРОВАЙДЕРА (форма добавления видео) */
+.vid__provider { margin-bottom: var(--st-space-4); }
+.vid__provider-label {
+  font-size: var(--st-text-sm);
+  font-weight: 600;
+  color: var(--st-text);
+  margin-bottom: var(--st-space-2);
+}
+.vid__provider-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--st-space-2);
+}
+.vid__provider-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: var(--st-space-3);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-bg);
+  cursor: pointer;
+  transition: border-color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease);
+}
+.vid__provider-opt:hover { border-color: var(--st-border-strong); }
+.vid__provider-opt.is-active {
+  border-color: var(--st-text);
+  background: var(--st-surface-2);
+}
+.vid__provider-title {
+  font-size: var(--st-text-sm);
+  font-weight: 600;
+  color: var(--st-text);
+}
+.vid__provider-hint {
+  font-size: var(--st-text-xs);
+  color: var(--st-text-faint);
+  line-height: 1.3;
+}
+@media (max-width: 560px) {
+  .vid__provider-opts { grid-template-columns: 1fr; }
+}

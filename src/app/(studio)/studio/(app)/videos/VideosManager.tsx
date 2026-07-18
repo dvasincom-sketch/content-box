@@ -712,8 +712,31 @@ function AddPanel({
   onCancel: () => void
 }) {
   const [mode, setMode] = useState<'upload' | 'url'>('upload')
+  const [provider, setProvider] = useState<'stream' | 'kinescope'>('kinescope')
   return (
     <div className="studio-card vid__form">
+      <div className="vid__provider">
+        <div className="vid__provider-label">Где хранить видео</div>
+        <div className="vid__provider-opts">
+          <button
+            type="button"
+            className={`vid__provider-opt${provider === 'kinescope' ? ' is-active' : ''}`}
+            onClick={() => setProvider('kinescope')}
+          >
+            <span className="vid__provider-title">🇷🇺 Российское (Kinescope)</span>
+            <span className="vid__provider-hint">Работает в РФ без VPN. Рекомендуется.</span>
+          </button>
+          <button
+            type="button"
+            className={`vid__provider-opt${provider === 'stream' ? ' is-active' : ''}`}
+            onClick={() => setProvider('stream')}
+          >
+            <span className="vid__provider-title">🌍 Зарубежное (Cloudflare)</span>
+            <span className="vid__provider-hint">Для зарубежной аудитории. В РФ нужен VPN.</span>
+          </button>
+        </div>
+      </div>
+
       <div className="vid__tabs">
         <button
           className={`vid__tab${mode === 'upload' ? ' is-active' : ''}`}
@@ -730,19 +753,21 @@ function AddPanel({
       </div>
 
       {mode === 'upload' ? (
-        <UploadFileForm tiers={tiers} onDone={onDone} onCancel={onCancel} />
+        <UploadFileForm provider={provider} tiers={tiers} onDone={onDone} onCancel={onCancel} />
       ) : (
-        <UrlFields tiers={tiers} onDone={onDone} onCancel={onCancel} />
+        <UrlFields provider={provider} tiers={tiers} onDone={onDone} onCancel={onCancel} />
       )}
     </div>
   )
 }
 
 function UploadFileForm({
+  provider,
   tiers,
   onDone,
   onCancel,
 }: {
+  provider: 'stream' | 'kinescope'
   tiers: Tier[]
   onDone: () => void
   onCancel: () => void
@@ -757,6 +782,7 @@ function UploadFileForm({
   const [total, setTotal] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const uploadRef = useRef<tus.Upload | null>(null)
+  const xhrRef = useRef<XMLHttpRequest | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -767,10 +793,58 @@ function UploadFileForm({
     setError(null)
   }
 
+  // Kinescope: файл идёт multipart через наш сервер (без TUS). Прогресс — через XHR.
+  function startKinescope(f: File) {
+    setUploading(true)
+    setPct(0)
+    setTotal(f.size)
+
+    const fd = new FormData()
+    fd.append('file', f)
+    fd.append('title', title.trim())
+    if (minTierId) fd.append('minTierId', minTierId)
+    fd.append('isPreview', String(isPreview))
+
+    const xhr = new XMLHttpRequest()
+    xhrRef.current = xhr
+    xhr.open('POST', '/studio/api/videos/kinescope/create-from-upload')
+    xhr.withCredentials = true
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        setUploaded(e.loaded)
+        setTotal(e.total)
+        setPct(Math.round((e.loaded / e.total) * 100))
+      }
+    }
+    xhr.onload = () => {
+      xhrRef.current = null
+      let json: any = {}
+      try { json = JSON.parse(xhr.responseText) } catch {}
+      if (xhr.status >= 200 && xhr.status < 300 && json.ok) {
+        onDone()
+      } else {
+        setError(json.error || `Не удалось загрузить (HTTP ${xhr.status})`)
+        setUploading(false)
+      }
+    }
+    xhr.onerror = () => {
+      xhrRef.current = null
+      setError('Ошибка соединения при загрузке')
+      setUploading(false)
+    }
+    xhr.send(fd)
+  }
+
   async function start() {
     setError(null)
     if (!file) return setError('Выберите файл')
     if (!title.trim()) return setError('Укажите название')
+
+    // Российское хранилище — простой multipart-путь
+    if (provider === 'kinescope') {
+      startKinescope(file)
+      return
+    }
 
     setUploading(true)
     setPct(0)
@@ -843,6 +917,10 @@ function UploadFileForm({
     if (uploadRef.current) {
       uploadRef.current.abort()
       uploadRef.current = null
+    }
+    if (xhrRef.current) {
+      xhrRef.current.abort()
+      xhrRef.current = null
     }
     setUploading(false)
     setPct(0)
@@ -952,10 +1030,12 @@ function UploadFileForm({
 }
 
 function UrlFields({
+  provider,
   tiers,
   onDone,
   onCancel,
 }: {
+  provider: 'stream' | 'kinescope'
   tiers: Tier[]
   onDone: () => void
   onCancel: () => void
@@ -973,7 +1053,11 @@ function UrlFields({
     if (!url.trim()) return setError('Укажите ссылку на видеофайл')
     setBusy(true)
     try {
-      const res = await fetch('/studio/api/videos/create-from-url', {
+      const endpoint =
+        provider === 'kinescope'
+          ? '/studio/api/videos/kinescope/create-from-url'
+          : '/studio/api/videos/create-from-url'
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -997,8 +1081,9 @@ function UrlFields({
   return (
     <>
       <p className="vid__form-hint">
-        Ссылка на видео из вашего хранилища: Яндекс.Диск (публичная ссылка),
-        Яндекс Object Storage, R2 или S3. Cloudflare Stream скачает и подготовит сам.
+        {provider === 'kinescope'
+          ? 'Ссылка на видео: Яндекс.Диск (публичная), Object Storage, S3, YouTube. Kinescope скачает и подготовит сам.'
+          : 'Ссылка на видео из вашего хранилища: Яндекс.Диск (публичная ссылка), Яндекс Object Storage, R2 или S3. Cloudflare Stream скачает и подготовит сам.'}
       </p>
       <label className="studio-field">
         <span className="studio-field__label">Название</span>
