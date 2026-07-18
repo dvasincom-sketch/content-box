@@ -685,7 +685,7 @@ function FolderManager({
       ) : (
         <ul className="foldermgr__list">
           {flatFolders.map((f) => (
-            <li key={f.id} className="foldermgr__item" style={{ paddingLeft: `${f.depth * 16}px` }}>
+            <li key={f.id} className="foldermgr__item" style={{ paddingLeft: `calc(var(--st-space-2) + ${f.depth * 16}px)` }}>
               <Folder size={14} className="foldermgr__item-icon" />
               {editingId === f.id ? (
                 <>
