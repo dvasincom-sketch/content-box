@@ -716,6 +716,37 @@ select.studio-input {
 @media (max-width: 860px) {
   .composer__grid { grid-template-columns: 1fr; }
   .composer__side { position: static; }
+
+  /* Шапка композера: «Назад» и кнопки переносятся, не распирают экран */
+  .composer__head {
+    flex-wrap: wrap;
+    gap: var(--st-space-3);
+    margin-bottom: var(--st-space-5);
+  }
+  .composer__actions {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: var(--st-space-2);
+  }
+  /* Кнопки действий растягиваются и делят строку, чтобы влезать */
+  .composer__actions .studio-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  /* Заголовок не распирает контейнер длинными словами */
+  .composer__title {
+    font-size: var(--st-text-xl);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Совсем узкие экраны — кнопки действий в столбец на всю ширину */
+@media (max-width: 480px) {
+  .composer__actions .studio-btn {
+    flex: 1 1 100%;
+  }
 }
 
 /* ============================================================================
