@@ -30,6 +30,9 @@ export default async function VideosPage() {
     isPreview: Boolean(v.isPreview),
     minTierName:
       v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug : null,
+    minTierId: v.minTier
+      ? String(typeof v.minTier === 'object' ? v.minTier.id : v.minTier)
+      : '',
     durationSec: v.durationSec || null,
     coverUrl: v.cover && typeof v.cover === 'object' ? v.cover.url : null,
     folderId: v.folder ? (typeof v.folder === 'object' ? v.folder.id : v.folder) : null,

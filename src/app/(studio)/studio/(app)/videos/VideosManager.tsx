@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { StudioSelect } from '../_ui/StudioSelect'
+import { VideoEditModal, type EditableVideo } from './VideoEditModal'
 
 type Tier = { id: number | string; name: string }
 type FolderItem = { id: number | string; title: string; parentId: number | string | null }
@@ -19,6 +20,7 @@ type Vid = {
   videoRef: string | null
   isPreview: boolean
   minTierName: string | null
+  minTierId: string
   durationSec: number | null
   coverUrl: string | null
   folderId: number | string | null
@@ -92,6 +94,7 @@ export function VideosManager({
 
   const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState<string>(FILTER_ALL) // FILTER_ALL | FILTER_NONE | folderId
+  const [editingVideo, setEditingVideo] = useState<EditableVideo | null>(null)
 
   const flatFolders = useMemo(() => flattenFolders(folders), [folders])
   const folderNameById = useMemo(() => {
@@ -173,6 +176,7 @@ export function VideosManager({
                 <th className="vidtable__th-status">Статус</th>
                 <th className="vidtable__th-folder">Папка</th>
                 <th className="vidtable__th-date">Добавлено</th>
+                <th className="vidtable__th-actions"></th>
               </tr>
             </thead>
             <tbody>
@@ -183,11 +187,26 @@ export function VideosManager({
                   flatFolders={flatFolders}
                   folderName={v.folderId != null ? folderNameById.get(String(v.folderId)) || null : null}
                   onFolderChange={applyFolderLocally}
+                  onEdit={() =>
+                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId })
+                  }
                 />
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {editingVideo && (
+        <VideoEditModal
+          video={editingVideo}
+          tiers={tiers}
+          onClose={() => setEditingVideo(null)}
+          onSaved={() => {
+            setEditingVideo(null)
+            router.refresh()
+          }}
+        />
       )}
     </>
   )
@@ -295,11 +314,13 @@ function VideoRow({
   flatFolders,
   folderName,
   onFolderChange,
+  onEdit,
 }: {
   video: Vid
   flatFolders: { id: number | string; title: string; depth: number }[]
   folderName: string | null
   onFolderChange: (videoId: number | string, folderId: number | string | null) => void
+  onEdit: () => void
 }) {
   const [ready, setReady] = useState<boolean | null>(null)
   const [pct, setPct] = useState<string | null>(null)
@@ -441,6 +462,17 @@ function VideoRow({
 
       {/* Дата */}
       <td className="vidtable__date-cell">{fmtDate(video.addedAt) || '—'}</td>
+
+      {/* Действия */}
+      <td className="vidtable__actions-cell">
+        <button
+          className="catmgr__icon-btn"
+          onClick={onEdit}
+          title="Редактировать видео"
+        >
+          <Pencil size={15} />
+        </button>
+      </td>
 
       {playing && (
         <VideoPreviewModal

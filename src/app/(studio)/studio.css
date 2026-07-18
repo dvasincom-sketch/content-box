@@ -1,4 +1,4 @@
-/* BUILD-MARKER: vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -2675,6 +2675,8 @@ select.studio-input {
 .vidtable__th-tier { width: 130px; }
 .vidtable__th-status { width: 150px; }
 .vidtable__th-folder { width: 180px; }
+.vidtable__th-actions { width: 52px; }
+.vidtable__actions-cell { text-align: right; white-space: nowrap; }
 
 .vidtable__row {
   border-bottom: 1px solid var(--st-border);
