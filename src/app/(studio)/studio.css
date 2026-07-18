@@ -1,4 +1,4 @@
-/* BUILD-MARKER: login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -877,9 +877,109 @@ select.studio-input {
   cursor: pointer;
 }
 
-/* Спиннер */
-.spin { animation: st-spin 0.8s linear infinite; }
-@keyframes st-spin { to { transform: rotate(360deg); } }
+/* ============================================================================
+   STUDIO SELECT — кастомный дропдаун (дизайн-система, тёмное стекло)
+   Заменяет нативный <select>: раскрытый список тоже в стиле.
+   ============================================================================ */
+.studio-select {
+  position: relative;
+  width: 100%;
+}
+.studio-select__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--st-space-2);
+  background: var(--st-bg);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  color: var(--st-text);
+  font-family: var(--st-font-body);
+  font-size: var(--st-text-md);
+  padding: var(--st-space-3) var(--st-space-3);
+  cursor: pointer;
+  transition: border-color var(--st-dur) var(--st-ease);
+  text-align: left;
+}
+.studio-select__trigger:hover { border-color: var(--st-border-strong); }
+.studio-select.is-open .studio-select__trigger { border-color: var(--st-border-strong); }
+.studio-select.is-disabled .studio-select__trigger {
+  opacity: .6;
+  cursor: not-allowed;
+}
+.studio-select__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-select__value.is-placeholder { color: var(--st-text-faint); }
+.studio-select__caret {
+  flex-shrink: 0;
+  color: var(--st-text-muted);
+  transition: transform var(--st-dur) var(--st-ease);
+}
+.studio-select.is-open .studio-select__caret { transform: rotate(180deg); }
+
+/* Раскрытый список — стеклянная панель */
+.studio-select__list {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--st-space-1);
+  border-radius: var(--st-radius);
+  background: color-mix(in srgb, var(--st-surface) 72%, transparent);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid color-mix(in srgb, #fff 10%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent),
+    0 16px 40px color-mix(in srgb, #000 45%, transparent);
+}
+.studio-select__option {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  padding: var(--st-space-2) var(--st-space-3);
+  border-radius: var(--st-radius-sm);
+  color: var(--st-text);
+  font-size: var(--st-text-md);
+  cursor: pointer;
+  user-select: none;
+}
+.studio-select__option.is-active { background: color-mix(in srgb, #fff 6%, transparent); }
+.studio-select__option.is-selected { font-weight: 600; }
+.studio-select__check {
+  width: 16px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--st-success);
+}
+.studio-select__option-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .studio-select__list {
+    background: var(--st-surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+/* На мобиле — крупнее шрифт триггера (анти-зум iOS, как у инпутов) */
+@media (max-width: 720px) {
+  .studio-select__trigger { font-size: 16px; }
+}
+
 
 /* --- Мобилка композера ----------------------------------------------------- */
 @media (max-width: 860px) {

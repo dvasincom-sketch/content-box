@@ -9,6 +9,7 @@ import {
   Upload, X, Play, Folder, FolderPlus, Pencil, Trash2, ChevronRight, ChevronDown,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
+import { StudioSelect } from '../_ui/StudioSelect'
 
 type Tier = { id: number | string; name: string }
 type FolderItem = { id: number | string; title: string; parentId: number | string | null }
@@ -624,18 +625,20 @@ function FolderManager({
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && createFolder()}
         />
-        <select
-          className="studio-input foldermgr__parent"
+        <StudioSelect
+          className="foldermgr__parent"
           value={newParent}
-          onChange={(e) => setNewParent(e.target.value)}
-        >
-          <option value="">Корень (без родителя)</option>
-          {flatFolders.map((f) => (
-            <option key={f.id} value={String(f.id)}>
-              {'\u00A0'.repeat(f.depth * 2)}{f.title}
-            </option>
-          ))}
-        </select>
+          onChange={setNewParent}
+          options={[
+            { value: '', label: 'Корень (без родителя)' },
+            ...flatFolders.map((f) => ({
+              value: String(f.id),
+              label: f.title,
+              depth: f.depth,
+            })),
+          ]}
+          ariaLabel="Родительская папка"
+        />
         <button className="studio-btn studio-btn--primary" onClick={createFolder} disabled={busy}>
           {busy ? <Loader2 size={15} className="spin" /> : <FolderPlus size={15} />}
           Создать
@@ -979,17 +982,16 @@ function UploadFileForm({
       <div className="vid__form-row">
         <label className="studio-field" style={{ flex: 1 }}>
           <span className="studio-field__label">Уровень доступа</span>
-          <select
-            className="studio-input"
+          <StudioSelect
             value={minTierId}
-            onChange={(e) => setMinTierId(e.target.value)}
+            onChange={setMinTierId}
+            options={[
+              { value: '', label: 'Все подписчики / бесплатно' },
+              ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
+            ]}
             disabled={isPreview || uploading}
-          >
-            <option value="">Все подписчики / бесплатно</option>
-            {tiers.map((t) => (
-              <option key={t.id} value={String(t.id)}>{t.name} и выше</option>
-            ))}
-          </select>
+            ariaLabel="Уровень доступа"
+          />
         </label>
         <label className="vid__preview-check">
           <input
@@ -1101,17 +1103,16 @@ function UrlFields({
       <div className="vid__form-row">
         <label className="studio-field" style={{ flex: 1 }}>
           <span className="studio-field__label">Уровень доступа</span>
-          <select
-            className="studio-input"
+          <StudioSelect
             value={minTierId}
-            onChange={(e) => setMinTierId(e.target.value)}
+            onChange={setMinTierId}
+            options={[
+              { value: '', label: 'Все подписчики / бесплатно' },
+              ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
+            ]}
             disabled={isPreview}
-          >
-            <option value="">Все подписчики / бесплатно</option>
-            {tiers.map((t) => (
-              <option key={t.id} value={String(t.id)}>{t.name} и выше</option>
-            ))}
-          </select>
+            ariaLabel="Уровень доступа"
+          />
         </label>
         <label className="vid__preview-check">
           <input type="checkbox" checked={isPreview} onChange={(e) => setIsPreview(e.target.checked)} />
