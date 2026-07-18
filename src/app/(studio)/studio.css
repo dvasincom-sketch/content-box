@@ -1,4 +1,4 @@
-/* BUILD-MARKER: row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -2148,6 +2148,20 @@ select.studio-input {
   font-size: var(--st-text-xs);
   color: var(--st-text-faint);
   max-width: 380px;
+}
+
+/* Мобилка: модалка плеера прижата к верху с небольшим отступом (16:9 не влезает
+   по центру и «висит»), компактный паддинг, тень мягче. */
+@media (max-width: 720px) {
+  .vidplay__overlay {
+    align-items: start;
+    padding: var(--st-space-4) var(--st-space-3);
+    padding-top: calc(var(--st-space-6) + env(safe-area-inset-top, 0px));
+  }
+  .vidplay {
+    max-width: 100%;
+    box-shadow: 0 12px 32px color-mix(in srgb, #000 40%, transparent);
+  }
 }
 
 /* ============================================================================

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Loader2, AlertCircle } from 'lucide-react'
 
 /**
@@ -20,6 +21,9 @@ export function VideoPreviewModal({
 }) {
   const [src, setSrc] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Портал в body работает только на клиенте — монтируемся после гидрации.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   useEffect(() => {
     let stopped = false
@@ -51,7 +55,9 @@ export function VideoPreviewModal({
     }
   }, [videoId])
 
-  return (
+  if (!mounted) return null
+
+  return createPortal(
     <div className="vidplay__overlay" onClick={onClose}>
       <div className="vidplay" onClick={(e) => e.stopPropagation()}>
         <div className="vidplay__head">
@@ -83,6 +89,7 @@ export function VideoPreviewModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
