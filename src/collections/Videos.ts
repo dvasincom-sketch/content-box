@@ -90,12 +90,27 @@ export const Videos: CollectionConfig = {
       },
     },
     {
+      name: 'provider',
+      type: 'select',
+      required: true,
+      defaultValue: 'stream',
+      label: 'Видеопровайдер',
+      options: [
+        { label: 'Cloudflare Stream (зарубежный)', value: 'stream' },
+        { label: 'Kinescope (российский)', value: 'kinescope' },
+      ],
+      admin: {
+        description:
+          'Где хранится видео. Stream — для зарубежной аудитории; Kinescope — для РФ (не блокируется провайдерами).',
+      },
+    },
+    {
       name: 'videoRef',
       type: 'text',
       label: 'Ссылка/ключ видео',
       admin: {
         description:
-          'Идентификатор видео в хранилище (заполним после выбора R2/Stream). Заглушка.',
+          'Идентификатор видео в хранилище: CF Stream uid или Kinescope video_id (по provider).',
       },
     },
     {

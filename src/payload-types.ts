@@ -533,7 +533,11 @@ export interface Video {
    */
   isPreview?: boolean | null;
   /**
-   * Идентификатор видео в хранилище (заполним после выбора R2/Stream). Заглушка.
+   * Где хранится видео. Stream — для зарубежной аудитории; Kinescope — для РФ (не блокируется провайдерами).
+   */
+  provider: 'stream' | 'kinescope';
+  /**
+   * Идентификатор видео в хранилище: CF Stream uid или Kinescope video_id (по provider).
    */
   videoRef?: string | null;
   durationSec?: number | null;
@@ -1130,6 +1134,7 @@ export interface VideosSelect<T extends boolean = true> {
   folder?: T;
   minTier?: T;
   isPreview?: T;
+  provider?: T;
   videoRef?: T;
   durationSec?: T;
   publishedAt?: T;

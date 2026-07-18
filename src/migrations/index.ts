@@ -16,6 +16,7 @@ import * as migration_20260717_080538_tiers_perks from './20260717_080538_tiers_
 import * as migration_20260717_091412_related_videos from './20260717_091412_related_videos';
 import * as migration_20260717_121624_add_video_folders from './20260717_121624_add_video_folders';
 import * as migration_20260717_155634_add_gallery from './20260717_155634_add_gallery';
+import * as migration_20260718_115114_add_video_provider from './20260718_115114_add_video_provider';
 
 export const migrations = [
   {
@@ -106,6 +107,11 @@ export const migrations = [
   {
     up: migration_20260717_155634_add_gallery.up,
     down: migration_20260717_155634_add_gallery.down,
-    name: '20260717_155634_add_gallery'
+    name: '20260717_155634_add_gallery',
+  },
+  {
+    up: migration_20260718_115114_add_video_provider.up,
+    down: migration_20260718_115114_add_video_provider.down,
+    name: '20260718_115114_add_video_provider'
   },
 ];
