@@ -70,12 +70,14 @@ export function PostRow({ doc }: { doc: PubDoc }) {
         </div>
       </div>
 
-      {minTierName && (
-        <span className="vid__badge" style={{ marginRight: 'var(--st-space-2)' }}>
-          <Lock size={12} /> {minTierName}
-        </span>
-      )}
-      <span className={`studio-status studio-status--${status.kind}`}>{status.label}</span>
+      <div className="studio-row__tags">
+        {minTierName && (
+          <span className="vid__badge">
+            <Lock size={12} /> {minTierName}
+          </span>
+        )}
+        <span className={`studio-status studio-status--${status.kind}`}>{status.label}</span>
+      </div>
     </Link>
   )
 }

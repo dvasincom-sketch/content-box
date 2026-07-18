@@ -286,6 +286,25 @@
   .studio-nav__footer { border-top: none; margin: 0; padding: 0; border-left: 1px solid var(--st-border); padding-left: var(--st-space-2); }
   .studio-nav__email { display: none; }
   .studio-main { padding: var(--st-space-5) var(--st-space-4); }
+
+  /* Строка публикации: обложка слева, контент и теги — сеткой, без наездов */
+  .studio-row {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    grid-template-areas:
+      "cover main"
+      "cover tags";
+    align-items: start;
+    column-gap: var(--st-space-3);
+    row-gap: var(--st-space-2);
+  }
+  .studio-row__cover { grid-area: cover; align-self: center; }
+  .studio-row__main { grid-area: main; }
+  .studio-row__tags {
+    grid-area: tags;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 
 /* ============================================================================
@@ -422,6 +441,14 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
 .studio-status--draft {
   color: var(--st-text-muted);
   background: var(--st-surface-2);
+}
+
+/* Бейдж уровня + статус справа от строки (десктоп — в ряд) */
+.studio-row__tags {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  flex-shrink: 0;
 }
 
 /* --- Теги ------------------------------------------------------------------ */
