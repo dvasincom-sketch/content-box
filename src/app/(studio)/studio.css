@@ -1,4 +1,4 @@
-/* BUILD-MARKER: folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -917,6 +917,16 @@ select.studio-input {
    списке не помогает — он заперт внутри контекста селекта. Поднимаем
    контейнер целиком. */
 .studio-select.is-open {
+  z-index: 60;
+}
+/* Общий подъём: любой контейнер-обёртка поля, внутри которого открыт селект,
+   поднимается над соседними блоками. Покрывает все формы разом (композер,
+   форма видео, настройки), чтобы не патчить каждый контейнер отдельно
+   через :has(). Позиционируем relative + z-index только когда селект открыт. */
+.studio-field:has(.studio-select.is-open),
+.vid__form-row:has(.studio-select.is-open),
+.composer__field:has(.studio-select.is-open) {
+  position: relative;
   z-index: 60;
 }
 .studio-select__trigger {
