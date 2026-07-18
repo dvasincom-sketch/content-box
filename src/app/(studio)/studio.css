@@ -1,4 +1,4 @@
-/* BUILD-MARKER: select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -448,6 +448,11 @@ body {
   }
   .studio-list .studio-row__tags .vid__badge,
   .studio-list .studio-row__tags .studio-status { flex-shrink: 0; }
+  /* Статус есть всегда → на мобиле он идёт ПЕРВЫМ, бейдж уровня после него.
+     Иначе бейдж РАМЁН толкает статус вправо и получается «лестница»
+     между строками с подпиской и без. Десктоп не трогаем (там колонки
+     фиксированы, статус и так не прыгает). */
+  .studio-list .studio-row__tags .studio-status { order: -1; }
 }
 
 /* ============================================================================

@@ -64,9 +64,13 @@ export function PostRow({ doc }: { doc: PubDoc }) {
           {doc.featured && <span className="studio-tag studio-tag--featured">Featured</span>}
         </div>
         <div className="studio-row__meta">
-          {categoryTitle && <span className="studio-row__cat">{categoryTitle}</span>}
-          <span className="studio-row__dot">·</span>
           <span className="studio-row__date">{formatDate(doc.publishedAt)}</span>
+          {categoryTitle && (
+            <>
+              <span className="studio-row__dot">·</span>
+              <span className="studio-row__cat">{categoryTitle}</span>
+            </>
+          )}
         </div>
       </div>
 
