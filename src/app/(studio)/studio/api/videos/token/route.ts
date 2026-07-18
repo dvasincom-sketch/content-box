@@ -5,12 +5,17 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { streamSignToken } from '@/lib/cfStream'
 
 /**
- * Выдаёт подписанный токен для просмотра видео АВТОРОМ в студии (превью).
- * Автор всегда имеет доступ к видео своего тенанта — проверки подписки нет,
- * только принадлежность тенанту.
+ * Данные для просмотра видео АВТОРОМ в студии (превью). Автор всегда имеет
+ * доступ к видео своего тенанта — проверки подписки нет, только тенант.
+ *
+ * Ветвление по провайдеру:
+ *   - stream:    signed-токен CF + customerCode
+ *   - kinescope: provider + embedId (без токена)
  *
  * GET ?id=<videoDocId>
- * Ответ: { token, uid, customerCode? }
+ * Ответ:
+ *   stream    → { ok, provider:'stream', token, uid, customerCode }
+ *   kinescope → { ok, provider:'kinescope', embedId }
  */
 export const runtime = 'nodejs'
 
@@ -35,15 +40,24 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Нет доступа' }, { status: 403 })
   }
 
-  const uid = doc.videoRef
-  if (!uid) return NextResponse.json({ error: 'У видео нет привязки к Stream' }, { status: 400 })
+  const ref = doc.videoRef
+  if (!ref) return NextResponse.json({ error: 'У видео нет привязки к хранилищу' }, { status: 400 })
 
+  const provider = doc.provider === 'kinescope' ? 'kinescope' : 'stream'
+
+  // Kinescope: токен не нужен.
+  if (provider === 'kinescope') {
+    return NextResponse.json({ ok: true, provider: 'kinescope', embedId: ref })
+  }
+
+  // Cloudflare Stream: signed-токен.
   try {
-    const token = await streamSignToken(uid, 2 * 60 * 60) // 2 часа
+    const token = await streamSignToken(ref, 2 * 60 * 60) // 2 часа
     return NextResponse.json({
       ok: true,
+      provider: 'stream',
       token,
-      uid,
+      uid: ref,
       customerCode: process.env.CF_STREAM_CUSTOMER_CODE || null,
     })
   } catch (e: any) {

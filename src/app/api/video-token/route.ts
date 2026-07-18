@@ -3,12 +3,18 @@ import { checkVideoAccess } from '@/lib/videoAccess'
 import { streamSignToken } from '@/lib/cfStream'
 
 /**
- * Публичный роут выдачи signed-токена подписчику. Токен выдаётся ТОЛЬКО если
- * доступ разрешён правилом гейтинга (checkVideoAccess). Иначе — 403 с причиной,
- * и токен не генерируется вовсе (видео физически не открыть).
+ * Публичный роут выдачи данных для плеера подписчику. Доступ выдаётся ТОЛЬКО
+ * если разрешён правилом гейтинга (checkVideoAccess) — иначе 403 с причиной.
+ *
+ * Ветвление по провайдеру видео:
+ *   - stream:    возвращаем signed-токен CF + customerCode (плеер собирает CF-iframe)
+ *   - kinescope: возвращаем provider + embedId (плеер собирает kinescope-iframe)
  *
  * GET ?id=<videoId>  или  ?slug=<slug>
- * Ответ: { token, uid, customerCode } | { error, reason, requiredTierName }
+ * Ответ:
+ *   stream    → { ok, provider:'stream', token, uid, customerCode }
+ *   kinescope → { ok, provider:'kinescope', embedId }
+ *   нет доступа → { error, reason, requiredTierName }
  */
 export const runtime = 'nodejs'
 
@@ -30,17 +36,26 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const uid = access.video.videoRef
-  if (!uid) {
-    return NextResponse.json({ error: 'У видео нет привязки к Stream' }, { status: 400 })
+  const ref = access.video.videoRef
+  if (!ref) {
+    return NextResponse.json({ error: 'У видео нет привязки к хранилищу' }, { status: 400 })
   }
 
+  const provider = access.video.provider === 'kinescope' ? 'kinescope' : 'stream'
+
+  // Kinescope: токен не нужен, плеер играет по embedId (базовая приватность).
+  if (provider === 'kinescope') {
+    return NextResponse.json({ ok: true, provider: 'kinescope', embedId: ref })
+  }
+
+  // Cloudflare Stream: signed-токен.
   try {
-    const token = await streamSignToken(uid, 2 * 60 * 60)
+    const token = await streamSignToken(ref, 2 * 60 * 60)
     return NextResponse.json({
       ok: true,
+      provider: 'stream',
       token,
-      uid,
+      uid: ref,
       customerCode: process.env.CF_STREAM_CUSTOMER_CODE || null,
     })
   } catch (e: any) {

@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react'
 import { X, Loader2, AlertCircle } from 'lucide-react'
 
 /**
- * Модальный плеер превью для автора. Запрашивает signed-токен с роута token,
- * затем показывает Stream-плеер (iframe с токеном вместо uid — для защищённого
- * видео). customerCode приходит с роута (из env CF_STREAM_CUSTOMER_CODE).
+ * Модальный плеер превью для автора. Запрашивает данные с роута token, который
+ * возвращает провайдера. Ветвление:
+ *   - stream:    CF-iframe с signed-токеном
+ *   - kinescope: iframe kinescope.io/embed/<embedId>
  */
 export function VideoPreviewModal({
   videoId,
@@ -17,8 +18,7 @@ export function VideoPreviewModal({
   title: string
   onClose: () => void
 }) {
-  const [token, setToken] = useState<string | null>(null)
-  const [customerCode, setCustomerCode] = useState<string | null>(null)
+  const [src, setSrc] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -34,8 +34,13 @@ export function VideoPreviewModal({
           setError(json.error || 'Не удалось получить доступ к видео')
           return
         }
-        setToken(json.token)
-        setCustomerCode(json.customerCode)
+        if (json.provider === 'kinescope') {
+          setSrc(json.embedId ? `https://kinescope.io/embed/${json.embedId}` : null)
+        } else if (json.token && json.customerCode) {
+          setSrc(`https://customer-${json.customerCode}.cloudflarestream.com/${json.token}/iframe`)
+        } else {
+          setError('Не удалось собрать плеер')
+        }
       } catch {
         if (!stopped) setError('Ошибка соединения')
       }
@@ -45,11 +50,6 @@ export function VideoPreviewModal({
       stopped = true
     }
   }, [videoId])
-
-  const iframeSrc =
-    token && customerCode
-      ? `https://customer-${customerCode}.cloudflarestream.com/${token}/iframe`
-      : null
 
   return (
     <div className="vidplay__overlay" onClick={onClose}>
@@ -66,25 +66,15 @@ export function VideoPreviewModal({
             <div className="vidplay__msg vidplay__msg--error">
               <AlertCircle size={22} />
               <span>{error}</span>
-              {!customerCode && !error.includes('токен') && (
-                <span className="vidplay__hint">
-                  Проверьте, что переменная CF_STREAM_CUSTOMER_CODE задана в окружении.
-                </span>
-              )}
             </div>
-          ) : !iframeSrc ? (
+          ) : !src ? (
             <div className="vidplay__msg">
               <Loader2 size={22} className="spin" />
               <span>Загрузка плеера…</span>
-              {token && !customerCode && (
-                <span className="vidplay__hint">
-                  Токен получен, но нет customer code. Задайте CF_STREAM_CUSTOMER_CODE в окружении.
-                </span>
-              )}
             </div>
           ) : (
             <iframe
-              src={iframeSrc}
+              src={src}
               style={{ border: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%' }}
               allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
               allowFullScreen

@@ -3,16 +3,17 @@
 import React, { useState, useEffect } from 'react'
 
 /**
- * Клиентский плеер для публичной страницы видео. Запрашивает signed-токен с
- * публичного роута /api/video-token (который сам проверяет доступ по подписке).
- * Если доступ есть — показывает Stream-плеер. Если нет — этот компонент вообще
- * не рендерится (страница показывает «замок» на серверной стороне).
+ * Клиентский плеер для публичной страницы видео. Запрашивает данные с публичного
+ * роута /api/video-token (который проверяет доступ по подписке и возвращает
+ * провайдера). Если доступа нет — компонент не рендерится (страница показывает
+ * «замок» на сервере).
  *
- * Стилизация — через inline-стили и Tailwind, в тон публичного сайта (brand-vars).
+ * Ветвление по провайдеру:
+ *   - stream:    CF-iframe с signed-токеном (customer-<code>.cloudflarestream.com)
+ *   - kinescope: iframe kinescope.io/embed/<embedId>
  */
 export function VideoPlayer({ videoId }: { videoId: string | number }) {
-  const [token, setToken] = useState<string | null>(null)
-  const [customerCode, setCustomerCode] = useState<string | null>(null)
+  const [src, setSrc] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -26,8 +27,13 @@ export function VideoPlayer({ videoId }: { videoId: string | number }) {
           setError(json.error || 'Не удалось загрузить видео')
           return
         }
-        setToken(json.token)
-        setCustomerCode(json.customerCode)
+        if (json.provider === 'kinescope') {
+          setSrc(json.embedId ? `https://kinescope.io/embed/${json.embedId}` : null)
+        } else if (json.token && json.customerCode) {
+          setSrc(`https://customer-${json.customerCode}.cloudflarestream.com/${json.token}/iframe`)
+        } else {
+          setError('Не удалось собрать плеер')
+        }
       } catch {
         if (!stopped) setError('Ошибка соединения')
       }
@@ -37,11 +43,6 @@ export function VideoPlayer({ videoId }: { videoId: string | number }) {
       stopped = true
     }
   }, [videoId])
-
-  const iframeSrc =
-    token && customerCode
-      ? `https://customer-${customerCode}.cloudflarestream.com/${token}/iframe`
-      : null
 
   return (
     <div
@@ -58,7 +59,7 @@ export function VideoPlayer({ videoId }: { videoId: string | number }) {
         >
           <span>{error}</span>
         </div>
-      ) : !iframeSrc ? (
+      ) : !src ? (
         <div
           className="absolute inset-0 flex items-center justify-center"
           style={{ color: 'var(--brand-text)', opacity: 0.6 }}
@@ -67,7 +68,7 @@ export function VideoPlayer({ videoId }: { videoId: string | number }) {
         </div>
       ) : (
         <iframe
-          src={iframeSrc}
+          src={src}
           style={{ border: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%' }}
           allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
           allowFullScreen
