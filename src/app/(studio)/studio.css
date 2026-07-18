@@ -1,4 +1,4 @@
-/* BUILD-MARKER: dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -985,10 +985,8 @@ select.studio-input {
   overflow-y: auto;
   padding: var(--st-space-1);
   border-radius: var(--st-radius);
-  background: color-mix(in srgb, var(--st-surface) 72%, transparent);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  border: 1px solid color-mix(in srgb, var(--st-border-strong) 60%, transparent);
+  background: var(--st-surface);
+  border: 1px solid var(--st-border-strong);
   box-shadow: var(--st-shadow);
 }
 .studio-select__option {
