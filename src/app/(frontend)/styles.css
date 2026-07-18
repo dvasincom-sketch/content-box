@@ -436,3 +436,113 @@ svg {
   .cgal__lb-prev { left: 8px; }
   .cgal__lb-next { right: 8px; }
 }
+
+/* ============================================================================
+   ВИТРИНА ПОДПИСКИ /subscribe
+   ============================================================================ */
+.sub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.sub-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 24px;
+  border-radius: 20px;
+}
+.sub-card--hl {
+  transform: translateY(-8px);
+}
+
+.sub-card__badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.sub-card__name {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.sub-card__price {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.sub-card__price-cur {
+  font-size: 24px;
+  font-weight: 700;
+}
+.sub-card__price-per {
+  font-size: 15px;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.sub-card__desc {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.sub-card__perks {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+.sub-card__perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.sub-card__perk-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: inline-flex;
+}
+.sub-card__perk-text {
+  flex: 1;
+}
+
+.sub-card__btn {
+  display: block;
+  text-align: center;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: transform 150ms ease, opacity 150ms ease;
+  margin-top: auto;
+}
+.sub-card__btn:hover {
+  transform: translateY(-2px);
+  opacity: 0.95;
+}
+
+@media (max-width: 860px) {
+  .sub-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+  .sub-card--hl { transform: none; }
+}
