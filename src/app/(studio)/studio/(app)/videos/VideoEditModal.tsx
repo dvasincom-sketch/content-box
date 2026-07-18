@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Loader2, Check } from 'lucide-react'
+import Link from 'next/link'
+import { X, Loader2, Check, FileText, ArrowUpRight } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
 
 type Tier = { id: number | string; name: string }
@@ -11,6 +12,7 @@ export type EditableVideo = {
   id: number | string
   title: string
   minTierId: string
+  usedIn: { id: number | string; title: string }[]
 }
 
 /**
@@ -110,6 +112,25 @@ export function VideoEditModal({
             </div>
 
             {error && <div className="studio-login__error">{error}</div>}
+
+            <div className="videdit__used">
+              <div className="videdit__used-label">Используется в публикациях</div>
+              {video.usedIn.length === 0 ? (
+                <div className="videdit__used-empty">Не прикреплено ни к одной публикации</div>
+              ) : (
+                <ul className="videdit__used-list">
+                  {video.usedIn.map((p) => (
+                    <li key={p.id}>
+                      <Link href={`/studio/posts/${p.id}`} className="videdit__used-link" onClick={onClose}>
+                        <FileText size={14} className="videdit__used-icon" />
+                        <span className="videdit__used-title">{p.title}</span>
+                        <ArrowUpRight size={14} className="videdit__used-arrow" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
           <div className="catedit__foot">

@@ -26,6 +26,7 @@ type Vid = {
   coverUrl: string | null
   folderId: number | string | null
   addedAt: string | null
+  usedIn: { id: number | string; title: string }[]
 }
 
 const FILTER_ALL = '__all__'
@@ -175,6 +176,7 @@ export function VideosManager({
                 <th className="vidtable__th-dur">Длительность</th>
                 <th className="vidtable__th-tier">Уровень</th>
                 <th className="vidtable__th-status">Статус</th>
+                <th className="vidtable__th-pubs">Публикации</th>
                 <th className="vidtable__th-folder">Папка</th>
                 <th className="vidtable__th-date">Добавлено</th>
                 <th className="vidtable__th-actions"></th>
@@ -189,7 +191,7 @@ export function VideosManager({
                   folderName={v.folderId != null ? folderNameById.get(String(v.folderId)) || null : null}
                   onFolderChange={applyFolderLocally}
                   onEdit={() =>
-                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId })
+                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, usedIn: v.usedIn })
                   }
                 />
               ))}
@@ -433,6 +435,21 @@ function VideoRow({
         )}
         {ready === null && !video.videoRef && (
           <span className="vid__status vid__status--wait"><Clock size={13} /> Нет файла</span>
+        )}
+      </td>
+
+      {/* Публикации (счётчик) */}
+      <td className="vidtable__pubs-cell">
+        {video.usedIn.length > 0 ? (
+          <button
+            className="vidtable__pubs-badge"
+            onClick={onEdit}
+            title={`Прикреплено к публикациям: ${video.usedIn.length}`}
+          >
+            {video.usedIn.length}
+          </button>
+        ) : (
+          <span className="vidtable__pubs-badge is-empty" title="Не прикреплено ни к одной публикации">0</span>
         )}
       </td>
 

@@ -1,4 +1,4 @@
-/* BUILD-MARKER: select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -2725,9 +2725,78 @@ select.studio-input {
 .vidtable__th-date { width: 120px; }
 .vidtable__th-tier { width: 130px; }
 .vidtable__th-status { width: 150px; }
+.vidtable__th-pubs { width: 96px; }
 .vidtable__th-folder { width: 180px; }
 .vidtable__th-actions { width: 52px; }
 .vidtable__actions-cell { text-align: right; white-space: nowrap; }
+
+/* Счётчик публикаций в строке видео */
+.vidtable__pubs-cell { text-align: left; }
+.vidtable__pubs-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 var(--st-space-2);
+  border: 1px solid var(--st-border);
+  border-radius: 999px;
+  background: var(--st-surface-2);
+  color: var(--st-text);
+  font-size: var(--st-text-xs);
+  font-family: var(--st-font-mono);
+  cursor: pointer;
+  transition: border-color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease);
+}
+.vidtable__pubs-badge:hover { border-color: var(--st-border-strong); background: var(--st-surface-hover); }
+.vidtable__pubs-badge.is-empty {
+  color: var(--st-text-faint);
+  cursor: default;
+  border-style: dashed;
+  background: transparent;
+}
+
+/* Блок «Используется в публикациях» в модалке редактирования видео */
+.videdit__used { display: flex; flex-direction: column; gap: var(--st-space-2); }
+.videdit__used-label {
+  font-size: var(--st-text-sm);
+  font-weight: 550;
+  color: var(--st-text-muted);
+}
+.videdit__used-empty {
+  font-size: var(--st-text-sm);
+  color: var(--st-text-faint);
+}
+.videdit__used-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-1);
+}
+.videdit__used-link {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  padding: var(--st-space-2) var(--st-space-3);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-bg);
+  color: var(--st-text);
+  font-size: var(--st-text-sm);
+  transition: border-color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease);
+}
+.videdit__used-link:hover { border-color: var(--st-border-strong); background: var(--st-surface-hover); }
+.videdit__used-icon { color: var(--st-text-faint); flex-shrink: 0; }
+.videdit__used-title {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.videdit__used-arrow { color: var(--st-text-faint); flex-shrink: 0; }
 
 .vidtable__row {
   border-bottom: 1px solid var(--st-border);

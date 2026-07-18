@@ -23,6 +23,27 @@ export default async function VideosPage() {
     overrideAccess: true,
   })
 
+  // Один запрос: все публикации тенанта с их relatedVideos. Строим карту
+  // videoId → [{ id, title }] публикаций, где это видео прикреплено. Так не
+  // делаем N запросов на каждое видео.
+  const pubsRes = await payload.find({
+    collection: 'publications',
+    where: { tenant: { equals: author!.tenantId } },
+    sort: '-publishedAt',
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const usedInByVideo = new Map<string, { id: number | string; title: string }[]>()
+  for (const p of pubsRes.docs as any[]) {
+    const related = Array.isArray(p.relatedVideos) ? p.relatedVideos : []
+    for (const rv of related) {
+      const vid = String(typeof rv === 'object' ? rv.id : rv)
+      if (!usedInByVideo.has(vid)) usedInByVideo.set(vid, [])
+      usedInByVideo.get(vid)!.push({ id: p.id, title: p.title || 'Без заголовка' })
+    }
+  }
+
   const videos = (res.docs as any[]).map((v) => ({
     id: v.id,
     title: v.title || 'Без названия',
@@ -37,6 +58,7 @@ export default async function VideosPage() {
     coverUrl: v.cover && typeof v.cover === 'object' ? v.cover.url : null,
     folderId: v.folder ? (typeof v.folder === 'object' ? v.folder.id : v.folder) : null,
     addedAt: v.publishedAt || v.createdAt || null,
+    usedIn: usedInByVideo.get(String(v.id)) || [],
   }))
 
   // уровни подписки для селектора доступа
