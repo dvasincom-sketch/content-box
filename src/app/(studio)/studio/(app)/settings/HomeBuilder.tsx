@@ -1,13 +1,15 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Loader2, Check, GripVertical } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Loader2, Check, GripVertical, Pencil } from 'lucide-react'
 import {
   DEFAULT_HOME_SECTIONS,
   HOME_SECTION_DEFS,
   type HomeSectionConfig,
   type HomeSectionType,
 } from '@/lib/homeSections'
+import { HeroTeamEditPanel } from './HeroTeamEditPanel'
 
 /** type → человекочитаемый лейбл (из единого источника). */
 const LABELS: Record<HomeSectionType, string> = HOME_SECTION_DEFS.reduce(
@@ -19,12 +21,29 @@ const LABELS: Record<HomeSectionType, string> = HOME_SECTION_DEFS.reduce(
 )
 
 /**
+ * Общий контракт компонента-редактора секции: выдвижная панель, которая сама
+ * грузит/сохраняет свои данные (как HeroTeamEditPanel). onClose закрывает,
+ * onSaved вызывается после успешного сохранения.
+ */
+type SectionEditor = (props: { onClose: () => void; onSaved: () => void }) => React.ReactNode
+
+/**
+ * Каркас под редактирование контента секций: карта type → редактор.
+ * Карандаш показывается только у секций, для которых редактор есть.
+ * Добавить редактор новой секции = одна запись сюда (разметку не трогаем).
+ */
+const SECTION_EDITORS: Partial<Record<HomeSectionType, SectionEditor>> = {
+  heroTeam: HeroTeamEditPanel,
+}
+
+/**
  * Конструктор главной: порядок (drag-and-drop) и видимость (тумблер) секций.
  * Начальное состояние — из пропса; пустой пропс → полный дефолт (все секции),
  * чтобы владелец сразу видел и мог тасовать весь набор. Первое сохранение
  * материализует конфиг в SiteSettings.homeSections.
  */
 export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
+  const router = useRouter()
   const [rows, setRows] = useState<HomeSectionConfig[]>(
     initial.length > 0 ? initial : DEFAULT_HOME_SECTIONS,
   )
@@ -32,6 +51,10 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // какой тип секции сейчас редактируется в выдвижной панели (null — закрыта)
+  const [editingType, setEditingType] = useState<HomeSectionType | null>(null)
+
+  const EditorPanel = editingType ? SECTION_EDITORS[editingType] : undefined
 
   function toggle(i: number) {
     setRows((r) => r.map((row, idx) => (idx === i ? { ...row, enabled: !row.enabled } : row)))
@@ -100,6 +123,15 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
             </span>
             <span className="homebld__num">{i + 1}</span>
             <span className="homebld__label">{LABELS[row.type]}</span>
+            {SECTION_EDITORS[row.type] && (
+              <button
+                className="catmgr__icon-btn homebld__edit"
+                onClick={() => setEditingType(row.type)}
+                title="Редактировать содержимое секции"
+              >
+                <Pencil size={15} />
+              </button>
+            )}
             <label className="homebld__toggle" title={row.enabled ? 'Показывается' : 'Скрыта'}>
               <input
                 type="checkbox"
@@ -134,6 +166,17 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
           Сохранить порядок
         </button>
       </div>
+
+      {EditorPanel && (
+        <EditorPanel
+          onClose={() => setEditingType(null)}
+          onSaved={() => {
+            setEditingType(null)
+            // освежить возможные превью во вкладке и публичную главную
+            router.refresh()
+          }}
+        />
+      )}
     </div>
   )
 }
