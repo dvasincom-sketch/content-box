@@ -16,6 +16,7 @@ import { SiteSettings } from './collections/SiteSettings'
 import { Categories } from './collections/Categories'
 import { Publications } from './collections/Publications'
 import { Pages } from './collections/Pages'
+import { MenuItems } from './collections/MenuItems'
 import { Media } from './collections/Media'
 import { SubscriptionTiers } from './collections/SubscriptionTiers'
 import { Subscribers } from './collections/Subscribers'
@@ -122,6 +123,7 @@ export default buildConfig({
     Categories,
     Publications,
     Pages,
+    MenuItems,
     Media,
     SubscriptionTiers,
     Subscribers,
@@ -190,6 +192,7 @@ export default buildConfig({
         categories: { useTenantAccess: false },
         publications: { useTenantAccess: false },
         pages: { useTenantAccess: false },
+        'menu-items': { useTenantAccess: false },
         media: { useTenantAccess: false },
         'subscription-tiers': { useTenantAccess: false },
         subscribers: { useTenantAccess: false },

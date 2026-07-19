@@ -74,6 +74,7 @@ export interface Config {
     categories: Category;
     publications: Publication;
     pages: Page;
+    'menu-items': MenuItem;
     media: Media;
     'subscription-tiers': SubscriptionTier;
     subscribers: Subscriber;
@@ -94,6 +95,7 @@ export interface Config {
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     publications: PublicationsSelect<false> | PublicationsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'menu-items': MenuItemsSelect<false> | MenuItemsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'subscription-tiers': SubscriptionTiersSelect<false> | SubscriptionTiersSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
@@ -670,6 +672,48 @@ export interface Page {
   createdAt: string;
 }
 /**
+ * Ручные правки меню поверх автогенерации из категорий.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "menu-items".
+ */
+export interface MenuItem {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  location: 'header' | 'footer';
+  kind: 'category' | 'page' | 'url';
+  /**
+   * Оверрайд авто-узла категории.
+   */
+  category?: (number | null) | Category;
+  /**
+   * Пункт ведёт на страницу («О проекте» и т.п.).
+   */
+  page?: (number | null) | Page;
+  /**
+   * Абсолютная ссылка: https://…
+   */
+  url?: string | null;
+  /**
+   * Пусто — берётся имя категории/страницы. Для URL обязательно.
+   */
+  labelOverride?: string | null;
+  /**
+   * Скрыть узел из меню, не удаляя запись.
+   */
+  hidden?: boolean | null;
+  /**
+   * Пункт-родитель для вложенности. Пусто — корневой уровень.
+   */
+  parent?: (number | null) | MenuItem;
+  /**
+   * Сортировка внутри своего уровня.
+   */
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Все зарегистрированные зрители, включая бесплатных.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -754,6 +798,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'menu-items';
+        value: number | MenuItem;
       } | null)
     | ({
         relationTo: 'media';
@@ -1049,6 +1097,24 @@ export interface PagesSelect<T extends boolean = true> {
         title?: T;
         description?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "menu-items_select".
+ */
+export interface MenuItemsSelect<T extends boolean = true> {
+  tenant?: T;
+  location?: T;
+  kind?: T;
+  category?: T;
+  page?: T;
+  url?: T;
+  labelOverride?: T;
+  hidden?: T;
+  parent?: T;
+  order?: T;
   updatedAt?: T;
   createdAt?: T;
 }
