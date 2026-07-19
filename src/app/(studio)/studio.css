@@ -3506,3 +3506,92 @@ select.studio-input {
   color: var(--st-text-muted, #999);
   align-self: center;
 }
+
+/* Конструктор меню — форма добавления пункта и диалог перемещения (menu-builder-v1). */
+.menubld__add-btn {
+  margin-left: auto;
+  align-self: center;
+}
+
+.menubld__addform {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--st-surface-2, rgba(127, 127, 127, 0.06));
+  border: 1px solid color-mix(in srgb, var(--st-text, #888) 10%, transparent);
+}
+
+.menubld__addform-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.menubld__addform-row > * {
+  min-width: 0;
+}
+
+.menubld__addform-row .studio-input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.menubld__addform-label {
+  font-size: 0.85rem;
+  color: var(--st-text-muted, #999);
+  flex-shrink: 0;
+}
+
+.menubld__addform-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.menubld__movedlg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.menubld__movedlg {
+  width: min(440px, 100%);
+  border-radius: 16px;
+  background: var(--st-surface, #fff);
+  border: 1px solid color-mix(in srgb, var(--st-text, #888) 12%, transparent);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.menubld__movedlg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--st-text, #888) 10%, transparent);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--st-text, #111);
+}
+
+.menubld__movedlg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.menubld__movedlg .menubld__addform-actions {
+  padding: 0 16px 16px;
+  margin-top: 0;
+}
