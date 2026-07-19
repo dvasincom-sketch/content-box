@@ -20,6 +20,15 @@ type Tier = {
   perks: Perk[]
 }
 
+type SettingsTab = 'appearance' | 'socials' | 'menu' | 'tiers'
+
+const TABS: { id: SettingsTab; label: string }[] = [
+  { id: 'appearance', label: 'Оформление' },
+  { id: 'socials', label: 'Соцсети' },
+  { id: 'menu', label: 'Меню и футер' },
+  { id: 'tiers', label: 'Подписки' },
+]
+
 const PLATFORMS = [
   { value: 'boosty', label: 'Boosty' },
   { value: 'vk', label: 'VK' },
@@ -37,6 +46,8 @@ export function SettingsView({
   socials: Social[]
   tiers: Tier[]
 }) {
+  const [tab, setTab] = useState<SettingsTab>('appearance')
+
   return (
     <>
       <div className="studio-page-head">
@@ -46,12 +57,29 @@ export function SettingsView({
         </div>
       </div>
 
+      <div className="settings__tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            className={`settings__tab${tab === t.id ? ' is-active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       <div className="settings">
-        <ThemeBlock />
-        <LogoBlock initialUrl={logoUrl} />
-        <SocialsBlock initial={initialSocials} />
-        <MenuBlock />
-        <TiersBlock initial={initialTiers} />
+        {tab === 'appearance' && (
+          <>
+            <ThemeBlock />
+            <LogoBlock initialUrl={logoUrl} />
+          </>
+        )}
+        {tab === 'socials' && <SocialsBlock initial={initialSocials} />}
+        {tab === 'menu' && <MenuBlock />}
+        {tab === 'tiers' && <TiersBlock initial={initialTiers} />}
       </div>
     </>
   )
