@@ -1,4 +1,4 @@
-/* BUILD-MARKER: home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -3839,4 +3839,77 @@ a.studio-btn--danger { color: #fff; }
 
 .homebld__warn {
   color: var(--st-danger);
+}
+
+/* ===== Редактор секции «Участники» (home-team-editor-v1) ==================== */
+
+/* Карандаш редактирования в строке секции конструктора главной. */
+.homebld__edit {
+  flex-shrink: 0;
+}
+
+/* Список участников в панели. */
+.htedit__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+  margin-bottom: var(--st-space-3);
+}
+
+.htedit__item {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-3);
+  padding: var(--st-space-2);
+  background: var(--st-surface-2);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  transition: opacity 150ms ease;
+}
+.htedit__item.is-dragging {
+  opacity: 0.4;
+}
+
+.htedit__grip {
+  display: inline-flex;
+  align-items: center;
+  color: var(--st-text-muted);
+  cursor: grab;
+  flex-shrink: 0;
+}
+.htedit__grip:active {
+  cursor: grabbing;
+}
+
+/* Аватар-превью: фиксированный бокс, фото кропается в него (object-fit).
+   Без этого <img> рендерится в натуральную величину. */
+.htedit__avatar {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--st-surface-hover);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.htedit__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.htedit__avatar-empty {
+  color: var(--st-text-faint);
+  display: inline-flex;
+}
+
+/* Поля участника (имя + категория) занимают оставшуюся ширину. */
+.htedit__fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
 }
