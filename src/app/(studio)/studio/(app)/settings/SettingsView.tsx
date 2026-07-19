@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ImagePlus, Loader2, Plus, Trash2, Check, Sun, Moon, ChevronDown, GripVertical } from 'lucide-react'
 import { PerkIcon, PERK_TYPES, type PerkType } from '@/components/studio/PerkIcon'
 import { StudioSelect } from '../_ui/StudioSelect'
+import { MenuBuilder } from './MenuBuilder'
 
 type Social = { platform: string; url: string }
 type Perk = { type: PerkType; text: string }
@@ -49,9 +50,27 @@ export function SettingsView({
         <ThemeBlock />
         <LogoBlock initialUrl={logoUrl} />
         <SocialsBlock initial={initialSocials} />
+        <MenuBlock />
         <TiersBlock initial={initialTiers} />
       </div>
     </>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Управление меню и футером                                                   */
+/* -------------------------------------------------------------------------- */
+function MenuBlock() {
+  return (
+    <section className="settings__block">
+      <div className="settings__block-head">
+        <h2>Меню и футер</h2>
+        <p>Порядок и видимость пунктов навигации. Категории подтягиваются автоматически — лишние можно скрыть.</p>
+      </div>
+      <div className="menubld-section">
+        <MenuBuilder />
+      </div>
+    </section>
   )
 }
 
