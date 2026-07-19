@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Loader2, Eye, EyeOff, Pencil, Trash2, Check, X,
-  FolderTree, FileText, Link2, AlertCircle,
+  FolderTree, FileText, Link2, AlertCircle, GripVertical,
 } from 'lucide-react'
 
 /** Узел дерева, как его отдаёт GET /studio/api/menu (buildMenuAdmin). */
@@ -23,13 +23,13 @@ type AdminMenuNode = {
 
 type MenuLocation = 'header' | 'footer'
 
-const MAX_DEPTH = 4
+/** Активное перетаскивание: ключ узла и ключ его родителя (для проверки сиблингов). */
+type DragState = { key: string; parentKey: string | null } | null
 
 /**
- * Конструктор меню (4b-1: каркас без drag-and-drop).
- * Грузит дерево через GET-роут, показывает вложенную структуру,
- * даёт точечные правки: скрыть/показать, переименовать, удалить.
- * Переключатель header/footer.
+ * Конструктор меню (4b-2: каркас + drag-and-drop внутри уровня).
+ * Перетаскивание разрешено только между узлами одного родителя (сиблингами).
+ * Смена родителя ручных пунктов — через форму (4b-3), не через dnd.
  */
 export function MenuBuilder() {
   const [location, setLocation] = useState<MenuLocation>('header')
@@ -37,6 +37,8 @@ export function MenuBuilder() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
+  const [drag, setDrag] = useState<DragState>(null)
+  const [savingOrder, setSavingOrder] = useState(false)
 
   const load = useCallback(async (loc: MenuLocation) => {
     setLoading(true)
@@ -64,7 +66,7 @@ export function MenuBuilder() {
     load(location)
   }, [location, load])
 
-  // --- Операции --------------------------------------------------------------
+  // --- Точечные операции -----------------------------------------------------
 
   const toggleHidden = useCallback(
     async (node: AdminMenuNode) => {
@@ -180,6 +182,65 @@ export function MenuBuilder() {
     [location, load],
   )
 
+  // --- Drag-and-drop: reorder внутри уровня ----------------------------------
+
+  /**
+   * Дроп узла `dragged` на позицию узла `target`. Разрешён только когда у обоих
+   * один родитель (сиблинги). Пересобираем порядок уровня и шлём в reorder.
+   */
+  const dropOnto = useCallback(
+    async (
+      target: AdminMenuNode,
+      targetParentKey: string | null,
+      siblings: AdminMenuNode[],
+    ) => {
+      const d = drag
+      setDrag(null)
+      if (!d) return
+      if (d.key === target.key) return
+      // Только внутри одного уровня.
+      if (d.parentKey !== targetParentKey) {
+        setError('Переместить можно только внутри одного уровня')
+        return
+      }
+
+      const fromIdx = siblings.findIndex((n) => n.key === d.key)
+      const toIdx = siblings.findIndex((n) => n.key === target.key)
+      if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return
+
+      const reordered = [...siblings]
+      const [moved] = reordered.splice(fromIdx, 1)
+      reordered.splice(toIdx, 0, moved)
+
+      // Новый порядок для всех сиблингов уровня.
+      const ops = reordered.map((n, i) => ({
+        key: n.key,
+        order: i,
+        parentKey: targetParentKey,
+      }))
+
+      setSavingOrder(true)
+      setError(null)
+      try {
+        const res = await fetch('/studio/api/menu/reorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ location, ops }),
+        })
+        const json = await res.json()
+        if (!res.ok) setError(json.error || 'Не удалось сохранить порядок')
+        await load(location)
+      } catch {
+        setError('Ошибка соединения')
+        await load(location)
+      } finally {
+        setSavingOrder(false)
+      }
+    },
+    [drag, location, load],
+  )
+
   // --- Рендер ----------------------------------------------------------------
 
   return (
@@ -199,6 +260,11 @@ export function MenuBuilder() {
         >
           Футер
         </button>
+        {savingOrder && (
+          <span className="menubld__saving">
+            <Loader2 size={13} className="spin" /> сохранение…
+          </span>
+        )}
       </div>
 
       {error && (
@@ -222,7 +288,13 @@ export function MenuBuilder() {
               key={node.key}
               node={node}
               depth={1}
+              parentKey={null}
+              siblings={tree}
               busyKey={busyKey}
+              drag={drag}
+              onDragStart={setDrag}
+              onDragEnd={() => setDrag(null)}
+              onDrop={dropOnto}
               onToggleHidden={toggleHidden}
               onRename={rename}
               onRemove={remove}
@@ -238,14 +310,30 @@ export function MenuBuilder() {
 function MenuRow({
   node,
   depth,
+  parentKey,
+  siblings,
   busyKey,
+  drag,
+  onDragStart,
+  onDragEnd,
+  onDrop,
   onToggleHidden,
   onRename,
   onRemove,
 }: {
   node: AdminMenuNode
   depth: number
+  parentKey: string | null
+  siblings: AdminMenuNode[]
   busyKey: string | null
+  drag: DragState
+  onDragStart: (d: DragState) => void
+  onDragEnd: () => void
+  onDrop: (
+    target: AdminMenuNode,
+    targetParentKey: string | null,
+    siblings: AdminMenuNode[],
+  ) => void
   onToggleHidden: (n: AdminMenuNode) => void
   onRename: (n: AdminMenuNode, label: string) => Promise<boolean>
   onRemove: (n: AdminMenuNode) => void
@@ -257,6 +345,11 @@ function MenuRow({
   const KindIcon =
     node.kind === 'category' ? FolderTree : node.kind === 'page' ? FileText : Link2
 
+  const isDragging = drag?.key === node.key
+  // Цель приемлема для дропа, если тащат сиблинга (тот же родитель) и не сам себя.
+  const isDropTarget =
+    drag != null && drag.parentKey === parentKey && drag.key !== node.key
+
   async function saveRename() {
     const ok = await onRename(node, draft)
     if (ok) setEditing(false)
@@ -265,9 +358,31 @@ function MenuRow({
   return (
     <li className="menubld__node">
       <div
-        className={`menubld__row${node.isHidden ? ' is-hidden' : ''}`}
+        className={
+          'menubld__row' +
+          (node.isHidden ? ' is-hidden' : '') +
+          (isDragging ? ' is-dragging' : '') +
+          (isDropTarget ? ' is-dropzone' : '')
+        }
         style={{ paddingLeft: `${(depth - 1) * 22 + 10}px` }}
+        onDragOver={(e) => {
+          if (isDropTarget) e.preventDefault() // разрешить drop только сиблингам
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
+          onDrop(node, parentKey, siblings)
+        }}
       >
+        <span
+          className="menubld__grip"
+          title="Перетащите для порядка"
+          draggable={!editing}
+          onDragStart={() => onDragStart({ key: node.key, parentKey })}
+          onDragEnd={onDragEnd}
+        >
+          <GripVertical size={14} />
+        </span>
+
         <span className="menubld__kind" title={kindTitle(node.kind)}>
           <KindIcon size={15} />
         </span>
@@ -360,7 +475,13 @@ function MenuRow({
               key={child.key}
               node={child}
               depth={depth + 1}
+              parentKey={node.key}
+              siblings={node.children}
               busyKey={busyKey}
+              drag={drag}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              onDrop={onDrop}
               onToggleHidden={onToggleHidden}
               onRename={onRename}
               onRemove={onRemove}

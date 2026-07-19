@@ -3473,3 +3473,36 @@ select.studio-input {
 .menubld-section {
   margin-top: 8px;
 }
+
+/* Конструктор меню — drag-and-drop (menu-builder-v1). */
+.menubld__grip {
+  display: inline-flex;
+  align-items: center;
+  color: var(--st-text-muted, #bbb);
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.menubld__grip:active {
+  cursor: grabbing;
+}
+
+.menubld__row.is-dragging {
+  opacity: 0.4;
+}
+
+.menubld__row.is-dropzone {
+  outline: 2px dashed color-mix(in srgb, var(--st-accent, #7c3aed) 60%, transparent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--st-accent, #7c3aed) 8%, transparent);
+}
+
+.menubld__saving {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 10px;
+  font-size: 0.8rem;
+  color: var(--st-text-muted, #999);
+  align-self: center;
+}
