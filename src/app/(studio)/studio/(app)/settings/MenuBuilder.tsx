@@ -4,9 +4,10 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Loader2, Eye, EyeOff, Pencil, Trash2, Check, X,
   FolderTree, FileText, Link2, AlertCircle, GripVertical,
-  Plus, FolderInput,
+  Plus, FolderInput, FileEdit,
 } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
+import { PageEditPanel } from './PageEditPanel'
 
 /** Узел дерева, как его отдаёт GET /studio/api/menu (buildMenuAdmin). */
 type AdminMenuNode = {
@@ -50,6 +51,7 @@ export function MenuBuilder() {
   const [savingOrder, setSavingOrder] = useState(false)
   const [adding, setAdding] = useState(false)
   const [moveFor, setMoveFor] = useState<AdminMenuNode | null>(null)
+  const [editPage, setEditPage] = useState<{ id: number | string } | null>(null)
 
   const load = useCallback(async (loc: MenuLocation) => {
     setLoading(true)
@@ -412,6 +414,7 @@ export function MenuBuilder() {
               onRename={rename}
               onRemove={remove}
               onMove={setMoveFor}
+              onEditPage={(id) => setEditPage({ id })}
             />
           ))}
         </ul>
@@ -425,6 +428,17 @@ export function MenuBuilder() {
           )}
           onCancel={() => setMoveFor(null)}
           onMove={(parentKey) => moveToParent(moveFor, parentKey)}
+        />
+      )}
+
+      {editPage && (
+        <PageEditPanel
+          pageId={editPage.id}
+          onClose={() => setEditPage(null)}
+          onSaved={() => {
+            setEditPage(null)
+            load(location)
+          }}
         />
       )}
     </div>
@@ -446,6 +460,7 @@ function MenuRow({
   onRename,
   onRemove,
   onMove,
+  onEditPage,
 }: {
   node: AdminMenuNode
   depth: number
@@ -464,6 +479,7 @@ function MenuRow({
   onRename: (n: AdminMenuNode, label: string) => Promise<boolean>
   onRemove: (n: AdminMenuNode) => void
   onMove: (n: AdminMenuNode) => void
+  onEditPage: (id: number | string) => void
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(node.label)
@@ -580,6 +596,16 @@ function MenuRow({
                   <FolderInput size={14} />
                 </button>
               )}
+              {node.kind === 'page' && node.pageId != null && (
+                <button
+                  className="catmgr__icon-btn"
+                  onClick={() => onEditPage(node.pageId as number | string)}
+                  disabled={busy}
+                  title="Редактировать содержимое страницы"
+                >
+                  <FileEdit size={14} />
+                </button>
+              )}
               <button
                 className="catmgr__icon-btn"
                 onClick={() => {
@@ -622,6 +648,7 @@ function MenuRow({
               onRename={onRename}
               onRemove={onRemove}
               onMove={onMove}
+              onEditPage={onEditPage}
             />
           ))}
         </ul>
