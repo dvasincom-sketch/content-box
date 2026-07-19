@@ -223,6 +223,28 @@ export const SiteSettings: CollectionConfig = {
       ],
     },
     {
+      name: 'banner',
+      type: 'group',
+      label: 'Баннер «ON AIR» (главная)',
+      admin: {
+        description: 'Тексты финального баннера главной. Если поля пустые — показываются значения по умолчанию.',
+      },
+      fields: [
+        {
+          name: 'tagline',
+          type: 'text',
+          label: 'Надпись сверху',
+          admin: { description: 'Мелкая надпись над «ON AIR». Пусто — значение по умолчанию.' },
+        },
+        {
+          name: 'onAirText',
+          type: 'text',
+          label: 'Крупный текст',
+          admin: { description: 'Крупная неоновая надпись. Пусто — значение по умолчанию.' },
+        },
+      ],
+    },
+    {
       name: 'socials',
       type: 'array',
       label: 'Соцсети',

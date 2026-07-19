@@ -12,6 +12,7 @@ import {
 import { HeroTeamEditPanel } from './HeroTeamEditPanel'
 import { HomeCategoriesEditPanel } from './HomeCategoriesEditPanel'
 import { HeroEditPanel } from './HeroEditPanel'
+import { BannerEditPanel } from './BannerEditPanel'
 
 /** type → человекочитаемый лейбл (из единого источника). */
 const LABELS: Record<HomeSectionType, string> = HOME_SECTION_DEFS.reduce(
@@ -38,6 +39,7 @@ const SECTION_EDITORS: Partial<Record<HomeSectionType, SectionEditor>> = {
   hero: HeroEditPanel,
   heroTeam: HeroTeamEditPanel,
   categories: HomeCategoriesEditPanel,
+  broadcast: BannerEditPanel,
 }
 
 /**

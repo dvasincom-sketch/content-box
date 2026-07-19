@@ -24,6 +24,15 @@ import './styles.css'
 const DEFAULT_HERO_EYEBROW = 'BTS TV · 24/7 Broadcast'
 const DEFAULT_HERO_TITLE_LINES = ['Полные выпуски BTS', 'с русской озвучкой']
 
+/** Дефолтные тексты баннера «ON AIR» — фолбэк, когда settings.banner пуст. */
+const DEFAULT_BANNER_TAGLINE = 'BTS TV'
+const DEFAULT_BANNER_ONAIR = 'ON AIR'
+
+/** Непустая строка → она, иначе fallback (мягкий фолбэк 3-простой). */
+function textOr(raw: unknown, fallback: string): string {
+  return typeof raw === 'string' && raw.trim() ? raw : fallback
+}
+
 /** Строки заголовка из textarea (по \n), пустые отбрасываем; пусто → дефолт. */
 function resolveHeroTitleLines(raw: unknown): string[] {
   if (typeof raw !== 'string') return DEFAULT_HERO_TITLE_LINES
@@ -103,11 +112,7 @@ export default async function HomePage() {
   const renderers: Record<HomeSectionType, () => ReactNode> = {
     hero: () => (
       <HeroBlock
-        eyebrow={
-          ((settings as any)?.hero?.eyebrow as string)?.trim()
-            ? ((settings as any).hero.eyebrow as string)
-            : DEFAULT_HERO_EYEBROW
-        }
+        eyebrow={textOr((settings as any)?.hero?.eyebrow, DEFAULT_HERO_EYEBROW)}
         titleLines={resolveHeroTitleLines((settings as any)?.hero?.titleLines)}
         chips={(((settings as any)?.heroChips ?? []) as any[])
           .filter((c) => c && typeof c === 'object' && c.slug)
@@ -150,7 +155,12 @@ export default async function HomePage() {
       />
     ),
     socials: () => <SocialLinksBlock items={(settings?.socials ?? []) as any[]} />,
-    broadcast: () => <BroadcastBannerBlock tagline="BTS TV" onAirText="ON AIR" />,
+    broadcast: () => (
+      <BroadcastBannerBlock
+        tagline={textOr((settings as any)?.banner?.tagline, DEFAULT_BANNER_TAGLINE)}
+        onAirText={textOr((settings as any)?.banner?.onAirText, DEFAULT_BANNER_ONAIR)}
+      />
+    ),
   }
 
   return (

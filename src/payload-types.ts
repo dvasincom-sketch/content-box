@@ -300,6 +300,19 @@ export interface SiteSetting {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Тексты финального баннера главной. Если поля пустые — показываются значения по умолчанию.
+   */
+  banner?: {
+    /**
+     * Мелкая надпись над «ON AIR». Пусто — значение по умолчанию.
+     */
+    tagline?: string | null;
+    /**
+     * Крупная неоновая надпись. Пусто — значение по умолчанию.
+     */
+    onAirText?: string | null;
+  };
   socials?:
     | {
         platform: 'boosty' | 'vk' | 'telegram' | 'youtube' | 'instagram';
@@ -1003,6 +1016,12 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         type?: T;
         enabled?: T;
         id?: T;
+      };
+  banner?:
+    | T
+    | {
+        tagline?: T;
+        onAirText?: T;
       };
   socials?:
     | T
