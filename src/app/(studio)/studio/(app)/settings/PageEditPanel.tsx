@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Loader2, Check } from 'lucide-react'
 import { RichEditor } from '../posts/new/RichEditor'
 
@@ -10,7 +11,10 @@ import { RichEditor } from '../posts/new/RichEditor'
  * Контент подгружается при открытии через /studio/api/pages/get
  * (Lexical → HTML), сохраняется через /studio/api/pages/update.
  *
- * Структура классов повторяет CategoryEditPanel (catedit__*).
+ * Портал в body + .studio-portal: панель вызывается из-под вкладок настроек,
+ * где предок создаёт stacking/containing-контекст (backdrop-filter/transform),
+ * из-за чего position:fixed съезжал. Портал выносит оверлей на уровень body,
+ * .studio-portal возвращает шрифт студии. Структура классов — catedit__*.
  */
 export function PageEditPanel({
   pageId,
@@ -21,12 +25,18 @@ export function PageEditPanel({
   onClose: () => void
   onSaved: () => void
 }) {
+  const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [title, setTitle] = useState('')
   const [contentHtml, setContentHtml] = useState('')
   const [initialHtml, setInitialHtml] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // createPortal доступен только на клиенте — монтируемся после первого рендера.
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Загрузка текущего заголовка и содержимого.
   useEffect(() => {
@@ -83,64 +93,69 @@ export function PageEditPanel({
     }
   }
 
-  return (
-    <div className="catedit__overlay" onClick={onClose}>
-      <div className="catedit" onClick={(e) => e.stopPropagation()}>
-        <div className="catedit__head">
-          <h3>Редактирование страницы</h3>
-          <button className="catmgr__icon-btn" onClick={onClose} title="Закрыть">
-            <X size={18} />
-          </button>
-        </div>
+  const panel = (
+    <div className="studio-portal">
+      <div className="catedit__overlay" onClick={onClose}>
+        <div className="catedit" onClick={(e) => e.stopPropagation()}>
+          <div className="catedit__head">
+            <h3>Редактирование страницы</h3>
+            <button className="catmgr__icon-btn" onClick={onClose} title="Закрыть">
+              <X size={18} />
+            </button>
+          </div>
 
-        <div className="catedit__body">
-          {loading ? (
-            <div className="menubld__loading">
-              <Loader2 size={18} className="spin" /> Загрузка…
-            </div>
-          ) : (
-            <>
-              <div className="studio-field">
-                <span className="studio-field__label">Заголовок страницы</span>
-                <input
-                  className="studio-input"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  autoFocus
-                />
-                <div className="catedit__slug">
-                  Это заголовок самой страницы (H1). Название в меню меняется в дереве отдельно.
+          <div className="catedit__body">
+            {loading ? (
+              <div className="menubld__loading">
+                <Loader2 size={18} className="spin" /> Загрузка…
+              </div>
+            ) : (
+              <>
+                <div className="studio-field">
+                  <span className="studio-field__label">Заголовок страницы</span>
+                  <input
+                    className="studio-input"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    autoFocus
+                  />
+                  <div className="catedit__slug">
+                    Это заголовок самой страницы (H1). Название в меню меняется в дереве отдельно.
+                  </div>
                 </div>
-              </div>
 
-              <div className="studio-field">
-                <span className="studio-field__label">Содержимое</span>
-                <RichEditor
-                  initialHtml={initialHtml}
-                  onChange={setContentHtml}
-                  placeholder="Текст страницы — например, «О проекте»."
-                />
-              </div>
+                <div className="studio-field">
+                  <span className="studio-field__label">Содержимое</span>
+                  <RichEditor
+                    initialHtml={initialHtml}
+                    onChange={setContentHtml}
+                    placeholder="Текст страницы — например, «О проекте»."
+                  />
+                </div>
 
-              {error && <div className="studio-login__error">{error}</div>}
-            </>
-          )}
-        </div>
+                {error && <div className="studio-login__error">{error}</div>}
+              </>
+            )}
+          </div>
 
-        <div className="catedit__foot">
-          <button className="studio-btn studio-btn--ghost" onClick={onClose}>
-            Отмена
-          </button>
-          <button
-            className="studio-btn studio-btn--primary"
-            onClick={save}
-            disabled={saving || loading}
-          >
-            {saving ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
-            Сохранить
-          </button>
+          <div className="catedit__foot">
+            <button className="studio-btn studio-btn--ghost" onClick={onClose}>
+              Отмена
+            </button>
+            <button
+              className="studio-btn studio-btn--primary"
+              onClick={save}
+              disabled={saving || loading}
+            >
+              {saving ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
+              Сохранить
+            </button>
+          </div>
         </div>
       </div>
     </div>
   )
+
+  if (!mounted) return null
+  return createPortal(panel, document.body)
 }
