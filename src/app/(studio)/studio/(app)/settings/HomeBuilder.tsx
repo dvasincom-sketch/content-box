@@ -10,6 +10,7 @@ import {
   type HomeSectionType,
 } from '@/lib/homeSections'
 import { HeroTeamEditPanel } from './HeroTeamEditPanel'
+import { HomeCategoriesEditPanel } from './HomeCategoriesEditPanel'
 
 /** type → человекочитаемый лейбл (из единого источника). */
 const LABELS: Record<HomeSectionType, string> = HOME_SECTION_DEFS.reduce(
@@ -34,6 +35,7 @@ type SectionEditor = (props: { onClose: () => void; onSaved: () => void }) => Re
  */
 const SECTION_EDITORS: Partial<Record<HomeSectionType, SectionEditor>> = {
   heroTeam: HeroTeamEditPanel,
+  categories: HomeCategoriesEditPanel,
 }
 
 /**
