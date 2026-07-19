@@ -11,6 +11,7 @@ import {
 } from '@/lib/homeSections'
 import { HeroTeamEditPanel } from './HeroTeamEditPanel'
 import { HomeCategoriesEditPanel } from './HomeCategoriesEditPanel'
+import { HeroEditPanel } from './HeroEditPanel'
 
 /** type → человекочитаемый лейбл (из единого источника). */
 const LABELS: Record<HomeSectionType, string> = HOME_SECTION_DEFS.reduce(
@@ -34,6 +35,7 @@ type SectionEditor = (props: { onClose: () => void; onSaved: () => void }) => Re
  * Добавить редактор новой секции = одна запись сюда (разметку не трогаем).
  */
 const SECTION_EDITORS: Partial<Record<HomeSectionType, SectionEditor>> = {
+  hero: HeroEditPanel,
   heroTeam: HeroTeamEditPanel,
   categories: HomeCategoriesEditPanel,
 }
