@@ -270,6 +270,19 @@ export interface SiteSetting {
     avatarSize?: ('48' | '64' | '96' | '128') | null;
   };
   /**
+   * Тексты верхнего блока главной. Если поля пустые — показываются значения по умолчанию.
+   */
+  hero?: {
+    /**
+     * Мелкая надпись-бейдж над слоганом. Пусто — значение по умолчанию.
+     */
+    eyebrow?: string | null;
+    /**
+     * Каждая строка — отдельная строка заголовка. Последняя строка выделяется градиентом. Пусто — значение по умолчанию.
+     */
+    titleLines?: string | null;
+  };
+  /**
    * Чипсы под заголовком главной. Порядок задаётся перетаскиванием.
    */
   heroChips?: (number | Category)[] | null;
@@ -975,6 +988,12 @@ export interface SiteSettingsSelect<T extends boolean = true> {
             };
         caption?: T;
         avatarSize?: T;
+      };
+  hero?:
+    | T
+    | {
+        eyebrow?: T;
+        titleLines?: T;
       };
   heroChips?: T;
   homeCategories?: T;

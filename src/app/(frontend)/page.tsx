@@ -16,6 +16,24 @@ import type { Metadata } from 'next'
 import { Fragment, type ReactNode } from 'react'
 import './styles.css'
 
+/**
+ * Дефолтные тексты Hero — фолбэк, когда settings.hero не заполнен (мягкий
+ * фолбэк 3-простой: пусто → показываем эти значения, чтобы главная не осталась
+ * без слогана). Единый источник дефолта.
+ */
+const DEFAULT_HERO_EYEBROW = 'BTS TV · 24/7 Broadcast'
+const DEFAULT_HERO_TITLE_LINES = ['Полные выпуски BTS', 'с русской озвучкой']
+
+/** Строки заголовка из textarea (по \n), пустые отбрасываем; пусто → дефолт. */
+function resolveHeroTitleLines(raw: unknown): string[] {
+  if (typeof raw !== 'string') return DEFAULT_HERO_TITLE_LINES
+  const lines = raw
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+  return lines.length > 0 ? lines : DEFAULT_HERO_TITLE_LINES
+}
+
 /** SEO главной (ТЗ §6): только дефолты тенанта, без titleTemplate. */
 export async function generateMetadata(): Promise<Metadata> {
   const ctx = await getTenantFromHeaders()
@@ -85,8 +103,12 @@ export default async function HomePage() {
   const renderers: Record<HomeSectionType, () => ReactNode> = {
     hero: () => (
       <HeroBlock
-        eyebrow="BTS TV · 24/7 Broadcast"
-        titleLines={['Полные выпуски BTS', 'с русской озвучкой']}
+        eyebrow={
+          ((settings as any)?.hero?.eyebrow as string)?.trim()
+            ? ((settings as any).hero.eyebrow as string)
+            : DEFAULT_HERO_EYEBROW
+        }
+        titleLines={resolveHeroTitleLines((settings as any)?.hero?.titleLines)}
         chips={(((settings as any)?.heroChips ?? []) as any[])
           .filter((c) => c && typeof c === 'object' && c.slug)
           .map((c) => ({ title: c.title, href: categoryHref(c) }))}

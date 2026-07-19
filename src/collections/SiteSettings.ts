@@ -151,6 +151,31 @@ export const SiteSettings: CollectionConfig = {
       ],
     },
     {
+      name: 'hero',
+      type: 'group',
+      label: 'Заголовок главной (Hero)',
+      admin: {
+        description: 'Тексты верхнего блока главной. Если поля пустые — показываются значения по умолчанию.',
+      },
+      fields: [
+        {
+          name: 'eyebrow',
+          type: 'text',
+          label: 'Надпись над заголовком',
+          admin: { description: 'Мелкая надпись-бейдж над слоганом. Пусто — значение по умолчанию.' },
+        },
+        {
+          name: 'titleLines',
+          type: 'textarea',
+          label: 'Заголовок-слоган',
+          admin: {
+            description:
+              'Каждая строка — отдельная строка заголовка. Последняя строка выделяется градиентом. Пусто — значение по умолчанию.',
+          },
+        },
+      ],
+    },
+    {
       name: 'heroChips',
       type: 'relationship',
       relationTo: 'categories',
