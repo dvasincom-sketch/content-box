@@ -2,6 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { normalizeHomeSections } from '@/lib/homeSections'
 import { SettingsView } from './SettingsView'
 
 /**
@@ -41,6 +42,10 @@ export default async function SettingsPage() {
     ? settings.socials.map((s: any) => ({ platform: s.platform, url: s.url }))
     : []
 
+  // Конфиг секций главной: порядок + видимость. Нормализуем здесь, чтобы вкладка
+  // всегда получала валидный набор (пустой/битый → дефолт из всех секций).
+  const homeSections = normalizeHomeSections(settings?.homeSections)
+
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     id: t.id,
     name: t.name,
@@ -54,5 +59,5 @@ export default async function SettingsPage() {
       : [],
   }))
 
-  return <SettingsView logoUrl={logoUrl} socials={socials} tiers={tiers} />
+  return <SettingsView logoUrl={logoUrl} socials={socials} tiers={tiers} homeSections={homeSections} />
 }

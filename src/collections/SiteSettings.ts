@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID } from '../access'
+import { HOME_SECTION_OPTIONS } from '../lib/homeSections'
 
 /**
  * SiteSettings (ТЗ §3.3) — one record per tenant (branding, theme, SEO
@@ -168,6 +169,33 @@ export const SiteSettings: CollectionConfig = {
       admin: {
         description: 'Блок «Категории». Если пусто — блок не отображается.',
       },
+    },
+    {
+      name: 'homeSections',
+      type: 'array',
+      label: 'Секции главной страницы',
+      labels: { singular: 'Секция', plural: 'Секции' },
+      admin: {
+        description:
+          'Порядок и видимость секций главной. Порядок задаётся перетаскиванием. ' +
+          'Если список пуст — показываются все секции в порядке по умолчанию. ' +
+          'Секции, зависящие от данных (участники, категории), скрываются автоматически при отсутствии данных, даже если включены.',
+      },
+      fields: [
+        {
+          name: 'type',
+          type: 'select',
+          required: true,
+          label: 'Секция',
+          options: HOME_SECTION_OPTIONS,
+        },
+        {
+          name: 'enabled',
+          type: 'checkbox',
+          label: 'Показывать',
+          defaultValue: true,
+        },
+      ],
     },
     {
       name: 'socials',

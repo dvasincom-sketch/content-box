@@ -1,4 +1,4 @@
-/* BUILD-MARKER: confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -3722,4 +3722,121 @@ a.studio-btn--danger { color: #fff; }
 .confirm__foot .studio-btn {
   min-width: 104px;
   justify-content: center;
+}
+
+/* ===== Конструктор главной страницы (home-builder-v1) ======================= */
+.homebld {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-4);
+}
+
+.homebld__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+}
+
+.homebld__item {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-3);
+  padding: var(--st-space-3) var(--st-space-4);
+  background: var(--st-surface-2);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  transition: opacity 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.homebld__item.is-dragging {
+  opacity: 0.4;
+}
+
+.homebld__item.is-off {
+  background: var(--st-surface);
+  border-style: dashed;
+}
+
+.homebld__grip {
+  display: inline-flex;
+  align-items: center;
+  color: var(--st-text-muted);
+  cursor: grab;
+  flex-shrink: 0;
+}
+.homebld__grip:active {
+  cursor: grabbing;
+}
+
+.homebld__num {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  font-size: var(--st-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--st-text-faint);
+}
+
+.homebld__label {
+  flex: 1;
+  font-size: var(--st-text-base);
+  color: var(--st-text);
+}
+.homebld__item.is-off .homebld__label {
+  color: var(--st-text-muted);
+}
+
+/* Тумблер-свитч: скрытый чекбокс + трек/бегунок. */
+.homebld__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+.homebld__toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.homebld__toggle-track {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--st-border-strong);
+  transition: background 150ms ease;
+  flex-shrink: 0;
+}
+.homebld__toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 150ms ease;
+}
+.homebld__toggle input:checked + .homebld__toggle-track {
+  background: var(--st-accent);
+}
+.homebld__toggle input:checked + .homebld__toggle-track .homebld__toggle-thumb {
+  transform: translateX(16px);
+}
+.homebld__toggle input:focus-visible + .homebld__toggle-track {
+  outline: 2px solid var(--st-border-strong);
+  outline-offset: 2px;
+}
+.homebld__toggle-text {
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+  min-width: 30px;
+}
+
+.homebld__warn {
+  color: var(--st-danger);
 }

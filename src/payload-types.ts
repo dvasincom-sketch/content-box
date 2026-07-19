@@ -277,6 +277,16 @@ export interface SiteSetting {
    * Блок «Категории». Если пусто — блок не отображается.
    */
   homeCategories?: (number | Category)[] | null;
+  /**
+   * Порядок и видимость секций главной. Порядок задаётся перетаскиванием. Если список пуст — показываются все секции в порядке по умолчанию. Секции, зависящие от данных (участники, категории), скрываются автоматически при отсутствии данных, даже если включены.
+   */
+  homeSections?:
+    | {
+        type: 'hero' | 'heroTeam' | 'latest' | 'categories' | 'whyUs' | 'socials' | 'broadcast';
+        enabled?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
   socials?:
     | {
         platform: 'boosty' | 'vk' | 'telegram' | 'youtube' | 'instagram';
@@ -968,6 +978,13 @@ export interface SiteSettingsSelect<T extends boolean = true> {
       };
   heroChips?: T;
   homeCategories?: T;
+  homeSections?:
+    | T
+    | {
+        type?: T;
+        enabled?: T;
+        id?: T;
+      };
   socials?:
     | T
     | {

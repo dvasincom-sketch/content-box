@@ -11,7 +11,9 @@ import { SocialLinksBlock } from '@/blocks/SocialLinksBlock'
 import { BroadcastBannerBlock } from '@/blocks/BroadcastBannerBlock'
 import { buildMetadata } from '@/lib/seo'
 import { categoryHref } from '@/lib/categoryHref'
+import { normalizeHomeSections, type HomeSectionType } from '@/lib/homeSections'
 import type { Metadata } from 'next'
+import { Fragment, type ReactNode } from 'react'
 import './styles.css'
 
 /** SEO главной (ТЗ §6): только дефолты тенанта, без titleTemplate. */
@@ -44,69 +46,97 @@ export default async function HomePage() {
   }
   const { tenant, settings } = ctx
 
+  // Конфиг секций главной: порядок + видимость. Пусто/мусор → дефолт (все 7
+  // в текущем порядке) — обратная совместимость. Рендерим только enabled.
+  const sections = normalizeHomeSections((settings as any)?.homeSections)
+  const activeTypes = new Set<HomeSectionType>(
+    sections.filter((s) => s.enabled).map((s) => s.type),
+  )
+
+  // Лениво: запросы к БД только под реально активные секции.
+  const needsFeatured = activeTypes.has('hero')
+  const needsLatest = activeTypes.has('latest')
+
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
 
-  const featuredRes = await payload.find({
-    collection: 'publications',
-    where: { and: [{ tenant: { equals: tenant.id } }, { featured: { equals: true } }] },
-    sort: '-publishedAt', depth: 1, limit: 1, overrideAccess: true,
-  })
-  const featured = featuredRes.docs[0] as any
+  const featured = needsFeatured
+    ? ((
+        await payload.find({
+          collection: 'publications',
+          where: { and: [{ tenant: { equals: tenant.id } }, { featured: { equals: true } }] },
+          sort: '-publishedAt', depth: 1, limit: 1, overrideAccess: true,
+        })
+      ).docs[0] as any)
+    : null
 
-  const latestRes = await payload.find({
-    collection: 'publications',
-    where: { tenant: { equals: tenant.id } },
-    sort: '-publishedAt', depth: 1, limit: 8, overrideAccess: true,
-  })
-  const latest = latestRes.docs as any[]
+  const latest = needsLatest
+    ? ((
+        await payload.find({
+          collection: 'publications',
+          where: { tenant: { equals: tenant.id } },
+          sort: '-publishedAt', depth: 1, limit: 8, overrideAccess: true,
+        })
+      ).docs as any[])
+    : []
 
+  // Маппинг type → рендер секции. Пропсы собраны ровно как в прежнем JSX;
+  // авто-скрытие при пустых данных остаётся внутри блок-компонентов.
+  const renderers: Record<HomeSectionType, () => ReactNode> = {
+    hero: () => (
+      <HeroBlock
+        eyebrow="BTS TV · 24/7 Broadcast"
+        titleLines={['Полные выпуски BTS', 'с русской озвучкой']}
+        chips={(((settings as any)?.heroChips ?? []) as any[])
+          .filter((c) => c && typeof c === 'object' && c.slug)
+          .map((c) => ({ title: c.title, href: categoryHref(c) }))}
+        featured={featured ? { title: featured.title, badge: 'Новинка', cover: featured.cover } : null}
+      />
+    ),
+    heroTeam: () => (
+      <HeroTeamBlock
+        members={((settings as any)?.heroTeam?.members ?? []) as any[]}
+        caption={(settings as any)?.heroTeam?.caption}
+        avatarSize={(settings as any)?.heroTeam?.avatarSize}
+      />
+    ),
+    latest: () => (
+      <LatestPublicationsBlock
+        items={latest.map((p) => ({
+          id: p.id, slug: p.slug, title: p.title, publishedAt: p.publishedAt,
+          minTierName: minTierName(p),
+          cover: p.cover,
+        }))}
+      />
+    ),
+    categories: () => (
+      <CategoriesGridBlock
+        items={(((settings as any)?.homeCategories ?? []) as any[])
+          .filter((c) => c && typeof c === 'object' && c.slug)
+          .map((c) => ({ id: c.id, title: c.title, href: categoryHref(c), cover: c.cover }))}
+      />
+    ),
+    whyUs: () => (
+      <WhyUsBlock
+        heading="Почему COCO JAMBO"
+        items={[
+          { icon: 'mic', title: 'Русская озвучка живым голосом', text: 'Качественный перевод и естественная озвучка' },
+          { icon: 'screen', title: 'Тысячи часов контента', text: 'Концерты, шоу, лайвы и эксклюзивы' },
+          { icon: 'clock', title: 'Новые видео каждую неделю', text: 'Мы постоянно работаем для вас' },
+          { icon: 'heart', title: 'Проект от ARMY для ARMY', text: 'С любовью к BTS и каждому зрителю' },
+        ]}
+      />
+    ),
+    socials: () => <SocialLinksBlock items={(settings?.socials ?? []) as any[]} />,
+    broadcast: () => <BroadcastBannerBlock tagline="BTS TV" onAirText="ON AIR" />,
+  }
 
   return (
     <main style={{ ...brandVars(settings?.theme, settings?.typography), background: 'var(--brand-bg)', minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <HeroBlock
-          eyebrow="BTS TV · 24/7 Broadcast"
-          titleLines={['Полные выпуски BTS', 'с русской озвучкой']}
-          chips={(((settings as any)?.heroChips ?? []) as any[])
-            .filter((c) => c && typeof c === 'object' && c.slug)
-            .map((c) => ({ title: c.title, href: categoryHref(c) }))}
-          featured={featured ? { title: featured.title, badge: 'Новинка', cover: featured.cover } : null}
-        />
-
-        <HeroTeamBlock
-          members={((settings as any)?.heroTeam?.members ?? []) as any[]}
-          caption={(settings as any)?.heroTeam?.caption}
-          avatarSize={(settings as any)?.heroTeam?.avatarSize}
-        />
-
-        <LatestPublicationsBlock
-          items={latest.map((p) => ({
-            id: p.id, slug: p.slug, title: p.title, publishedAt: p.publishedAt,
-            minTierName: minTierName(p),
-            cover: p.cover,
-          }))}
-        />
-
-        <CategoriesGridBlock
-          items={(((settings as any)?.homeCategories ?? []) as any[])
-            .filter((c) => c && typeof c === 'object' && c.slug)
-            .map((c) => ({ id: c.id, title: c.title, href: categoryHref(c), cover: c.cover }))}
-        />
-
-        <WhyUsBlock
-          heading="Почему COCO JAMBO"
-          items={[
-            { icon: 'mic', title: 'Русская озвучка живым голосом', text: 'Качественный перевод и естественная озвучка' },
-            { icon: 'screen', title: 'Тысячи часов контента', text: 'Концерты, шоу, лайвы и эксклюзивы' },
-            { icon: 'clock', title: 'Новые видео каждую неделю', text: 'Мы постоянно работаем для вас' },
-            { icon: 'heart', title: 'Проект от ARMY для ARMY', text: 'С любовью к BTS и каждому зрителю' },
-          ]}
-        />
-
-        <SocialLinksBlock items={(settings?.socials ?? []) as any[]} />
-
-        <BroadcastBannerBlock tagline="BTS TV" onAirText="ON AIR" />
+        {sections
+          .filter((s) => s.enabled)
+          .map((s) => <Fragment key={s.type}>{renderers[s.type]()}</Fragment>)}
       </div>
     </main>
   )

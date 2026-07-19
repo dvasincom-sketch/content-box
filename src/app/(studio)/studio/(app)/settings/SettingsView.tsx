@@ -6,6 +6,8 @@ import { ImagePlus, Loader2, Plus, Trash2, Check, Sun, Moon, ChevronDown, GripVe
 import { PerkIcon, PERK_TYPES, type PerkType } from '@/components/studio/PerkIcon'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { MenuBuilder } from './MenuBuilder'
+import { HomeBuilder } from './HomeBuilder'
+import type { HomeSectionConfig } from '@/lib/homeSections'
 
 type Social = { platform: string; url: string }
 type Perk = { type: PerkType; text: string }
@@ -20,10 +22,11 @@ type Tier = {
   perks: Perk[]
 }
 
-type SettingsTab = 'appearance' | 'socials' | 'menu' | 'tiers'
+type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers'
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'appearance', label: 'Оформление' },
+  { id: 'home', label: 'Главная страница' },
   { id: 'socials', label: 'Соцсети' },
   { id: 'menu', label: 'Меню и футер' },
   { id: 'tiers', label: 'Подписки' },
@@ -41,10 +44,12 @@ export function SettingsView({
   logoUrl,
   socials: initialSocials,
   tiers: initialTiers,
+  homeSections,
 }: {
   logoUrl: string | null
   socials: Social[]
   tiers: Tier[]
+  homeSections: HomeSectionConfig[]
 }) {
   const [tab, setTab] = useState<SettingsTab>('appearance')
 
@@ -77,11 +82,27 @@ export function SettingsView({
             <LogoBlock initialUrl={logoUrl} />
           </>
         )}
+        {tab === 'home' && <HomeBlock homeSections={homeSections} />}
         {tab === 'socials' && <SocialsBlock initial={initialSocials} />}
         {tab === 'menu' && <MenuBlock />}
         {tab === 'tiers' && <TiersBlock initial={initialTiers} />}
       </div>
     </>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Конструктор главной страницы                                                */
+/* -------------------------------------------------------------------------- */
+function HomeBlock({ homeSections }: { homeSections: HomeSectionConfig[] }) {
+  return (
+    <section className="settings__block">
+      <div className="settings__block-head">
+        <h2>Главная страница</h2>
+        <p>Порядок и видимость секций главной. Перетаскивайте, чтобы поменять порядок, тумблером включайте или выключайте секции.</p>
+      </div>
+      <HomeBuilder initial={homeSections} />
+    </section>
   )
 }
 
