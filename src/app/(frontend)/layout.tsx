@@ -2,7 +2,8 @@ import React from 'react'
 import './styles.css'
 import { Inter, Montserrat, Manrope, Golos_Text, PT_Sans, Unbounded, Roboto } from 'next/font/google'
 import { getTenantFromHeaders } from '@/lib/tenant'
-import { getHeaderMenu, getFooterCategories, getFooterColumns } from '@/lib/headerMenu'
+import { getFooterCategories, getFooterColumns } from '@/lib/headerMenu'
+import { buildMenu } from '@/lib/buildMenu'
 import { brandVars } from '@/lib/brand'
 import { SiteHeader } from '@/components/SiteHeader'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
@@ -33,9 +34,10 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const settings = ctx?.settings as any
   const subscriber = await getCurrentSubscriber()
 
-  // Меню и футер строятся из страниц (ТЗ §3.6, white-label):
-  // showInMenu → шапка; showInFooter + footerColumn → колонка футера.
-  const menu = tenant ? await getHeaderMenu(tenant.id as number) : []
+  // Меню шапки: buildMenu сливает автоген категорий с ручными оверрайдами
+  // конструктора (menu-items) — скрытие/порядок/переименование. Футер пока
+  // на старых функциях (переключим отдельным заходом).
+  const menu = tenant ? await buildMenu(tenant.id as number, 'header') : []
   const footerCats = tenant ? await getFooterCategories(tenant.id as number) : []
   const footerColumns = tenant ? await getFooterColumns(tenant.id as number) : []
   let navItems: { label: string; url: string }[] = []
