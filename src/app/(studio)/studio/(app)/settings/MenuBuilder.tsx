@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Loader2, Eye, EyeOff, Pencil, Trash2, Check, X,
   FolderTree, FileText, Link2, AlertCircle, GripVertical,
+  Plus, FolderInput,
 } from 'lucide-react'
+import { StudioSelect } from '../_ui/StudioSelect'
 
 /** Узел дерева, как его отдаёт GET /studio/api/menu (buildMenuAdmin). */
 type AdminMenuNode = {
@@ -21,24 +23,33 @@ type AdminMenuNode = {
   children: AdminMenuNode[]
 }
 
+type PageOption = { id: number | string; title: string; slug: string }
 type MenuLocation = 'header' | 'footer'
 
 /** Активное перетаскивание: ключ узла и ключ его родителя (для проверки сиблингов). */
 type DragState = { key: string; parentKey: string | null } | null
 
+const MAX_DEPTH = 4
+
+/** Плоский пункт для выбора родителя: ключ, подпись, глубина. */
+type FlatOption = { key: string; label: string; depth: number }
+
 /**
- * Конструктор меню (4b-2: каркас + drag-and-drop внутри уровня).
- * Перетаскивание разрешено только между узлами одного родителя (сиблингами).
- * Смена родителя ручных пунктов — через форму (4b-3), не через dnd.
+ * Конструктор меню (4b-3: каркас + dnd + добавление пунктов и смена родителя).
+ * Категории подтягиваются автоматически; ручные пункты (страница/URL) можно
+ * добавлять, переименовывать, перемещать между уровнями через форму.
  */
 export function MenuBuilder() {
   const [location, setLocation] = useState<MenuLocation>('header')
   const [tree, setTree] = useState<AdminMenuNode[]>([])
+  const [pages, setPages] = useState<PageOption[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const [drag, setDrag] = useState<DragState>(null)
   const [savingOrder, setSavingOrder] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [moveFor, setMoveFor] = useState<AdminMenuNode | null>(null)
 
   const load = useCallback(async (loc: MenuLocation) => {
     setLoading(true)
@@ -51,12 +62,15 @@ export function MenuBuilder() {
       if (!res.ok) {
         setError(json.error || 'Не удалось загрузить меню')
         setTree([])
+        setPages([])
       } else {
         setTree(Array.isArray(json.tree) ? json.tree : [])
+        setPages(Array.isArray(json.pages) ? json.pages : [])
       }
     } catch {
       setError('Ошибка соединения')
       setTree([])
+      setPages([])
     } finally {
       setLoading(false)
     }
@@ -65,6 +79,20 @@ export function MenuBuilder() {
   useEffect(() => {
     load(location)
   }, [location, load])
+
+  // Плоский список узлов для выбора родителя (с отступами по глубине).
+  // Исключаем узлы на MAX_DEPTH уровне — под них нельзя вкладывать.
+  const parentOptions = useMemo<FlatOption[]>(() => {
+    const out: FlatOption[] = []
+    const walk = (nodes: AdminMenuNode[], depth: number) => {
+      for (const n of nodes) {
+        if (depth < MAX_DEPTH) out.push({ key: n.key, label: n.label, depth })
+        walk(n.children, depth + 1)
+      }
+    }
+    walk(tree, 1)
+    return out
+  }, [tree])
 
   // --- Точечные операции -----------------------------------------------------
 
@@ -184,10 +212,6 @@ export function MenuBuilder() {
 
   // --- Drag-and-drop: reorder внутри уровня ----------------------------------
 
-  /**
-   * Дроп узла `dragged` на позицию узла `target`. Разрешён только когда у обоих
-   * один родитель (сиблинги). Пересобираем порядок уровня и шлём в reorder.
-   */
   const dropOnto = useCallback(
     async (
       target: AdminMenuNode,
@@ -198,7 +222,6 @@ export function MenuBuilder() {
       setDrag(null)
       if (!d) return
       if (d.key === target.key) return
-      // Только внутри одного уровня.
       if (d.parentKey !== targetParentKey) {
         setError('Переместить можно только внутри одного уровня')
         return
@@ -212,7 +235,6 @@ export function MenuBuilder() {
       const [moved] = reordered.splice(fromIdx, 1)
       reordered.splice(toIdx, 0, moved)
 
-      // Новый порядок для всех сиблингов уровня.
       const ops = reordered.map((n, i) => ({
         key: n.key,
         order: i,
@@ -241,6 +263,78 @@ export function MenuBuilder() {
     [drag, location, load],
   )
 
+  // --- Смена родителя ручного пункта (через форму) ---------------------------
+
+  const moveToParent = useCallback(
+    async (node: AdminMenuNode, newParentKey: string | null) => {
+      setBusyKey(node.key)
+      setError(null)
+      try {
+        const res = await fetch('/studio/api/menu/reorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            location,
+            ops: [{ key: node.key, order: 9999, parentKey: newParentKey }],
+          }),
+        })
+        const json = await res.json()
+        if (!res.ok) setError(json.error || 'Не удалось переместить')
+        else await load(location)
+      } catch {
+        setError('Ошибка соединения')
+      } finally {
+        setBusyKey(null)
+        setMoveFor(null)
+      }
+    },
+    [location, load],
+  )
+
+  // --- Создание ручного пункта -----------------------------------------------
+
+  const createItem = useCallback(
+    async (payload: {
+      kind: 'page' | 'url'
+      pageId?: number | string
+      url?: string
+      labelOverride?: string
+      parentKey: string | null
+    }) => {
+      setError(null)
+      const parent = keyToParentRef(payload.parentKey)
+      const body: any = {
+        location,
+        kind: payload.kind,
+        ...parent,
+      }
+      if (payload.kind === 'page') body.pageId = payload.pageId
+      else body.url = payload.url
+      if (payload.labelOverride) body.labelOverride = payload.labelOverride
+
+      try {
+        const res = await fetch('/studio/api/menu/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(body),
+        })
+        const json = await res.json()
+        if (!res.ok) {
+          setError(json.error || 'Не удалось добавить пункт')
+          return false
+        }
+        await load(location)
+        return true
+      } catch {
+        setError('Ошибка соединения')
+        return false
+      }
+    },
+    [location, load],
+  )
+
   // --- Рендер ----------------------------------------------------------------
 
   return (
@@ -265,7 +359,26 @@ export function MenuBuilder() {
             <Loader2 size={13} className="spin" /> сохранение…
           </span>
         )}
+        <button
+          className="studio-btn studio-btn--ghost menubld__add-btn"
+          onClick={() => setAdding((v) => !v)}
+          type="button"
+        >
+          <Plus size={15} /> Добавить пункт
+        </button>
       </div>
+
+      {adding && (
+        <AddItemForm
+          pages={pages}
+          parentOptions={parentOptions}
+          onCancel={() => setAdding(false)}
+          onCreate={async (payload) => {
+            const ok = await createItem(payload)
+            if (ok) setAdding(false)
+          }}
+        />
+      )}
 
       {error && (
         <div className="menubld__error">
@@ -298,9 +411,21 @@ export function MenuBuilder() {
               onToggleHidden={toggleHidden}
               onRename={rename}
               onRemove={remove}
+              onMove={setMoveFor}
             />
           ))}
         </ul>
+      )}
+
+      {moveFor && (
+        <MoveDialog
+          node={moveFor}
+          parentOptions={parentOptions.filter(
+            (o) => o.key !== moveFor.key && !isDescendantKey(moveFor, o.key),
+          )}
+          onCancel={() => setMoveFor(null)}
+          onMove={(parentKey) => moveToParent(moveFor, parentKey)}
+        />
       )}
     </div>
   )
@@ -320,6 +445,7 @@ function MenuRow({
   onToggleHidden,
   onRename,
   onRemove,
+  onMove,
 }: {
   node: AdminMenuNode
   depth: number
@@ -337,6 +463,7 @@ function MenuRow({
   onToggleHidden: (n: AdminMenuNode) => void
   onRename: (n: AdminMenuNode, label: string) => Promise<boolean>
   onRemove: (n: AdminMenuNode) => void
+  onMove: (n: AdminMenuNode) => void
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(node.label)
@@ -346,7 +473,6 @@ function MenuRow({
     node.kind === 'category' ? FolderTree : node.kind === 'page' ? FileText : Link2
 
   const isDragging = drag?.key === node.key
-  // Цель приемлема для дропа, если тащат сиблинга (тот же родитель) и не сам себя.
   const isDropTarget =
     drag != null && drag.parentKey === parentKey && drag.key !== node.key
 
@@ -366,7 +492,7 @@ function MenuRow({
         }
         style={{ paddingLeft: `${(depth - 1) * 22 + 10}px` }}
         onDragOver={(e) => {
-          if (isDropTarget) e.preventDefault() // разрешить drop только сиблингам
+          if (isDropTarget) e.preventDefault()
         }}
         onDrop={(e) => {
           e.preventDefault()
@@ -444,6 +570,16 @@ function MenuRow({
                   <Eye size={14} />
                 )}
               </button>
+              {node.isManual && (
+                <button
+                  className="catmgr__icon-btn"
+                  onClick={() => onMove(node)}
+                  disabled={busy}
+                  title="Переместить"
+                >
+                  <FolderInput size={14} />
+                </button>
+              )}
               <button
                 className="catmgr__icon-btn"
                 onClick={() => {
@@ -485,11 +621,187 @@ function MenuRow({
               onToggleHidden={onToggleHidden}
               onRename={onRename}
               onRemove={onRemove}
+              onMove={onMove}
             />
           ))}
         </ul>
       )}
     </li>
+  )
+}
+
+/** Форма добавления ручного пункта (страница / внешний URL). */
+function AddItemForm({
+  pages,
+  parentOptions,
+  onCancel,
+  onCreate,
+}: {
+  pages: PageOption[]
+  parentOptions: FlatOption[]
+  onCancel: () => void
+  onCreate: (payload: {
+    kind: 'page' | 'url'
+    pageId?: number | string
+    url?: string
+    labelOverride?: string
+    parentKey: string | null
+  }) => void
+}) {
+  const [kind, setKind] = useState<'page' | 'url'>('page')
+  const [pageId, setPageId] = useState<string>(pages[0] ? String(pages[0].id) : '')
+  const [url, setUrl] = useState('')
+  const [label, setLabel] = useState('')
+  const [parentKey, setParentKey] = useState<string>('__root__')
+  const [busy, setBusy] = useState(false)
+
+  async function submit() {
+    setBusy(true)
+    await onCreate({
+      kind,
+      pageId: kind === 'page' ? pageId : undefined,
+      url: kind === 'url' ? url.trim() : undefined,
+      labelOverride: label.trim() || undefined,
+      parentKey: parentKey === '__root__' ? null : parentKey,
+    })
+    setBusy(false)
+  }
+
+  const canSubmit =
+    kind === 'page' ? Boolean(pageId) : Boolean(url.trim()) && Boolean(label.trim())
+
+  return (
+    <div className="menubld__addform">
+      <div className="menubld__addform-row">
+        <StudioSelect
+          value={kind}
+          onChange={(v) => setKind(v as 'page' | 'url')}
+          options={[
+            { value: 'page', label: 'Страница' },
+            { value: 'url', label: 'Внешняя ссылка' },
+          ]}
+          ariaLabel="Тип пункта"
+        />
+
+        {kind === 'page' ? (
+          <StudioSelect
+            value={pageId}
+            onChange={setPageId}
+            options={pages.map((p) => ({ value: String(p.id), label: p.title }))}
+            ariaLabel="Страница"
+          />
+        ) : (
+          <>
+            <input
+              className="studio-input"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://…"
+            />
+            <input
+              className="studio-input"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Название"
+            />
+          </>
+        )}
+      </div>
+
+      <div className="menubld__addform-row">
+        <span className="menubld__addform-label">Родитель:</span>
+        <StudioSelect
+          value={parentKey}
+          onChange={setParentKey}
+          options={[
+            { value: '__root__', label: 'Верхний уровень' },
+            ...parentOptions.map((o) => ({
+              value: o.key,
+              label: o.label,
+              depth: o.depth,
+            })),
+          ]}
+          ariaLabel="Родительский пункт"
+        />
+        {kind === 'page' && (
+          <input
+            className="studio-input"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Название (по умолчанию — имя страницы)"
+          />
+        )}
+      </div>
+
+      <div className="menubld__addform-actions">
+        <button className="studio-btn studio-btn--ghost" onClick={onCancel} disabled={busy}>
+          Отмена
+        </button>
+        <button
+          className="studio-btn studio-btn--primary"
+          onClick={submit}
+          disabled={busy || !canSubmit}
+        >
+          {busy ? <Loader2 size={15} className="spin" /> : <Plus size={15} />}
+          Добавить
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** Диалог смены родителя ручного пункта. */
+function MoveDialog({
+  node,
+  parentOptions,
+  onCancel,
+  onMove,
+}: {
+  node: AdminMenuNode
+  parentOptions: FlatOption[]
+  onCancel: () => void
+  onMove: (parentKey: string | null) => void
+}) {
+  const [parentKey, setParentKey] = useState<string>('__root__')
+
+  return (
+    <div className="menubld__movedlg-overlay" onClick={onCancel}>
+      <div className="menubld__movedlg" onClick={(e) => e.stopPropagation()}>
+        <div className="menubld__movedlg-head">
+          <span>Переместить «{node.label}»</span>
+          <button className="catmgr__icon-btn" onClick={onCancel} title="Закрыть">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="menubld__movedlg-body">
+          <span className="menubld__addform-label">Новый родитель:</span>
+          <StudioSelect
+            value={parentKey}
+            onChange={setParentKey}
+            options={[
+              { value: '__root__', label: 'Верхний уровень' },
+              ...parentOptions.map((o) => ({
+                value: o.key,
+                label: o.label,
+                depth: o.depth,
+              })),
+            ]}
+            ariaLabel="Новый родитель"
+          />
+        </div>
+        <div className="menubld__addform-actions">
+          <button className="studio-btn studio-btn--ghost" onClick={onCancel}>
+            Отмена
+          </button>
+          <button
+            className="studio-btn studio-btn--primary"
+            onClick={() => onMove(parentKey === '__root__' ? null : parentKey)}
+          >
+            <Check size={15} /> Переместить
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -503,4 +815,31 @@ function countDescendants(node: AdminMenuNode): number {
   let n = 0
   for (const c of node.children) n += 1 + countDescendants(c)
   return n
+}
+
+/** Является ли key потомком node (чтобы не дать переместить пункт под своего же потомка). */
+function isDescendantKey(node: AdminMenuNode, key: string): boolean {
+  for (const c of node.children) {
+    if (c.key === key) return true
+    if (isDescendantKey(c, key)) return true
+  }
+  return false
+}
+
+/**
+ * Ключ родителя из формы → поля для роута create.
+ *   'item:34'  → { parentId: 34 }        (ручной пункт-родитель)
+ *   'cat:12'   → { parentCategoryId: 12 } (категория; бэк материализует оверрайд)
+ *   null       → {}                        (корневой уровень)
+ */
+function keyToParentRef(
+  key: string | null,
+): { parentId?: number } | { parentCategoryId?: number } | Record<string, never> {
+  if (!key) return {}
+  const [type, raw] = key.split(':')
+  const id = Number(raw)
+  if (!Number.isFinite(id)) return {}
+  if (type === 'item') return { parentId: id }
+  if (type === 'cat') return { parentCategoryId: id }
+  return {}
 }

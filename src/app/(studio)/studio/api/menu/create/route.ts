@@ -9,10 +9,16 @@ const MAX_DEPTH = 4
  * Создание ручного пункта меню (страница или внешний URL).
  *
  * Body:
- *   { location, kind: 'page', pageId, labelOverride?, parentId?, order? }
- *   { location, kind: 'url', url, labelOverride (обязателен), parentId?, order? }
+ *   { location, kind: 'page', pageId, labelOverride?, parentId?, parentCategoryId?, order? }
+ *   { location, kind: 'url', url, labelOverride (обязателен), parentId?, parentCategoryId?, order? }
  *
- * parentId — ссылка на menu-items (не на категорию). Пусто → корневой уровень.
+ * Родитель:
+ *   - parentId — ссылка на menu-items (ручной пункт-родитель ИЛИ уже
+ *     материализованный оверрайд категории).
+ *   - parentCategoryId — id категории-родителя. Если её оверрайд ещё не
+ *     материализован, создаём его (ленивая материализация) и вешаем пункт под
+ *     него. Приоритет у parentId, если заданы оба.
+ *   - оба пусты → корневой уровень.
  * Родитель обязан принадлежать тому же тенанту и тому же location.
  * Глубина ограничена MAX_DEPTH.
  */
@@ -52,12 +58,10 @@ export async function POST(req: NextRequest) {
     const pageOk = await belongsToTenant(payload, 'pages', data.pageId, tenantId)
     if (!pageOk) return NextResponse.json({ error: 'Страница не найдена' }, { status: 404 })
     newData.page = Number(data.pageId)
-    // labelOverride необязателен: пусто → имя страницы.
     if (typeof data.labelOverride === 'string' && data.labelOverride.trim()) {
       newData.labelOverride = data.labelOverride.trim()
     }
   } else {
-    // kind === 'url'
     const url = typeof data.url === 'string' ? data.url.trim() : ''
     if (!url) return NextResponse.json({ error: 'Не указан URL' }, { status: 400 })
     const label = typeof data.labelOverride === 'string' ? data.labelOverride.trim() : ''
@@ -72,7 +76,11 @@ export async function POST(req: NextRequest) {
   }
 
   // --- Родитель --------------------------------------------------------------
+  // Определяем итоговый parent (menu-items id) из parentId ИЛИ parentCategoryId.
+  let parentItemId: number | null = null
+
   if (data.parentId != null) {
+    // Явный parent — ручной пункт или уже материализованный оверрайд.
     const parent = await getMenuItem(payload, data.parentId, tenantId)
     if (!parent) {
       return NextResponse.json({ error: 'Родитель не найден' }, { status: 400 })
@@ -83,15 +91,30 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       )
     }
-    // Глубина родителя + 1 не должна превышать MAX_DEPTH.
-    const parentDepth = await depthOf(payload, Number(data.parentId), tenantId)
+    parentItemId = Number(data.parentId)
+  } else if (data.parentCategoryId != null) {
+    // Родитель — категория: материализуем её оверрайд, если нужно.
+    const catOk = await belongsToTenant(payload, 'categories', data.parentCategoryId, tenantId)
+    if (!catOk) {
+      return NextResponse.json({ error: 'Категория-родитель не найдена' }, { status: 400 })
+    }
+    parentItemId = await materializeCategory(
+      payload,
+      tenantId,
+      location,
+      Number(data.parentCategoryId),
+    )
+  }
+
+  if (parentItemId != null) {
+    const parentDepth = await depthOf(payload, parentItemId, tenantId)
     if (parentDepth + 1 > MAX_DEPTH) {
       return NextResponse.json(
         { error: `Превышена максимальная вложенность (${MAX_DEPTH} уровня)` },
         { status: 400 },
       )
     }
-    newData.parent = Number(data.parentId)
+    newData.parent = parentItemId
   }
 
   try {
@@ -107,6 +130,45 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     )
   }
+}
+
+/** Материализует оверрайд авто-категории (или возвращает id существующего). */
+async function materializeCategory(
+  payload: any,
+  tenantId: number,
+  location: string,
+  categoryId: number,
+): Promise<number> {
+  const existing = await payload.find({
+    collection: 'menu-items',
+    where: {
+      and: [
+        { tenant: { equals: tenantId } },
+        { location: { equals: location } },
+        { kind: { equals: 'category' } },
+        { category: { equals: categoryId } },
+      ],
+    },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const found = existing.docs[0] as any
+  if (found) return found.id
+  const created = await payload.create({
+    collection: 'menu-items',
+    data: {
+      tenant: tenantId,
+      location,
+      kind: 'category',
+      category: categoryId,
+      hidden: false,
+      order: 0,
+      labelOverride: null,
+    },
+    overrideAccess: true,
+  })
+  return (created as any).id
 }
 
 /** Глубина узла menu-items: 1 = корень. Идём вверх по parent. */
