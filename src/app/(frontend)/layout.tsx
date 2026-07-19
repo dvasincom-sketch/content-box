@@ -2,8 +2,8 @@ import React from 'react'
 import './styles.css'
 import { Inter, Montserrat, Manrope, Golos_Text, PT_Sans, Unbounded, Roboto } from 'next/font/google'
 import { getTenantFromHeaders } from '@/lib/tenant'
-import { getFooterCategories, getFooterColumns } from '@/lib/headerMenu'
 import { buildMenu } from '@/lib/buildMenu'
+import { footerFromTree } from '@/lib/footerFromTree'
 import { brandVars } from '@/lib/brand'
 import { SiteHeader } from '@/components/SiteHeader'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
@@ -34,15 +34,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const settings = ctx?.settings as any
   const subscriber = await getCurrentSubscriber()
 
-  // Меню шапки: buildMenu сливает автоген категорий с ручными оверрайдами
-  // конструктора (menu-items) — скрытие/порядок/переименование. Футер пока
-  // на старых функциях (переключим отдельным заходом).
+  // Меню шапки и футер строятся из единого конструктора (menu-items):
+  // buildMenu сливает автоген категорий с ручными оверрайдами.
   const menu = tenant ? await buildMenu(tenant.id as number, 'header') : []
-  const footerCats = tenant ? await getFooterCategories(tenant.id as number) : []
-  const footerColumns = tenant ? await getFooterColumns(tenant.id as number) : []
+  const footerTree = tenant ? await buildMenu(tenant.id as number, 'footer') : []
+  const { nav: footerNav, columns: footerColumns } = footerFromTree(footerTree)
   let navItems: { label: string; url: string }[] = []
-  let footerNav: { label: string; href: string }[] = []
-  let footerSupport: { label: string; href: string }[] = []
 
   if (tenant?.id) {
     const payloadConfig = await config
@@ -52,7 +49,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       where: {
         and: [
           { tenant: { equals: tenant.id } },
-          { or: [{ showInMenu: { equals: true } }, { showInFooter: { equals: true } }] },
+          { showInMenu: { equals: true } },
         ],
       },
       sort: 'menuOrder',
@@ -61,14 +58,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       overrideAccess: true,
     })
 
+    // Страницы с showInMenu — ссылки в шапке (рядом с деревом категорий).
     for (const page of pagesRes.docs as any[]) {
-      const href = `/page/${page.slug}`
-      if (page.showInMenu) navItems.push({ label: page.title, url: href })
-      if (page.showInFooter) {
-        const item = { label: page.title, href }
-        if (page.footerColumn === 'support') footerSupport.push(item)
-        else footerNav.push(item)
-      }
+      navItems.push({ label: page.title, url: `/page/${page.slug}` })
     }
   }
 
@@ -108,12 +100,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
           <SiteFooter
             brandName={tenant?.name ?? ''}
             copyright={`© ${new Date().getFullYear()} ${tenant?.name ?? ''}. Все права защищены.`}
-            nav={[...footerNav, ...footerCats.map((c) => ({ label: c.label, href: c.url }))]}
-            columns={footerColumns.map((col) => ({
-              heading: col.heading,
-              items: col.items.map((i) => ({ label: i.label, href: i.url })),
-            }))}
-            support={footerSupport}
+            nav={footerNav}
+            columns={footerColumns}
+            support={[]}
           />
         )}
       </body>
