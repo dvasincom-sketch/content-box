@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { PageEditPanel } from './PageEditPanel'
+import { ConfirmDialog } from '../_ui/ConfirmDialog'
 
 /** Узел дерева, как его отдаёт GET /studio/api/menu (buildMenuAdmin). */
 type AdminMenuNode = {
@@ -52,6 +53,7 @@ export function MenuBuilder() {
   const [adding, setAdding] = useState(false)
   const [moveFor, setMoveFor] = useState<AdminMenuNode | null>(null)
   const [editPage, setEditPage] = useState<{ id: number | string } | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<AdminMenuNode | null>(null)
 
   const load = useCallback(async (loc: MenuLocation) => {
     setLoading(true)
@@ -179,18 +181,9 @@ export function MenuBuilder() {
     [location, load],
   )
 
-  const remove = useCallback(
+  const performDelete = useCallback(
     async (node: AdminMenuNode) => {
-      const childCount = countDescendants(node)
-      const msg = node.isManual
-        ? childCount > 0
-          ? `Удалить пункт «${node.label}» и вложенные (${childCount})?`
-          : `Удалить пункт «${node.label}»?`
-        : `Вернуть «${node.label}» в автоматический вид? Ручные настройки этого пункта${
-            childCount > 0 ? ` и вложенные (${childCount})` : ''
-          } будут удалены.`
-      if (!window.confirm(msg)) return
-
+      setConfirmDelete(null)
       setBusyKey(node.key)
       setError(null)
       try {
@@ -211,6 +204,11 @@ export function MenuBuilder() {
     },
     [location, load],
   )
+
+  // Клик по корзине только открывает окно подтверждения.
+  const remove = useCallback((node: AdminMenuNode) => {
+    setConfirmDelete(node)
+  }, [])
 
   // --- Drag-and-drop: reorder внутри уровня ----------------------------------
 
@@ -439,6 +437,18 @@ export function MenuBuilder() {
             setEditPage(null)
             load(location)
           }}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title={deleteTitle(confirmDelete)}
+          message={deleteMessage(confirmDelete)}
+          confirmLabel={confirmDelete.isManual ? 'Удалить' : 'Сбросить'}
+          cancelLabel="Отмена"
+          danger
+          onConfirm={() => performDelete(confirmDelete)}
+          onCancel={() => setConfirmDelete(null)}
         />
       )}
     </div>
@@ -842,6 +852,26 @@ function countDescendants(node: AdminMenuNode): number {
   let n = 0
   for (const c of node.children) n += 1 + countDescendants(c)
   return n
+}
+
+/** Заголовок окна подтверждения удаления. */
+function deleteTitle(node: AdminMenuNode): string {
+  return node.isManual
+    ? `Удалить пункт «${node.label}»?`
+    : `Вернуть «${node.label}» в автоматический вид?`
+}
+
+/** Пояснение в окне подтверждения (учёт вложенных). */
+function deleteMessage(node: AdminMenuNode): string {
+  const childCount = countDescendants(node)
+  if (node.isManual) {
+    return childCount > 0
+      ? `Пункт и вложенные (${childCount}) будут удалены безвозвратно.`
+      : 'Пункт будет удалён безвозвратно.'
+  }
+  return childCount > 0
+    ? `Ручные настройки этого пункта и вложенные (${childCount}) будут удалены. Категория останется в меню автоматически.`
+    : 'Ручные настройки будут сброшены. Категория останется в меню автоматически.'
 }
 
 /** Является ли key потомком node (чтобы не дать переместить пункт под своего же потомка). */

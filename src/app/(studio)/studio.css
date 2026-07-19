@@ -1,4 +1,4 @@
-/* BUILD-MARKER: menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -3631,4 +3631,87 @@ select.studio-input {
   background: var(--st-surface, #fff);
   color: var(--st-text, #111);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* ===== ConfirmDialog — окно подтверждения (confirm-dialog-v1) =============== */
+
+/* danger-вариант кнопки (для удаления и деструктивных действий). */
+.studio-btn--danger { background: var(--st-danger); color: #fff; }
+.studio-btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--st-danger) 85%, #000);
+}
+a.studio-btn--danger { color: #fff; }
+
+.confirm__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: color-mix(in srgb, #000 55%, transparent);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--st-space-5);
+  animation: st-fade 140ms var(--st-ease) both;
+}
+
+.confirm {
+  width: min(440px, 100%);
+  background: var(--st-surface);
+  border: 1px solid var(--st-border-strong);
+  border-radius: var(--st-radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: st-pop 160ms var(--st-ease) both;
+  overflow: hidden;
+}
+
+@keyframes st-pop {
+  from { transform: scale(0.96); opacity: 0.6; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.confirm__body {
+  display: flex;
+  gap: var(--st-space-4);
+  padding: var(--st-space-6);
+}
+
+.confirm__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--st-radius-sm);
+  flex-shrink: 0;
+}
+
+.confirm__icon--danger {
+  background: color-mix(in srgb, var(--st-danger) 14%, transparent);
+  color: var(--st-danger);
+}
+
+.confirm__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+}
+
+.confirm__title {
+  font-size: var(--st-text-lg);
+  line-height: 1.35;
+}
+
+.confirm__message {
+  font-size: var(--st-text-sm);
+  color: var(--st-text-muted);
+  line-height: 1.5;
+}
+
+.confirm__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--st-space-2);
+  padding: var(--st-space-4) var(--st-space-6);
+  border-top: 1px solid var(--st-border);
+  background: var(--st-surface-2, transparent);
 }
