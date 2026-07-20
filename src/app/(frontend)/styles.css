@@ -629,3 +629,44 @@ svg {
   .sub-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
   .sub-card--hl { transform: none; }
 }
+
+/* ============================================================================
+   МЕТА ШАПКИ ПУБЛИКАЦИИ (характер «тех-кампания»: сдержанная пилюля + маркер)
+   Чип категории — приглушённая подложка на --brand-primary, без яркой заливки.
+   Дата — с акцентной точкой-маркером. Читается тихо, работает как подпись бренда.
+   ============================================================================ */
+.pubmeta-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: var(--brand-text);
+  background: color-mix(in srgb, var(--brand-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 16%, transparent);
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.pubmeta-chip:hover {
+  background: color-mix(in srgb, var(--brand-primary) 16%, transparent);
+  border-color: color-mix(in srgb, var(--brand-primary) 28%, transparent);
+}
+
+.pubmeta-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  color: var(--brand-muted);
+}
+.pubmeta-date::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  flex-shrink: 0;
+}
