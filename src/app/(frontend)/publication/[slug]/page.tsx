@@ -213,7 +213,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
         {/* Хлебные крошки: путь до категории (сам пост не дублируем — он в H1).
             Одна строка, горизонтальный скролл на мобиле, приглушённая плашка. */}
         <nav
-          className="breadcrumbs mb-5 flex items-center gap-x-1.5 text-sm rounded-xl px-3 py-2"
+          className="breadcrumbs pubhero-reveal pubhero-d0 mb-5 flex items-center gap-x-1.5 text-sm rounded-xl px-3 py-2"
           style={{
             color: 'var(--brand-text)',
             background: 'color-mix(in srgb, var(--brand-text) 6%, transparent)',
@@ -240,7 +240,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
         {/* Журнальный герой: обложка (или брендовый градиент) + мета/заголовок
             поверх, белым по тёмному градиенту снизу. */}
         <div
-          className="relative rounded-3xl overflow-hidden h-72 lg:h-96 flex flex-col justify-end"
+          className="pubhero-cover relative rounded-3xl overflow-hidden h-72 lg:h-96 flex flex-col justify-end"
           style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}
         >
           {pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
@@ -248,7 +248,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               src={pub.cover.url}
               alt={pub.cover.alt || pub.title}
               fill
-              className="object-cover"
+              className="pubhero-kenburns object-cover"
               sizes="(max-width: 768px) 100vw, 768px"
               priority
             />
@@ -263,7 +263,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
             }}
           />
           {/* Только заголовок, прижат к низу обложки */}
-          <div className="relative px-6 lg:px-10 pt-8 pb-14 lg:pb-20">
+          <div className="pubhero-reveal pubhero-d2 relative px-6 lg:px-10 pt-8 pb-14 lg:pb-20">
             <h1
               className="text-xl sm:text-3xl lg:text-5xl font-extrabold leading-tight"
               style={{
@@ -286,7 +286,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           }}
         >
           {/* Мета: категория-чип + дата — под обложкой, брендовыми цветами */}
-          <div className="flex items-center flex-wrap gap-3 mb-6 text-sm">
+          <div className="pubhero-reveal pubhero-d3 flex items-center flex-wrap gap-3 mb-6 text-sm">
             {category && (
               <Link
                 href={categoryHref(category)}

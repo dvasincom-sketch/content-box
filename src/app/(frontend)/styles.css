@@ -244,6 +244,78 @@ svg {
 }
 
 /* ============================================================================
+   АНИМАЦИЯ ШАПКИ ПУБЛИКАЦИИ (оркестрованное появление + Ken Burns)
+   Чистый CSS, играет один раз при загрузке. Уважает prefers-reduced-motion.
+   ============================================================================ */
+
+/* Появление: fade + сдвиг снизу. Выразительно — 24px, 700ms, мягкий ease-out. */
+@keyframes pubhero-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Обложка: появление с лёгким наплывом (scale) поверх reveal. */
+@keyframes pubhero-cover-in {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Ken Burns: очень медленный, деликатный зум фото. alternate — плавно
+   туда-обратно, без «прыжка» на повторе. */
+@keyframes pubhero-kenburns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+
+/* Базовый класс появления: стартуем невидимыми, анимируемся один раз (forwards). */
+.pubhero-reveal {
+  opacity: 0;
+  animation: pubhero-reveal 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Каскад задержек — оркестровка сверху вниз. */
+.pubhero-d0 { animation-delay: 0ms; }
+.pubhero-d1 { animation-delay: 120ms; }
+.pubhero-d2 { animation-delay: 320ms; }
+.pubhero-d3 { animation-delay: 480ms; }
+.pubhero-d4 { animation-delay: 620ms; }
+
+/* Обложка-контейнер: свой in-эффект (scale-наплыв). */
+.pubhero-cover {
+  opacity: 0;
+  animation: pubhero-cover-in 800ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
+}
+
+/* Само фото внутри обложки: Ken Burns после появления (delay ~= конец наплыва). */
+.pubhero-kenburns {
+  animation: pubhero-kenburns 28s ease-out 900ms infinite alternate;
+  transform-origin: center 40%;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pubhero-reveal,
+  .pubhero-cover,
+  .pubhero-kenburns {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ============================================================================
    ПУБЛИЧНАЯ ВИТРИНА ГАЛЕРЕИ (justified grid + lightbox + защита)
    ============================================================================ */
 
