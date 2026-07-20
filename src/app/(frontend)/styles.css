@@ -233,6 +233,16 @@ svg {
   border-color: var(--brand-accent) !important;
 }
 
+/* Хлебные крошки: одна строка, горизонтальный скролл на мобиле, скрытый скроллбар */
+.breadcrumbs {
+  overflow-x: auto;
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge */
+}
+.breadcrumbs::-webkit-scrollbar {
+  display: none;                /* WebKit */
+}
+
 /* ============================================================================
    ПУБЛИЧНАЯ ВИТРИНА ГАЛЕРЕИ (justified grid + lightbox + защита)
    ============================================================================ */

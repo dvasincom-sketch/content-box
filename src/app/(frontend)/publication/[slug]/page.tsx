@@ -253,41 +253,53 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               priority
             />
           )}
-          {/* Тёмный градиент на нижние ~55% для читаемости текста */}
+          {/* Тёмный градиент снизу для читаемости заголовка */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 30%, transparent 55%)',
+                'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 32%, transparent 60%)',
             }}
           />
-          <div className="relative p-5 lg:p-8">
-            <div className="flex items-center flex-wrap gap-3 mb-3 text-sm">
-              {category && (
-                <Link
-                  href={categoryHref(category)}
-                  className="px-3 py-1 rounded-full font-medium backdrop-blur"
-                  style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}
-                >
-                  {category.title}
-                </Link>
-              )}
-              {dateStr && <span style={{ color: 'rgba(255,255,255,0.85)' }}>{dateStr}</span>}
-            </div>
+          {/* Только заголовок, прижат к низу обложки */}
+          <div className="relative px-5 lg:px-8 pt-8 pb-14 lg:pb-16">
             <h1
               className="text-2xl sm:text-3xl lg:text-5xl font-extrabold leading-tight"
-              style={{ color: '#fff', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}
+              style={{ color: '#fff', textShadow: '0 2px 14px rgba(0,0,0,0.55)' }}
             >
               {pub.title}
             </h1>
           </div>
         </div>
 
-        {/* Контент-карточка: лёгкий наезд на низ обложки (~28px) */}
+        {/* Контент-карточка: выразительный наезд на низ обложки (без JS) */}
         <div
-          className="relative rounded-3xl px-5 lg:px-8 pt-8 pb-2"
-          style={{ marginTop: '-28px', background: 'var(--brand-bg)' }}
+          className="relative z-10 rounded-3xl px-5 lg:px-8 pt-6 pb-2"
+          style={{
+            marginTop: '-40px',
+            background: 'var(--brand-bg)',
+            boxShadow: '0 -8px 24px rgba(0,0,0,0.12)',
+          }}
         >
+          {/* Мета: категория-чип + дата — под обложкой, брендовыми цветами */}
+          <div className="flex items-center flex-wrap gap-3 mb-6 text-sm">
+            {category && (
+              <Link
+                href={categoryHref(category)}
+                className="px-3 py-1 rounded-full font-medium"
+                style={{
+                  background: 'color-mix(in srgb, var(--brand-primary) 18%, transparent)',
+                  color: 'var(--brand-text)',
+                }}
+              >
+                {category.title}
+              </Link>
+            )}
+            {dateStr && (
+              <span style={{ color: 'var(--brand-text)', opacity: 0.6 }}>{dateStr}</span>
+            )}
+          </div>
+
 
         {pubAccess.allowed ? (
           <>
