@@ -237,10 +237,10 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           ))}
         </nav>
 
-        {/* Журнальный герой: обложка (или брендовый градиент) + мета/заголовок
-            поверх, белым по тёмному градиенту снизу. */}
+        {/* Обложка: чистое фото (или брендовый градиент-фолбэк) + Ken Burns.
+            Без текста и затемнения — заголовок вынесен ниже. */}
         <div
-          className="pubhero-cover relative rounded-3xl overflow-hidden h-72 lg:h-96 flex flex-col justify-end"
+          className="pubhero-cover relative rounded-3xl overflow-hidden h-72 lg:h-96"
           style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}
         >
           {pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
@@ -253,39 +253,19 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               priority
             />
           )}
-          {/* Тёмный градиент: плотный снизу, поднят до ~78% — перекрывает
-              светлые зоны фото под заголовком (приоритет читаемости). */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.78) 28%, rgba(0,0,0,0.4) 55%, transparent 78%)',
-            }}
-          />
-          {/* Только заголовок, прижат к низу обложки */}
-          <div className="pubhero-reveal pubhero-d2 relative px-6 lg:px-10 pt-8 pb-14 lg:pb-20">
-            <h1
-              className="text-xl sm:text-3xl lg:text-5xl font-extrabold leading-tight"
-              style={{
-                color: '#fff',
-                textShadow: '0 2px 14px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.9)',
-              }}
-            >
-              {pub.title}
-            </h1>
-          </div>
         </div>
 
-        {/* Контент-карточка: выразительный наезд на низ обложки (без JS) */}
-        <div
-          className="relative z-10 rounded-3xl px-5 lg:px-8 pt-6 pb-2"
-          style={{
-            marginTop: '-40px',
-            background: 'var(--brand-bg)',
-            boxShadow: '0 -8px 24px rgba(0,0,0,0.12)',
-          }}
+        {/* Заголовок — отдельной зоной под обложкой, брендовым цветом. */}
+        <h1
+          className="pubhero-reveal pubhero-d2 text-3xl lg:text-5xl font-extrabold leading-tight mt-7 mb-6"
+          style={{ color: 'var(--brand-text)' }}
         >
-          {/* Мета: категория-чип + дата — под обложкой, брендовыми цветами */}
+          {pub.title}
+        </h1>
+
+        {/* Контент: мета + тело публикации (без журнального наезда). */}
+        <div className="relative">
+          {/* Мета: категория-чип + дата */}
           <div className="pubhero-reveal pubhero-d3 flex items-center flex-wrap gap-3 mb-6 text-sm">
             {category && (
               <Link
@@ -311,9 +291,16 @@ export default async function PublicationPage({ params }: { params: Promise<Para
             {relatedVideos.length > 0 && (
               <div className="flex flex-col gap-6 mb-8">
                 {relatedVideos.map(({ video, allowed, access }, i) => (
-                  <div key={video?.id ?? i}>
+                  <div
+                    key={video?.id ?? i}
+                    className="rounded-2xl p-4 lg:p-5"
+                    style={{
+                      background: 'var(--brand-surface)',
+                      boxShadow: 'var(--brand-card-shadow)',
+                    }}
+                  >
                     {video?.title && (
-                      <div className="text-lg font-semibold mb-2" style={{ color: 'var(--brand-text)' }}>{video.title}</div>
+                      <div className="text-lg font-semibold mb-3" style={{ color: 'var(--brand-text)' }}>{video.title}</div>
                     )}
                     {allowed ? (
                       <VideoPlayer videoId={video.id} />

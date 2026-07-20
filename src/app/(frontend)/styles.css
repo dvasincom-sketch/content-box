@@ -248,11 +248,11 @@ svg {
    Чистый CSS, играет один раз при загрузке. Уважает prefers-reduced-motion.
    ============================================================================ */
 
-/* Появление: fade + сдвиг снизу. Выразительно — 24px, 700ms, мягкий ease-out. */
+/* Появление: fade + сдвиг снизу. Замедлено и выразительнее — 32px, 1000ms. */
 @keyframes pubhero-reveal {
   from {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(32px);
   }
   to {
     opacity: 1;
@@ -282,15 +282,15 @@ svg {
 /* Базовый класс появления: стартуем невидимыми, анимируемся один раз (forwards). */
 .pubhero-reveal {
   opacity: 0;
-  animation: pubhero-reveal 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: pubhero-reveal 1000ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* Каскад задержек — оркестровка сверху вниз. */
 .pubhero-d0 { animation-delay: 0ms; }
-.pubhero-d1 { animation-delay: 120ms; }
-.pubhero-d2 { animation-delay: 320ms; }
-.pubhero-d3 { animation-delay: 480ms; }
-.pubhero-d4 { animation-delay: 620ms; }
+.pubhero-d1 { animation-delay: 200ms; }
+.pubhero-d2 { animation-delay: 450ms; }
+.pubhero-d3 { animation-delay: 700ms; }
+.pubhero-d4 { animation-delay: 950ms; }
 
 /* Обложка-контейнер: свой in-эффект (scale-наплыв). */
 .pubhero-cover {
@@ -325,6 +325,7 @@ svg {
 .cgal-plate {
   padding: clamp(20px, 4vw, 48px);
   border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
 }
 .theme-light .cgal-plate {
   background: #2A2A2E;
