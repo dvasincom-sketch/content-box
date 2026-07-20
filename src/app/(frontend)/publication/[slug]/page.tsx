@@ -210,32 +210,39 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   return (
     <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Хлебные крошки: путь категории + сама публикация */}
-        <nav className="text-sm mb-6 flex flex-wrap items-center gap-x-2 gap-y-1"
-          style={{ color: 'var(--brand-text)', opacity: 0.7 }}
-          aria-label="Хлебные крошки">
-          <Link href="/" className="hover:opacity-100">Главная</Link>
+        {/* Хлебные крошки: путь до категории (сам пост не дублируем — он в H1).
+            Одна строка, горизонтальный скролл на мобиле, приглушённая плашка. */}
+        <nav
+          className="breadcrumbs mb-5 flex items-center gap-x-1.5 text-sm rounded-xl px-3 py-2"
+          style={{
+            color: 'var(--brand-text)',
+            background: 'color-mix(in srgb, var(--brand-text) 6%, transparent)',
+          }}
+          aria-label="Хлебные крошки"
+        >
+          <Link href="/" className="whitespace-nowrap shrink-0 hover:opacity-100" style={{ opacity: 0.7 }}>
+            Главная
+          </Link>
           {((category?.breadcrumbs ?? []) as { url?: string; label?: string }[]).map((crumb, i) => (
-            <span key={crumb.url ?? i} className="flex items-center gap-x-2">
-              <span aria-hidden="true">/</span>
-              <Link href={`/category${crumb.url}`} className="hover:opacity-100">{crumb.label}</Link>
+            <span key={crumb.url ?? i} className="flex items-center gap-x-1.5 shrink-0">
+              <span aria-hidden="true" style={{ opacity: 0.4 }}>›</span>
+              <Link
+                href={`/category${crumb.url}`}
+                className="whitespace-nowrap hover:opacity-100"
+                style={{ opacity: 0.7 }}
+              >
+                {crumb.label}
+              </Link>
             </span>
           ))}
-          <span aria-hidden="true">/</span>
-          <span style={{ opacity: 1 }}>{pub.title}</span>
         </nav>
 
-        <div className="flex items-center gap-3 mb-4 text-sm" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
-          {category && (
-            <Link href={categoryHref(category)} className="px-3 py-1 rounded-full" style={{ background: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)' }}>{category.title}</Link>
-          )}
-          {dateStr && <span>{dateStr}</span>}
-        </div>
-
-        <h1 className="text-3xl lg:text-5xl font-extrabold mb-6" style={{ color: 'var(--brand-text)' }}>{pub.title}</h1>
-
-        <div className="relative rounded-2xl h-56 lg:h-80 mb-8 overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}>
+        {/* Журнальный герой: обложка (или брендовый градиент) + мета/заголовок
+            поверх, белым по тёмному градиенту снизу. */}
+        <div
+          className="relative rounded-3xl overflow-hidden h-72 lg:h-96 flex flex-col justify-end"
+          style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}
+        >
           {pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
             <Image
               src={pub.cover.url}
@@ -246,7 +253,41 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               priority
             />
           )}
+          {/* Тёмный градиент на нижние ~55% для читаемости текста */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 30%, transparent 55%)',
+            }}
+          />
+          <div className="relative p-5 lg:p-8">
+            <div className="flex items-center flex-wrap gap-3 mb-3 text-sm">
+              {category && (
+                <Link
+                  href={categoryHref(category)}
+                  className="px-3 py-1 rounded-full font-medium backdrop-blur"
+                  style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}
+                >
+                  {category.title}
+                </Link>
+              )}
+              {dateStr && <span style={{ color: 'rgba(255,255,255,0.85)' }}>{dateStr}</span>}
+            </div>
+            <h1
+              className="text-2xl sm:text-3xl lg:text-5xl font-extrabold leading-tight"
+              style={{ color: '#fff', textShadow: '0 2px 12px rgba(0,0,0,0.5)' }}
+            >
+              {pub.title}
+            </h1>
+          </div>
         </div>
+
+        {/* Контент-карточка: лёгкий наезд на низ обложки (~28px) */}
+        <div
+          className="relative rounded-3xl px-5 lg:px-8 pt-8 pb-2"
+          style={{ marginTop: '-28px', background: 'var(--brand-bg)' }}
+        >
 
         {pubAccess.allowed ? (
           <>
@@ -299,6 +340,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
         )}
 
         <PostNavBlock prev={navPrev} next={navNext} />
+        </div>
       </div>
     </main>
   )
