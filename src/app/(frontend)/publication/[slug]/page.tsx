@@ -253,19 +253,23 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               priority
             />
           )}
-          {/* Тёмный градиент снизу для читаемости заголовка */}
+          {/* Тёмный градиент: плотный снизу, поднят до ~78% — перекрывает
+              светлые зоны фото под заголовком (приоритет читаемости). */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 32%, transparent 60%)',
+                'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.78) 28%, rgba(0,0,0,0.4) 55%, transparent 78%)',
             }}
           />
           {/* Только заголовок, прижат к низу обложки */}
-          <div className="relative px-5 lg:px-8 pt-8 pb-14 lg:pb-16">
+          <div className="relative px-6 lg:px-10 pt-8 pb-14 lg:pb-20">
             <h1
-              className="text-2xl sm:text-3xl lg:text-5xl font-extrabold leading-tight"
-              style={{ color: '#fff', textShadow: '0 2px 14px rgba(0,0,0,0.55)' }}
+              className="text-xl sm:text-3xl lg:text-5xl font-extrabold leading-tight"
+              style={{
+                color: '#fff',
+                textShadow: '0 2px 14px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.9)',
+              }}
             >
               {pub.title}
             </h1>
