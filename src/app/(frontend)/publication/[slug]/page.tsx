@@ -12,6 +12,7 @@ import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
 import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
+import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
 import { Lock } from 'lucide-react'
 import type { Metadata } from 'next'
 import '../../styles.css'
@@ -48,6 +49,83 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     fallbackTitle: pub.title,
     brandName: (tenant as any)?.name,
   })
+}
+
+/** Публикация → карточка навигации. minTier задан → premium (бейдж). */
+function toNavItem(doc: any, kind: PostNavItem['kind']): PostNavItem {
+  const category = doc?.category && typeof doc.category === 'object' ? doc.category : null
+  const cover = doc?.cover && typeof doc.cover === 'object' ? doc.cover : null
+  return {
+    title: doc?.title ?? '',
+    href: `/publication/${doc?.slug}`,
+    categoryTitle: category?.title ?? null,
+    coverUrl: cover?.url ?? null,
+    isPremium: doc?.minTier != null && doc.minTier !== '',
+    kind,
+  }
+}
+
+/**
+ * Ближайший сосед по дате. direction 'prev' — более ранний (publishedAt <),
+ * 'next' — более поздний (publishedAt >). Учитываем только посты с датой.
+ */
+async function findNeighbor(
+  payload: any,
+  tenantId: number | string,
+  currentPublishedAt: string,
+  direction: 'prev' | 'next',
+): Promise<any | null> {
+  const res = await payload.find({
+    collection: 'publications',
+    where: {
+      and: [
+        { tenant: { equals: tenantId } },
+        { publishedAt: { exists: true } },
+        direction === 'prev'
+          ? { publishedAt: { less_than: currentPublishedAt } }
+          : { publishedAt: { greater_than: currentPublishedAt } },
+      ],
+    },
+    sort: direction === 'prev' ? '-publishedAt' : 'publishedAt',
+    limit: 1,
+    depth: 1,
+    overrideAccess: true,
+  })
+  return res.docs[0] || null
+}
+
+/** Случайная публикация тенанта (исключая текущую) — фолбэк на краю ленты. */
+async function findRandom(
+  payload: any,
+  tenantId: number | string,
+  excludeId: number | string,
+): Promise<any | null> {
+  const where = {
+    and: [
+      { tenant: { equals: tenantId } },
+      { publishedAt: { exists: true } },
+      { id: { not_equals: excludeId } },
+    ],
+  }
+  const countRes = await payload.find({
+    collection: 'publications',
+    where,
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const total = countRes.totalDocs || 0
+  if (total === 0) return null
+  const randomPage = Math.floor(Math.random() * total) + 1
+  const res = await payload.find({
+    collection: 'publications',
+    where,
+    limit: 1,
+    page: randomPage,
+    depth: 1,
+    overrideAccess: true,
+  })
+  return res.docs[0] || null
 }
 
 export default async function PublicationPage({ params }: { params: Promise<Params> }) {
@@ -105,6 +183,29 @@ export default async function PublicationPage({ params }: { params: Promise<Para
         })
         .filter((x: any): x is PublicGalleryItem => x != null)
     : []
+
+  // Навигация между публикациями (внизу поста). Соседи по publishedAt; на краю
+  // ленты — случайный пост (подпись «Читайте также»). Только посты с датой.
+  let navPrev: PostNavItem | null = null
+  let navNext: PostNavItem | null = null
+  if (pub.publishedAt) {
+    const [prevDoc, nextDoc] = await Promise.all([
+      findNeighbor(payload, tenant.id, pub.publishedAt, 'prev'),
+      findNeighbor(payload, tenant.id, pub.publishedAt, 'next'),
+    ])
+    navPrev = prevDoc ? toNavItem(prevDoc, 'prev') : null
+    navNext = nextDoc ? toNavItem(nextDoc, 'next') : null
+
+    // Край ленты: недостающую сторону заполняем случайным постом.
+    if (!prevDoc) {
+      const rnd = await findRandom(payload, tenant.id, pub.id)
+      if (rnd) navPrev = toNavItem(rnd, 'related')
+    }
+    if (!nextDoc) {
+      const rnd = await findRandom(payload, tenant.id, pub.id)
+      if (rnd) navNext = toNavItem(rnd, 'related')
+    }
+  }
 
   return (
     <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
@@ -196,6 +297,8 @@ export default async function PublicationPage({ params }: { params: Promise<Para
         ) : (
           <PublicationLock reason={pubAccess.reason} requiredTierName={pubAccess.requiredTierName} />
         )}
+
+        <PostNavBlock prev={navPrev} next={navNext} />
       </div>
     </main>
   )
