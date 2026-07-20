@@ -255,33 +255,34 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           )}
         </div>
 
-        {/* Заголовок — отдельной зоной под обложкой, брендовым цветом. */}
+        {/* Заголовок — отдельной зоной под обложкой, брендовым цветом.
+            Характер «тех-кампания»: шрифт тенанта (var(--font-heading)),
+            полужирный вес 500 + плотный трекинг вместо тяжёлого bold. */}
         <h1
-          className="pubhero-reveal pubhero-d2 text-3xl lg:text-5xl font-extrabold leading-tight mt-7 mb-6"
-          style={{ color: 'var(--brand-text)' }}
+          className="pubhero-reveal pubhero-d2 text-3xl lg:text-5xl mt-7 mb-6"
+          style={{
+            color: 'var(--brand-text)',
+            fontFamily: 'var(--font-heading)',
+            fontWeight: 500,
+            letterSpacing: '-0.025em',
+            lineHeight: 1.08,
+          }}
         >
           {pub.title}
         </h1>
 
         {/* Контент: мета + тело публикации (без журнального наезда). */}
         <div className="relative">
-          {/* Мета: категория-чип + дата */}
-          <div className="pubhero-reveal pubhero-d3 flex items-center flex-wrap gap-3 mb-6 text-sm">
+          {/* Мета: категория-чип + дата. Характер «тех-кампания»:
+              чип — сдержанная пилюля-подложка (.pubmeta-chip),
+              дата — с акцентной точкой-маркером (.pubmeta-date). */}
+          <div className="pubhero-reveal pubhero-d3 flex items-center flex-wrap gap-3 mb-6">
             {category && (
-              <Link
-                href={categoryHref(category)}
-                className="px-3 py-1 rounded-full font-medium"
-                style={{
-                  background: 'color-mix(in srgb, var(--brand-primary) 18%, transparent)',
-                  color: 'var(--brand-text)',
-                }}
-              >
+              <Link href={categoryHref(category)} className="pubmeta-chip">
                 {category.title}
               </Link>
             )}
-            {dateStr && (
-              <span style={{ color: 'var(--brand-text)', opacity: 0.6 }}>{dateStr}</span>
-            )}
+            {dateStr && <span className="pubmeta-date">{dateStr}</span>}
           </div>
 
 
