@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { StudioNav } from './StudioNav'
+import { SessionGuard } from './SessionGuard'
 
 /**
  * Layout приватной части студии. Guard: нет автора → на /studio/login.
@@ -35,6 +36,9 @@ export default async function StudioAppLayout({ children }: { children: React.Re
     <div className="studio-shell">
       <StudioNav authorEmail={author.user.email} brandName={brandName} />
       <main className="studio-main">{children}</main>
+      {/* Клиентский сторож сессии: показывает экран «Сессия истекла» при
+          протухании токена в фоне (напр. после сна устройства). */}
+      <SessionGuard />
     </div>
   )
 }

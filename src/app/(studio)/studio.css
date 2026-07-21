@@ -1,4 +1,4 @@
-/* BUILD-MARKER: composer-flags-v1 + home-builder-add-v1 + home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: session-expired-v1 + poster-toggle-v1 + composer-flags-v1 + home-builder-add-v1 + home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -1967,6 +1967,44 @@ select.studio-input {
   color: var(--st-text-faint);
   font-family: var(--st-font-mono);
   margin-top: var(--st-space-1);
+}
+
+/* Тумблер «Тип раздела» (обычный / контейнер афиш) — сегментный переключатель
+   на два равных сегмента, в стиле .settings__theme-opt. */
+.catedit__poster-toggle {
+  display: flex;
+  gap: var(--st-space-2);
+}
+.catedit__poster-opt {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--st-space-3) var(--st-space-4);
+  background: var(--st-bg);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  color: var(--st-text-muted);
+  font-size: var(--st-text-sm);
+  font-weight: 550;
+  cursor: pointer;
+  transition: border-color var(--st-dur) var(--st-ease),
+    color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease);
+}
+.catedit__poster-opt:hover {
+  color: var(--st-text);
+  border-color: var(--st-border-strong);
+}
+.catedit__poster-opt.is-on {
+  color: #fff;
+  background: var(--st-accent);
+  border-color: var(--st-accent);
+}
+.catedit__hint {
+  font-size: var(--st-text-sm);
+  color: var(--st-text-muted);
+  line-height: 1.45;
 }
 
 .catedit__cover {
@@ -4001,4 +4039,58 @@ a.studio-btn--danger { color: #fff; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ============================================================================
+   Оверлей «Сессия истекла» (SessionGuard). Появляется, когда токен протух в
+   фоне — вместо молчаливого 401. Полноэкранный, поверх всей студии.
+   ============================================================================ */
+.session-expired {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--st-space-5);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.session-expired__card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--st-surface);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  padding: var(--st-space-6);
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+.session-expired__title {
+  margin: 0 0 var(--st-space-3);
+  font-size: var(--st-text-lg);
+  color: var(--st-text);
+}
+.session-expired__text {
+  margin: 0 0 var(--st-space-5);
+  font-size: var(--st-text-sm);
+  color: var(--st-text-muted);
+  line-height: 1.5;
+}
+.session-expired__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--st-space-3) var(--st-space-5);
+  background: var(--st-accent);
+  color: #fff;
+  font-size: var(--st-text-sm);
+  font-weight: 600;
+  border-radius: var(--st-radius-sm);
+  text-decoration: none;
+  transition: opacity var(--st-dur) var(--st-ease);
+}
+.session-expired__btn:hover {
+  opacity: 0.9;
 }

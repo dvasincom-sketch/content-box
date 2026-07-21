@@ -20,7 +20,12 @@ const usersScoped: Access = ({ req: { user } }) => {
 
 export const Users: CollectionConfig = {
   slug: 'users',
-  auth: true,
+  // Срок жизни токена сессии — 7 дней (дефолт Payload = 2 часа, из-за чего
+  // студия «слетала» после сна ноутбука). Это конфиг, не поле БД — миграция
+  // не нужна. Кука выставляется с maxAge = tokenExpiration.
+  auth: {
+    tokenExpiration: 60 * 60 * 24 * 7, // 604800 сек = 7 дней
+  },
   labels: { singular: 'Пользователь', plural: 'Пользователи' },
   admin: {
     useAsTitle: 'email',
