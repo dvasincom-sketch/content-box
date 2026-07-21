@@ -82,6 +82,8 @@ export interface Config {
     'video-folders': VideoFolder;
     'gallery-images': GalleryImage;
     'gallery-folders': GalleryFolder;
+    comments: Comment;
+    reactions: Reaction;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -103,6 +105,8 @@ export interface Config {
     'video-folders': VideoFoldersSelect<false> | VideoFoldersSelect<true>;
     'gallery-images': GalleryImagesSelect<false> | GalleryImagesSelect<true>;
     'gallery-folders': GalleryFoldersSelect<false> | GalleryFoldersSelect<true>;
+    comments: CommentsSelect<false> | CommentsSelect<true>;
+    reactions: ReactionsSelect<false> | ReactionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -788,6 +792,55 @@ export interface Subscriber {
   collection: 'subscribers';
 }
 /**
+ * Комментарии зрителей. Постмодерация: скрывайте нарушающие через статус.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments".
+ */
+export interface Comment {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  publication: number | Publication;
+  /**
+   * Зритель, оставивший комментарий.
+   */
+  author: number | Subscriber;
+  text: string;
+  /**
+   * Заполнено = это ответ. Ветки только один уровень.
+   */
+  parent?: (number | null) | Comment;
+  /**
+   * Скрытые комментарии не видны на сайте.
+   */
+  status: 'published' | 'hidden';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Эмодзи-реакции зрителей на публикации и комментарии.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reactions".
+ */
+export interface Reaction {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  targetType: 'publication' | 'comment';
+  /**
+   * Заполнено при targetType = публикация.
+   */
+  publication?: (number | null) | Publication;
+  /**
+   * Заполнено при targetType = комментарий.
+   */
+  comment?: (number | null) | Comment;
+  subscriber: number | Subscriber;
+  emoji: 'like' | 'love' | 'fire' | 'cry';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -866,6 +919,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'gallery-folders';
         value: number | GalleryFolder;
+      } | null)
+    | ({
+        relationTo: 'comments';
+        value: number | Comment;
+      } | null)
+    | ({
+        relationTo: 'reactions';
+        value: number | Reaction;
       } | null);
   globalSlug?: string | null;
   user:
@@ -1319,6 +1380,34 @@ export interface GalleryFoldersSelect<T extends boolean = true> {
         label?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments_select".
+ */
+export interface CommentsSelect<T extends boolean = true> {
+  tenant?: T;
+  publication?: T;
+  author?: T;
+  text?: T;
+  parent?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "reactions_select".
+ */
+export interface ReactionsSelect<T extends boolean = true> {
+  tenant?: T;
+  targetType?: T;
+  publication?: T;
+  comment?: T;
+  subscriber?: T;
+  emoji?: T;
   updatedAt?: T;
   createdAt?: T;
 }

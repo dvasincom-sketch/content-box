@@ -24,6 +24,8 @@ import { Videos } from './collections/Videos'
 import { VideoFolders } from './collections/VideoFolders'
 import { GalleryImages } from './collections/GalleryImages'
 import { GalleryFolders } from './collections/GalleryFolders'
+import { Comments } from './collections/Comments'
+import { Reactions } from './collections/Reactions'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -131,6 +133,8 @@ export default buildConfig({
     VideoFolders,
     GalleryImages,
     GalleryFolders,
+    Comments,
+    Reactions,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -200,6 +204,8 @@ export default buildConfig({
         'video-folders': { useTenantAccess: false },
         'gallery-images': { useTenantAccess: false },
         'gallery-folders': { useTenantAccess: false },
+        comments: { useTenantAccess: false },
+        reactions: { useTenantAccess: false },
       },
     }),
   ],
