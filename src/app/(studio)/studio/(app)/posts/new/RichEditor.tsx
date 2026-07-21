@@ -67,6 +67,39 @@ export function RichEditor({ initialHtml = '', onChange, placeholder }: Props) {
     refreshActive()
   }
 
+  // Вставка из буфера: берём ТОЛЬКО чистый текст (без чужого HTML/стилей/data-*),
+  // сохраняем структуру абзацев. Пустая строка → новый параграф, одиночный
+  // перенос → <br>. Спецсимволы экранируем, чтобы текст не стал разметкой.
+  function onPaste(e: React.ClipboardEvent<HTMLDivElement>) {
+    e.preventDefault()
+    const text = e.clipboardData.getData('text/plain')
+    if (!text) return
+
+    const escape = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+    // нормализуем переносы, режем на абзацы по пустым строкам
+    const paragraphs = text
+      .replace(/\r\n?/g, '\n')
+      .split(/\n{2,}/)
+      .map((para) => para.trim())
+      .filter((para) => para.length > 0)
+      .map((para) => {
+        // одиночные переносы внутри абзаца → <br>
+        const withBreaks = para
+          .split('\n')
+          .map((line) => escape(line))
+          .join('<br>')
+        return `<p>${withBreaks}</p>`
+      })
+
+    const html = paragraphs.join('')
+    ref.current?.focus()
+    document.execCommand('insertHTML', false, html || '<p></p>')
+    emit()
+    refreshActive()
+  }
+
   const toolBtn = (
     cmd: string,
     key: string,
@@ -106,6 +139,7 @@ export function RichEditor({ initialHtml = '', onChange, placeholder }: Props) {
           contentEditable
           suppressContentEditableWarning
           onInput={onInput}
+          onPaste={onPaste}
           onKeyUp={refreshActive}
           onMouseUp={refreshActive}
           onBlur={emit}
