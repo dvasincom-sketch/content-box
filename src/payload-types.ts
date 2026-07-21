@@ -306,6 +306,7 @@ export interface SiteSetting {
           | 'latest'
           | 'popular'
           | 'discussed'
+          | 'posterRows'
           | 'categories'
           | 'popularCategories'
           | 'whyUs'

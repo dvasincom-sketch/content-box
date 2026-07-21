@@ -27,6 +27,7 @@ import * as migration_20260721_105030_add_publication_isnews from './20260721_10
 import * as migration_20260721_113916_add_gallery_image_sizes from './20260721_113916_add_gallery_image_sizes';
 import * as migration_20260721_124326_add_category_poster_layout from './20260721_124326_add_category_poster_layout';
 import * as migration_20260721_153100_add_media_image_sizes from './20260721_153100_add_media_image_sizes';
+import * as migration_20260721_165038_add_poster_rows_section from './20260721_165038_add_poster_rows_section';
 
 export const migrations = [
   {
@@ -172,6 +173,11 @@ export const migrations = [
   {
     up: migration_20260721_153100_add_media_image_sizes.up,
     down: migration_20260721_153100_add_media_image_sizes.down,
-    name: '20260721_153100_add_media_image_sizes'
+    name: '20260721_153100_add_media_image_sizes',
+  },
+  {
+    up: migration_20260721_165038_add_poster_rows_section.up,
+    down: migration_20260721_165038_add_poster_rows_section.down,
+    name: '20260721_165038_add_poster_rows_section'
   },
 ];
