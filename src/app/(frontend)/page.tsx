@@ -4,6 +4,7 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { HeroBlock } from '@/blocks/HeroBlock'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
+import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { HeroTeamBlock } from '@/blocks/HeroTeamBlock'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { WhyUsBlock } from '@/blocks/WhyUsBlock'
@@ -107,6 +108,12 @@ export default async function HomePage() {
       ).docs as any[])
     : []
 
+  // Счётчики комментариев/реакций для карточек — один запрос, только под latest.
+  const cardStats =
+    latest.length > 0
+      ? await getPublicationCardStats(latest.map((p) => p.id), tenant.id as number)
+      : new Map<string, { comments: number; reactions: number }>()
+
   // Маппинг type → рендер секции. Пропсы собраны ровно как в прежнем JSX;
   // авто-скрытие при пустых данных остаётся внутри блок-компонентов.
   const renderers: Record<HomeSectionType, () => ReactNode> = {
@@ -129,11 +136,18 @@ export default async function HomePage() {
     ),
     latest: () => (
       <LatestPublicationsBlock
-        items={latest.map((p) => ({
-          id: p.id, slug: p.slug, title: p.title, publishedAt: p.publishedAt,
-          minTierName: minTierName(p),
-          cover: p.cover,
-        }))}
+        items={latest.map((p) => {
+          const stats = cardStats.get(String(p.id))
+          return {
+            id: p.id, slug: p.slug, title: p.title, publishedAt: p.publishedAt,
+            minTierName: minTierName(p),
+            cover: p.cover,
+            commentCount: stats?.comments ?? 0,
+            reactionCount: stats?.reactions ?? 0,
+            hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
+            hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
+          }
+        })}
       />
     ),
     categories: () => (
