@@ -83,6 +83,11 @@ export async function POST(req: NextRequest) {
     patch.gallery = await buildGallery(payload, data.gallery, tenantId)
   }
 
+  // Признак «Новость»
+  if ('isNews' in data) {
+    patch.isNews = Boolean(data.isNews)
+  }
+
   // Статус
   if (data.publish === true) {
     // публикуем: ставим дату, если её не было

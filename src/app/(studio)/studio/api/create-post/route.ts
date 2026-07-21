@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
         ...(coverId ? { cover: coverId } : {}),
         ...(relatedVideos.length ? { relatedVideos } : {}),
         ...(gallery.length ? { gallery } : {}),
+        ...(data.isNews ? { isNews: true } : {}),
         ...(publish ? { publishedAt: new Date().toISOString() } : {}),
       } as any,
       overrideAccess: true,
