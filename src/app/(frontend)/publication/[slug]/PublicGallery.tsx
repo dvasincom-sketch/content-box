@@ -4,7 +4,12 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export type PublicGalleryItem = {
-  url: string
+  /** Уменьшенная версия (thumbnail) — для сетки. */
+  thumbUrl: string
+  /** Крупная версия (large) — для лайтбокса. */
+  largeUrl: string
+  /** Фолбэк на случай отсутствия размеров (старые фото без imageSizes). */
+  url?: string
   width: number | null
   height: number | null
   caption: string
@@ -134,7 +139,7 @@ export function PublicGallery({ items }: { items: PublicGalleryItem[] }) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={item.url}
+            src={item.thumbUrl || item.url}
             alt={item.alt || item.caption || ''}
             loading="lazy"
             draggable={false}
@@ -162,7 +167,7 @@ export function PublicGallery({ items }: { items: PublicGalleryItem[] }) {
           <figure className="cgal__lb-fig" onClick={(e) => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={items[lightbox].url}
+              src={items[lightbox].largeUrl || items[lightbox].url}
               alt={items[lightbox].alt || ''}
               draggable={false}
               onContextMenu={noContext}

@@ -169,13 +169,20 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     : []
 
   // Галерея: доступна только если публикация открыта (наследует её minTier).
-  // depth:2 → gallery.image populate'ится объектом с url/width/height.
+  // depth:2 → gallery.image populate'ится объектом с url/width/height/sizes.
+  // На сайт отдаём НЕ оригинал (8–10 МБ), а сгенерированные размеры (WebP):
+  // thumbnail в сетку, large в лайтбокс. url — фолбэк, если размеров нет.
   const galleryItems: PublicGalleryItem[] = pubAccess.allowed && Array.isArray(pub.gallery)
     ? pub.gallery
         .map((row: any) => {
           const img = row?.image
           if (!img || typeof img !== 'object' || !img.url) return null
+          const sizes = img.sizes || {}
+          const thumbUrl = sizes.thumbnail?.url || img.url
+          const largeUrl = sizes.large?.url || img.url
           return {
+            thumbUrl: thumbUrl as string,
+            largeUrl: largeUrl as string,
             url: img.url as string,
             width: img.width || null,
             height: img.height || null,
