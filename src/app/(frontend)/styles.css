@@ -1097,3 +1097,112 @@ svg {
   color: var(--brand-muted);
   padding: 8px 0;
 }
+
+/* ============================================================================
+   КИНОБЛОК — ряд вертикальных постеров 2:3 (.poster-row)
+   Для категорий с posterLayout. Горизонтальный CSS-скролл, постеры без
+   подписей, обрезка под 2:3. Работает в обеих темах (токены --brand-*).
+   ============================================================================ */
+.poster-row {
+  margin: clamp(28px, 4vw, 44px) 0;
+}
+.poster-row__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  text-decoration: none;
+  color: inherit;
+}
+.poster-row__title {
+  font-family: var(--font-heading);
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--brand-text);
+}
+.poster-row__more {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--brand-muted);
+  transition: color 150ms ease;
+}
+.poster-row__head:hover .poster-row__more {
+  color: var(--brand-primary);
+}
+
+/* Скроллящийся ряд */
+.poster-row__scroll {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px; /* место под тень/скролл */
+  scrollbar-width: thin;
+  scrollbar-color: var(--brand-border) transparent;
+}
+.poster-row__scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.poster-row__scroll::-webkit-scrollbar-thumb {
+  background: var(--brand-border);
+  border-radius: 999px;
+}
+.poster-row__scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Карточка-постер */
+.poster-card {
+  flex: 0 0 auto;
+  width: clamp(120px, 40vw, 170px);
+  scroll-snap-align: start;
+  text-decoration: none;
+  transition: transform 200ms ease;
+}
+.poster-card:hover {
+  transform: translateY(-4px);
+}
+.poster-card__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--brand-surface);
+  box-shadow: var(--brand-card-shadow);
+}
+.poster-card__img {
+  object-fit: cover;
+}
+.poster-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poster-card { transition: none; }
+  .poster-card:hover { transform: none; }
+}
+
+/* Сетка постеров — на странице категории с posterLayout (весь список, перенос) */
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: clamp(12px, 2vw, 18px);
+}
+@media (max-width: 480px) {
+  .poster-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  }
+}

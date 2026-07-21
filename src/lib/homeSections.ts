@@ -27,6 +27,7 @@ export const HOME_SECTION_DEFS = [
   { type: 'latest', label: 'Последние публикации' },
   { type: 'popular', label: 'Сейчас популярно' },
   { type: 'discussed', label: 'Обсуждаемое' },
+  { type: 'posterRows', label: 'Киноблоки (постеры)' },
   { type: 'categories', label: 'Категории (плитки)' },
   { type: 'popularCategories', label: 'Популярные разделы' },
   { type: 'whyUs', label: '«Почему мы»' },

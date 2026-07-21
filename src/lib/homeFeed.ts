@@ -30,12 +30,27 @@ export type CategoryCard = {
   activity: number
 }
 
+export type PosterItem = {
+  id: string | number
+  slug: string
+  title: string
+  posterUrl: string | null
+}
+
+export type PosterRowData = {
+  id: string | number
+  title: string
+  href: string
+  items: PosterItem[]
+}
+
 export type HomeFeed = {
   news: PublicationCard[]
   latest: PublicationCard[]
   popular: PublicationCard[]
   discussed: PublicationCard[]
   popularCategories: CategoryCard[]
+  posterRows: PosterRowData[]
 }
 
 function relId(val: any): string | number | null {
@@ -72,6 +87,7 @@ export async function getHomeFeed(
     popular: [],
     discussed: [],
     popularCategories: [],
+    posterRows: [],
   }
 
   try {
@@ -294,6 +310,61 @@ export async function getHomeFeed(
         .filter((c): c is CategoryCard => Boolean(c))
     }
 
+    // ── 6. Киноряды: категории с posterLayout → ряд постеров на каждую ──
+    const posterCatsRes = await payload.find({
+      collection: 'categories',
+      where: {
+        and: [{ tenant: { equals: tenantId } }, { posterLayout: { equals: true } }],
+      },
+      sort: 'order',
+      depth: 1,
+      limit: 50,
+      overrideAccess: true,
+    })
+    const posterCats = posterCatsRes.docs as any[]
+
+    const posterRows: PosterRowData[] = []
+    for (const cat of posterCats) {
+      // Публикации ветки этой категории (как на странице категории — прямые + потомки).
+      const branchRes = await payload.find({
+        collection: 'categories',
+        where: {
+          and: [{ tenant: { equals: tenantId } }, { 'breadcrumbs.doc': { equals: cat.id } }],
+        },
+        depth: 0,
+        limit: 500,
+        overrideAccess: true,
+      })
+      const branchIds = (branchRes.docs as any[]).map((c) => c.id)
+      if (branchIds.length === 0) branchIds.push(cat.id)
+
+      const catPubsRes = await payload.find({
+        collection: 'publications',
+        where: {
+          and: [{ tenant: { equals: tenantId } }, { category: { in: branchIds } }],
+        },
+        sort: '-publishedAt',
+        depth: 1,
+        limit: 12, // превью-ряд, не весь список
+        overrideAccess: true,
+      })
+
+      const items: PosterItem[] = (catPubsRes.docs as any[]).map((p) => {
+        const cover = p.cover && typeof p.cover === 'object' ? p.cover : null
+        const posterUrl = cover?.sizes?.poster?.url || cover?.url || null
+        return { id: p.id, slug: p.slug, title: p.title, posterUrl }
+      })
+
+      if (items.length === 0) continue // пустую категорию не показываем
+
+      const crumbs = (cat.breadcrumbs ?? []) as { url?: string }[]
+      const href = crumbs.length
+        ? `/category${crumbs[crumbs.length - 1].url ?? ''}`
+        : `/category/${cat.slug}`
+
+      posterRows.push({ id: cat.id, title: cat.title, href, items })
+    }
+
     // ── Собираем карточки со статистикой ──
     const [news, latest, popular, discussed] = await Promise.all([
       cardsFor(newsDocs),
@@ -302,7 +373,7 @@ export async function getHomeFeed(
       cardsFor(discussedDocs),
     ])
 
-    return { news, latest, popular, discussed, popularCategories }
+    return { news, latest, popular, discussed, popularCategories, posterRows }
   } catch {
     return empty
   }

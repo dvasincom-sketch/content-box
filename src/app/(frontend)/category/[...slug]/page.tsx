@@ -171,6 +171,40 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
               В этой категории пока нет публикаций.
             </p>
           )
+        ) : category.posterLayout ? (
+          // Киноблок: сетка вертикальных постеров 2:3 (весь список, без подписей).
+          <div className="poster-grid">
+            {pubs.map((p) => {
+              const cover = p.cover && typeof p.cover === 'object' ? p.cover : null
+              const posterUrl =
+                cover?.sizes?.poster?.url || cover?.url || null
+              return (
+                <a
+                  key={p.id}
+                  href={`/publication/${p.slug}`}
+                  className="poster-card"
+                  title={p.title}
+                >
+                  <div className="poster-card__frame">
+                    {posterUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={posterUrl}
+                        alt={p.title}
+                        loading="lazy"
+                        className="poster-card__img"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+                      />
+                    ) : (
+                      <div className="poster-card__placeholder" aria-hidden>
+                        {(p.title || '?').slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                </a>
+              )
+            })}
+          </div>
         ) : (
           <LatestPublicationsBlock
             heading=""

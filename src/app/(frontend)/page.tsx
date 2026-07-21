@@ -5,6 +5,7 @@ import { brandVars } from '@/lib/brand'
 import { HeroBlock } from '@/blocks/HeroBlock'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
 import { getHomeFeed } from '@/lib/homeFeed'
+import { PosterRow } from '@/blocks/PosterRow'
 import { HeroTeamBlock } from '@/blocks/HeroTeamBlock'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { WhyUsBlock } from '@/blocks/WhyUsBlock'
@@ -85,7 +86,8 @@ export default async function HomePage() {
     activeTypes.has('latest') ||
     activeTypes.has('popular') ||
     activeTypes.has('discussed') ||
-    activeTypes.has('popularCategories')
+    activeTypes.has('popularCategories') ||
+    activeTypes.has('posterRows')
 
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
@@ -109,7 +111,7 @@ export default async function HomePage() {
   // разделы — одним хелпером, с исключением дублей «сверху вниз».
   const feed = needsFeed
     ? await getHomeFeed(tenant.id as number, manualCategoryIds)
-    : { news: [], latest: [], popular: [], discussed: [], popularCategories: [] }
+    : { news: [], latest: [], popular: [], discussed: [], popularCategories: [], posterRows: [] }
 
   // Маппинг type → рендер секции. Пропсы собраны ровно как в прежнем JSX;
   // авто-скрытие при пустых данных остаётся внутри блок-компонентов.
@@ -135,6 +137,13 @@ export default async function HomePage() {
     latest: () => <LatestPublicationsBlock heading="Последние публикации" items={feed.latest} />,
     popular: () => <LatestPublicationsBlock heading="Сейчас популярно" items={feed.popular} />,
     discussed: () => <LatestPublicationsBlock heading="Обсуждаемое" items={feed.discussed} />,
+    posterRows: () => (
+      <>
+        {feed.posterRows.map((row) => (
+          <PosterRow key={row.id} title={row.title} href={row.href} items={row.items} />
+        ))}
+      </>
+    ),
     popularCategories: () => (
       <CategoriesGridBlock
         heading="Популярные разделы"
