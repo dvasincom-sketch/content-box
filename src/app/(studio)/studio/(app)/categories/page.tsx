@@ -41,6 +41,7 @@ export default async function CategoriesPage() {
       descriptionHtml: lexicalToHtml(c.description),
       coverId: coverId != null ? Number(coverId) : null,
       coverUrl: coverUrl ?? null,
+      posterLayout: Boolean(c.posterLayout),
     }
   })
 

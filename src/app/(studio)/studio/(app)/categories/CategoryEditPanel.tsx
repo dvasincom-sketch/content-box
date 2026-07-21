@@ -12,6 +12,7 @@ export type EditableCat = {
   descriptionHtml: string
   coverId: number | null
   coverUrl: string | null
+  posterLayout: boolean
 }
 
 /**
@@ -32,6 +33,7 @@ export function CategoryEditPanel({
   const [descHtml, setDescHtml] = useState(cat.descriptionHtml || '')
   const [coverId, setCoverId] = useState<number | null>(cat.coverId)
   const [coverUrl, setCoverUrl] = useState<string | null>(cat.coverUrl)
+  const [posterLayout, setPosterLayout] = useState<boolean>(cat.posterLayout ?? false)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -88,6 +90,7 @@ export function CategoryEditPanel({
           title: title.trim(),
           description: descHtml,
           coverId: coverId ?? null,
+          posterLayout,
         }),
       })
       const json = await res.json()
@@ -123,6 +126,29 @@ export function CategoryEditPanel({
               autoFocus
             />
             {slugPreview && <div className="catedit__slug">/{slugPreview}</div>}
+          </div>
+
+          <div className="studio-field">
+            <span className="studio-field__label">Формат обложек раздела</span>
+            <div className="catedit__poster-toggle">
+              <button
+                type="button"
+                className={`catedit__poster-opt${!posterLayout ? ' is-on' : ''}`}
+                onClick={() => setPosterLayout(false)}
+              >
+                Горизонтальные
+              </button>
+              <button
+                type="button"
+                className={`catedit__poster-opt${posterLayout ? ' is-on' : ''}`}
+                onClick={() => setPosterLayout(true)}
+              >
+                Вертикальные (киноблок)
+              </button>
+            </div>
+            <div className="catedit__hint">
+              Вертикальные — публикации показываются постерами 2:3 (афиши): рядом на главной и сеткой в разделе. Загружайте вертикальные обложки.
+            </div>
           </div>
 
           <div className="studio-field">

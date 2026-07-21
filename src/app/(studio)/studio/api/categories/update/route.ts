@@ -62,6 +62,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Режим обложки: киноблок (вертикальные постеры) вкл/выкл
+  if ('posterLayout' in data) {
+    patch.posterLayout = Boolean(data.posterLayout)
+  }
+
   // Смена родителя
   if ('parentId' in data) {
     const newParent = data.parentId
