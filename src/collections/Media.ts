@@ -10,7 +10,33 @@ import { publicReadTenantWrite } from '../access'
 export const Media: CollectionConfig = {
   slug: 'media',
   labels: { singular: 'Медиафайл', plural: 'Медиафайлы' },
-  upload: true, // файлы уходят в R2 (s3Storage в payload.config.ts)
+  upload: {
+    // Файлы уходят в R2 (s3Storage в payload.config.ts). Оригинал хранится
+    // как есть, на сайт отдаём размеры ниже (в разы легче). sharp генерирует
+    // их при загрузке. Обложки грузятся по одной (upload-cover), поэтому
+    // параллельного OOM, как было в галерее, здесь нет.
+    mimeTypes: ['image/*'],
+    imageSizes: [
+      // landscape-обложка для обычных карточек публикаций
+      {
+        name: 'card',
+        width: 800,
+        formatOptions: { format: 'webp', options: { quality: 80 } },
+      },
+      // вертикальный постер 2:3 для киноряда (retina-запас на ~300px)
+      {
+        name: 'poster',
+        width: 600,
+        formatOptions: { format: 'webp', options: { quality: 80 } },
+      },
+      // мелкое превью (меню, связанные посты)
+      {
+        name: 'thumb',
+        width: 400,
+        formatOptions: { format: 'webp', options: { quality: 78 } },
+      },
+    ],
+  },
   access: publicReadTenantWrite,
   fields: [
     // `tenant` added by the multi-tenant plugin.
