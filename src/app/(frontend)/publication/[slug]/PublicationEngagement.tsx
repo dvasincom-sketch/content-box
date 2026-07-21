@@ -2,6 +2,7 @@
 
 import { useEffect, useOptimistic, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Lock, Plus, X } from 'lucide-react'
 import { toggleReaction, submitComment } from './actions'
 
@@ -63,7 +64,6 @@ export type PublicationEngagementProps = {
   reactions: PublicationReaction[]
   comments: CommentNode[]
   commentCount: number
-  loginHref?: string
   currentUser?: { name: string; color?: string | null } | null
 }
 
@@ -281,7 +281,6 @@ export function PublicationEngagement({
   reactions,
   comments,
   commentCount,
-  loginHref = '/subscribe',
   currentUser,
 }: PublicationEngagementProps) {
   const [openPop, setOpenPop] = useState<ReactionKey | null>(null)
@@ -290,6 +289,13 @@ export function PublicationEngagement({
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLTextAreaElement>(null)
+
+  // «Войти» ведёт на /login с возвратом на текущую публикацию.
+  // /login прочитает redirect, когда научится (сейчас параметр просто задаётся).
+  const pathname = usePathname()
+  const loginHref = pathname
+    ? `/login?redirect=${encodeURIComponent(pathname)}`
+    : '/login'
 
   const [optimisticReactions, applyOptimistic] = useOptimistic(reactions, reactionsReducer)
 
@@ -453,10 +459,10 @@ export function PublicationEngagement({
               </div>
               <div className="cm-gate__title">Здесь обсуждают ARMY</div>
               <div className="cm-gate__sub">
-                Комментарии доступны подписчикам. Войдите, чтобы читать и оставлять свои.
+                Войдите или зарегистрируйтесь, чтобы читать комментарии и оставлять свои.
               </div>
               <Link href={loginHref} className="cm-gate__btn">
-                Войти или подписаться
+                Войти
               </Link>
             </div>
           </div>

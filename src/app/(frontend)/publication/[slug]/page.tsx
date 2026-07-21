@@ -359,7 +359,6 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           reactions={engagement.reactions}
           comments={engagement.comments}
           commentCount={engagement.commentCount}
-          loginHref="/subscribe"
         />
 
         <PostNavBlock prev={navPrev} next={navNext} />
