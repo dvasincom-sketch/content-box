@@ -299,7 +299,18 @@ export interface SiteSetting {
    */
   homeSections?:
     | {
-        type: 'hero' | 'heroTeam' | 'latest' | 'categories' | 'whyUs' | 'socials' | 'broadcast';
+        type:
+          | 'hero'
+          | 'heroTeam'
+          | 'news'
+          | 'latest'
+          | 'popular'
+          | 'discussed'
+          | 'categories'
+          | 'popularCategories'
+          | 'whyUs'
+          | 'socials'
+          | 'broadcast';
         enabled?: boolean | null;
         id?: string | null;
       }[]

@@ -1,4 +1,4 @@
-/* BUILD-MARKER: home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: home-builder-add-v1 + home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -3846,6 +3846,51 @@ a.studio-btn--danger { color: #fff; }
 /* Карандаш редактирования в строке секции конструктора главной. */
 .homebld__edit {
   flex-shrink: 0;
+}
+
+/* Крестик удаления секции из конфигурации (home-builder-add-v1). */
+.homebld__remove {
+  flex-shrink: 0;
+  color: var(--st-text-muted);
+  transition: color 150ms ease;
+}
+.homebld__remove:hover {
+  color: var(--st-danger);
+}
+
+/* Ряд чипов «Добавить секцию» — недостающие типы. */
+.homebld__add {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+  padding-top: var(--st-space-2);
+}
+.homebld__add-label {
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+}
+.homebld__add-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--st-space-2);
+}
+.homebld__add-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--st-space-2) var(--st-space-3);
+  font-size: var(--st-text-sm);
+  color: var(--st-text);
+  background: var(--st-surface-2);
+  border: 1px dashed var(--st-border-strong);
+  border-radius: var(--st-radius);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.homebld__add-chip:hover {
+  background: color-mix(in srgb, var(--st-accent) 12%, var(--st-surface-2));
+  border-color: var(--st-accent);
+  color: var(--st-accent);
 }
 
 /* Список участников в панели. */

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Check, GripVertical, Pencil } from 'lucide-react'
+import { Loader2, Check, GripVertical, Pencil, Plus, X } from 'lucide-react'
 import {
   DEFAULT_HOME_SECTIONS,
   HOME_SECTION_DEFS,
@@ -67,6 +67,18 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
     setSaved(false)
   }
 
+  // Добавить секцию, которой ещё нет в списке (в конец, включённой).
+  function addSection(type: HomeSectionType) {
+    setRows((r) => (r.some((row) => row.type === type) ? r : [...r, { type, enabled: true }]))
+    setSaved(false)
+  }
+
+  // Удалить секцию из конфига (не путать с «выключить» — здесь строка исчезает).
+  function removeSection(i: number) {
+    setRows((r) => r.filter((_, idx) => idx !== i))
+    setSaved(false)
+  }
+
   // drag-n-drop переупорядочивание (паттерн GalleryComposer)
   function onDrop(target: number) {
     if (dragIndex === null || dragIndex === target) return
@@ -102,6 +114,9 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
   }
 
   const enabledCount = rows.filter((r) => r.enabled).length
+
+  // Секции, которых ещё нет в конфиге — доступны для добавления (чипы).
+  const availableToAdd = HOME_SECTION_DEFS.filter((d) => !rows.some((r) => r.type === d.type))
 
   return (
     <div className="homebld">
@@ -149,9 +164,36 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
               </span>
               <span className="homebld__toggle-text">{row.enabled ? 'Вкл' : 'Выкл'}</span>
             </label>
+            <button
+              className="catmgr__icon-btn homebld__remove"
+              onClick={() => removeSection(i)}
+              title="Удалить секцию из конфигурации"
+              aria-label="Удалить секцию"
+            >
+              <X size={15} />
+            </button>
           </div>
         ))}
       </div>
+
+      {availableToAdd.length > 0 && (
+        <div className="homebld__add">
+          <span className="homebld__add-label">Добавить секцию:</span>
+          <div className="homebld__add-chips">
+            {availableToAdd.map((d) => (
+              <button
+                key={d.type}
+                type="button"
+                className="homebld__add-chip"
+                onClick={() => addSection(d.type)}
+              >
+                <Plus size={14} />
+                {d.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {enabledCount === 0 && (
         <div className="settings__hint homebld__warn">
