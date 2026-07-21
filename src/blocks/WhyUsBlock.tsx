@@ -1,8 +1,8 @@
 import React from 'react'
-import { Mic, MonitorPlay, Clock, Heart } from 'lucide-react'
+import { Mic, MonitorPlay, Clock, Heart, Globe, Library, Zap, CalendarDays } from 'lucide-react'
 
 type Advantage = {
-  icon: 'mic' | 'screen' | 'clock' | 'heart'
+  icon: 'mic' | 'screen' | 'clock' | 'heart' | 'globe' | 'library' | 'zap' | 'calendar'
   title: string
   text: string
 }
@@ -17,6 +17,10 @@ const ICONS = {
   screen: MonitorPlay,
   clock: Clock,
   heart: Heart,
+  globe: Globe,
+  library: Library,
+  zap: Zap,
+  calendar: CalendarDays,
 }
 
 export function WhyUsBlock({ heading = 'Почему мы', items }: WhyUsBlockProps) {
@@ -27,7 +31,7 @@ export function WhyUsBlock({ heading = 'Почему мы', items }: WhyUsBlockP
       <h2 className="text-2xl lg:text-3xl font-bold mb-6" style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}>
         {heading}
       </h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((a, i) => {
           const Icon = ICONS[a.icon]
           return (
