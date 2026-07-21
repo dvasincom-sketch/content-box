@@ -419,6 +419,10 @@ export interface Category {
    */
   showInFooter?: boolean | null;
   /**
+   * Публикации этой категории показываются горизонтальным рядом вертикальных постеров 2:3 (как афиши фильмов) — на странице категории и на главной. Загружайте вертикальную обложку.
+   */
+  posterLayout?: boolean | null;
+  /**
    * Пусто = сгенерируется автоматически из названия и описания при сохранении.
    */
   seo?: {
@@ -1161,6 +1165,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   order?: T;
   showInHeader?: T;
   showInFooter?: T;
+  posterLayout?: T;
   seo?:
     | T
     | {

@@ -36,7 +36,9 @@ type UploadTask = {
 }
 
 const MAX_IMAGES = 30
-const PARALLEL = 3 // одновременных загрузок
+const PARALLEL = 1 // одновременных загрузок: 1, чтобы sharp-ресайз крупных
+// файлов (imageSizes) не переполнял память сервера (512 МБ). Параллельная
+// обработка нескольких больших изображений давала OOM.
 
 function flattenFolders(folders: FolderItem[]) {
   const byParent = new Map<string, FolderItem[]>()
