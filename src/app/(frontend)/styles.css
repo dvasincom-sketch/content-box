@@ -50,7 +50,11 @@ body {
   line-height: 32px;
 
   margin: 0;
-  
+
+  /* Гасим паразитный горизонтальный скролл от full-bleed рядов (напр.
+     .poster-row__scroll, тянущийся на 100vw). `clip`, а не `hidden`: не
+     создаёт скролл-контейнер, поэтому sticky-шапка не ломается. */
+  overflow-x: clip;
 
   @media (max-width: 1024px) {
     font-size: 15px;
@@ -1132,7 +1136,12 @@ svg {
   color: var(--brand-primary);
 }
 
-/* Скроллящийся ряд */
+/* Скроллящийся ряд.
+   Full-bleed: сам ряд растягивается до краёв окна (margin в минус на
+   полувьюпорт), а padding возвращает первую/последнюю карточку на линию
+   контента — так первая афиша выровнена под заголовком, но ряд можно
+   доскроллить до самых краёв экрана. Заголовок ряда остаётся в контейнере.
+   Паразитный горизонтальный оверфлоу гасит `body { overflow-x: clip }`. */
 .poster-row__scroll {
   display: flex;
   gap: 14px;
@@ -1142,6 +1151,11 @@ svg {
   padding-bottom: 4px; /* место под тень/скролл */
   scrollbar-width: thin;
   scrollbar-color: var(--brand-border) transparent;
+
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: calc(50vw - 50%);
+  padding-right: calc(50vw - 50%);
 }
 .poster-row__scroll::-webkit-scrollbar {
   height: 6px;
