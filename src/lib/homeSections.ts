@@ -23,8 +23,12 @@
 export const HOME_SECTION_DEFS = [
   { type: 'hero', label: 'Hero — «Новинка»' },
   { type: 'heroTeam', label: 'Участники' },
+  { type: 'news', label: 'Новости' },
   { type: 'latest', label: 'Последние публикации' },
+  { type: 'popular', label: 'Сейчас популярно' },
+  { type: 'discussed', label: 'Обсуждаемое' },
   { type: 'categories', label: 'Категории (плитки)' },
+  { type: 'popularCategories', label: 'Популярные разделы' },
   { type: 'whyUs', label: '«Почему мы»' },
   { type: 'socials', label: 'Соцсети' },
   { type: 'broadcast', label: 'Баннер «ON AIR»' },

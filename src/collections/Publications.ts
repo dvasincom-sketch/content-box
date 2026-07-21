@@ -15,7 +15,7 @@ export const Publications: CollectionConfig = {
   labels: { singular: 'Публикация', plural: 'Публикации' },
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'category', 'publishedAt', 'featured'],
+    defaultColumns: ['title', 'category', 'publishedAt', 'featured', 'isNews'],
   },
   access: publicReadTenantWrite,
   fields: [
@@ -127,6 +127,16 @@ export const Publications: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       label: 'Featured (hero / «новинка»)',
+    },
+    {
+      name: 'isNews',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Новость',
+      index: true,
+      admin: {
+        description: 'Отметьте, если это новость о событиях во вселенной BTS. Такие материалы попадают в секцию «Новости» на главной.',
+      },
     },
     {
       name: 'seo',

@@ -497,6 +497,10 @@ export interface Publication {
       }[]
     | null;
   featured?: boolean | null;
+  /**
+   * Отметьте, если это новость о событиях во вселенной BTS. Такие материалы попадают в секцию «Новости» на главной.
+   */
+  isNews?: boolean | null;
   seo?: {
     title?: string | null;
     description?: string | null;
@@ -1184,6 +1188,7 @@ export interface PublicationsSelect<T extends boolean = true> {
         id?: T;
       };
   featured?: T;
+  isNews?: T;
   seo?:
     | T
     | {

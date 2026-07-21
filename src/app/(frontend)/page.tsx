@@ -4,7 +4,7 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { HeroBlock } from '@/blocks/HeroBlock'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
-import { getPublicationCardStats } from '@/lib/publicationCardStats'
+import { getHomeFeed } from '@/lib/homeFeed'
 import { HeroTeamBlock } from '@/blocks/HeroTeamBlock'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { WhyUsBlock } from '@/blocks/WhyUsBlock'
@@ -16,6 +16,10 @@ import { normalizeHomeSections, type HomeSectionType } from '@/lib/homeSections'
 import type { Metadata } from 'next'
 import { Fragment, type ReactNode } from 'react'
 import './styles.css'
+
+// Главная кэшируется и ревалидируется раз в час: «Сейчас популярно» (за 3 дня)
+// и «Обсуждаемое» обновляются, без персонализации страница остаётся статикой.
+export const revalidate = 3600
 
 /**
  * Дефолтные тексты Hero — фолбэк, когда settings.hero не заполнен (мягкий
@@ -59,13 +63,6 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
-/** Имя уровня доступа из minTier (relationship, depth>=1). */
-function minTierName(p: any): string | null {
-  const mt = p?.minTier
-  if (!mt) return null
-  if (typeof mt === 'object') return mt.name || mt.slug || null
-  return null
-}
 
 export default async function HomePage() {
   const ctx = await getTenantFromHeaders()
@@ -83,7 +80,12 @@ export default async function HomePage() {
 
   // Лениво: запросы к БД только под реально активные секции.
   const needsFeatured = activeTypes.has('hero')
-  const needsLatest = activeTypes.has('latest')
+  const needsFeed =
+    activeTypes.has('news') ||
+    activeTypes.has('latest') ||
+    activeTypes.has('popular') ||
+    activeTypes.has('discussed') ||
+    activeTypes.has('popularCategories')
 
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
@@ -98,21 +100,16 @@ export default async function HomePage() {
       ).docs[0] as any)
     : null
 
-  const latest = needsLatest
-    ? ((
-        await payload.find({
-          collection: 'publications',
-          where: { tenant: { equals: tenant.id } },
-          sort: '-publishedAt', depth: 1, limit: 8, overrideAccess: true,
-        })
-      ).docs as any[])
-    : []
+  // Ручные категории (для секции categories) — их id исключаем из «Популярных разделов».
+  const manualCategoryIds = (((settings as any)?.homeCategories ?? []) as any[])
+    .map((c) => (c && typeof c === 'object' ? c.id : c))
+    .filter((id) => id != null)
 
-  // Счётчики комментариев/реакций для карточек — один запрос, только под latest.
-  const cardStats =
-    latest.length > 0
-      ? await getPublicationCardStats(latest.map((p) => p.id), tenant.id as number)
-      : new Map<string, { comments: number; reactions: number }>()
+  // Лента главной: новости / последние / популярное / обсуждаемое / популярные
+  // разделы — одним хелпером, с исключением дублей «сверху вниз».
+  const feed = needsFeed
+    ? await getHomeFeed(tenant.id as number, manualCategoryIds)
+    : { news: [], latest: [], popular: [], discussed: [], popularCategories: [] }
 
   // Маппинг type → рендер секции. Пропсы собраны ровно как в прежнем JSX;
   // авто-скрытие при пустых данных остаётся внутри блок-компонентов.
@@ -134,20 +131,19 @@ export default async function HomePage() {
         avatarSize={(settings as any)?.heroTeam?.avatarSize}
       />
     ),
-    latest: () => (
-      <LatestPublicationsBlock
-        items={latest.map((p) => {
-          const stats = cardStats.get(String(p.id))
-          return {
-            id: p.id, slug: p.slug, title: p.title, publishedAt: p.publishedAt,
-            minTierName: minTierName(p),
-            cover: p.cover,
-            commentCount: stats?.comments ?? 0,
-            reactionCount: stats?.reactions ?? 0,
-            hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
-            hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
-          }
-        })}
+    news: () => <LatestPublicationsBlock heading="Новости" items={feed.news} />,
+    latest: () => <LatestPublicationsBlock heading="Последние публикации" items={feed.latest} />,
+    popular: () => <LatestPublicationsBlock heading="Сейчас популярно" items={feed.popular} />,
+    discussed: () => <LatestPublicationsBlock heading="Обсуждаемое" items={feed.discussed} />,
+    popularCategories: () => (
+      <CategoriesGridBlock
+        heading="Популярные разделы"
+        items={feed.popularCategories.map((c) => ({
+          id: c.id,
+          title: c.title,
+          href: c.href,
+          cover: c.cover,
+        }))}
       />
     ),
     categories: () => (
