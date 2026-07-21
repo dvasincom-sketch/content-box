@@ -7,6 +7,7 @@ import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
+import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { RichText } from '@/components/RichText'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { categoryHref } from '@/lib/categoryHref'
@@ -107,6 +108,12 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
   })
   const pubs = pubsRes.docs as any[]
 
+  // Счётчики комментариев и реакций для карточек — один агрегирующий запрос.
+  const cardStats = await getPublicationCardStats(
+    pubs.map((p) => p.id),
+    tenant.id as number,
+  )
+
   // Прямые подкатегории — плитками под публикациями.
   const childrenRes = await payload.find({
     collection: 'categories',
@@ -167,17 +174,24 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
         ) : (
           <LatestPublicationsBlock
             heading=""
-            items={pubs.map((p) => ({
-              id: p.id,
-              slug: p.slug,
-              title: p.title,
-              publishedAt: p.publishedAt,
-              minTierName:
-                p.minTier && typeof p.minTier === 'object'
-                  ? p.minTier.name || p.minTier.slug || null
-                  : null,
-              cover: p.cover,
-            }))}
+            items={pubs.map((p) => {
+              const stats = cardStats.get(String(p.id))
+              return {
+                id: p.id,
+                slug: p.slug,
+                title: p.title,
+                publishedAt: p.publishedAt,
+                minTierName:
+                  p.minTier && typeof p.minTier === 'object'
+                    ? p.minTier.name || p.minTier.slug || null
+                    : null,
+                cover: p.cover,
+                commentCount: stats?.comments ?? 0,
+                reactionCount: stats?.reactions ?? 0,
+                hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
+                hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
+              }
+            })}
           />
         )}
 

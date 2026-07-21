@@ -1,6 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
-import { Lock } from 'lucide-react'
+import { Lock, MessageCircle, Heart, Video, Images } from 'lucide-react'
 import { relativeDayLabel } from '@/lib/relativeDate'
 
 export type PublicationCard = {
@@ -10,6 +10,10 @@ export type PublicationCard = {
   publishedAt?: string | null
   minTierName?: string | null
   cover?: { url?: string | null; alt?: string | null } | string | number | null
+  commentCount?: number
+  reactionCount?: number
+  hasVideo?: boolean
+  hasGallery?: boolean
 }
 
 export type LatestPublicationsBlockProps = {
@@ -69,6 +73,35 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
                 <h3 className="font-semibold leading-snug" style={{ color: 'var(--brand-text)' }}>
                   <a href={`/publication/${p.slug}`} className="transition-opacity hover:opacity-70">{p.title}</a>
                 </h3>
+
+                {/* Мета: слева счётчики (комменты, реакции), справа — наличие видео/галереи */}
+                <div className="mt-auto flex items-center justify-between text-xs"
+                  style={{ color: 'var(--brand-muted)' }}>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1" title="Комментарии">
+                      <MessageCircle size={14} />
+                      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{p.commentCount ?? 0}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1" title="Реакции">
+                      <Heart size={14} />
+                      <span style={{ fontVariantNumeric: 'tabular-nums' }}>{p.reactionCount ?? 0}</span>
+                    </span>
+                  </div>
+                  {(p.hasVideo || p.hasGallery) && (
+                    <div className="flex items-center gap-2.5">
+                      {p.hasVideo && (
+                        <span className="inline-flex items-center" title="Есть видео">
+                          <Video size={14} />
+                        </span>
+                      )}
+                      {p.hasGallery && (
+                        <span className="inline-flex items-center" title="Есть галерея">
+                          <Images size={14} />
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </article>
           )
