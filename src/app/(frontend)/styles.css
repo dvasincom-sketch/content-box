@@ -1231,11 +1231,18 @@ svg {
   .poster-card:hover { transform: none; }
 }
 
-/* Сетка постеров — на странице категории с posterLayout (весь список, перенос) */
+/* Сетка постеров-афиш — на странице категории-контейнера (posterLayout):
+   дочерние категории афишами, с переносом на строки. */
 .poster-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: clamp(12px, 2vw, 18px);
+}
+/* В сетке карточка заполняет ячейку. Иначе фиксированная ширина .poster-card
+   (clamp 120–170px, нужна для карусели на главной) шире 1fr-колонки —
+   карточки вылезают за ячейки, перекрывают гэпы и налезают друг на друга. */
+.poster-grid .poster-card {
+  width: 100%;
 }
 @media (max-width: 480px) {
   .poster-grid {
