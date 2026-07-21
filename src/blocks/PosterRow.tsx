@@ -1,18 +1,22 @@
 import Image from 'next/image'
 
 /**
- * PosterRow — горизонтальный ряд вертикальных постеров 2:3 (киноблок).
- * Для категорий с posterLayout: заголовок = имя категории (кликабелен, ведёт
- * в категорию), под ним — скроллящийся ряд постеров без подписей.
+ * PosterRow — горизонтальный ряд вертикальных постеров 2:3 (киноряд).
  *
- * Постеры берут cover в размере `poster` (WebP, из imageSizes Media), с
- * фолбэком на оригинал. Обрезка под 2:3 (object-fit: cover). Пустой ряд не
+ * Новая модель: постер = АФИША дочерней категории (её обложка), а не публикация.
+ * Заголовок ряда = имя категории-контейнера (кликабелен, ведёт в контейнер),
+ * под ним — скроллящийся ряд афиш её дочерних категорий. Клик по афише ведёт
+ * в саму дочернюю категорию (`item.href`), внутри которой — обычные
+ * горизонтальные публикации (эпизоды).
+ *
+ * Постеры берут cover категории в размере `poster` (WebP, из imageSizes Media),
+ * с фолбэком на оригинал. Обрезка под 2:3 (object-fit: cover). Пустой ряд не
  * рендерится. Скролл — чистый CSS (свайп/трекпад), без JS.
  */
 
 export type PosterItem = {
   id: string | number
-  slug: string
+  href: string
   title: string
   posterUrl: string | null
 }
@@ -37,12 +41,7 @@ export function PosterRow({ title, href, items }: PosterRowProps) {
 
       <div className="poster-row__scroll">
         {items.map((it) => (
-          <a
-            key={it.id}
-            href={`/publication/${it.slug}`}
-            className="poster-card"
-            title={it.title}
-          >
+          <a key={it.id} href={it.href} className="poster-card" title={it.title}>
             <div className="poster-card__frame">
               {it.posterUrl ? (
                 <Image

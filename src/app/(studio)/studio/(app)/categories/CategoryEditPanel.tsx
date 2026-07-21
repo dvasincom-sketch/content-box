@@ -129,25 +129,25 @@ export function CategoryEditPanel({
           </div>
 
           <div className="studio-field">
-            <span className="studio-field__label">Формат обложек раздела</span>
+            <span className="studio-field__label">Тип раздела</span>
             <div className="catedit__poster-toggle">
               <button
                 type="button"
                 className={`catedit__poster-opt${!posterLayout ? ' is-on' : ''}`}
                 onClick={() => setPosterLayout(false)}
               >
-                Горизонтальные
+                Обычный раздел
               </button>
               <button
                 type="button"
                 className={`catedit__poster-opt${posterLayout ? ' is-on' : ''}`}
                 onClick={() => setPosterLayout(true)}
               >
-                Вертикальные (киноблок)
+                Контейнер афиш
               </button>
             </div>
             <div className="catedit__hint">
-              Вертикальные — публикации показываются постерами 2:3 (афиши): рядом на главной и сеткой в разделе. Загружайте вертикальные обложки.
+              Контейнер афиш — дочерние категории этого раздела выводятся вертикальными постерами 2:3 (афишами): рядом на главной и сеткой на странице раздела. Клик по афише ведёт в дочерний раздел с эпизодами. Вертикальную обложку загружайте в КАЖДУЮ дочернюю категорию.
             </div>
           </div>
 

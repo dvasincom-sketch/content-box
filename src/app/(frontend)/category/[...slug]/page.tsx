@@ -83,38 +83,49 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
   const category = await findCategory(payload, tenant.id as number, slug)
   if (!category) notFound()
 
+  // Категория-контейнер (posterLayout): её дочерние категории выводятся афишами
+  // (постерами 2:3), а публикации ветки на этой странице не показываются —
+  // эпизоды живут внутри дочерних разделов.
+  const isPosterContainer = Boolean(category.posterLayout)
+
   // Публикации всей ветки: категории, у которых текущая есть в цепочке предков.
-  const branchRes = await payload.find({
-    collection: 'categories',
-    where: {
-      and: [{ tenant: { equals: tenant.id } }, { 'breadcrumbs.doc': { equals: category.id } }],
-    },
-    limit: 500,
-    depth: 0,
-    overrideAccess: true,
-  })
-  const branchIDs = (branchRes.docs as any[]).map((c) => c.id)
-  if (branchIDs.length === 0) branchIDs.push(category.id)
+  // Для контейнера не нужны (показываем афиши детей), поэтому не запрашиваем.
+  let pubs: any[] = []
+  let cardStats = new Map<string, { comments: number; reactions: number }>()
+  if (!isPosterContainer) {
+    const branchRes = await payload.find({
+      collection: 'categories',
+      where: {
+        and: [{ tenant: { equals: tenant.id } }, { 'breadcrumbs.doc': { equals: category.id } }],
+      },
+      limit: 500,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const branchIDs = (branchRes.docs as any[]).map((c) => c.id)
+    if (branchIDs.length === 0) branchIDs.push(category.id)
 
-  const pubsRes = await payload.find({
-    collection: 'publications',
-    where: {
-      and: [{ tenant: { equals: tenant.id } }, { category: { in: branchIDs } }],
-    },
-    sort: '-publishedAt',
-    depth: 1,
-    limit: 50,
-    overrideAccess: true,
-  })
-  const pubs = pubsRes.docs as any[]
+    const pubsRes = await payload.find({
+      collection: 'publications',
+      where: {
+        and: [{ tenant: { equals: tenant.id } }, { category: { in: branchIDs } }],
+      },
+      sort: '-publishedAt',
+      depth: 1,
+      limit: 50,
+      overrideAccess: true,
+    })
+    pubs = pubsRes.docs as any[]
 
-  // Счётчики комментариев и реакций для карточек — один агрегирующий запрос.
-  const cardStats = await getPublicationCardStats(
-    pubs.map((p) => p.id),
-    tenant.id as number,
-  )
+    // Счётчики комментариев и реакций для карточек — один агрегирующий запрос.
+    cardStats = await getPublicationCardStats(
+      pubs.map((p) => p.id),
+      tenant.id as number,
+    )
+  }
 
-  // Прямые подкатегории — плитками под публикациями.
+  // Прямые подкатегории. Для контейнера — это афиши; для обычной категории —
+  // плитки под публикациями. depth:1 — нужен cover.
   const childrenRes = await payload.find({
     collection: 'categories',
     where: {
@@ -164,47 +175,53 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
           </div>
         ) : null}
 
-        {pubs.length === 0 ? (
+        {isPosterContainer ? (
+          // Контейнер: сетка афиш — прямые дочерние категории вертикальными
+          // постерами 2:3. Клик по афише → страница дочерней категории (эпизоды).
+          children.length > 0 ? (
+            <div className="poster-grid">
+              {children.map((c) => {
+                const cover = c.cover && typeof c.cover === 'object' ? c.cover : null
+                const posterUrl = cover?.sizes?.poster?.url || cover?.url || null
+                return (
+                  <a
+                    key={c.id}
+                    href={categoryHref(c)}
+                    className="poster-card"
+                    title={c.title}
+                  >
+                    <div className="poster-card__frame">
+                      {posterUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={posterUrl}
+                          alt={c.title}
+                          loading="lazy"
+                          className="poster-card__img"
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+                        />
+                      ) : (
+                        <div className="poster-card__placeholder" aria-hidden>
+                          {(c.title || '?').slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  </a>
+                )
+              })}
+            </div>
+          ) : category.description ? null : (
+            <p style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
+              В этом разделе пока нет подразделов.
+            </p>
+          )
+        ) : pubs.length === 0 ? (
           // Если есть статья или подкатегории — раздел не пустой.
           category.description || children.length > 0 ? null : (
             <p style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
               В этой категории пока нет публикаций.
             </p>
           )
-        ) : category.posterLayout ? (
-          // Киноблок: сетка вертикальных постеров 2:3 (весь список, без подписей).
-          <div className="poster-grid">
-            {pubs.map((p) => {
-              const cover = p.cover && typeof p.cover === 'object' ? p.cover : null
-              const posterUrl =
-                cover?.sizes?.poster?.url || cover?.url || null
-              return (
-                <a
-                  key={p.id}
-                  href={`/publication/${p.slug}`}
-                  className="poster-card"
-                  title={p.title}
-                >
-                  <div className="poster-card__frame">
-                    {posterUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={posterUrl}
-                        alt={p.title}
-                        loading="lazy"
-                        className="poster-card__img"
-                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-                      />
-                    ) : (
-                      <div className="poster-card__placeholder" aria-hidden>
-                        {(p.title || '?').slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                </a>
-              )
-            })}
-          </div>
         ) : (
           <LatestPublicationsBlock
             heading=""
@@ -229,8 +246,9 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
           />
         )}
 
-        {/* Прямые подкатегории — плитками */}
-        {children.length > 0 && (
+        {/* Прямые подкатегории плитками — только для обычной категории.
+            У контейнера дети уже показаны афишами выше, дублировать не нужно. */}
+        {!isPosterContainer && children.length > 0 && (
           <div className="mt-14">
             <CategoriesGridBlock
               heading="Разделы"

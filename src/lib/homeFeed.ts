@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
+import { categoryHref } from '@/lib/categoryHref'
 import type { PublicationCard } from '@/blocks/LatestPublicationsBlock'
 
 /**
@@ -14,6 +15,8 @@ import type { PublicationCard } from '@/blocks/LatestPublicationsBlock'
  *  - discussed  — «обсуждаемое»: по числу комментов за всё время
  *  - popularCategories — категории по суммарной активности их публикаций,
  *                        исключая переданные ручные (manualCategoryIds)
+ *  - posterRows — киноряды: категории-контейнеры (posterLayout) → ряд АФИШ
+ *                 их дочерних категорий (обложка категории, ссылка в раздел)
  *
  * Замечание по масштабу: агрегации считаются в JS (Payload не сортирует по
  * count). На текущих объёмах дёшево; при росте — кандидат на SQL-агрегацию.
@@ -32,7 +35,7 @@ export type CategoryCard = {
 
 export type PosterItem = {
   id: string | number
-  slug: string
+  href: string
   title: string
   posterUrl: string | null
 }
@@ -310,59 +313,52 @@ export async function getHomeFeed(
         .filter((c): c is CategoryCard => Boolean(c))
     }
 
-    // ── 6. Киноряды: категории с posterLayout → ряд постеров на каждую ──
-    const posterCatsRes = await payload.find({
+    // ── 6. Киноряды: категории-контейнеры (posterLayout) → ряд АФИШ детей ──
+    // Новая модель: постер = обложка ДОЧЕРНЕЙ категории (афиша фильма/сериала),
+    // клик по афише ведёт в саму дочернюю категорию, а не в публикацию. Ряд
+    // группируется по родителю-контейнеру: заголовок = контейнер, элементы =
+    // его прямые дети. Дёшево по памяти: 1 запрос контейнеров + по 1 запросу
+    // детей на контейнер (обычно единицы контейнеров).
+    const containerRes = await payload.find({
       collection: 'categories',
       where: {
         and: [{ tenant: { equals: tenantId } }, { posterLayout: { equals: true } }],
       },
       sort: 'order',
-      depth: 1,
+      depth: 0, // нужны только id/title/slug/breadcrumbs (breadcrumbs — хранимое поле)
       limit: 50,
       overrideAccess: true,
     })
-    const posterCats = posterCatsRes.docs as any[]
+    const containers = containerRes.docs as any[]
 
     const posterRows: PosterRowData[] = []
-    for (const cat of posterCats) {
-      // Публикации ветки этой категории (как на странице категории — прямые + потомки).
-      const branchRes = await payload.find({
+    for (const container of containers) {
+      // Прямые дочерние категории контейнера = афиши. depth:1 — нужен cover.
+      const childrenRes = await payload.find({
         collection: 'categories',
         where: {
-          and: [{ tenant: { equals: tenantId } }, { 'breadcrumbs.doc': { equals: cat.id } }],
+          and: [{ tenant: { equals: tenantId } }, { parent: { equals: container.id } }],
         },
-        depth: 0,
-        limit: 500,
-        overrideAccess: true,
-      })
-      const branchIds = (branchRes.docs as any[]).map((c) => c.id)
-      if (branchIds.length === 0) branchIds.push(cat.id)
-
-      const catPubsRes = await payload.find({
-        collection: 'publications',
-        where: {
-          and: [{ tenant: { equals: tenantId } }, { category: { in: branchIds } }],
-        },
-        sort: '-publishedAt',
+        sort: 'order',
         depth: 1,
-        limit: 12, // превью-ряд, не весь список
+        limit: 100,
         overrideAccess: true,
       })
 
-      const items: PosterItem[] = (catPubsRes.docs as any[]).map((p) => {
-        const cover = p.cover && typeof p.cover === 'object' ? p.cover : null
+      const items: PosterItem[] = (childrenRes.docs as any[]).map((c) => {
+        const cover = c.cover && typeof c.cover === 'object' ? c.cover : null
         const posterUrl = cover?.sizes?.poster?.url || cover?.url || null
-        return { id: p.id, slug: p.slug, title: p.title, posterUrl }
+        return { id: c.id, href: categoryHref(c), title: c.title, posterUrl }
       })
 
-      if (items.length === 0) continue // пустую категорию не показываем
+      if (items.length === 0) continue // контейнер без детей не показываем
 
-      const crumbs = (cat.breadcrumbs ?? []) as { url?: string }[]
-      const href = crumbs.length
-        ? `/category${crumbs[crumbs.length - 1].url ?? ''}`
-        : `/category/${cat.slug}`
-
-      posterRows.push({ id: cat.id, title: cat.title, href, items })
+      posterRows.push({
+        id: container.id,
+        title: container.title,
+        href: categoryHref(container),
+        items,
+      })
     }
 
     // ── Собираем карточки со статистикой ──
