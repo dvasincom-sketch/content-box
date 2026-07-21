@@ -13,6 +13,11 @@ import { checkVideoAccess } from '@/lib/videoAccess'
 import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
 import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
 import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
+import {
+  PublicationEngagement,
+  type PublicationReaction,
+  type CommentNode,
+} from './PublicationEngagement'
 import { Lock } from 'lucide-react'
 import type { Metadata } from 'next'
 import '../../styles.css'
@@ -207,6 +212,100 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     }
   }
 
+  // ──────────────────────────────────────────────────────────────────────
+  // МОКИ реакций и комментариев (этап дизайна).
+  // TODO(бэкенд): заменить на реальные данные из коллекций Payload
+  //   (Comments / Reactions, tenant-scoped) и isAuthed — на getCurrentSubscriber().
+  //   Сам компонент PublicationEngagement при этом не меняется — только пропсы.
+  const isAuthed = false // ← гость. Поставь true, чтобы посмотреть роль подписчика.
+
+  const mockReactions: PublicationReaction[] = [
+    {
+      key: 'like',
+      count: 31,
+      mine: false,
+      reactors: [
+        { id: 1, name: 'Мина', color: '#7C3AED' },
+        { id: 2, name: 'Deni', color: '#EC4899' },
+        { id: 3, name: 'tae', color: '#F59E0B' },
+      ],
+    },
+    {
+      key: 'love',
+      count: 54,
+      mine: false,
+      reactors: [
+        { id: 4, name: 'yoongi', color: '#3C3489' },
+        { id: 5, name: 'jk_lover', color: '#0EA5E9' },
+        { id: 1, name: 'Мина', color: '#7C3AED' },
+      ],
+    },
+    {
+      key: 'fire',
+      count: 39,
+      mine: false,
+      reactors: [
+        { id: 2, name: 'Deni', color: '#EC4899' },
+        { id: 4, name: 'yoongi', color: '#3C3489' },
+      ],
+    },
+    {
+      key: 'cry',
+      count: 6,
+      mine: false,
+      reactors: [{ id: 5, name: 'jk_lover', color: '#0EA5E9' }],
+    },
+  ]
+
+  const mockComments: CommentNode[] = [
+    {
+      id: 1,
+      authorName: 'Мина',
+      authorColor: '#7C3AED',
+      timeLabel: '2 ч назад',
+      text: 'Это выступление я буду пересматривать вечно. Мурашки с первой секунды 💜',
+      reactions: [
+        { key: 'like', count: 4 },
+        { key: 'love', count: 9 },
+        { key: 'fire', count: 2 },
+      ],
+      replies: [
+        {
+          id: 11,
+          authorName: 'Deni',
+          authorColor: '#EC4899',
+          timeLabel: '1 ч назад',
+          text: 'Плюсую, пересматриваю уже третий раз!',
+          reactions: [{ key: 'like', count: 2 }],
+        },
+      ],
+    },
+    {
+      id: 2,
+      authorName: 'Deni',
+      authorColor: '#EC4899',
+      timeLabel: '5 ч назад',
+      text: 'Хореография на припеве — просто космос. Как они синхронизировались на таком стадионе?',
+      reactions: [
+        { key: 'fire', count: 6 },
+        { key: 'love', count: 1 },
+      ],
+      replies: [],
+    },
+    {
+      id: 3,
+      authorName: 'yoongi',
+      authorColor: '#3C3489',
+      timeLabel: 'вчера',
+      text: 'Горжусь до слёз. ARMY навсегда 🔥',
+      reactions: [
+        { key: 'love', count: 12 },
+        { key: 'fire', count: 3 },
+      ],
+      replies: [],
+    },
+  ]
+
   return (
     <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
@@ -342,6 +441,15 @@ export default async function PublicationPage({ params }: { params: Promise<Para
         ) : (
           <PublicationLock reason={pubAccess.reason} requiredTierName={pubAccess.requiredTierName} />
         )}
+
+        {/* Реакции + комментарии. Видны всегда (для гостя — тизер с приглашением). */}
+        <PublicationEngagement
+          isAuthed={isAuthed}
+          reactions={mockReactions}
+          comments={mockComments}
+          commentCount={12}
+          loginHref="/subscribe"
+        />
 
         <PostNavBlock prev={navPrev} next={navNext} />
         </div>
