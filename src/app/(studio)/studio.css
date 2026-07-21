@@ -1,4 +1,4 @@
-/* BUILD-MARKER: home-builder-add-v1 + home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: composer-flags-v1 + home-builder-add-v1 + home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -817,6 +817,37 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
 
 /* --- Центр ----------------------------------------------------------------- */
 .composer__main { min-width: 0; }
+
+/* Флаги публикации над заголовком (composer-flags-v1): чип «Новость» и т.п. */
+.composer__flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--st-space-2);
+  margin-bottom: var(--st-space-3);
+}
+.composer__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--st-space-2) var(--st-space-3);
+  font-size: var(--st-text-sm);
+  color: var(--st-text-muted);
+  background: transparent;
+  border: 1px dashed var(--st-border-strong);
+  border-radius: var(--st-radius);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.composer__flag:hover {
+  border-color: var(--st-accent);
+  color: var(--st-text);
+}
+.composer__flag.is-on {
+  color: #fff;
+  background: var(--st-accent);
+  border-style: solid;
+  border-color: var(--st-accent);
+}
 
 .composer__title {
   width: 100%;

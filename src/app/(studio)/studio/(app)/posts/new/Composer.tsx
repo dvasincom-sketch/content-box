@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ImagePlus, X, Loader2, Trash2 } from 'lucide-react'
+import { ArrowLeft, ImagePlus, X, Loader2, Trash2, Newspaper } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
 import { RichEditor } from './RichEditor'
@@ -25,6 +25,7 @@ export type PostInitial = {
   coverId: number | null
   coverUrl: string | null
   isPublished: boolean
+  isNews?: boolean
   relatedVideoIds: (number | string)[]
   gallery: GalleryItem[]
 }
@@ -49,6 +50,7 @@ export function Composer({
   const [body, setBody] = useState(initial?.body || '')
   const [categoryId, setCategoryId] = useState<string>(initial?.categoryId || '')
   const [minTierId, setMinTierId] = useState<string>(initial?.minTierId || '')
+  const [isNews, setIsNews] = useState<boolean>(initial?.isNews ?? false)
 
   const [coverId, setCoverId] = useState<number | null>(initial?.coverId ?? null)
   const [coverUrl, setCoverUrl] = useState<string | null>(initial?.coverUrl ?? null)
@@ -134,6 +136,9 @@ export function Composer({
         : (gallery.length
             ? gallery.map((g) => ({ imageId: g.imageId, caption: g.caption }))
             : undefined),
+      // признак «Новость»: в edit шлём всегда (чтобы снятие сохранялось),
+      // в create — только если включён
+      isNews: isEdit ? isNews : (isNews || undefined),
     }
     if (isEdit) payload.id = initial!.id
     if (publish !== undefined) payload.publish = publish
@@ -274,6 +279,18 @@ export function Composer({
 
       <div className="composer__grid">
         <div className="composer__main">
+          <div className="composer__flags">
+            <button
+              type="button"
+              className={`composer__flag${isNews ? ' is-on' : ''}`}
+              onClick={() => setIsNews((v) => !v)}
+              aria-pressed={isNews}
+              title="Пометить как новость — попадёт в секцию «Новости» на главной"
+            >
+              <Newspaper size={14} />
+              Новость
+            </button>
+          </div>
           <input
             className="composer__title"
             placeholder="Заголовок публикации"

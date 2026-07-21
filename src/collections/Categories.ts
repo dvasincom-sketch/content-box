@@ -77,6 +77,16 @@ export const Categories: CollectionConfig = {
       admin: { description: 'Показывать в колонке футера (для подкатегорий 2-го уровня).' },
     },
     {
+      name: 'posterLayout',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Киноблок (вертикальные постеры)',
+      admin: {
+        description:
+          'Публикации этой категории показываются горизонтальным рядом вертикальных постеров 2:3 (как афиши фильмов) — на странице категории и на главной. Загружайте вертикальную обложку.',
+      },
+    },
+    {
       name: 'seo',
       type: 'group',
       label: 'SEO (оверрайды)',
