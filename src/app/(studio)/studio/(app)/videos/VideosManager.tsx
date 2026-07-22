@@ -844,11 +844,14 @@ type KinescopeLibItem = {
   posterUrl: string | null
 }
 
+type KinFolder = { id: string; name: string; parentId: string | null }
+
 /**
- * Пикер библиотеки Kinescope: список уже загруженных (через app.kinescope.io)
- * видео с превью, поиском и пагинацией. Клик по карточке импортирует видео в
- * студию (создаёт запись с provider=kinescope + videoRef). Уровень доступа,
- * категорию и папку задаём потом в обычном редакторе видео.
+ * Пикер библиотеки Kinescope. Таблица уже загруженных (через app.kinescope.io)
+ * видео с превью/длительностью/статусом, поиском и пагинацией. Папки —
+ * с вложенностью (хлебные крошки, навигация по parent_id). Мультивыбор
+ * чекбоксами + «Импортировать · N» (создаёт записи provider=kinescope +
+ * videoRef). Уровень доступа/категорию задаём потом в редакторе видео.
  */
 function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
   const [items, setItems] = useState<KinescopeLibItem[]>([])
@@ -859,23 +862,29 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [perPage, setPerPage] = useState(24)
-  const [busyId, setBusyId] = useState<string | null>(null)
   const [added, setAdded] = useState<Set<string>>(new Set())
   const [importedCount, setImportedCount] = useState(0)
-  const [folders, setFolders] = useState<{ id: string; name: string }[]>([])
-  const [folderId, setFolderId] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [allFolders, setAllFolders] = useState<KinFolder[]>([])
+  const [path, setPath] = useState<{ id: string; name: string }[]>([])
 
-  // Папки Kinescope — один раз при открытии.
+  const currentFolderId = path.length ? path[path.length - 1]!.id : null
+  const searching = debounced.length > 0
+  const subFolders = searching
+    ? []
+    : allFolders
+        .filter((f) => (f.parentId ?? null) === currentFolderId)
+        .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+
+  // Папки один раз при открытии.
   useEffect(() => {
     let cancelled = false
-    fetch('/studio/api/videos/kinescope/folders', {
-      credentials: 'include',
-      cache: 'no-store',
-    })
+    fetch('/studio/api/videos/kinescope/folders', { credentials: 'include', cache: 'no-store' })
       .then(async (res) => {
         const json = await res.json().catch(() => null)
         if (cancelled || !res.ok) return
-        setFolders(Array.isArray(json?.folders) ? json.folders : [])
+        setAllFolders(Array.isArray(json?.folders) ? json.folders : [])
       })
       .catch(() => {})
     return () => {
@@ -883,7 +892,7 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
     }
   }, [])
 
-  // Дебаунс поиска: сбрасываем на первую страницу при новом запросе.
+  // Дебаунс поиска: сбрасываем на первую страницу.
   useEffect(() => {
     const t = setTimeout(() => {
       setDebounced(query.trim())
@@ -892,13 +901,16 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
     return () => clearTimeout(t)
   }, [query])
 
+  // Список видео. При поиске — по всему аккаунту; иначе — по текущей папке
+  // (в корне — видео вне папок).
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
     const qs = new URLSearchParams({ page: String(page) })
-    if (debounced) qs.set('q', debounced)
-    if (folderId) qs.set('folderId', folderId)
+    if (searching) qs.set('q', debounced)
+    else if (currentFolderId) qs.set('folderId', currentFolderId)
+    else qs.set('withoutFolder', '1')
     fetch(`/studio/api/videos/kinescope/library?${qs.toString()}`, {
       credentials: 'include',
       cache: 'no-store',
@@ -924,36 +936,72 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
     return () => {
       cancelled = true
     }
-  }, [page, debounced, folderId])
+  }, [page, debounced, currentFolderId, searching])
 
-  async function importVideo(v: KinescopeLibItem) {
-    if (busyId || added.has(v.id)) return
-    setBusyId(v.id)
+  function openFolder(f: KinFolder) {
+    setPath((p) => [...p, { id: f.id, name: f.name }])
+    setPage(1)
+    setSelected(new Set())
+  }
+  function crumbTo(index: number) {
+    setPath((p) => (index < 0 ? [] : p.slice(0, index + 1)))
+    setPage(1)
+    setSelected(new Set())
+  }
+
+  const selectableIds = items.filter((v) => !added.has(v.id)).map((v) => v.id)
+  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selected.has(id))
+
+  function toggleSelect(id: string) {
+    setSelected((s) => {
+      const n = new Set(s)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+  }
+  function toggleSelectAll() {
+    setSelected((s) => {
+      const n = new Set(s)
+      if (allSelected) selectableIds.forEach((id) => n.delete(id))
+      else selectableIds.forEach((id) => n.add(id))
+      return n
+    })
+  }
+
+  async function importSelected() {
+    const ids = [...selected].filter((id) => !added.has(id))
+    if (ids.length === 0 || importing) return
+    setImporting(true)
     setError(null)
-    try {
-      const res = await fetch('/studio/api/videos/kinescope/import', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoId: v.id, title: v.title }),
-      })
-      const json = await res.json().catch(() => null)
-      // 409 = уже в студии — тоже помечаем как добавленное, без ошибки-стоппера.
-      if (!res.ok && res.status !== 409) {
-        setError(json?.error || `Не удалось импортировать (HTTP ${res.status})`)
-        return
+    let ok = 0
+    for (const id of ids) {
+      const v = items.find((i) => i.id === id)
+      try {
+        const res = await fetch('/studio/api/videos/kinescope/import', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ videoId: id, title: v?.title }),
+        })
+        if (res.ok) ok++
+        if (res.ok || res.status === 409) {
+          setAdded((a) => {
+            const n = new Set(a)
+            n.add(id)
+            return n
+          })
+        } else {
+          const j = await res.json().catch(() => null)
+          setError(j?.error || `Ошибка импорта (HTTP ${res.status})`)
+        }
+      } catch {
+        setError('Не удалось связаться с сервером')
       }
-      setAdded((s) => {
-        const n = new Set(s)
-        n.add(v.id)
-        return n
-      })
-      if (res.ok) setImportedCount((c) => c + 1)
-    } catch {
-      setError('Не удалось связаться с сервером')
-    } finally {
-      setBusyId(null)
     }
+    setImportedCount((c) => c + ok)
+    setSelected(new Set())
+    setImporting(false)
   }
 
   const totalPages = Math.max(1, Math.ceil(total / perPage))
@@ -969,36 +1017,19 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
-      <div className="kinlib__hint">
-        Видео, загруженные в Kinescope. Нажмите на карточку, чтобы добавить в студию.
-        Уровень доступа и категорию можно задать потом в редакторе видео.
-      </div>
 
-      {folders.length > 0 && (
-        <div className="kinlib__folders">
-          <button
-            type="button"
-            className={`kinlib__folder${folderId === '' ? ' is-active' : ''}`}
-            onClick={() => {
-              setFolderId('')
-              setPage(1)
-            }}
-          >
+      {!searching && (
+        <div className="kinlib__crumbs">
+          <button type="button" className="kinlib__crumb" onClick={() => crumbTo(-1)}>
             Все
           </button>
-          {folders.map((f) => (
-            <button
-              type="button"
-              key={f.id}
-              className={`kinlib__folder${folderId === f.id ? ' is-active' : ''}`}
-              onClick={() => {
-                setFolderId(f.id)
-                setPage(1)
-              }}
-              title={f.name}
-            >
-              <Folder size={13} /> {f.name}
-            </button>
+          {path.map((c, i) => (
+            <span key={c.id} className="kinlib__crumb-wrap">
+              <ChevronRight size={13} className="kinlib__crumb-sep" />
+              <button type="button" className="kinlib__crumb" onClick={() => crumbTo(i)} title={c.name}>
+                {c.name}
+              </button>
+            </span>
           ))}
         </div>
       )}
@@ -1009,49 +1040,97 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
         <div className="kinlib__state">
           <Loader2 size={20} className="spin" /> Загрузка…
         </div>
-      ) : items.length === 0 ? (
-        <div className="kinlib__state">
-          {debounced ? 'Ничего не найдено.' : 'В аккаунте Kinescope пока нет видео.'}
-        </div>
       ) : (
-        <div className="kinlib__grid">
-          {items.map((v) => {
-            const isAdded = added.has(v.id)
-            const isBusy = busyId === v.id
-            return (
+        <div className="kinlib__table">
+          <div className="kinlib__row kinlib__row--head">
+            <div className="kinlib__cell-check">
               <button
                 type="button"
-                key={v.id}
-                className={`kinlib__card${isAdded ? ' is-added' : ''}`}
-                onClick={() => importVideo(v)}
-                disabled={isBusy || isAdded}
-                title={v.title}
+                className={`kinlib__check${allSelected ? ' is-on' : ''}`}
+                onClick={toggleSelectAll}
+                disabled={selectableIds.length === 0}
+                aria-label="Выбрать все"
               >
-                <div className="kinlib__thumb">
-                  {v.posterUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={v.posterUrl} alt="" loading="lazy" />
-                  ) : (
-                    <span className="kinlib__thumb-empty">
-                      <VideoIcon size={22} />
-                    </span>
-                  )}
-                  {v.duration ? <span className="kinlib__dur">{fmtDur(v.duration ?? null)}</span> : null}
-                  {!v.ready && <span className="kinlib__badge">обработка</span>}
-                  <span className="kinlib__overlay">
-                    {isBusy ? (
-                      <Loader2 size={18} className="spin" />
-                    ) : isAdded ? (
-                      <Check size={18} />
-                    ) : (
-                      <Plus size={18} />
-                    )}
-                  </span>
-                </div>
-                <div className="kinlib__title">{v.title}</div>
+                <Check size={12} />
               </button>
-            )
-          })}
+            </div>
+            <div className="kinlib__cell-thumb" />
+            <div className="kinlib__cell-title kinlib__th">Название</div>
+            <div className="kinlib__cell-dur kinlib__th">Длит.</div>
+            <div className="kinlib__cell-status kinlib__th">Статус</div>
+          </div>
+
+          {subFolders.map((f) => (
+            <button
+              type="button"
+              key={f.id}
+              className="kinlib__row kinlib__row--folder"
+              onClick={() => openFolder(f)}
+            >
+              <div className="kinlib__cell-check" />
+              <div className="kinlib__cell-thumb">
+                <span className="kinlib__folder-ic">
+                  <Folder size={18} />
+                </span>
+              </div>
+              <div className="kinlib__cell-title kinlib__folder-name">{f.name}</div>
+              <div className="kinlib__cell-dur" />
+              <div className="kinlib__cell-status">
+                <ChevronRight size={16} />
+              </div>
+            </button>
+          ))}
+
+          {items.length === 0 && subFolders.length === 0 ? (
+            <div className="kinlib__state">
+              {searching ? 'Ничего не найдено.' : 'Здесь пусто.'}
+            </div>
+          ) : (
+            items.map((v) => {
+              const isAdded = added.has(v.id)
+              const isSel = selected.has(v.id)
+              return (
+                <div
+                  key={v.id}
+                  className={`kinlib__row${isAdded ? ' is-added' : ''}${isSel ? ' is-selected' : ''}`}
+                  onClick={() => !isAdded && toggleSelect(v.id)}
+                  role="button"
+                >
+                  <div className="kinlib__cell-check">
+                    <span
+                      className={`kinlib__check${isSel ? ' is-on' : ''}${isAdded ? ' is-done' : ''}`}
+                    >
+                      <Check size={12} />
+                    </span>
+                  </div>
+                  <div className="kinlib__cell-thumb">
+                    {v.posterUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={v.posterUrl} alt="" loading="lazy" />
+                    ) : (
+                      <span className="kinlib__thumb-empty">
+                        <VideoIcon size={18} />
+                      </span>
+                    )}
+                    {v.duration ? <span className="kinlib__dur">{fmtDur(v.duration ?? null)}</span> : null}
+                  </div>
+                  <div className="kinlib__cell-title" title={v.title}>
+                    {v.title}
+                  </div>
+                  <div className="kinlib__cell-dur">{fmtDur(v.duration ?? null) || '—'}</div>
+                  <div className="kinlib__cell-status">
+                    {isAdded ? (
+                      <span className="kinlib__st-added">Добавлено</span>
+                    ) : v.ready ? (
+                      <span className="kinlib__st-ok">Готово</span>
+                    ) : (
+                      <span className="kinlib__st-proc">обработка</span>
+                    )}
+                  </div>
+                </div>
+              )
+            })
+          )}
         </div>
       )}
 
@@ -1083,9 +1162,21 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
         <button type="button" className="studio-btn studio-btn--ghost" onClick={onCancel}>
           Отмена
         </button>
-        <button type="button" className="studio-btn studio-btn--primary" onClick={onDone}>
-          <Check size={16} /> Готово{importedCount > 0 ? ` · ${importedCount}` : ''}
-        </button>
+        {selected.size > 0 ? (
+          <button
+            type="button"
+            className="studio-btn studio-btn--primary"
+            onClick={importSelected}
+            disabled={importing}
+          >
+            {importing ? <Loader2 size={16} className="spin" /> : <Plus size={16} />} Импортировать ·{' '}
+            {selected.size}
+          </button>
+        ) : (
+          <button type="button" className="studio-btn studio-btn--primary" onClick={onDone}>
+            <Check size={16} /> Готово{importedCount > 0 ? ` · ${importedCount}` : ''}
+          </button>
+        )}
       </div>
     </div>
   )

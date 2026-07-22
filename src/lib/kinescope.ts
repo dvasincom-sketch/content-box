@@ -263,36 +263,54 @@ export async function kinescopeListVideos(params?: {
 export type KinescopeFolder = {
   id: string
   name: string
+  /** id родительской папки; null — верхний уровень */
+  parentId: string | null
 }
 
 /**
- * Список папок Kinescope. GET /v1/projects возвращает проекты с инлайн-массивом
- * `folders` (верхний уровень). Собираем плоский список папок по всем проектам.
- * Имена чиним от кракозябр (как названия видео).
+ * Все папки Kinescope с иерархией. GET /v1/projects даёт список проектов, затем
+ * для каждого GET /v1/projects/{id}/folders — все папки проекта плоско, с
+ * `parent_id` (вложенность строится на клиенте). Имена чиним от кракозябр.
  */
 export async function kinescopeListFolders(): Promise<KinescopeFolder[]> {
-  const res = await fetch(`${KINESCOPE_API}/projects?per_page=100`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${apiToken()}` },
-  })
-  const json = await res.json().catch(() => ({}))
-  if (!res.ok) {
-    const msg = json?.error?.message || `Kinescope list projects failed (${res.status})`
+  const headers = { Authorization: `Bearer ${apiToken()}` }
+
+  const pr = await fetch(`${KINESCOPE_API}/projects?per_page=100`, { method: 'GET', headers })
+  const pj = await pr.json().catch(() => ({}))
+  if (!pr.ok) {
+    const msg = pj?.error?.message || `Kinescope list projects failed (${pr.status})`
     throw new Error(msg)
   }
+  const projects = Array.isArray(pj?.data) ? pj.data : []
 
-  const projects = Array.isArray(json?.data) ? json.data : []
   const folders: KinescopeFolder[] = []
   const seen = new Set<string>()
+
   for (const p of projects) {
-    const fs = Array.isArray(p?.folders) ? p.folders : []
-    for (const f of fs) {
-      const id = f?.id
-      if (!id || seen.has(id)) continue
-      seen.add(id)
-      folders.push({ id, name: repairMojibake(f?.name) || 'Без имени' })
+    const projectId = p?.id
+    if (!projectId) continue
+    try {
+      const fr = await fetch(
+        `${KINESCOPE_API}/projects/${projectId}/folders?per_page=100`,
+        { method: 'GET', headers },
+      )
+      const fj = await fr.json().catch(() => ({}))
+      const fs = Array.isArray(fj?.data) ? fj.data : []
+      for (const f of fs) {
+        const id = f?.id
+        if (!id || seen.has(id)) continue
+        seen.add(id)
+        folders.push({
+          id,
+          name: repairMojibake(f?.name) || 'Без имени',
+          parentId: f?.parent_id ?? null,
+        })
+      }
+    } catch {
+      // проект без доступа к папкам — пропускаем
     }
   }
+
   folders.sort((a, b) => a.name.localeCompare(b.name, 'ru'))
   return folders
 }

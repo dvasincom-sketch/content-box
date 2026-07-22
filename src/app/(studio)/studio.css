@@ -1,4 +1,4 @@
-/* BUILD-MARKER: kinlib-folders-v1 + kinlib-v1 + session-btn-fix-v1 + session-expired-v1 + poster-toggle-v1 + composer-flags-v1 + home-builder-add-v1 + home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: kinlib-table-v1 + kinlib-folders-v1 + kinlib-v1 + session-btn-fix-v1 + session-expired-v1 + poster-toggle-v1 + composer-flags-v1 + home-builder-add-v1 + home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -4285,4 +4285,180 @@ a.session-expired__btn {
   background: var(--st-accent);
   border-color: var(--st-accent);
   color: var(--st-accent-text);
+}
+
+/* ============================================================================
+   Библиотека Kinescope v2 — таблица, чекбоксы-мультивыбор, хлебные крошки папок
+   ============================================================================ */
+.kinlib__crumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.kinlib__crumb-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.kinlib__crumb-sep {
+  color: var(--st-text-faint);
+}
+.kinlib__crumb {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--st-text-muted);
+  font-size: var(--st-text-sm);
+  padding: 2px 6px;
+  border-radius: 6px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kinlib__crumb:hover {
+  color: var(--st-text);
+  background: var(--st-surface-2);
+}
+
+.kinlib__table {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 440px;
+  overflow-y: auto;
+}
+.kinlib__row {
+  display: grid;
+  grid-template-columns: 28px 76px 1fr 64px 100px;
+  align-items: center;
+  gap: var(--st-space-3);
+  padding: var(--st-space-2);
+  border-radius: var(--st-radius-sm);
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--st-text);
+  cursor: pointer;
+  font: inherit;
+}
+.kinlib__row:hover:not(.kinlib__row--head) {
+  background: var(--st-surface-2);
+}
+.kinlib__row--head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  cursor: default;
+  background: var(--st-surface);
+}
+.kinlib__row.is-selected {
+  background: color-mix(in srgb, var(--st-accent) 12%, transparent);
+}
+.kinlib__row.is-added {
+  opacity: 0.6;
+  cursor: default;
+}
+.kinlib__th {
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.kinlib__cell-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kinlib__cell-thumb {
+  position: relative;
+  width: 76px;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--st-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kinlib__row--head .kinlib__cell-thumb {
+  background: none;
+  aspect-ratio: auto;
+  height: 0;
+}
+.kinlib__cell-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.kinlib__cell-title {
+  font-size: var(--st-text-sm);
+  color: var(--st-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kinlib__cell-dur {
+  font-size: var(--st-text-sm);
+  color: var(--st-text-muted);
+}
+.kinlib__cell-status {
+  font-size: var(--st-text-xs);
+}
+
+/* Кастомный чекбокс в стиле студии */
+.kinlib__check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--st-border-strong);
+  background: var(--st-bg);
+  color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background var(--st-dur) var(--st-ease),
+    border-color var(--st-dur) var(--st-ease);
+}
+.kinlib__check.is-on {
+  background: var(--st-accent);
+  border-color: var(--st-accent);
+  color: var(--st-accent-text);
+}
+.kinlib__check.is-done {
+  background: var(--st-success);
+  border-color: var(--st-success);
+  color: #fff;
+}
+.kinlib__check:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.kinlib__row--folder .kinlib__folder-ic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  color: var(--st-warning);
+}
+.kinlib__folder-name {
+  font-weight: 550;
+}
+
+.kinlib__st-added {
+  color: var(--st-success);
+  font-weight: 550;
+}
+.kinlib__st-ok {
+  color: var(--st-text-muted);
+}
+.kinlib__st-proc {
+  color: var(--st-warning);
 }

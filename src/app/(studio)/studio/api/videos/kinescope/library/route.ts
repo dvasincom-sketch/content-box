@@ -21,9 +21,10 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, Number(url.searchParams.get('page') || '1') || 1)
   const query = url.searchParams.get('q') || undefined
   const folderId = url.searchParams.get('folderId') || undefined
+  const withoutFolder = url.searchParams.get('withoutFolder') === '1'
 
   try {
-    const res = await kinescopeListVideos({ page, perPage: 24, query, folderId })
+    const res = await kinescopeListVideos({ page, perPage: 24, query, folderId, withoutFolder })
     return NextResponse.json(
       { ok: true, ...res },
       { headers: { 'Cache-Control': 'no-store' } },
