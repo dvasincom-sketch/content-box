@@ -1,4 +1,4 @@
-/* BUILD-MARKER: session-expired-v1 + poster-toggle-v1 + composer-flags-v1 + home-builder-add-v1 + home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
+/* BUILD-MARKER: session-btn-fix-v1 + session-expired-v1 + poster-toggle-v1 + composer-flags-v1 + home-builder-add-v1 + home-categories-editor-v1 + home-team-editor-v1 + home-builder-v1 + confirm-dialog-v1 + menu-builder-v1 + brand-logo-v1 + gallery-folders-v1 + select-opaque-v1 + dash-stats-row-v1 + video-usedin-v1 + select-zfix-v3 + select-zfix-v2 + folder-pad-v2 + folder-actions-v1 + portal-font-v1 + video-edit-v1 + vidplay-portal-v1 + row-order-v1 + select-zfix-v1 + studioselect-v1 + login-glass-v1 + glass-v1 + rootbg-v1 + ios-nozoom-v1 + login-clean-v1 + mobile-rows-v2 —
    если этих строк нет в CSS на проде, задеплоился старый файл (Clear build cache). */
 /* ============================================================================
    STUDIO — дизайн-токены (Патреон Creator Studio × Linear/Vercel)
@@ -4084,12 +4084,19 @@ a.studio-btn--danger { color: #fff; }
   justify-content: center;
   padding: var(--st-space-3) var(--st-space-5);
   background: var(--st-accent);
-  color: #fff;
+  color: var(--st-accent-text);
   font-size: var(--st-text-sm);
   font-weight: 600;
   border-radius: var(--st-radius-sm);
   text-decoration: none;
   transition: opacity var(--st-dur) var(--st-ease);
+}
+/* Префикс a. — как у a.studio-btn--primary: перебивает глобальный цвет ссылок
+   студии (у него специфичность выше одиночного класса), иначе текст кнопки
+   красится в тёмный и сливается с фоном. Пара accent/accent-text даёт верный
+   контраст в обеих темах. */
+a.session-expired__btn {
+  color: var(--st-accent-text);
 }
 .session-expired__btn:hover {
   opacity: 0.9;
