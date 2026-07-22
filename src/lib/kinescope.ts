@@ -48,11 +48,54 @@ export type KinescopeVideo = {
  * Нормализует ответ Kinescope (поле data) в наш тип.
  * Kinescope-статусы обработки: 'uploading' | 'processing' | 'done' | 'error' и т.п.
  */
+/**
+ * Починка «кракозябр» в названиях. Kinescope при заливке файлов с кириллицей в
+ * имени иногда сохраняет UTF-8-байты, прочитанные как Windows-1251 (напр.
+ * «СЂСѓСЃСЃРєР°СЏ» вместо «русская»). Разворачиваем: символы строки → байты
+ * CP1251 → читаем эти байты как UTF-8. Карта байтов CP1251 строится один раз
+ * через встроенный TextDecoder (без внешних зависимостей).
+ *
+ * Guard: если хоть один символ не из CP1251 — это не мойибейк (не трогаем); и
+ * если байты не декодируются как валидный UTF-8 (fatal) — строка и так
+ * корректна (ASCII/обычная кириллица), возвращаем как есть. Если кодек
+ * windows-1251 в рантайме недоступен (small-ICU) — функция становится no-op.
+ */
+let cp1251Map: Map<string, number> | null | undefined
+function cp1251ByteMap(): Map<string, number> | null {
+  if (cp1251Map !== undefined) return cp1251Map
+  try {
+    const dec = new TextDecoder('windows-1251')
+    const m = new Map<string, number>()
+    for (let b = 0; b < 256; b++) m.set(dec.decode(new Uint8Array([b])), b)
+    cp1251Map = m
+  } catch {
+    cp1251Map = null
+  }
+  return cp1251Map
+}
+
+function repairMojibake(s: string | undefined): string | undefined {
+  if (!s) return s
+  const map = cp1251ByteMap()
+  if (!map) return s
+  const bytes = new Uint8Array(s.length)
+  for (let i = 0; i < s.length; i++) {
+    const b = map.get(s[i]!)
+    if (b === undefined) return s // символ вне CP1251 → это не мойибейк
+    bytes[i] = b
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  } catch {
+    return s // байты не валидный UTF-8 → строка была корректной
+  }
+}
+
 function normalizeVideo(d: any): KinescopeVideo {
   const status = d?.status as string | undefined
   return {
     id: d?.id,
-    title: d?.title,
+    title: repairMojibake(d?.title),
     status,
     ready: status === 'done',
     duration: typeof d?.duration === 'number' ? d.duration : undefined,
