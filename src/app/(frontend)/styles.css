@@ -1176,10 +1176,15 @@ svg {
 }
 .poster-row__title {
   font-family: var(--font-heading);
-  font-size: clamp(18px, 2.5vw, 22px);
-  font-weight: 500;
+  font-size: 1.5rem; /* text-2xl — как у заголовков других блоков */
+  font-weight: var(--heading-weight, 700);
   letter-spacing: -0.02em;
   color: var(--brand-text);
+}
+@media (min-width: 1024px) {
+  .poster-row__title {
+    font-size: 1.875rem; /* lg:text-3xl */
+  }
 }
 .poster-row__more {
   flex-shrink: 0;
@@ -1192,22 +1197,16 @@ svg {
 }
 
 /* Скроллящийся ряд.
-   Full-bleed: сам ряд растягивается до краёв окна (margin в минус на
-   полувьюпорт), а padding возвращает первую/последнюю карточку на линию
-   контента — так первая афиша выровнена под заголовком, но ряд можно
-   доскроллить до самых краёв экрана. Заголовок ряда остаётся в контейнере.
-   Паразитный горизонтальный оверфлоу гасит `body { overflow-x: clip }`. */
+   Обычный скролл ВНУТРИ контентной колонки: первая обложка выровнена по левому
+   краю с заголовком и другими блоками (без full-bleed). Скроллбар зарезервирован
+   всегда (не даёт сдвига), но ползунок прозрачен по умолчанию и появляется на
+   ховер. */
 .poster-row__scroll {
   display: flex;
   gap: 14px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
-
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-  padding-left: calc(50vw - 50%);
-  padding-right: calc(50vw - 50%);
 
   /* Вертикальные отступы = запас под hover-подъём карточки (-4px) и её тень.
      Без них overflow (Y коерцится в auto из-за overflow-x:auto) режет верх/низ
@@ -1216,17 +1215,24 @@ svg {
   padding-top: 20px;
   padding-bottom: 20px;
 
-  /* Firefox и прочие стандартные: тонкий брендовый бар. В Chromium/WebKit
-     эти свойства гасятся ниже (@supports), иначе они отключают ::-webkit-*. */
+  /* Firefox/стандартные: тонкий трек всегда (место зарезервировано), но
+     ползунок прозрачный — виден только на ховер. В Chromium/WebKit эти свойства
+     гасятся ниже (@supports), иначе они отключают ::-webkit-*. */
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.poster-row__scroll:hover {
   scrollbar-color: color-mix(in srgb, var(--brand-primary) 40%, transparent) transparent;
 }
 
-/* Chromium/WebKit: кастомный скроллбар «в наш стиль». Chrome игнорирует
-   ::-webkit-scrollbar, если заданы стандартные scrollbar-*, поэтому внутри
-   этого блока возвращаем им auto и рисуем псевдоэлементами. */
+/* Chromium/WebKit: кастомный скроллбар «в наш стиль», видимый только на ховер.
+   Chrome игнорирует ::-webkit-scrollbar, если заданы стандартные scrollbar-*,
+   поэтому внутри блока возвращаем им auto и рисуем псевдоэлементами. Высоту
+   трека держим постоянной (8px) — ползунок прячем прозрачностью, чтобы при
+   появлении на ховер не было вертикального сдвига. */
 @supports selector(::-webkit-scrollbar) {
-  .poster-row__scroll {
+  .poster-row__scroll,
+  .poster-row__scroll:hover {
     scrollbar-width: auto;
     scrollbar-color: auto;
   }
@@ -1237,11 +1243,12 @@ svg {
     background: transparent;
   }
   .poster-row__scroll::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--brand-primary) 40%, transparent);
+    background: transparent;
     border-radius: 999px;
+    transition: background 150ms ease;
   }
   .poster-row__scroll:hover::-webkit-scrollbar-thumb {
-    background: var(--brand-primary);
+    background: color-mix(in srgb, var(--brand-primary) 40%, transparent);
   }
 }
 
