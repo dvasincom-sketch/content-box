@@ -30,6 +30,14 @@ import { Reactions } from './collections/Reactions'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+// Ограничиваем нативную память sharp: на Render (512 МБ) генерация превью
+// (imageSizes обложек/галерей) иначе даёт всплеск RSS и OOM-убийство процесса
+// — а это возвращает клиенту НЕ-JSON (падение рантайма), из-за чего загрузка
+// «молча» падала. cache(false) — не держим декодированные буферы в кэше;
+// concurrency(1) — не крутим несколько тяжёлых операций sharp параллельно.
+sharp.cache(false)
+sharp.concurrency(1)
+
 export default buildConfig({
   admin: {
     user: Users.slug,
