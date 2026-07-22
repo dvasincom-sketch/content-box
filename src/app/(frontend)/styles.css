@@ -802,6 +802,17 @@ svg {
   border-bottom: 8px solid var(--brand-surface);
   margin-bottom: -1px;
 }
+/* Раскрытие вправо: для пилюль в левой половине экрана (иначе поповер уезжает
+   за левый край на мобиле). Стрелку тоже переносим к левому краю. */
+.rx-pop--left {
+  right: auto;
+  left: 0;
+}
+.rx-pop--left::before,
+.rx-pop--left::after {
+  right: auto;
+  left: 16px;
+}
 .rx-pop__head {
   font-size: 12px;
   color: var(--brand-muted);

@@ -112,8 +112,14 @@ function ReactionPill({
   onToggle: (k: ReactionKey) => void
 }) {
   const open = openPop === r.key
+  const wrapRef = useRef<HTMLDivElement>(null)
+  // Сторона раскрытия поповера. По умолчанию влево (right:0); если пилюля в левой
+  // половине экрана — раскрываем вправо (left:0), иначе поповер уезжает за левый
+  // край на мобиле. Считаем в момент клика по положению пилюли — до отрисовки
+  // поповера, поэтому без мигания.
+  const [popAlign, setPopAlign] = useState<'right' | 'left'>('right')
   return (
-    <div className="rx-pop-wrap">
+    <div className="rx-pop-wrap" ref={wrapRef}>
       <div className={`rx-pill${r.mine ? ' is-active' : ''}`}>
         <button
           type="button"
@@ -132,7 +138,16 @@ function ReactionPill({
           aria-expanded={open}
           onClick={(e) => {
             e.stopPropagation()
-            setOpenPop(open ? null : r.key)
+            if (open) {
+              setOpenPop(null)
+              return
+            }
+            const rect = wrapRef.current?.getBoundingClientRect()
+            if (rect && typeof window !== 'undefined') {
+              const center = rect.left + rect.width / 2
+              setPopAlign(center < window.innerWidth / 2 ? 'left' : 'right')
+            }
+            setOpenPop(r.key)
           }}
         >
           ▾
@@ -140,7 +155,7 @@ function ReactionPill({
       </div>
 
       {open && (
-        <div className="rx-pop" role="dialog">
+        <div className={`rx-pop${popAlign === 'left' ? ' rx-pop--left' : ''}`} role="dialog">
           <div className="rx-pop__head">
             {REACTION_EMOJI[r.key]} {r.reactors.length}
           </div>
