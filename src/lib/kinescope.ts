@@ -135,6 +135,81 @@ export async function kinescopeUploadFile(params: {
   return normalizeVideo(json.data || json)
 }
 
+export type KinescopeListItem = {
+  id: string
+  title: string
+  status?: string
+  ready: boolean
+  duration?: number
+  /** URL превью (постера) — маленький размер для сетки, null если ещё нет */
+  posterUrl: string | null
+}
+
+export type KinescopeList = {
+  items: KinescopeListItem[]
+  page: number
+  perPage: number
+  total: number
+}
+
+/**
+ * Список видео из Kinescope (GET /v1/videos) — для импорта уже загруженных
+ * через интерфейс Kinescope роликов в студию.
+ *
+ * По умолчанию НЕ фильтруем по project_id: пользователь мог загрузить видео в
+ * любой проект/папку через app.kinescope.io, и все они должны быть видны.
+ * Пагинация — meta.pagination.{page,per_page,total}. Превью берём из poster
+ * (sm → md → original). Поиск — параметр q (по названию/описанию).
+ */
+export async function kinescopeListVideos(params?: {
+  page?: number
+  perPage?: number
+  query?: string
+}): Promise<KinescopeList> {
+  const page = Math.max(1, Math.floor(params?.page ?? 1))
+  const perPage = Math.min(100, Math.max(1, Math.floor(params?.perPage ?? 24)))
+
+  const qs = new URLSearchParams()
+  qs.set('page', String(page))
+  qs.set('per_page', String(perPage))
+  const q = (params?.query || '').trim()
+  if (q) qs.set('q', q)
+
+  const res = await fetch(`${KINESCOPE_API}/videos?${qs.toString()}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${apiToken()}` },
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const msg = json?.error?.message || `Kinescope list videos failed (${res.status})`
+    throw new Error(msg)
+  }
+
+  const data = Array.isArray(json?.data) ? json.data : []
+  const items: KinescopeListItem[] = data.map((d: any) => {
+    const base = normalizeVideo(d)
+    const poster = d?.poster
+    const posterUrl =
+      (poster && (poster.sm || poster.md || poster.original)) || null
+    return {
+      id: base.id,
+      title: base.title || 'Без названия',
+      status: base.status,
+      ready: base.ready,
+      duration: base.duration,
+      posterUrl,
+    }
+  })
+
+  const pg = json?.meta?.pagination || {}
+  return {
+    items,
+    page: typeof pg.page === 'number' ? pg.page : page,
+    perPage: typeof pg.per_page === 'number' ? pg.per_page : perPage,
+    total: typeof pg.total === 'number' ? pg.total : items.length,
+  }
+}
+
 /** Статус/метаданные видео по id — готово ли к воспроизведению. */
 export async function kinescopeGetVideo(id: string): Promise<KinescopeVideo> {
   const res = await fetch(`${KINESCOPE_API}/videos/${id}`, {
