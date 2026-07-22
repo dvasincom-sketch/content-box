@@ -819,7 +819,7 @@ function AddPanel({
             className={`vid__tab${mode === 'library' ? ' is-active' : ''}`}
             onClick={() => setMode('library')}
           >
-            <VideoIcon size={15} /> Библиотека Kinescope
+            <VideoIcon size={15} /> Библиотека
           </button>
         )}
       </div>
@@ -862,6 +862,26 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
   const [busyId, setBusyId] = useState<string | null>(null)
   const [added, setAdded] = useState<Set<string>>(new Set())
   const [importedCount, setImportedCount] = useState(0)
+  const [folders, setFolders] = useState<{ id: string; name: string }[]>([])
+  const [folderId, setFolderId] = useState('')
+
+  // Папки Kinescope — один раз при открытии.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/studio/api/videos/kinescope/folders', {
+      credentials: 'include',
+      cache: 'no-store',
+    })
+      .then(async (res) => {
+        const json = await res.json().catch(() => null)
+        if (cancelled || !res.ok) return
+        setFolders(Array.isArray(json?.folders) ? json.folders : [])
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Дебаунс поиска: сбрасываем на первую страницу при новом запросе.
   useEffect(() => {
@@ -878,6 +898,7 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
     setError(null)
     const qs = new URLSearchParams({ page: String(page) })
     if (debounced) qs.set('q', debounced)
+    if (folderId) qs.set('folderId', folderId)
     fetch(`/studio/api/videos/kinescope/library?${qs.toString()}`, {
       credentials: 'include',
       cache: 'no-store',
@@ -903,7 +924,7 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
     return () => {
       cancelled = true
     }
-  }, [page, debounced])
+  }, [page, debounced, folderId])
 
   async function importVideo(v: KinescopeLibItem) {
     if (busyId || added.has(v.id)) return
@@ -952,6 +973,35 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
         Видео, загруженные в Kinescope. Нажмите на карточку, чтобы добавить в студию.
         Уровень доступа и категорию можно задать потом в редакторе видео.
       </div>
+
+      {folders.length > 0 && (
+        <div className="kinlib__folders">
+          <button
+            type="button"
+            className={`kinlib__folder${folderId === '' ? ' is-active' : ''}`}
+            onClick={() => {
+              setFolderId('')
+              setPage(1)
+            }}
+          >
+            Все
+          </button>
+          {folders.map((f) => (
+            <button
+              type="button"
+              key={f.id}
+              className={`kinlib__folder${folderId === f.id ? ' is-active' : ''}`}
+              onClick={() => {
+                setFolderId(f.id)
+                setPage(1)
+              }}
+              title={f.name}
+            >
+              <Folder size={13} /> {f.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && <div className="studio-login__error kinlib__error">{error}</div>}
 

@@ -208,6 +208,10 @@ export async function kinescopeListVideos(params?: {
   page?: number
   perPage?: number
   query?: string
+  /** id папки Kinescope — фильтр по папке */
+  folderId?: string
+  /** только видео вне папок */
+  withoutFolder?: boolean
 }): Promise<KinescopeList> {
   const page = Math.max(1, Math.floor(params?.page ?? 1))
   const perPage = Math.min(100, Math.max(1, Math.floor(params?.perPage ?? 24)))
@@ -217,6 +221,9 @@ export async function kinescopeListVideos(params?: {
   qs.set('per_page', String(perPage))
   const q = (params?.query || '').trim()
   if (q) qs.set('q', q)
+  const folderId = (params?.folderId || '').trim()
+  if (folderId) qs.set('folder_id', folderId)
+  else if (params?.withoutFolder) qs.set('without_folder', 'true')
 
   const res = await fetch(`${KINESCOPE_API}/videos?${qs.toString()}`, {
     method: 'GET',
@@ -251,6 +258,43 @@ export async function kinescopeListVideos(params?: {
     perPage: typeof pg.per_page === 'number' ? pg.per_page : perPage,
     total: typeof pg.total === 'number' ? pg.total : items.length,
   }
+}
+
+export type KinescopeFolder = {
+  id: string
+  name: string
+}
+
+/**
+ * Список папок Kinescope. GET /v1/projects возвращает проекты с инлайн-массивом
+ * `folders` (верхний уровень). Собираем плоский список папок по всем проектам.
+ * Имена чиним от кракозябр (как названия видео).
+ */
+export async function kinescopeListFolders(): Promise<KinescopeFolder[]> {
+  const res = await fetch(`${KINESCOPE_API}/projects?per_page=100`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${apiToken()}` },
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const msg = json?.error?.message || `Kinescope list projects failed (${res.status})`
+    throw new Error(msg)
+  }
+
+  const projects = Array.isArray(json?.data) ? json.data : []
+  const folders: KinescopeFolder[] = []
+  const seen = new Set<string>()
+  for (const p of projects) {
+    const fs = Array.isArray(p?.folders) ? p.folders : []
+    for (const f of fs) {
+      const id = f?.id
+      if (!id || seen.has(id)) continue
+      seen.add(id)
+      folders.push({ id, name: repairMojibake(f?.name) || 'Без имени' })
+    }
+  }
+  folders.sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+  return folders
 }
 
 /** Статус/метаданные видео по id — готово ли к воспроизведению. */
