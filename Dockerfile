@@ -15,8 +15,17 @@ RUN apt-get update \
 
 # 1) Зависимости отдельным слоем (кэш). Ставим ВСЕ (включая dev) — нужны и для
 #    сборки, и для `payload migrate` (загрузка TS-конфига).
+#
+#    ВАЖНО: npm 10.8.2, вшитый в node:20-bookworm-slim, содержит баг резолва
+#    lock-файла — он отвергает наш ВАЛИДНЫЙ package-lock.json как «out of sync»,
+#    считая часть транзитивных зависимостей (monaco-editor, yjs,
+#    @testing-library/dom и др. — из @payloadcms/richtext-lexical и
+#    @testing-library/react) отсутствующими. Тот же lock без ошибок проходит
+#    `npm ci` на npm >= 10.9 (проверено локально и в CI). Поэтому сначала
+#    поднимаем npm до 10.9.x, затем детерминированно ставим строго по lock.
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm install -g npm@10 \
+  && npm ci --no-audit --no-fund
 
 # 2) Исходники.
 COPY . .
