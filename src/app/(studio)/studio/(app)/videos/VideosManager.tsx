@@ -7,7 +7,7 @@ import * as tus from 'tus-js-client'
 import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
   Upload, X, Play, Folder, FolderPlus, Pencil, Trash2, ChevronRight, ChevronDown,
-  MapPin, Globe,
+  ChevronLeft, Search, MapPin, Globe,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { StudioSelect } from '../_ui/StudioSelect'
@@ -766,8 +766,13 @@ function AddPanel({
   onDone: () => void
   onCancel: () => void
 }) {
-  const [mode, setMode] = useState<'upload' | 'url'>('upload')
+  const [mode, setMode] = useState<'upload' | 'url' | 'library'>('upload')
   const [provider, setProvider] = useState<'stream' | 'kinescope'>('kinescope')
+  // Вкладка «Библиотека» есть только у Kinescope. При переключении на Cloudflare
+  // возвращаемся к загрузке, чтобы не остаться на скрытой вкладке.
+  useEffect(() => {
+    if (provider !== 'kinescope' && mode === 'library') setMode('upload')
+  }, [provider, mode])
   return (
     <div className="studio-card vid__form">
       <div className="vid__provider">
@@ -809,13 +814,229 @@ function AddPanel({
         >
           <LinkIcon size={15} /> По ссылке
         </button>
+        {provider === 'kinescope' && (
+          <button
+            className={`vid__tab${mode === 'library' ? ' is-active' : ''}`}
+            onClick={() => setMode('library')}
+          >
+            <VideoIcon size={15} /> Библиотека Kinescope
+          </button>
+        )}
       </div>
 
       {mode === 'upload' ? (
         <UploadFileForm provider={provider} tiers={tiers} onDone={onDone} onCancel={onCancel} />
-      ) : (
+      ) : mode === 'url' ? (
         <UrlFields provider={provider} tiers={tiers} onDone={onDone} onCancel={onCancel} />
+      ) : (
+        <KinescopeLibrary onDone={onDone} onCancel={onCancel} />
       )}
+    </div>
+  )
+}
+
+type KinescopeLibItem = {
+  id: string
+  title: string
+  status?: string
+  ready: boolean
+  duration?: number
+  posterUrl: string | null
+}
+
+/**
+ * Пикер библиотеки Kinescope: список уже загруженных (через app.kinescope.io)
+ * видео с превью, поиском и пагинацией. Клик по карточке импортирует видео в
+ * студию (создаёт запись с provider=kinescope + videoRef). Уровень доступа,
+ * категорию и папку задаём потом в обычном редакторе видео.
+ */
+function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+  const [items, setItems] = useState<KinescopeLibItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [debounced, setDebounced] = useState('')
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [perPage, setPerPage] = useState(24)
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [added, setAdded] = useState<Set<string>>(new Set())
+  const [importedCount, setImportedCount] = useState(0)
+
+  // Дебаунс поиска: сбрасываем на первую страницу при новом запросе.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebounced(query.trim())
+      setPage(1)
+    }, 400)
+    return () => clearTimeout(t)
+  }, [query])
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    const qs = new URLSearchParams({ page: String(page) })
+    if (debounced) qs.set('q', debounced)
+    fetch(`/studio/api/videos/kinescope/library?${qs.toString()}`, {
+      credentials: 'include',
+      cache: 'no-store',
+    })
+      .then(async (res) => {
+        const json = await res.json().catch(() => null)
+        if (cancelled) return
+        if (!res.ok) {
+          setItems([])
+          setError(json?.error || `Не удалось загрузить список (HTTP ${res.status})`)
+          return
+        }
+        setItems(Array.isArray(json?.items) ? json.items : [])
+        setTotal(Number(json?.total) || 0)
+        setPerPage(Number(json?.perPage) || 24)
+      })
+      .catch(() => {
+        if (!cancelled) setError('Не удалось связаться с сервером')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [page, debounced])
+
+  async function importVideo(v: KinescopeLibItem) {
+    if (busyId || added.has(v.id)) return
+    setBusyId(v.id)
+    setError(null)
+    try {
+      const res = await fetch('/studio/api/videos/kinescope/import', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId: v.id, title: v.title }),
+      })
+      const json = await res.json().catch(() => null)
+      // 409 = уже в студии — тоже помечаем как добавленное, без ошибки-стоппера.
+      if (!res.ok && res.status !== 409) {
+        setError(json?.error || `Не удалось импортировать (HTTP ${res.status})`)
+        return
+      }
+      setAdded((s) => {
+        const n = new Set(s)
+        n.add(v.id)
+        return n
+      })
+      if (res.ok) setImportedCount((c) => c + 1)
+    } catch {
+      setError('Не удалось связаться с сервером')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / perPage))
+
+  return (
+    <div className="kinlib">
+      <div className="kinlib__search">
+        <Search size={15} />
+        <input
+          className="kinlib__search-input"
+          placeholder="Поиск по названию…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+      <div className="kinlib__hint">
+        Видео, загруженные в Kinescope. Нажмите на карточку, чтобы добавить в студию.
+        Уровень доступа и категорию можно задать потом в редакторе видео.
+      </div>
+
+      {error && <div className="studio-login__error kinlib__error">{error}</div>}
+
+      {loading ? (
+        <div className="kinlib__state">
+          <Loader2 size={20} className="spin" /> Загрузка…
+        </div>
+      ) : items.length === 0 ? (
+        <div className="kinlib__state">
+          {debounced ? 'Ничего не найдено.' : 'В аккаунте Kinescope пока нет видео.'}
+        </div>
+      ) : (
+        <div className="kinlib__grid">
+          {items.map((v) => {
+            const isAdded = added.has(v.id)
+            const isBusy = busyId === v.id
+            return (
+              <button
+                type="button"
+                key={v.id}
+                className={`kinlib__card${isAdded ? ' is-added' : ''}`}
+                onClick={() => importVideo(v)}
+                disabled={isBusy || isAdded}
+                title={v.title}
+              >
+                <div className="kinlib__thumb">
+                  {v.posterUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={v.posterUrl} alt="" loading="lazy" />
+                  ) : (
+                    <span className="kinlib__thumb-empty">
+                      <VideoIcon size={22} />
+                    </span>
+                  )}
+                  {v.duration ? <span className="kinlib__dur">{fmtDur(v.duration ?? null)}</span> : null}
+                  {!v.ready && <span className="kinlib__badge">обработка</span>}
+                  <span className="kinlib__overlay">
+                    {isBusy ? (
+                      <Loader2 size={18} className="spin" />
+                    ) : isAdded ? (
+                      <Check size={18} />
+                    ) : (
+                      <Plus size={18} />
+                    )}
+                  </span>
+                </div>
+                <div className="kinlib__title">{v.title}</div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="kinlib__pager">
+          <button
+            type="button"
+            className="studio-btn studio-btn--ghost"
+            disabled={page <= 1 || loading}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            <ChevronLeft size={16} /> Назад
+          </button>
+          <span className="kinlib__page">
+            {page} / {totalPages}
+          </span>
+          <button
+            type="button"
+            className="studio-btn studio-btn--ghost"
+            disabled={page >= totalPages || loading}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Вперёд <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
+
+      <div className="kinlib__foot">
+        <button type="button" className="studio-btn studio-btn--ghost" onClick={onCancel}>
+          Отмена
+        </button>
+        <button type="button" className="studio-btn studio-btn--primary" onClick={onDone}>
+          <Check size={16} /> Готово{importedCount > 0 ? ` · ${importedCount}` : ''}
+        </button>
+      </div>
     </div>
   )
 }
