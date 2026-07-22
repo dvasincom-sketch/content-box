@@ -1,0 +1,22 @@
+# Не тащим в build-контекст лишнее (ускоряет сборку, не ломает кэш).
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.*
+*.log
+npm-debug.log*
+Dockerfile
+Dockerfile.*
+docker-compose.yml
+.dockerignore
+
+# Локальные ассеты/тесты, не нужные в сборке и рантайме
+media
+data
+tests
+playwright-report
+test-results
+.vscode
+.idea
