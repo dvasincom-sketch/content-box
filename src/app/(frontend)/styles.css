@@ -1232,20 +1232,27 @@ svg {
 }
 
 /* Сетка постеров-афиш — на странице категории-контейнера (posterLayout):
-   дочерние категории афишами, с переносом на строки. */
+   дочерние категории афишами, с переносом на строки.
+   Десктоп — фиксированно 5 в строку; на узких экранах колонок меньше,
+   чтобы афиши не мельчили. */
 .poster-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: clamp(12px, 2vw, 18px);
 }
 /* В сетке карточка заполняет ячейку. Иначе фиксированная ширина .poster-card
-   (clamp 120–170px, нужна для карусели на главной) шире 1fr-колонки —
+   (clamp 120–170px, нужна для карусели на главной) шире колонки —
    карточки вылезают за ячейки, перекрывают гэпы и налезают друг на друга. */
 .poster-grid .poster-card {
   width: 100%;
 }
-@media (max-width: 480px) {
+@media (max-width: 900px) {
   .poster-grid {
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .poster-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
