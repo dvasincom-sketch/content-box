@@ -435,7 +435,7 @@ function VideoLockInline({
           style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(6px)' }}>
           <Lock size={20} color="#fff" />
         </div>
-        <p className="mb-7 text-sm max-w-xs mx-auto" style={{ color: '#fff', opacity: 0.92 }}>{text}</p>
+        <p className="text-sm max-w-xs mx-auto" style={{ color: '#fff', opacity: 0.92, marginBottom: 28 }}>{text}</p>
         <Link href="/subscribe" className="inline-block text-sm font-semibold px-5 py-2.5 rounded-xl"
           style={{ background: '#fff', color: 'var(--brand-primary)' }}>
           Оформить подписку
