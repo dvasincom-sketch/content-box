@@ -15,6 +15,9 @@ export type EditableCat = {
   posterLayout: boolean
 }
 
+/** Ответ роута загрузки обложки /studio/api/categories/cover. */
+type CoverResponse = { error?: string; id?: number; url?: string | null }
+
 /**
  * Выдвижная панель редактирования категории. Название, slug (авто-превью),
  * описание (RichEditor → HTML → Lexical на сервере), обложка (R2).
@@ -49,19 +52,58 @@ export function CategoryEditPanel({
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res = await fetch('/studio/api/categories/cover', {
-        method: 'POST',
-        body: fd,
-        credentials: 'include',
-      })
-      const json = await res.json()
-      if (!res.ok) setError(json.error || 'Не удалось загрузить обложку')
-      else {
-        setCoverId(json.id)
-        setCoverUrl(json.url)
+
+      // 1) Сеть/запрос: если fetch упал — это не ответ сервера, а обрыв связи.
+      let res: Response
+      try {
+        res = await fetch('/studio/api/categories/cover', {
+          method: 'POST',
+          body: fd,
+          credentials: 'include',
+        })
+      } catch {
+        setError('Не удалось связаться с сервером (нет сети или запрос прерван). Проверьте соединение и повторите.')
+        return
       }
-    } catch {
-      setError('Ошибка загрузки обложки')
+
+      // 2) Тело ответа: пытаемся как JSON, иначе как текст (сервер мог отдать
+      //    HTML-страницу ошибки платформы — тогда res.json() бросил бы исключение).
+      const contentType = res.headers.get('content-type') || ''
+      let data: CoverResponse | null = null
+      let rawText = ''
+      if (contentType.includes('application/json')) {
+        data = (await res.json().catch(() => null)) as CoverResponse | null
+      } else {
+        rawText = (await res.text().catch(() => '')).trim()
+      }
+
+      // 3) Ошибка: показываем максимально конкретную причину.
+      if (!res.ok) {
+        let msg = data?.error
+        if (!msg) {
+          if (res.status === 401) {
+            msg = 'Сессия истекла — войдите в студию заново и повторите загрузку.'
+          } else if (res.status === 413) {
+            msg = 'Файл слишком большой — сервер отклонил загрузку. Возьмите картинку меньшего веса.'
+          } else if (res.status === 502 || res.status === 503 || res.status === 500) {
+            msg = `Сервер не смог обработать изображение (HTTP ${res.status}) — вероятно, не хватило памяти при создании превью. Попробуйте изображение меньшего размера/веса (например, ≤ 2 МБ, до ~2000px по ширине).`
+          } else {
+            msg = `Ошибка сервера (HTTP ${res.status}).`
+          }
+          if (rawText) msg += ` Ответ сервера: ${rawText.slice(0, 200)}`
+        }
+        setError(msg)
+        return
+      }
+
+      // 4) Успех, но без данных — тоже сигнализируем явно.
+      if (!data?.id) {
+        setError('Сервер вернул неожиданный ответ без данных обложки. Повторите попытку.')
+        return
+      }
+
+      setCoverId(data.id)
+      setCoverUrl(data.url ?? null)
     } finally {
       setUploading(false)
       if (fileInput.current) fileInput.current.value = ''
