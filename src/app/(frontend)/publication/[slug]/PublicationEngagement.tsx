@@ -189,6 +189,20 @@ function CommentActions({
   onToggleCommentReaction: (id: string | number, key: ReactionKey) => void
   onReply: (node: CommentNode) => void
 }) {
+  // Пикер эмодзи для кнопки «+»: раскрывается по клику, выбор эмодзи ставит
+  // соответствующую реакцию на комментарий. Закрывается по клику вне.
+  const [pickOpen, setPickOpen] = useState(false)
+  const pickRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!pickOpen) return
+    const onDoc = (e: MouseEvent) => {
+      if (!pickRef.current?.contains(e.target as Node)) setPickOpen(false)
+    }
+    document.addEventListener('click', onDoc)
+    return () => document.removeEventListener('click', onDoc)
+  }, [pickOpen])
+
   return (
     <div className="cm-actions">
       {node.reactions.map((cr) => (
@@ -204,15 +218,40 @@ function CommentActions({
         </button>
       ))}
       {isAuthed && (
-        <button
-          type="button"
-          className="cm-rx cm-rx--add"
-          title="Добавить реакцию"
-          aria-label="Добавить реакцию"
-          onClick={() => onToggleCommentReaction(node.id, 'like')}
-        >
-          <Plus size={14} />
-        </button>
+        <div className="cm-rx-pick-wrap" ref={pickRef}>
+          <button
+            type="button"
+            className="cm-rx cm-rx--add"
+            title="Добавить реакцию"
+            aria-label="Добавить реакцию"
+            aria-expanded={pickOpen}
+            onClick={(e) => {
+              e.stopPropagation()
+              setPickOpen((o) => !o)
+            }}
+          >
+            <Plus size={14} />
+          </button>
+          {pickOpen && (
+            <div className="cm-rx-pick" role="menu">
+              {REACTION_ORDER.map((k) => (
+                <button
+                  type="button"
+                  key={k}
+                  className="cm-rx-pick__opt"
+                  title={`Реакция ${REACTION_EMOJI[k]}`}
+                  aria-label={`Реакция ${REACTION_EMOJI[k]}`}
+                  onClick={() => {
+                    onToggleCommentReaction(node.id, k)
+                    setPickOpen(false)
+                  }}
+                >
+                  {REACTION_EMOJI[k]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       )}
       {!isReply && isAuthed && <span className="cm-sep">·</span>}
       {!isReply && isAuthed && (
@@ -289,6 +328,61 @@ function reactionsReducer(
   })
 }
 
+type CommentOptimisticAction = { id: string | number; key: ReactionKey }
+
+/**
+ * Тумблер реакции в списке реакций одного комментария. Семантика как у поста —
+ * «одна реакция на пользователя»: выбор нового эмодзи снимает предыдущий.
+ * В отличие от поста, список содержит только НЕнулевые реакции, поэтому:
+ *  - новый ключ добавляем записью;
+ *  - при обнулении счётчика пилюлю убираем (filter count > 0).
+ * Порядок пилюль держим по REACTION_ORDER.
+ */
+function toggleCommentReactions(list: CommentReaction[], key: ReactionKey): CommentReaction[] {
+  const mine = list.find((r) => r.mine)
+
+  let next: CommentReaction[]
+  if (mine && mine.key === key) {
+    // повторный клик по своей реакции — снимаем
+    next = list.map((r) =>
+      r.key === key ? { ...r, mine: false, count: Math.max(0, r.count - 1) } : r,
+    )
+  } else {
+    // снять прежнюю (если была другая) и поставить новую
+    next = list.map((r) =>
+      r.mine ? { ...r, mine: false, count: Math.max(0, r.count - 1) } : r,
+    )
+    if (next.some((r) => r.key === key)) {
+      next = next.map((r) => (r.key === key ? { ...r, mine: true, count: r.count + 1 } : r))
+    } else {
+      next = [...next, { key, count: 1, mine: true }]
+    }
+  }
+
+  return next
+    .filter((r) => r.count > 0)
+    .sort((a, b) => REACTION_ORDER.indexOf(a.key) - REACTION_ORDER.indexOf(b.key))
+}
+
+/** Оптимистичный редьюсер дерева комментариев: находит нужный узел (в т.ч. в
+ *  ответах) и тумблерит его реакцию. */
+function commentsReducer(
+  state: CommentNode[],
+  action: CommentOptimisticAction,
+): CommentNode[] {
+  const walk = (nodes: CommentNode[]): CommentNode[] =>
+    nodes.map((n) => {
+      if (String(n.id) === String(action.id)) {
+        return { ...n, reactions: toggleCommentReactions(n.reactions, action.key) }
+      }
+      if (n.replies && n.replies.length > 0) {
+        return { ...n, replies: walk(n.replies) }
+      }
+      return n
+    })
+  return walk(state)
+}
+
 export function PublicationEngagement({
   isAuthed,
   publicationId,
@@ -313,6 +407,7 @@ export function PublicationEngagement({
     : '/login'
 
   const [optimisticReactions, applyOptimistic] = useOptimistic(reactions, reactionsReducer)
+  const [optimisticComments, applyCommentOptimistic] = useOptimistic(comments, commentsReducer)
 
   const ordered = REACTION_ORDER.map((k) =>
     optimisticReactions.find((r) => r.key === k),
@@ -327,7 +422,7 @@ export function PublicationEngagement({
     return () => document.removeEventListener('click', onDoc)
   }, [openPop])
 
-  const visibleComments = isAuthed ? comments : comments.slice(0, 2)
+  const visibleComments = isAuthed ? optimisticComments : optimisticComments.slice(0, 2)
 
   function handleToggleReaction(key: ReactionKey) {
     setError(null)
@@ -346,6 +441,7 @@ export function PublicationEngagement({
   function handleToggleCommentReaction(commentId: string | number, key: ReactionKey) {
     setError(null)
     startTransition(async () => {
+      applyCommentOptimistic({ id: commentId, key })
       const res = await toggleReaction({
         targetType: 'comment',
         targetId: commentId,

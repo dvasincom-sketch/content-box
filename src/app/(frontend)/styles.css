@@ -969,6 +969,43 @@ svg {
 }
 .cm-item:hover .cm-rx--add { opacity: 1; }
 .cm-rx--add:hover { color: var(--brand-primary); border: none; }
+/* На тач-устройствах ховера нет — держим «+» видимой, иначе пикер не вызвать. */
+@media (hover: none) {
+  .cm-rx--add { opacity: 1; }
+}
+
+/* Пикер эмодзи для «+»: маленький поповер с выбором реакции. */
+.cm-rx-pick-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.cm-rx-pick {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+.cm-rx-pick__opt {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 5px 7px;
+  border-radius: 8px;
+  transition: background 120ms ease, transform 120ms ease;
+}
+.cm-rx-pick__opt:hover {
+  background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+  transform: translateY(-1px);
+}
 
 .cm-sep {
   color: var(--brand-border);
