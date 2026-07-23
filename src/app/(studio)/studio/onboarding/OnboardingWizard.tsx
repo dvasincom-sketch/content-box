@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation'
  * шага на tenant и двигает onboardingStep, поэтому при возврате мастер
  * открывается на том же месте. Финал ставит onboardingComplete=true → студия.
  *
+ * Визуально согласован со студией и экраном входа: фон студийного логина
+ * (пятна + сетка), стеклянная карточка .studio-login__card, поля/кнопки .studio-*.
+ *
  * Аватар грузится в site-settings.logo через существующий /studio/api/settings/logo.
  * Остальное — через /studio/api/onboarding.
  */
@@ -151,14 +154,14 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
   const catLabel = CATEGORIES.find((c) => c.value === category)?.label || '—'
 
   return (
-    <div className="onb">
+    <div className="studio-login onb">
       <style>{ONB_CSS}</style>
 
-      <div className="onb__bg" aria-hidden>
-        <span className="onb__grid" />
+      <div className="studio-login__bg" aria-hidden>
+        <span className="studio-login__grid" />
       </div>
 
-      <div className="onb__card">
+      <div className="studio-login__card onb__card">
         <div className="onb__head">
           <div className="onb__eyebrow">Настройка · Контент Бокс</div>
           <div className="onb__progress">
@@ -180,10 +183,10 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
             <>
               <h1 className="onb__title">Расскажите о проекте</h1>
               <p className="onb__lede">Название увидят ваши подписчики. Описание можно изменить позже.</p>
-              <label className="onb__field">
-                <span className="onb__label">Название проекта</span>
+              <label className="studio-field">
+                <span className="studio-field__label">Название проекта</span>
                 <input
-                  className="onb__input"
+                  className="studio-input"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Мой фандом"
@@ -191,10 +194,10 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
                   autoFocus
                 />
               </label>
-              <label className="onb__field">
-                <span className="onb__label">Короткое описание</span>
+              <label className="studio-field">
+                <span className="studio-field__label">Короткое описание</span>
                 <textarea
-                  className="onb__input onb__textarea"
+                  className="studio-input onb__textarea"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="О чём ваш проект — в одном-двух предложениях"
@@ -209,11 +212,11 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
             <>
               <h1 className="onb__title">Адрес вашего сайта</h1>
               <p className="onb__lede">Латиница, цифры и дефис. Позже можно подключить свой домен.</p>
-              <label className="onb__field">
-                <span className="onb__label">Поддомен</span>
+              <label className="studio-field">
+                <span className="studio-field__label">Поддомен</span>
                 <div className="onb__addr">
                   <input
-                    className="onb__input onb__addr-input"
+                    className="studio-input onb__addr-input"
                     value={subdomain}
                     onChange={(e) => setSubdomain(sanitizeSub(e.target.value))}
                     placeholder="my-fandom"
@@ -276,7 +279,7 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
                 <div className="onb__avatar-actions">
                   <button
                     type="button"
-                    className="onb__btn onb__btn--ghost"
+                    className="studio-btn"
                     onClick={() => fileRef.current?.click()}
                     disabled={saving}
                   >
@@ -309,12 +312,14 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
             </>
           )}
 
-          {error && <div className="onb__error">{error}</div>}
+          {error && (
+            <div className="studio-login__error" style={{ marginTop: 'var(--st-space-3)' }}>{error}</div>
+          )}
         </div>
 
         <div className="onb__foot">
           {step > 0 ? (
-            <button type="button" className="onb__btn onb__btn--ghost" onClick={goBack} disabled={saving}>
+            <button type="button" className="studio-btn" onClick={goBack} disabled={saving}>
               Назад
             </button>
           ) : (
@@ -322,11 +327,11 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
           )}
           <div className="onb__foot-right">
             {step === 3 && (
-              <button type="button" className="onb__btn onb__btn--ghost" onClick={next} disabled={saving}>
+              <button type="button" className="studio-btn" onClick={next} disabled={saving}>
                 Пропустить
               </button>
             )}
-            <button type="button" className="onb__btn onb__btn--primary" onClick={next} disabled={saving}>
+            <button type="button" className="studio-btn studio-btn--primary" onClick={next} disabled={saving}>
               {saving ? 'Сохраняем…' : step === LAST ? 'Открыть студию' : 'Далее'}
             </button>
           </div>
@@ -337,126 +342,67 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
 }
 
 const ONB_CSS = `
-.onb {
-  position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center;
-  padding:40px 20px; background:var(--st-bg); color:var(--st-text);
-  font-family:var(--font-sans, 'IBM Plex Sans', system-ui, sans-serif);
-}
-.onb__bg { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
-.onb__grid {
-  position:absolute; inset:0; opacity:.5;
-  background-image:
-    linear-gradient(to right, rgba(255,255,255,.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,.03) 1px, transparent 1px);
-  background-size:44px 44px;
-  mask-image:radial-gradient(circle at 50% 35%, #000 30%, transparent 72%);
-}
-.onb__card {
-  position:relative; z-index:1; width:100%; max-width:520px;
-  background:var(--st-surface); border:1px solid var(--st-border);
-  border-radius:16px; box-shadow:var(--st-shadow); padding:28px 28px 22px;
-}
-.onb__head { margin-bottom:20px; }
-.onb__eyebrow {
-  font-family:var(--font-mono, 'IBM Plex Mono', monospace);
-  font-size:12px; letter-spacing:.12em; color:var(--st-text-muted); margin-bottom:14px;
-}
-.onb__progress { display:flex; gap:8px; margin-bottom:10px; }
-.onb__dot { width:26px; height:4px; border-radius:2px; background:var(--st-surface-hover); transition:background .2s ease; }
-.onb__dot.is-active { background:var(--st-accent); }
-.onb__dot.is-done { background:color-mix(in srgb, var(--st-accent) 55%, transparent); }
-.onb__stepno {
-  font-family:var(--font-mono, monospace); font-size:12px; color:var(--st-text-faint);
-}
-.onb__body { min-height:220px; }
-.onb__title { font-size:24px; font-weight:600; letter-spacing:-.02em; margin:0 0 6px; }
-.onb__lede { font-size:14px; color:var(--st-text-muted); margin:0 0 18px; line-height:1.5; }
-.onb__field { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
-.onb__label { font-family:var(--font-mono, monospace); font-size:12px; color:var(--st-text-muted); }
-.onb__input {
-  width:100%; padding:11px 13px; font-size:15px;
-  font-family:var(--font-sans, system-ui, sans-serif);
-  color:var(--st-text); background:var(--st-surface-2);
-  border:1px solid var(--st-border); border-radius:9px; outline:none;
-  transition:border-color .15s ease;
-}
-.onb__input:focus { border-color:var(--st-border-strong); }
-.onb__input::placeholder { color:var(--st-text-faint); }
-.onb__textarea { resize:vertical; line-height:1.5; }
-.onb__addr { display:flex; align-items:stretch; }
-.onb__addr-input { border-top-right-radius:0; border-bottom-right-radius:0; }
+/* Онбординг живёт в шелле студийного логина: карточку прижимаем к верху
+   (чтобы не «прыгала» между шагами) и делаем шире стандартного логина. */
+.studio-login.onb { align-items: start; padding-top: var(--st-space-8); }
+.onb__card { max-width: 560px; }
+.onb .studio-field { margin-bottom: var(--st-space-4); }
+.onb__textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
+
+.onb__head { margin-bottom: var(--st-space-5); }
+.onb__eyebrow { font-family: var(--st-font-mono); font-size: 12px; letter-spacing: .12em; color: var(--st-text-muted); margin-bottom: 14px; }
+.onb__progress { display: flex; gap: 8px; margin-bottom: 10px; }
+.onb__dot { width: 26px; height: 4px; border-radius: 2px; background: var(--st-surface-hover); transition: background .2s ease; }
+.onb__dot.is-active { background: var(--st-accent); }
+.onb__dot.is-done { background: color-mix(in srgb, var(--st-accent) 55%, transparent); }
+.onb__stepno { font-family: var(--st-font-mono); font-size: 12px; color: var(--st-text-faint); }
+.onb__body { min-height: 220px; }
+.onb__title { font-size: var(--st-text-xl); font-weight: 600; letter-spacing: -.02em; margin: 0 0 6px; }
+.onb__lede { font-size: var(--st-text-sm); color: var(--st-text-muted); margin: 0 0 18px; line-height: 1.5; }
+
+.onb__addr { display: flex; align-items: stretch; }
+.onb__addr .onb__addr-input { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .onb__addr-suffix {
-  display:flex; align-items:center; padding:0 12px; font-size:14px; color:var(--st-text-muted);
-  background:var(--st-surface-hover); border:1px solid var(--st-border); border-left:none;
-  border-top-right-radius:9px; border-bottom-right-radius:9px; white-space:nowrap;
+  display: flex; align-items: center; padding: 0 12px; font-size: 14px; color: var(--st-text-muted);
+  background: var(--st-surface-hover); border: 1px solid var(--st-border); border-left: none;
+  border-top-right-radius: var(--st-radius-sm); border-bottom-right-radius: var(--st-radius-sm); white-space: nowrap;
 }
-.onb__preview { font-size:13px; color:var(--st-text-muted); }
-.onb__preview b { color:var(--st-text); }
-.onb__subnote { margin-top:12px; font-size:12.5px; line-height:1.5; color:var(--st-text-faint); }
-.onb__subnote b { color:var(--st-text-muted); font-weight:500; }
-/* Категории — радио-кнопки в нашем стиле */
-.onb__radios { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+.onb__preview { font-size: 13px; color: var(--st-text-muted); }
+.onb__preview b { color: var(--st-text); }
+.onb__subnote { margin-top: 12px; font-size: 12.5px; line-height: 1.5; color: var(--st-text-faint); }
+.onb__subnote b { color: var(--st-text-muted); font-weight: 500; }
+
+.onb__radios { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .onb__radio {
-  display:flex; align-items:center; gap:11px; padding:12px 14px; cursor:pointer;
-  background:var(--st-surface-2); border:1px solid var(--st-border); border-radius:10px;
-  transition:border-color .15s ease, background .15s ease;
+  display: flex; align-items: center; gap: 11px; padding: 12px 14px; cursor: pointer;
+  background: var(--st-surface-2); border: 1px solid var(--st-border); border-radius: var(--st-radius-sm);
+  transition: border-color .15s ease, background .15s ease;
 }
-.onb__radio:hover { background:var(--st-surface-hover); }
-.onb__radio.is-active { border-color:var(--st-accent); background:var(--st-surface-hover); }
-.onb__radio input { position:absolute; opacity:0; width:0; height:0; }
-.onb__radio-dot {
-  flex:none; width:18px; height:18px; border-radius:50%;
-  border:2px solid var(--st-border-strong); background:transparent;
-  transition:border-color .15s ease; position:relative;
-}
-.onb__radio.is-active .onb__radio-dot { border-color:var(--st-accent); }
-.onb__radio.is-active .onb__radio-dot::after {
-  content:''; position:absolute; inset:3px; border-radius:50%; background:var(--st-accent);
-}
-.onb__radio input:focus-visible + .onb__radio-dot { box-shadow:0 0 0 3px color-mix(in srgb, var(--st-accent) 30%, transparent); }
-.onb__radio-label { font-size:14px; color:var(--st-text); }
-.onb__avatar { display:flex; align-items:center; gap:18px; }
-.onb__avatar-preview {
-  width:88px; height:88px; border-radius:16px; overflow:hidden; flex:none;
-  background:var(--st-surface-2); border:1px solid var(--st-border);
-  display:flex; align-items:center; justify-content:center;
-}
-.onb__avatar-preview img { width:100%; height:100%; object-fit:cover; }
-.onb__avatar-empty { font-size:34px; font-weight:600; color:var(--st-text-faint); }
-.onb__avatar-actions { display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
-.onb__hint { font-size:12px; color:var(--st-text-faint); }
-.onb__summary { display:flex; flex-direction:column; gap:2px; }
-.onb__row {
-  display:flex; justify-content:space-between; gap:16px; padding:11px 0;
-  border-bottom:1px solid var(--st-border); font-size:14px;
-}
-.onb__row:last-child { border-bottom:none; }
-.onb__row span { color:var(--st-text-muted); }
-.onb__row b { color:var(--st-text); font-weight:500; text-align:right; word-break:break-word; }
-.onb__error {
-  margin-top:16px; font-size:14px; color:var(--st-danger);
-  background:color-mix(in srgb, var(--st-danger) 12%, transparent);
-  border:1px solid color-mix(in srgb, var(--st-danger) 30%, transparent);
-  border-radius:9px; padding:10px 12px;
-}
-.onb__foot {
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  margin-top:22px; padding-top:18px; border-top:1px solid var(--st-border);
-}
-.onb__foot-right { display:flex; gap:10px; }
-.onb__btn {
-  padding:11px 18px; font-size:14px; font-weight:600; border-radius:9px; cursor:pointer;
-  font-family:var(--font-sans, system-ui, sans-serif); border:1px solid transparent;
-  transition:background .15s ease, border-color .15s ease;
-}
-.onb__btn:disabled { opacity:.6; cursor:default; }
-.onb__btn--primary { background:var(--st-accent); color:var(--st-accent-text); }
-.onb__btn--primary:hover:not(:disabled) { background:var(--st-accent-hover); }
-.onb__btn--ghost { background:transparent; color:var(--st-text); border-color:var(--st-border); }
-.onb__btn--ghost:hover:not(:disabled) { background:var(--st-surface-hover); }
-@media (max-width:520px){
-  .onb { align-items:flex-start; }
-  .onb__card { padding:22px 18px; }
-  .onb__radios { grid-template-columns:1fr; }
+.onb__radio:hover { background: var(--st-surface-hover); }
+.onb__radio.is-active { border-color: var(--st-accent); background: var(--st-surface-hover); }
+.onb__radio input { position: absolute; opacity: 0; width: 0; height: 0; }
+.onb__radio-dot { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--st-border-strong); background: transparent; transition: border-color .15s ease; position: relative; }
+.onb__radio.is-active .onb__radio-dot { border-color: var(--st-accent); }
+.onb__radio.is-active .onb__radio-dot::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--st-accent); }
+.onb__radio input:focus-visible + .onb__radio-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-accent) 30%, transparent); }
+.onb__radio-label { font-size: 14px; color: var(--st-text); }
+
+.onb__avatar { display: flex; align-items: center; gap: 18px; }
+.onb__avatar-preview { width: 88px; height: 88px; border-radius: 16px; overflow: hidden; flex: none; background: var(--st-surface-2); border: 1px solid var(--st-border); display: flex; align-items: center; justify-content: center; }
+.onb__avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+.onb__avatar-empty { font-size: 34px; font-weight: 600; color: var(--st-text-faint); }
+.onb__avatar-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.onb__hint { font-size: 12px; color: var(--st-text-faint); }
+
+.onb__summary { display: flex; flex-direction: column; gap: 2px; }
+.onb__row { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--st-border); font-size: 14px; }
+.onb__row:last-child { border-bottom: none; }
+.onb__row span { color: var(--st-text-muted); }
+.onb__row b { color: var(--st-text); font-weight: 500; text-align: right; word-break: break-word; }
+
+.onb__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--st-border); }
+.onb__foot-right { display: flex; gap: 10px; }
+@media (max-width: 560px) {
+  .onb__radios { grid-template-columns: 1fr; }
 }
 `

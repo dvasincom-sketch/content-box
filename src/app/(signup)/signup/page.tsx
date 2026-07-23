@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BrandLogo } from '@/components/studio/BrandLogo'
 
 /**
  * Регистрация автора (/signup) — визуальный «брат» экрана /studio/login:
@@ -82,9 +81,6 @@ export default function SignupPage() {
         {!created ? (
           <>
             <div className="studio-login__head">
-              <div className="studio-login__logo">
-                <BrandLogo size={44} blink />
-              </div>
               <h1>Создать проект</h1>
               <p>Контент Бокс · регистрация автора</p>
             </div>
@@ -140,9 +136,6 @@ export default function SignupPage() {
         ) : (
           <div className="su-done">
             <div className="studio-login__head">
-              <div className="studio-login__logo">
-                <BrandLogo size={44} />
-              </div>
               <h1>Проект создан</h1>
               <p>Сохраните пароль — показываем один раз</p>
             </div>
