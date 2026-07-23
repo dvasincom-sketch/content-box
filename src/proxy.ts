@@ -12,7 +12,13 @@ import type { NextRequest } from 'next/server'
  * Place this file at: src/middleware.ts
  */
 
-const BYPASS_PREFIXES = ['/admin', '/api', '/_next', '/favicon.ico']
+// Пути, которые НЕ резолвятся по домену-тенанту (платформенные, а не клиентские):
+//  - /admin  — супер-админка Payload (управление проектами/пользователями);
+//  - /studio — редакторская панель; она скоупится по ЗАЛОГИНЕННОМУ пользователю
+//              (author.tenantId), а не по хосту, поэтому доступна на любом домене
+//              (в т.ч. на платформенном contentbox.site), без привязки к тенанту;
+//  - /api, /_next, /favicon.ico — служебные.
+const BYPASS_PREFIXES = ['/admin', '/studio', '/api', '/_next', '/favicon.ico']
 
 function stripPort(host: string | null): string {
   return (host || '').split(':')[0].toLowerCase()
