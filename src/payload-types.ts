@@ -181,6 +181,17 @@ export interface Tenant {
   domainVerified?: boolean | null;
   status: 'pending' | 'active' | 'suspended';
   plan?: ('free' | 'basic' | 'pro') | null;
+  /**
+   * Часть до .contentbox.site. `domain` = <subdomain>.contentbox.site.
+   */
+  subdomain?: string | null;
+  category?: ('blogger' | 'musician' | 'podcaster' | 'streamer' | 'artist' | 'education' | 'other') | null;
+  description?: string | null;
+  /**
+   * Индекс шага мастера для возобновления. 0 — не начат.
+   */
+  onboardingStep?: number | null;
+  onboardingComplete?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -190,6 +201,10 @@ export interface Tenant {
  */
 export interface User {
   id: number;
+  /**
+   * Отображаемое имя автора (заполняется при регистрации).
+   */
+  name?: string | null;
   /**
    * Пусто для платформенных пользователей (superadmin).
    */
@@ -446,7 +461,7 @@ export interface Category {
    */
   showInFooter?: boolean | null;
   /**
-   * Публикации этой категории показываются горизонтальным рядом вертикальных постеров 2:3 (как афиши фильмов) — на странице категории и на главной. Загружайте вертикальную обложку.
+   * Эта категория — контейнер: её дочерние категории выводятся вертикальными постерами-афишами 2:3 (как афиши фильмов/сериалов) — рядом на главной и сеткой на странице раздела. Клик по афише ведёт в дочерний раздел с публикациями-эпизодами. Загружайте вертикальную обложку в КАЖДУЮ дочернюю категорию.
    */
   posterLayout?: boolean | null;
   /**
@@ -1054,6 +1069,11 @@ export interface TenantsSelect<T extends boolean = true> {
   domainVerified?: T;
   status?: T;
   plan?: T;
+  subdomain?: T;
+  category?: T;
+  description?: T;
+  onboardingStep?: T;
+  onboardingComplete?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1062,6 +1082,7 @@ export interface TenantsSelect<T extends boolean = true> {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
   tenant?: T;
   platformRole?: T;
   tenantRole?: T;

@@ -17,8 +17,9 @@ export default async function StudioAppLayout({ children }: { children: React.Re
     redirect('/studio/login')
   }
 
-  // Имя тенанта для брендинга сайдбара.
+  // Тенант: имя для брендинга сайдбара + гейт онбординга.
   let brandName = 'Студия'
+  let onboardingComplete = true
   try {
     const payload = await getPayload({ config: await config })
     const tenant = await payload.findByID({
@@ -28,8 +29,14 @@ export default async function StudioAppLayout({ children }: { children: React.Re
       overrideAccess: true,
     })
     brandName = (tenant as any)?.name || brandName
+    onboardingComplete = Boolean((tenant as any)?.onboardingComplete)
   } catch {
     /* дефолт при ошибке */
+  }
+
+  // Незавершённый онбординг → в мастер (вне try, чтобы redirect не проглотился).
+  if (!onboardingComplete) {
+    redirect('/studio/onboarding')
   }
 
   return (

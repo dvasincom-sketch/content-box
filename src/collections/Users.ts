@@ -44,6 +44,12 @@ export const Users: CollectionConfig = {
   fields: [
     // `email` and `password` are injected by `auth: true`.
     {
+      name: 'name',
+      type: 'text',
+      label: 'Имя',
+      admin: { description: 'Отображаемое имя автора (заполняется при регистрации).' },
+    },
+    {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',

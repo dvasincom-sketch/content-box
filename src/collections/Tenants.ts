@@ -67,6 +67,49 @@ export const Tenants: CollectionConfig = {
         { label: 'Pro', value: 'pro' },
       ],
     },
+    // --- Онбординг автора (заполняется мастером в /studio/onboarding) ---
+    {
+      name: 'subdomain',
+      type: 'text',
+      unique: true,
+      index: true,
+      label: 'Поддомен',
+      admin: {
+        description: 'Часть до .contentbox.site. `domain` = <subdomain>.contentbox.site.',
+      },
+    },
+    {
+      name: 'category',
+      type: 'select',
+      label: 'Категория (ниша)',
+      options: [
+        { label: 'Блогер', value: 'blogger' },
+        { label: 'Музыкант', value: 'musician' },
+        { label: 'Подкастер', value: 'podcaster' },
+        { label: 'Стример', value: 'streamer' },
+        { label: 'Художник', value: 'artist' },
+        { label: 'Образование', value: 'education' },
+        { label: 'Другое', value: 'other' },
+      ],
+    },
+    {
+      name: 'description',
+      type: 'textarea',
+      label: 'Короткое описание проекта',
+    },
+    {
+      name: 'onboardingStep',
+      type: 'number',
+      defaultValue: 0,
+      label: 'Шаг онбординга',
+      admin: { description: 'Индекс шага мастера для возобновления. 0 — не начат.' },
+    },
+    {
+      name: 'onboardingComplete',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Онбординг завершён',
+    },
   ],
   timestamps: true, // provides createdAt / updatedAt
 }
