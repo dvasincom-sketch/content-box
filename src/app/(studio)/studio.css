@@ -505,6 +505,16 @@ body {
 .studio-page-head h1 { font-size: var(--st-text-2xl); }
 .studio-page-head__sub { color: var(--st-text-muted); font-size: var(--st-text-base); margin-top: var(--st-space-1); }
 
+/* Узкие экраны: кнопка действия не должна вылезать за вьюпорт — уводим её
+   под заголовок и прижимаем влево (иначе «Новая публикация» обрезается). */
+@media (max-width: 560px) {
+  .studio-page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .studio-page-head > .studio-btn { align-self: flex-start; }
+}
+
 .studio-back {
   display: inline-flex;
   align-items: center;

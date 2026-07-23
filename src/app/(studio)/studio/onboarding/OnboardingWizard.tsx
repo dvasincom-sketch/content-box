@@ -226,6 +226,11 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
               <div className="onb__preview">
                 Ваш адрес: <b>{(subdomain || 'ваш-адрес')}.contentbox.site</b>
               </div>
+              <p className="onb__subnote">
+                Свой собственный домен можно будет подключить позже в личном кабинете.
+                Домен третьего уровня <b>.contentbox.site</b> остаётся бесплатным и всегда
+                доступен как резервный адрес.
+              </p>
             </>
           )}
 
@@ -233,17 +238,23 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
             <>
               <h1 className="onb__title">Категория проекта</h1>
               <p className="onb__lede">Поможет с оформлением и рекомендациями.</p>
-              <div className="onb__cats">
+              <div className="onb__radios" role="radiogroup" aria-label="Категория проекта">
                 {CATEGORIES.map((c) => (
-                  <button
+                  <label
                     key={c.value}
-                    type="button"
-                    className={`onb__cat ${category === c.value ? 'is-active' : ''}`}
-                    onClick={() => setCategory(c.value)}
-                    disabled={saving}
+                    className={`onb__radio ${category === c.value ? 'is-active' : ''}`}
                   >
-                    {c.label}
-                  </button>
+                    <input
+                      type="radio"
+                      name="category"
+                      value={c.value}
+                      checked={category === c.value}
+                      onChange={() => setCategory(c.value)}
+                      disabled={saving}
+                    />
+                    <span className="onb__radio-dot" aria-hidden />
+                    <span className="onb__radio-label">{c.label}</span>
+                  </label>
                 ))}
               </div>
             </>
@@ -381,14 +392,29 @@ const ONB_CSS = `
 }
 .onb__preview { font-size:13px; color:var(--st-text-muted); }
 .onb__preview b { color:var(--st-text); }
-.onb__cats { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
-.onb__cat {
-  padding:13px 14px; font-size:14px; text-align:left; cursor:pointer;
-  color:var(--st-text); background:var(--st-surface-2);
-  border:1px solid var(--st-border); border-radius:10px; transition:border-color .15s ease, background .15s ease;
+.onb__subnote { margin-top:12px; font-size:12.5px; line-height:1.5; color:var(--st-text-faint); }
+.onb__subnote b { color:var(--st-text-muted); font-weight:500; }
+/* Категории — радио-кнопки в нашем стиле */
+.onb__radios { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+.onb__radio {
+  display:flex; align-items:center; gap:11px; padding:12px 14px; cursor:pointer;
+  background:var(--st-surface-2); border:1px solid var(--st-border); border-radius:10px;
+  transition:border-color .15s ease, background .15s ease;
 }
-.onb__cat:hover { background:var(--st-surface-hover); }
-.onb__cat.is-active { border-color:var(--st-accent); background:var(--st-surface-hover); }
+.onb__radio:hover { background:var(--st-surface-hover); }
+.onb__radio.is-active { border-color:var(--st-accent); background:var(--st-surface-hover); }
+.onb__radio input { position:absolute; opacity:0; width:0; height:0; }
+.onb__radio-dot {
+  flex:none; width:18px; height:18px; border-radius:50%;
+  border:2px solid var(--st-border-strong); background:transparent;
+  transition:border-color .15s ease; position:relative;
+}
+.onb__radio.is-active .onb__radio-dot { border-color:var(--st-accent); }
+.onb__radio.is-active .onb__radio-dot::after {
+  content:''; position:absolute; inset:3px; border-radius:50%; background:var(--st-accent);
+}
+.onb__radio input:focus-visible + .onb__radio-dot { box-shadow:0 0 0 3px color-mix(in srgb, var(--st-accent) 30%, transparent); }
+.onb__radio-label { font-size:14px; color:var(--st-text); }
 .onb__avatar { display:flex; align-items:center; gap:18px; }
 .onb__avatar-preview {
   width:88px; height:88px; border-radius:16px; overflow:hidden; flex:none;
@@ -429,7 +455,8 @@ const ONB_CSS = `
 .onb__btn--ghost { background:transparent; color:var(--st-text); border-color:var(--st-border); }
 .onb__btn--ghost:hover:not(:disabled) { background:var(--st-surface-hover); }
 @media (max-width:520px){
+  .onb { align-items:flex-start; }
   .onb__card { padding:22px 18px; }
-  .onb__cats { grid-template-columns:1fr; }
+  .onb__radios { grid-template-columns:1fr; }
 }
 `

@@ -38,8 +38,11 @@ export default async function OnboardingPage() {
     settings?.logo && typeof settings.logo === 'object' ? settings.logo.url : null
 
   const t = tenant as any
+  // Имя тенанта при регистрации — временный плейсхолдер; в поле показываем пусто,
+  // чтобы автор ввёл реальное название проекта.
+  const displayName = t.name && t.name !== 'Новый проект' ? t.name : ''
   const initial = {
-    name: t.name || '',
+    name: displayName,
     description: t.description || '',
     subdomain: t.subdomain || '',
     category: t.category || '',
