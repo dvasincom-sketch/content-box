@@ -2,23 +2,29 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 /**
- * Domain → tenant resolution (ТЗ §5).
+ * Роутинг по хосту: платформенный домен vs клиентские (тенантные) домены.
  *
- * Runs on every front-end request. Reads the hostname, looks up an ACTIVE +
- * domainVerified Tenant by `domain` via Payload's REST API, and injects the
- * tenant context into request headers so rendering and Payload queries operate
- * in that scope. ISR/CDN cache is varied by domain so tenants never share HTML.
+ * ПЛАТФОРМЕННЫЙ домен (contentbox.site): на `/` отдаём лендинг платформы
+ * (public/landing.html), а /studio и /admin пропускаем как есть — они скоупятся
+ * по залогиненному пользователю, тенант по хосту им не нужен.
  *
- * Place this file at: src/middleware.ts
+ * КЛИЕНТСКИЕ домены: ищем ACTIVE + domainVerified тенанта по `domain` через
+ * Payload REST API и инжектим его контекст в заголовки (рендер и запросы идут
+ * в скоупе тенанта). ISR/CDN кэш варьируется по домену.
+ *
+ * Файл подключается из src/middleware.ts.
  */
 
-// Пути, которые НЕ резолвятся по домену-тенанту (платформенные, а не клиентские):
-//  - /admin  — супер-админка Payload (управление проектами/пользователями);
-//  - /studio — редакторская панель; она скоупится по ЗАЛОГИНЕННОМУ пользователю
-//              (author.tenantId), а не по хосту, поэтому доступна на любом домене
-//              (в т.ч. на платформенном contentbox.site), без привязки к тенанту;
-//  - /api, /_next, /favicon.ico — служебные.
+// Пути мимо резолвинга тенанта (служебные + панели, они скоупятся по логину).
 const BYPASS_PREFIXES = ['/admin', '/studio', '/api', '/_next', '/favicon.ico']
+
+// Платформенные хосты: тут лендинг + студия + админка, а НЕ клиентский сайт.
+const PLATFORM_HOSTS = new Set(['contentbox.site', 'www.contentbox.site'])
+function isPlatformHost(host: string): boolean {
+  // Технический домен Timeweb (*.twc1.net) тоже показывает лендинг — удобно
+  // проверить всё ДО переключения DNS на contentbox.site.
+  return PLATFORM_HOSTS.has(host) || host.endsWith('.twc1.net')
+}
 
 function stripPort(host: string | null): string {
   return (host || '').split(':')[0].toLowerCase()
@@ -57,13 +63,26 @@ export async function proxy(request: NextRequest) {
     request.headers.get('host') ??
     request.nextUrl.hostname,
   )
+
+  // Платформенный домен: лендинг на `/`, без резолвинга тенанта.
+  if (isPlatformHost(host)) {
+    if (pathname === '/') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/landing.html' // статика из public/
+      return NextResponse.rewrite(url)
+    }
+    // Прочие пути (кроме уже пропущенных /studio, /admin, /api) — как есть.
+    return NextResponse.next()
+  }
+
+  // Клиентский домен → резолвинг тенанта.
   const proto = request.headers.get('x-forwarded-proto') ?? 'https'
   const origin = `${proto}://${host}`
   console.log('[proxy] host=', host, '| origin=', origin)
   const tenant = await resolveTenantByDomain(host, origin)
 
   if (!tenant) {
-    // Unknown / unverified / suspended domain → don't leak another tenant.
+    // Неизвестный / неверифицированный / приостановленный домен.
     const url = request.nextUrl.clone()
     url.pathname = '/domain-not-found'
     const res = NextResponse.rewrite(url)

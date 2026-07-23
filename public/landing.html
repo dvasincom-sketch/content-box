@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Контент Бокс — своё приложение для твоей аудитории</title>
+<meta name="description" content="White-label платформа для авторов контента. Своё приложение на твоём домене, подписки на твой счёт, никаких посредников.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== ТОКЕНЫ (из брендбука студии) ===== */
+  .theme-dark {
+    --bg:#0a0a0b; --surface:#131316; --surface-2:#1a1a1e; --surface-hover:#202027;
+    --border:#26262c; --border-strong:#35353d;
+    --text:#f4f4f5; --muted:#a1a1aa; --faint:#6b6b74;
+    --accent:#ffffff; --accent-text:#0a0a0b; --accent-hover:#e4e4e7;
+    --success:#4ade80; --danger:#f87171; --warning:#fbbf24;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 20px 50px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+  .theme-light {
+    --bg:#fafafa; --surface:#ffffff; --surface-2:#f4f4f5; --surface-hover:#ececee;
+    --border:#e4e4e7; --border-strong:#d4d4d8;
+    --text:#18181b; --muted:#52525b; --faint:#a1a1aa;
+    --accent:#18181b; --accent-text:#ffffff; --accent-hover:#27272a;
+    --success:#16a34a; --danger:#dc2626; --warning:#d97706;
+    --shadow:0 1px 2px rgba(0,0,0,.06), 0 20px 50px rgba(0,0,0,.10);
+    color-scheme:light;
+  }
+  :root {
+    --sans:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    --ease:cubic-bezier(.4,0,.2,1);
+    --radius-sm:6px; --radius:10px; --radius-lg:14px;
+    --maxw:1080px;
+    --gutter: max(24px, calc((100vw - 1080px) / 2 + 24px));
+    --glass: color-mix(in srgb, var(--surface) 60%, transparent);
+    --blur: blur(20px) saturate(1.4);
+    --glass-brd: color-mix(in srgb, var(--border-strong) 55%, transparent);
+    --glass-hi: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+  }
+
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:var(--bg); color:var(--text);
+    font-family:var(--sans); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+  .wrap { max-width:var(--maxw); margin:0 auto; padding:0 24px; }
+  html, body { overflow-x:clip; }
+
+  a { color:inherit; text-decoration:none; }
+  ::selection { background:var(--accent); color:var(--accent-text); }
+
+  /* Каретка — сигнатура (печатная машинка) */
+  .caret { display:inline-block; width:.52em; height:1.05em; margin-left:.04em;
+           background:var(--accent); vertical-align:text-bottom; animation:blink 1.05s steps(1) infinite; }
+  @keyframes blink { 0%,50%{opacity:1} 50.01%,100%{opacity:0} }
+
+  /* Появление */
+  @keyframes rise { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .reveal { opacity:0; }
+  .reveal.in { animation:rise .6s var(--ease) both; }
+
+  /* ===== ХЕДЕР ===== */
+  header {
+    position:sticky; top:0; z-index:50;
+    background:color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--border);
+  }
+  .nav { display:flex; align-items:center; justify-content:space-between; height:64px; }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:600; font-size:16px; letter-spacing:-.01em; }
+  .logo__mark { width:32px; height:32px; border-radius:8px; background:var(--surface-2); color:var(--text);
+                border:1px solid var(--border); display:grid; place-items:center; }
+  .logo__mark svg { width:21px; height:21px; display:block; }
+  .logo__mono { font-family:var(--mono); font-weight:500; }
+  .nav__links { display:flex; gap:28px; font-family:var(--mono); font-size:13px; color:var(--muted); }
+  .nav__links a { transition:color .14s var(--ease); }
+  .nav__links a:hover { color:var(--text); }
+  .nav__right { display:flex; align-items:center; gap:14px; }
+  .theme-toggle { width:34px; height:34px; border:1px solid var(--border); border-radius:var(--radius-sm);
+                  background:transparent; color:var(--muted); cursor:pointer; display:grid; place-items:center;
+                  transition:background .14s var(--ease), color .14s var(--ease); }
+  .theme-toggle:hover { background:var(--surface-hover); color:var(--text); }
+  .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:var(--radius-sm);
+         font-family:var(--sans); font-weight:550; font-size:14px; cursor:pointer; border:1px solid transparent;
+         transition:background .14s var(--ease), border-color .14s var(--ease), transform .14s var(--ease); white-space:nowrap; }
+  .btn--primary { background:var(--accent); color:var(--accent-text); }
+  .btn--primary:hover { background:var(--accent-hover); }
+  .btn--ghost { background:transparent; color:var(--text); border-color:var(--border); }
+  .btn--ghost:hover { background:var(--surface-hover); }
+  .btn--lg { padding:13px 24px; font-size:15px; }
+
+  @media (max-width:820px){ .nav__links { display:none; } }
+
+  /* ===== ОБЩЕЕ ДЛЯ СЕКЦИЙ ===== */
+  section { padding:96px 0; border-bottom:1px solid var(--border); }
+  .eyebrow { font-family:var(--mono); font-size:12px; letter-spacing:.04em; color:var(--muted);
+             text-transform:uppercase; margin-bottom:18px; display:flex; align-items:center; gap:10px; }
+  .eyebrow::before { content:''; width:24px; height:1px; background:var(--border-strong); }
+  h2.sec { font-size:clamp(28px,4.5vw,42px); font-weight:600; letter-spacing:-.025em; line-height:1.1; margin-bottom:20px; max-width:820px; }
+  .sec-lede { font-size:18px; color:var(--muted); max-width:640px; margin-bottom:52px; line-height:1.6; }
+  h3 { font-size:19px; font-weight:600; letter-spacing:-.01em; margin-bottom:10px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px;
+          transition:border-color .2s var(--ease); }
+  .card:hover { border-color:var(--border-strong); }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .muted { color:var(--muted); }
+  @media (max-width:860px){ .grid-3,.grid-4 { grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; } }
+
+  /* ===== HERO ===== */
+  .hero { padding:72px 0 96px; border-bottom:1px solid var(--border); }
+  .hero__badge { display:inline-flex; align-items:center; gap:8px; font-family:var(--mono); font-size:12px;
+    color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:6px 14px; margin-bottom:32px; }
+  .hero__badge::before { content:''; width:7px; height:7px; border-radius:50%; background:var(--success);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--success) 20%, transparent); }
+  .hero__title { font-size:clamp(40px,7vw,76px); font-weight:600; letter-spacing:-.03em; line-height:1.02; margin-bottom:28px; }
+  .mono-accent { font-family:var(--mono); font-weight:400; }
+  .hero__lede { font-size:clamp(17px,2.2vw,20px); color:var(--muted); max-width:600px; line-height:1.55; margin-bottom:36px; }
+  .hero__cta { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:56px; }
+  .hero__stats { display:flex; gap:40px; flex-wrap:wrap; margin-top:8px; padding:22px 28px; border-radius:var(--radius-lg); }
+  .hero__stat b { display:block; font-size:26px; font-weight:600; letter-spacing:-.02em; }
+  .hero__stat span { font-family:var(--mono); font-size:12px; color:var(--muted); }
+
+  /* PWA mock */
+  .hero__mock { margin-top:64px; }
+  .mock { max-width:420px; margin:0 auto; border:1px solid var(--border-strong); border-radius:var(--radius-lg);
+    overflow:hidden; background:var(--surface); box-shadow:var(--shadow); }
+  .mock__bar { display:flex; align-items:center; gap:6px; padding:12px 16px; border-bottom:1px solid var(--border);
+    background:var(--surface-2); }
+  .mock__dot { width:9px; height:9px; border-radius:50%; background:var(--border-strong); }
+  .mock__url { margin-left:12px; font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .mock__app { padding:20px; }
+  .mock__head { display:flex; align-items:center; gap:12px; padding-bottom:18px; border-bottom:1px solid var(--border); margin-bottom:16px; }
+  .mock__logo { width:44px; height:44px; border-radius:12px; background:var(--accent); color:var(--accent-text);
+    display:grid; place-items:center; font-weight:700; font-size:20px; }
+  .mock__name { font-weight:600; font-size:16px; }
+  .mock__subs { font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:2px; }
+  .mock__feed { display:flex; flex-direction:column; gap:8px; }
+  .mock__item { display:flex; align-items:center; gap:10px; padding:11px 14px; background:var(--surface-2);
+    border-radius:var(--radius-sm); font-size:14px; }
+  .mock__type { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--accent-text); background:var(--accent); padding:2px 7px; border-radius:4px; flex-shrink:0; }
+  .mock__foot { margin-top:16px; padding-top:14px; border-top:1px solid var(--border);
+    font-family:var(--mono); font-size:11px; color:var(--faint); text-align:center; }
+  .hero__mock-cap { text-align:center; font-family:var(--mono); font-size:12px; color:var(--faint); margin-top:20px; }
+
+  /* Проблема */
+  .prob__tag { font-family:var(--mono); font-size:13px; font-weight:600; margin-bottom:14px; display:inline-flex; align-items:center; gap:8px; }
+  .prob__tag::before { content:''; width:8px; height:8px; border-radius:50%; }
+  .prob__tag--red::before { background:var(--danger); }
+  .prob__tag--yellow::before { background:var(--warning); }
+  .prob__tag--gray::before { background:var(--faint); }
+  .prob__tag--good::before { background:var(--success); }
+  .prob__punch { margin-top:32px; padding:24px 28px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); font-size:17px; line-height:1.5; }
+
+  .mono-inline { font-family:var(--mono); font-size:.92em; color:var(--text); background:var(--surface-2);
+    padding:1px 6px; border-radius:4px; }
+
+  /* Опоры */
+  .pillar__num { font-family:var(--mono); font-size:13px; color:var(--faint); margin-bottom:16px; }
+
+  /* Шаги */
+  .steps { display:flex; flex-direction:column; }
+  .step { display:flex; gap:20px; padding:24px 0; border-bottom:1px solid var(--border); align-items:flex-start; }
+  .step:last-child { border-bottom:none; }
+  .step__n { flex-shrink:0; width:36px; height:36px; border-radius:50%; border:1px solid var(--border-strong);
+    display:grid; place-items:center; font-family:var(--mono); font-size:14px; font-weight:600; color:var(--text); }
+
+  /* Возможности */
+  .feat { padding:22px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    transition:border-color .2s var(--ease); }
+  .feat:hover { border-color:var(--border-strong); }
+  .feat__k { font-family:var(--mono); font-size:14px; font-weight:600; margin-bottom:8px; }
+
+  /* Таблица сравнения */
+  .table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); }
+  .cmp { width:100%; border-collapse:collapse; font-size:14px; min-width:640px; }
+  .cmp th, .cmp td { padding:14px 18px; text-align:center; border-bottom:1px solid var(--border); }
+  .cmp th:first-child, .cmp td:first-child { text-align:left; font-weight:500; }
+  .cmp thead th { font-family:var(--mono); font-size:12px; color:var(--muted); font-weight:500; }
+  .cmp__us { background:var(--surface); font-weight:600 !important; color:var(--text); }
+  th.cmp__us { color:var(--text) !important; }
+  .cmp tr:last-child td { border-bottom:none; }
+  .cmp .y { color:var(--success); font-weight:700; }
+  .cmp .n { color:var(--faint); }
+
+  /* Пилот */
+  .case__big { font-family:var(--mono); font-size:34px; font-weight:600; letter-spacing:-.02em; margin-bottom:8px; }
+  .case__lbl { font-size:14px; color:var(--muted); line-height:1.4; }
+  .case__note { margin-top:28px; font-family:var(--mono); font-size:12px; color:var(--faint); }
+
+  /* Экономика */
+  .econ__cap { font-family:var(--mono); font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:14px; }
+  .econ__big { font-size:32px; font-weight:600; letter-spacing:-.02em; margin-bottom:14px; }
+  .econ__big span { font-size:16px; font-weight:500; color:var(--muted); }
+  .econ__where { margin-top:24px; padding:24px 28px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); }
+  .econ__where-h { font-family:var(--mono); font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:16px; }
+  .econ__where-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:14px; color:var(--muted); }
+  .econ__where-grid span { padding-left:16px; position:relative; }
+  .econ__where-grid span::before { content:'·'; position:absolute; left:4px; color:var(--faint); }
+  @media (max-width:560px){ .econ__where-grid { grid-template-columns:1fr; } }
+
+  /* FAQ */
+  .faq { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .faq__i { border-bottom:1px solid var(--border); }
+  .faq__i:last-child { border-bottom:none; }
+  .faq__i summary { padding:20px 24px; cursor:pointer; font-weight:550; font-size:16px; list-style:none;
+    display:flex; justify-content:space-between; align-items:center; transition:background .14s var(--ease); }
+  .faq__i summary::-webkit-details-marker { display:none; }
+  .faq__i summary::after { content:'+'; font-family:var(--mono); color:var(--muted); font-size:20px; transition:transform .2s var(--ease); }
+  .faq__i[open] summary::after { transform:rotate(45deg); }
+  .faq__i summary:hover { background:var(--surface); }
+  .faq__i p { padding:0 24px 20px; margin:0; }
+
+  /* CTA */
+  .cta { text-align:center; max-width:560px; margin:0 auto; padding:48px 0; }
+  .cta__title { font-size:clamp(28px,4.5vw,40px); font-weight:600; letter-spacing:-.02em; margin-bottom:16px; }
+  .cta__lede { font-size:17px; color:var(--muted); margin-bottom:32px; line-height:1.55; }
+  .cta__form { display:flex; gap:10px; max-width:440px; margin:0 auto; }
+  .cta__input { flex:1; padding:13px 16px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-sm); color:var(--text); font-family:var(--mono); font-size:14px; }
+  .cta__input:focus { outline:none; border-color:var(--border-strong); }
+  .cta__input::placeholder { color:var(--faint); }
+  .cta__note { font-family:var(--mono); font-size:12px; color:var(--faint); margin-top:16px; }
+  .cta__done { display:none; align-items:center; justify-content:center; gap:10px; font-size:16px; font-weight:550;
+    padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); }
+  .cta__check { color:var(--success); font-weight:700; }
+  @media (max-width:480px){ .cta__form { flex-direction:column; } }
+
+  /* Скрины студии — карточки-браузеры бок о бок, горизонтальный скролл */
+  .shots__head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+  .theme-toggle--wide { width:auto; height:36px; padding:0 14px; gap:8px; display:inline-flex; align-items:center;
+    font-family:var(--mono); font-size:13px; color:var(--muted); }
+  .theme-toggle--wide:hover { color:var(--text); }
+  .shots { width:100vw; margin-left:calc(50% - 50vw); }
+  .shots__track { display:flex; gap:22px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth;
+    scrollbar-width:none; -ms-overflow-style:none; padding:4px var(--gutter) 10px; scroll-padding-left:var(--gutter); }
+  .shots__track::-webkit-scrollbar { display:none; }
+  .shots__card { flex:0 0 min(940px,86vw); scroll-snap-align:start; border:1px solid var(--border-strong);
+    border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow); background:var(--surface); }
+  .shots__bar { display:flex; align-items:center; gap:6px; padding:11px 15px; border-bottom:1px solid var(--border); background:var(--surface-2); }
+  .shots__img { display:block; width:100%; height:auto; }
+  .shot--light { display:none; }
+  .theme-light .shot--dark { display:none; }
+  .theme-light .shot--light { display:block; }
+  .shot--ph { aspect-ratio:16/10; display:grid; place-items:center; text-align:center; padding:24px;
+    color:var(--faint); font-family:var(--mono); font-size:13px; background:var(--surface-2); }
+  .shots__nav { display:flex; justify-content:center; gap:12px; margin-top:20px; }
+  .shots__arrow { width:42px; height:42px; border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text);
+    font-size:22px; line-height:1; cursor:pointer; background:var(--glass); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+    transition:background .14s var(--ease); }
+  .shots__arrow:hover { background:var(--surface-hover); }
+
+  /* Живой дашборд (рисуется в обеих темах — без картинок) */
+  .dash { display:grid; grid-template-columns:196px 1fr; min-height:540px; font-family:var(--sans); font-size:13px; }
+  .dash__side { border-right:1px solid var(--border); background:var(--surface-2); padding:16px 12px; display:flex; flex-direction:column; gap:4px; }
+  .dash__brand { display:flex; align-items:center; gap:10px; padding:6px 8px 16px; }
+  .dash__mark { width:36px; height:36px; border-radius:9px; background:var(--surface-2); border:1px solid var(--border);
+    color:var(--text); display:grid; place-items:center; flex-shrink:0; }
+  .dash__mark svg { width:21px; height:21px; }
+  .dash__brand b { display:block; font-size:13px; font-weight:700; letter-spacing:.03em; }
+  .dash__brand span { font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .dash__nav { display:flex; flex-direction:column; gap:2px; }
+  .dash__nav-i { display:flex; align-items:center; gap:11px; padding:9px 11px; border-radius:8px; color:var(--muted); font-size:13px; }
+  .dash__nav-i b { font-weight:600; }
+  .dash__nav-i.is-active { background:var(--surface-2); color:var(--text); font-weight:600; }
+  .dash__dot { width:15px; height:15px; border-radius:4px; border:1.5px solid currentColor; opacity:.75; flex-shrink:0; }
+  .dash__user { margin-top:auto; display:flex; align-items:center; gap:8px; padding:12px 6px 2px; border-top:1px solid var(--border);
+    font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .dash__ava { width:24px; height:24px; border-radius:50%; border:1px solid var(--border); display:grid; place-items:center;
+    font-family:var(--sans); font-size:11px; color:var(--text); flex-shrink:0; }
+  .dash__main { padding:22px 24px; display:flex; flex-direction:column; gap:16px; background:var(--surface); }
+  .dash__top { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+  .dash__h { font-size:26px; font-weight:700; letter-spacing:-.02em; }
+  .dash__sub { font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:5px; }
+  .dash__new { background:var(--accent); color:var(--accent-text); border:none; border-radius:9px; padding:11px 17px;
+    font-weight:600; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .dash__stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .dash__stat { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .dash__stat b { display:block; font-size:30px; font-weight:700; letter-spacing:-.02em; }
+  .dash__stat span { font-size:12px; color:var(--muted); }
+  .dash__actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .dash__act { display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:15px 18px; }
+  .dash__act-ic { width:40px; height:40px; border-radius:9px; background:var(--surface-2); display:grid; place-items:center;
+    font-size:18px; color:var(--muted); flex-shrink:0; }
+  .dash__act b { display:block; font-size:14px; }
+  .dash__act span { font-size:12px; color:var(--muted); }
+  .dash__recent-h { display:flex; justify-content:space-between; align-items:center; font-family:var(--mono); font-size:12px;
+    color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:.03em; }
+  .dash__row { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border); border-radius:10px;
+    margin-bottom:8px; background:var(--surface); }
+  .dash__row-t { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+  .dash__chip { font-family:var(--mono); font-size:10px; color:var(--muted); background:var(--surface-2); padding:3px 8px; border-radius:5px; white-space:nowrap; }
+  .dash__date { font-family:var(--mono); font-size:11px; color:var(--faint); }
+  .dash__ok { font-size:11px; font-weight:600; color:var(--success); background:color-mix(in srgb,var(--success) 15%,transparent);
+    padding:3px 9px; border-radius:6px; white-space:nowrap; }
+  @media (max-width:680px){ .dash { grid-template-columns:1fr; min-height:0; } .dash__side { flex-direction:row; align-items:center; overflow-x:auto; }
+    .dash__user{display:none;} .dash__stats,.dash__actions{grid-template-columns:1fr;} .dash__chip,.dash__date{display:none;} }
+
+  /* Экраны студии: списки / таблица / категории / настройки */
+  .st__body { display:flex; flex-direction:column; gap:10px; }
+  /* Публикации */
+  .dp__row { display:flex; align-items:center; gap:14px; padding:12px 14px; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
+  .dp__thumb { width:58px; height:40px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); flex-shrink:0; }
+  .dp__t { flex:1; min-width:0; }
+  .dp__t b { display:block; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dp__t span { font-family:var(--mono); font-size:11px; color:var(--muted); }
+  /* Видео (таблица) */
+  .dv__toolbar { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .dv__folder { border:1px solid var(--border); border-radius:9px; padding:9px 14px; font-size:13px; background:var(--surface); color:var(--muted); }
+  .dv { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface); }
+  .dv__row { display:grid; grid-template-columns:1fr 68px 92px 96px; gap:10px; align-items:center; padding:11px 16px; border-bottom:1px solid var(--border); font-size:13px; }
+  .dv__row:last-child { border-bottom:none; }
+  .dv__row--head { font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; }
+  .dv__name { display:flex; align-items:center; gap:12px; overflow:hidden; }
+  .dv__name .dv__ttl { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dv__thumb { flex-shrink:0; width:54px; height:34px; border-radius:5px; background:var(--surface-2); border:1px solid var(--border); display:grid; place-items:center; font-family:var(--mono); font-size:10px; color:var(--muted); }
+  .dv__chip { font-size:11px; color:var(--muted); background:var(--surface-2); padding:3px 9px; border-radius:6px; justify-self:start; }
+  .dv__ok { font-size:12px; color:var(--success); }
+  /* Категории */
+  .dc { border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface); max-width:840px; }
+  .dc__row { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); font-size:14px; }
+  .dc__row:last-child { border-bottom:none; }
+  .dc__chev { color:var(--faint); }
+  .dc__ic { width:30px; height:24px; border-radius:5px; border:1px dashed var(--border-strong); flex-shrink:0; }
+  .dc__slug { font-family:var(--mono); font-size:12px; color:var(--faint); }
+  .dc__cnt { margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--surface-2); padding:3px 10px; border-radius:20px; }
+  /* Настройки */
+  .ds__tabs { display:flex; gap:6px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:6px; flex-wrap:wrap; }
+  .ds__tab { padding:8px 14px; border-radius:8px; font-size:13px; color:var(--muted); }
+  .ds__tab.is-active { background:var(--surface); color:var(--text); font-weight:600; }
+  .ds__panel { border:1px solid var(--border); border-radius:12px; background:var(--surface); padding:22px; }
+  .ds__h { font-size:17px; font-weight:700; margin-bottom:8px; }
+  .ds__p { font-size:13px; color:var(--muted); margin-bottom:18px; max-width:640px; line-height:1.5; }
+  .ds__item { display:flex; align-items:center; gap:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+  .ds__grip { color:var(--faint); letter-spacing:-2px; }
+  .ds__num { font-family:var(--mono); font-size:12px; color:var(--faint); width:12px; }
+  .ds__name { flex:1; font-size:14px; }
+  .ds__edit { color:var(--muted); font-size:13px; }
+  .ds__sw { width:38px; height:22px; border-radius:20px; background:var(--faint); position:relative; flex-shrink:0; }
+  .ds__sw.is-on { background:var(--accent); }
+  .ds__sw::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--accent-text); }
+  .ds__sw.is-on::after { left:18px; }
+  .ds__vkl { font-family:var(--mono); font-size:11px; color:var(--muted); }
+  .ds__x { color:var(--faint); }
+
+  /* Вкладки-подписи экранов */
+  .shots__tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  .shots__tab { padding:7px 14px; border:1px solid var(--border); border-radius:20px; font-size:13px; color:var(--muted);
+    background:var(--glass); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); cursor:pointer; transition:color .14s var(--ease), background .14s var(--ease), border-color .14s var(--ease); }
+  .shots__tab:hover { color:var(--text); }
+  .shots__tab.is-active { background:var(--accent); color:var(--accent-text); border-color:var(--accent); }
+
+  /* Цветной mesh-фон (как в студии) — стеклу есть что размывать */
+  body::before { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; filter:blur(10px);
+    background:
+      radial-gradient(560px 420px at 12% 6%,  color-mix(in srgb, #4b46a0 40%, transparent), transparent 70%),
+      radial-gradient(620px 460px at 88% 20%, color-mix(in srgb, #1f6d5c 34%, transparent), transparent 72%),
+      radial-gradient(640px 480px at 70% 92%, color-mix(in srgb, #6d2f57 30%, transparent), transparent 74%); }
+  /* Стекло на крупных панелях */
+  .card, .feat, .prob__punch, .econ__where, .faq, .hero__stats {
+    background:var(--glass); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+    border:1px solid var(--glass-brd); box-shadow:var(--glass-hi); }
+  @media (prefers-reduced-transparency: reduce) {
+    .card,.feat,.prob__punch,.econ__where,.faq,.hero__stats { background:var(--surface); backdrop-filter:none; -webkit-backdrop-filter:none; } }
+
+  /* Конструктор поста */
+  .pb__palette { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:22px; }
+  .pb__phint { font-family:var(--mono); font-size:12px; color:var(--muted); margin-right:4px; }
+  .pb__add { display:inline-flex; align-items:center; gap:7px; padding:9px 15px; border:1px solid var(--border); border-radius:20px;
+    background:var(--glass); backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur); color:var(--text); font-size:13px; font-weight:550; cursor:pointer;
+    transition:border-color .14s var(--ease), background .14s var(--ease); }
+  .pb__add:hover { border-color:var(--border-strong); }
+  .pb__add b { font-family:var(--mono); font-weight:700; }
+  .pb__frame { max-width:760px; border:1px solid var(--border-strong); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow); background:var(--surface); }
+  .pb__doc { padding:26px 28px; }
+  .pb__title { width:100%; border:none; background:transparent; color:var(--text); font-family:var(--sans); font-size:24px; font-weight:700; letter-spacing:-.02em; outline:none; }
+  .pb__title::placeholder { color:var(--faint); }
+  .pb__blocks { display:flex; flex-direction:column; gap:14px; margin-top:18px; }
+  .pb__empty { padding:24px; border:1px dashed var(--border-strong); border-radius:12px; text-align:center; color:var(--faint); font-family:var(--mono); font-size:13px; }
+  .pb__block { position:relative; border:1px solid var(--border); border-radius:12px; padding:16px; background:var(--surface-2); }
+  .pb__bx { position:absolute; top:10px; right:10px; width:24px; height:24px; border:none; border-radius:6px; background:transparent; color:var(--faint); cursor:pointer; font-size:16px; line-height:1; }
+  .pb__bx:hover { background:var(--surface-hover); color:var(--text); }
+  .pbb-h { font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:12px; }
+  .pbb-lines span { display:block; height:9px; border-radius:4px; background:var(--surface-hover); margin-bottom:8px; }
+  .pbb-video { aspect-ratio:16/9; border-radius:8px; background:var(--surface-hover); display:grid; place-items:center; }
+  .pbb-play { width:0; height:0; border-style:solid; border-width:11px 0 11px 18px; border-color:transparent transparent transparent var(--text); opacity:.7; }
+  .pbb-audio { display:flex; align-items:center; gap:14px; }
+  .pbb-audio .pbb-play { border-width:8px 0 8px 13px; }
+  .pbb-wave { flex:1; height:26px; border-radius:6px; background:repeating-linear-gradient(90deg, var(--surface-hover) 0 3px, transparent 3px 7px); }
+  .pbb-gal { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .pbb-gal i { aspect-ratio:1; border-radius:8px; background:var(--surface-hover); display:block; }
+  .pb__foot { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:16px 28px; border-top:1px solid var(--border); flex-wrap:wrap; }
+  .pb__access { display:inline-flex; border:1px solid var(--border); border-radius:20px; overflow:hidden; }
+  .pb__access button { padding:8px 14px; border:none; background:transparent; color:var(--muted); cursor:pointer; font-size:13px; }
+  .pb__access button.is-on { background:var(--accent); color:var(--accent-text); font-weight:600; }
+  .pb__publish { background:var(--accent); color:var(--accent-text); border:none; border-radius:9px; padding:11px 20px; font-weight:600; font-size:14px; cursor:pointer; }
+  .pb__toast { display:none; font-family:var(--mono); font-size:12px; color:var(--success); }
+  @media (max-width:560px){ .pbb-gal { grid-template-columns:repeat(2,1fr); } }
+
+  /* Футер */
+  .foot { padding:48px 0; }
+  .foot__in { display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+  .foot__links { display:flex; gap:24px; font-family:var(--mono); font-size:13px; color:var(--muted); }
+  .foot__links a:hover { color:var(--text); }
+  .foot__copy { font-family:var(--mono); font-size:12px; color:var(--faint); }
+</style>
+</head>
+<body>
+<!-- ===== ХЕДЕР ===== -->
+<header>
+  <div class="wrap nav">
+    <a href="#" class="logo">
+      <span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"><animateTransform attributeName="transform" type="translate" values="0 0; -4 -4; 0 0" dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/></path><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><animateTransform attributeName="transform" type="translate" values="0 0; 4 4; 0 0" dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/></path></g></svg></span>
+      Контент&nbsp;<span class="logo__mono">Бокс</span>
+    </a>
+    <nav class="nav__links">
+      <a href="#studio-shots">Студия</a>
+      <a href="#pricing">Цена</a>
+      <a href="#fears">Вопросы</a>
+      <a href="#start">Как начать</a>
+    </nav>
+    <div class="nav__right">
+      <button class="theme-toggle" id="themeToggle" title="Сменить тему" aria-label="Сменить тему">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4l1.4-1.4"/></svg>
+      </button>
+      <a href="/studio" class="btn btn--ghost">Войти в студию</a>
+      <a href="#talk" class="btn btn--primary">Поговорить с нами</a>
+    </div>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="wrap">
+    <h1 class="hero__title reveal">
+      Твоему фандому<br>
+      нужен <span class="mono-accent">дом</span>.<br>
+      Не чужая площадка<span class="caret"></span>
+    </h1>
+    <p class="hero__lede reveal">
+      Ты годами собирал аудиторию. Но живёшь на чужой территории — где правила меняют без тебя,
+      а аккаунт могут отключить в любой день. Контент Бокс даёт тебе своё приложение, где фандом
+      остаётся с тобой. Навсегда.
+    </p>
+    <div class="hero__cta reveal">
+      <a href="#product" class="btn btn--primary btn--lg">Посмотреть, как это работает</a>
+      <a href="#talk" class="btn btn--ghost btn--lg">Поговорить с нами</a>
+    </div>
+    <div class="hero__stats reveal">
+      <div class="hero__stat"><b>Твой домен</b><span>не boosty.to/ты</span></div>
+      <div class="hero__stat"><b>Твоя база</b><span>не «у площадки»</span></div>
+      <div class="hero__stat"><b>Твои деньги</b><span>на твой счёт</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===== КАК ВЫГЛЯДИТ СТУДИЯ (5 экранов, живая вёрстка) ===== -->
+<section id="studio-shots">
+  <div class="wrap">
+    <div class="shots__head reveal">
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px">Интерфейс</div>
+        <h2 class="sec" style="margin-bottom:0">Как выглядит студия</h2>
+      </div>
+      <button class="theme-toggle theme-toggle--wide" id="themeToggle2" type="button" title="Сменить тему" aria-label="Сменить тему">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4l1.4-1.4"/></svg>
+        <span>Тема</span>
+      </button>
+    </div>
+    <p class="sec-lede reveal">Реальные экраны студии. Листай вбок или жми вкладки, переключай тему — интерфейс живёт в обеих.</p>
+    <div class="shots__tabs reveal" id="shotsTabs">
+      <button class="shots__tab is-active" type="button">Дашборд</button>
+      <button class="shots__tab" type="button">Публикации</button>
+      <button class="shots__tab" type="button">Видео</button>
+      <button class="shots__tab" type="button">Категории</button>
+      <button class="shots__tab" type="button">Настройки</button>
+    </div>
+    <div class="shots reveal">
+      <div class="shots__track" id="shotsTrack">
+        <div class="shots__card"><div class="shots__bar"><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__url">contentbox.site/studio</span></div><div class="dash"><aside class="dash__side"><div class="dash__brand"><span class="dash__mark"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span><div><b>COCO JAMBO</b><span>Студия</span></div></div><nav class="dash__nav"><span class="dash__nav-i is-active"><span class="dash__dot"></span>Дашборд</span><span class="dash__nav-i"><span class="dash__dot"></span>Публикации</span><span class="dash__nav-i"><span class="dash__dot"></span>Видео</span><span class="dash__nav-i"><span class="dash__dot"></span>Категории</span><span class="dash__nav-i"><span class="dash__dot"></span>Настройки</span></nav><div class="dash__user"><span class="dash__ava">W</span> www2713@yandex.ru</div></aside><main class="dash__main">
+  <div class="dash__top"><div><div class="dash__h">Дашборд</div><div class="dash__sub">Вы вошли как www2713@yandex.ru</div></div><button class="dash__new" type="button">+ Новая публикация</button></div>
+  <div class="dash__stats"><div class="dash__stat"><b>12</b><span>Публикаций</span></div><div class="dash__stat"><b>0</b><span>Черновиков</span></div><div class="dash__stat"><b>211</b><span>Категорий</span></div></div>
+  <div class="dash__actions"><div class="dash__act"><span class="dash__act-ic">+</span><div><b>Написать публикацию</b><span>Заголовок, обложка, текст, доступ</span></div></div><div class="dash__act"><span class="dash__act-ic">&#9783;</span><div><b>Управлять категориями</b><span>Дерево разделов сайта</span></div></div></div>
+  <div><div class="dash__recent-h"><span>Последние публикации</span><span>Все &rarr;</span></div>
+    <div class="dash__row"><span class="dash__row-t">BTS: THE RETURN (Возвращение) | Документальный&hellip;</span><span class="dash__chip">BTS: THE RETURN</span><span class="dash__date">21 июл.</span><span class="dash__ok">Опубликовано</span></div>
+    <div class="dash__row"><span class="dash__row-t">RM станет гостем психоаналитического подкаста&hellip;</span><span class="dash__chip">Интервью</span><span class="dash__date">21 июл.</span><span class="dash__ok">Опубликовано</span></div>
+    <div class="dash__row"><span class="dash__row-t">Закулисье клипа &laquo;NORMAL&raquo;</span><span class="dash__chip">BTS</span><span class="dash__date">21 июл.</span><span class="dash__ok">Опубликовано</span></div>
+  </div>
+</main></div></div>
+
+        <div class="shots__card"><div class="shots__bar"><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__url">contentbox.site/studio</span></div><div class="dash"><aside class="dash__side"><div class="dash__brand"><span class="dash__mark"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span><div><b>COCO JAMBO</b><span>Студия</span></div></div><nav class="dash__nav"><span class="dash__nav-i"><span class="dash__dot"></span>Дашборд</span><span class="dash__nav-i is-active"><span class="dash__dot"></span>Публикации</span><span class="dash__nav-i"><span class="dash__dot"></span>Видео</span><span class="dash__nav-i"><span class="dash__dot"></span>Категории</span><span class="dash__nav-i"><span class="dash__dot"></span>Настройки</span></nav><div class="dash__user"><span class="dash__ava">W</span> www2713@yandex.ru</div></aside><main class="dash__main"><div class="dash__top"><div><div class="dash__h">Публикации</div><div class="dash__sub">Всего: 12</div></div><button class="dash__new" type="button">+ Новая публикация</button></div><div class="st__body"><div class="dp__row"><span class="dp__thumb"></span><div class="dp__t"><b>BTS: THE RETURN (Возвращение) | Документальный фильм Netflix</b><span>21 июл. 2026 · BTS: THE RETURN</span></div><span class="dash__ok">Опубликовано</span></div><div class="dp__row"><span class="dp__thumb"></span><div class="dp__t"><b>RM станет гостем психоаналитического подкаста Fashion Neurosis</b><span>21 июл. 2026 · Интервью</span></div><span class="dash__ok">Опубликовано</span></div><div class="dp__row"><span class="dp__thumb"></span><div class="dp__t"><b>Закулисье клипа «NORMAL»</b><span>21 июл. 2026 · BTS</span></div><span class="dash__ok">Опубликовано</span></div><div class="dp__row"><span class="dp__thumb"></span><div class="dp__t"><b>BTS на чемпионате FIFA World Cup 2026: Final Halftime Show</b><span>20 июл. 2026 · Концерты</span></div><span class="dash__ok">Опубликовано</span></div><div class="dp__row"><span class="dp__thumb"></span><div class="dp__t"><b>BTS JIMIN Rolling Stone интервью</b><span>18 июл. 2026</span></div><span class="dash__ok">Опубликовано</span></div></div></main></div></div>
+
+        <div class="shots__card"><div class="shots__bar"><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__url">contentbox.site/studio</span></div><div class="dash"><aside class="dash__side"><div class="dash__brand"><span class="dash__mark"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span><div><b>COCO JAMBO</b><span>Студия</span></div></div><nav class="dash__nav"><span class="dash__nav-i"><span class="dash__dot"></span>Дашборд</span><span class="dash__nav-i"><span class="dash__dot"></span>Публикации</span><span class="dash__nav-i is-active"><span class="dash__dot"></span>Видео</span><span class="dash__nav-i"><span class="dash__dot"></span>Категории</span><span class="dash__nav-i"><span class="dash__dot"></span>Настройки</span></nav><div class="dash__user"><span class="dash__ava">W</span> www2713@yandex.ru</div></aside><main class="dash__main"><div class="dash__top"><div><div class="dash__h">Видео</div><div class="dash__sub">Всего: 9</div></div><button class="dash__new" type="button">+ Добавить видео</button></div><div class="dv__toolbar"><span class="dv__folder">&#128193; Все видео (9) &#9662;</span><span class="dv__folder">Управление папками &#8250;</span></div><div class="dv"><div class="dv__row dv__row--head"><span>Название</span><span>Длит.</span><span>Уровень</span><span>Статус</span></div><div class="dv__row"><span class="dv__name"><span class="dv__thumb">32:07</span><span class="dv__ttl">01.mp4</span></span><span>32:07</span><span class="dv__chip">Все</span><span class="dv__ok">&#10003; Готово</span></div><div class="dv__row"><span class="dv__name"><span class="dv__thumb">25:19</span><span class="dv__ttl">[EPISODE] BTS @ LOVE YOURSELF</span></span><span>25:19</span><span class="dv__chip">Все</span><span class="dv__ok">&#10003; Готово</span></div><div class="dv__row"><span class="dv__name"><span class="dv__thumb">93:41</span><span class="dv__ttl">BTS: THE RETURN</span></span><span>93:41</span><span class="dv__chip">РАМЁН</span><span class="dv__ok">&#10003; Готово</span></div><div class="dv__row"><span class="dv__name"><span class="dv__thumb">2:16</span><span class="dv__ttl">BTS на чемпионате FIFA World Cup 2026</span></span><span>2:16</span><span class="dv__chip">Все</span><span class="dv__ok">&#10003; Готово</span></div><div class="dv__row"><span class="dv__name"><span class="dv__thumb">12:43</span><span class="dv__ttl">BTS JIMIN Rolling Stone интервью</span></span><span>12:43</span><span class="dv__chip">Все</span><span class="dv__ok">&#10003; Готово</span></div></div></main></div></div>
+
+        <div class="shots__card"><div class="shots__bar"><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__url">contentbox.site/studio</span></div><div class="dash"><aside class="dash__side"><div class="dash__brand"><span class="dash__mark"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span><div><b>COCO JAMBO</b><span>Студия</span></div></div><nav class="dash__nav"><span class="dash__nav-i"><span class="dash__dot"></span>Дашборд</span><span class="dash__nav-i"><span class="dash__dot"></span>Публикации</span><span class="dash__nav-i"><span class="dash__dot"></span>Видео</span><span class="dash__nav-i is-active"><span class="dash__dot"></span>Категории</span><span class="dash__nav-i"><span class="dash__dot"></span>Настройки</span></nav><div class="dash__user"><span class="dash__ava">W</span> www2713@yandex.ru</div></aside><main class="dash__main"><div class="dash__top"><div><div class="dash__h">Категории</div><div class="dash__sub">Всего: 211</div></div><button class="dash__new" type="button">+ Новая категория</button></div><div class="dc"><div class="dc__row"><span class="dc__chev">&#8250;</span><span class="dc__ic"></span><b>Видеография</b><span class="dc__slug">/videography</span><span class="dc__cnt">12</span></div><div class="dc__row"><span class="dc__chev">&#8250;</span><span class="dc__ic"></span><b>Дискография</b><span class="dc__slug">/discography</span><span class="dc__cnt">9</span></div><div class="dc__row"><span class="dc__chev">&#8250;</span><span class="dc__ic"></span><b>Разное</b><span class="dc__slug">/others</span><span class="dc__cnt">6</span></div><div class="dc__row"><span class="dc__chev">&#8250;</span><span class="dc__ic"></span><b>BTS</b><span class="dc__slug">/bts</span><span class="dc__cnt">5</span></div></div></main></div></div>
+
+        <div class="shots__card"><div class="shots__bar"><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__url">contentbox.site/studio</span></div><div class="dash"><aside class="dash__side"><div class="dash__brand"><span class="dash__mark"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span><div><b>COCO JAMBO</b><span>Студия</span></div></div><nav class="dash__nav"><span class="dash__nav-i"><span class="dash__dot"></span>Дашборд</span><span class="dash__nav-i"><span class="dash__dot"></span>Публикации</span><span class="dash__nav-i"><span class="dash__dot"></span>Видео</span><span class="dash__nav-i"><span class="dash__dot"></span>Категории</span><span class="dash__nav-i is-active"><span class="dash__dot"></span>Настройки</span></nav><div class="dash__user"><span class="dash__ava">W</span> www2713@yandex.ru</div></aside><main class="dash__main"><div class="dash__top"><div><div class="dash__h">Настройки</div><div class="dash__sub">Оформление и подписки вашего сайта</div></div></div><div class="ds__tabs"><span class="ds__tab">Оформление</span><span class="ds__tab is-active">Главная страница</span><span class="ds__tab">Соцсети</span><span class="ds__tab">Меню и футер</span><span class="ds__tab">Подписки</span></div><div class="ds__panel"><div class="ds__h">Главная страница</div><p class="ds__p">Порядок и видимость секций главной. Перетаскивайте, чтобы поменять порядок, тумблером включайте или выключайте секции.</p><div class="ds__item"><span class="ds__grip">&#8942;&#8942;</span><span class="ds__num">1</span><span class="ds__name">Hero — «Новинка»</span><span class="ds__edit">&#9998;</span><span class="ds__sw is-on"></span><span class="ds__vkl">Вкл</span><span class="ds__x">&times;</span></div><div class="ds__item"><span class="ds__grip">&#8942;&#8942;</span><span class="ds__num">2</span><span class="ds__name">Участники</span><span class="ds__edit">&#9998;</span><span class="ds__sw is-on"></span><span class="ds__vkl">Вкл</span><span class="ds__x">&times;</span></div><div class="ds__item"><span class="ds__grip">&#8942;&#8942;</span><span class="ds__num">3</span><span class="ds__name">Последние публикации</span><span class="ds__edit">&#9998;</span><span class="ds__sw is-on"></span><span class="ds__vkl">Вкл</span><span class="ds__x">&times;</span></div><div class="ds__item"><span class="ds__grip">&#8942;&#8942;</span><span class="ds__num">4</span><span class="ds__name">Новости</span><span class="ds__edit">&#9998;</span><span class="ds__sw is-on"></span><span class="ds__vkl">Вкл</span><span class="ds__x">&times;</span></div></div></main></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ПЕРВЫЙ ПАРТНЁР ===== -->
+<section id="case">
+  <div class="wrap">
+    <div class="eyebrow reveal">Для кого</div>
+    <h2 class="sec reveal">Кому это подходит</h2>
+    <p class="sec-lede reveal">Не только фандомы. Если у тебя есть аудитория и что ей дать — платформа работает.</p>
+    <div class="grid-3">
+      <div class="card reveal"><div class="pillar__num">Курсы и обучение</div><h3>Эксперты и школы</h3><p class="muted">Доступ к урокам, вебинарам и материалам по подписке. Ученики — в приложении, оплата идёт тебе на счёт.</p></div>
+      <div class="card reveal"><div class="pillar__num">Клубы по интересам</div><h3>Сообщества</h3><p class="muted">Закрытый контент и «свои»: материалы, встречи и обсуждения только для участников клуба.</p></div>
+      <div class="card reveal"><div class="pillar__num">Авторский контент</div><h3>Медиа и эксклюзив</h3><p class="muted">Переводы, разборы, закулисье. Как COCO JAMBO — фан-медиа про BTS с тысячами подписчиков.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ДОМ, КОТОРЫЙ НЕ ОТНЯТЬ (эмоция + тревога площадки) ===== -->
+<section id="home">
+  <div class="wrap">
+    <div class="eyebrow reveal">Почему это важно</div>
+    <h2 class="sec reveal">Ты не арендатор. Ты — хозяин.</h2>
+    <p class="sec-lede reveal">
+      Разница между «вести канал» и «иметь своё» — это разница между съёмной квартирой и домом.
+      Пока ты на чужой площадке, ты играешь по чужим правилам.
+    </p>
+    <div class="grid-2">
+      <div class="card reveal">
+        <div class="prob__tag prob__tag--red">Как сейчас</div>
+        <p class="muted" style="margin-bottom:14px">Площадка решает, что тебе можно. Меняет комиссию. Показывает твоим подписчикам чужих авторов. Может заблокировать — и фандом, который ты собирал годами, исчезнет за ночь.</p>
+        <p class="muted" style="margin:0">Ты всё время немного в тревоге. И это нормально — потому что дом не твой.</p>
+      </div>
+      <div class="card reveal">
+        <div class="prob__tag prob__tag--good">С Контент Бокс</div>
+        <p class="muted" style="margin-bottom:14px">Приложение на твоём домене. База подписчиков — твоя, выгружается в любой момент. Никаких чужих авторов рядом. Уйти можешь когда угодно и забрать всё с собой.</p>
+        <p class="muted" style="margin:0">Ты перестаёшь оглядываться. Просто делаешь то, что любишь.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== КАК ЭТО ВЫГЛЯДИТ (демо продукта — раньше) ===== -->
+<section id="product">
+  <div class="wrap">
+    <div class="eyebrow reveal">Как это работает</div>
+    <h2 class="sec reveal">Публиковать так же просто, как писать пост</h2>
+    <p class="sec-lede reveal">Никакой сложной CMS. Пост — это конструктор из блоков: текст, видео, аудио, галерея. Собираешь, задаёшь уровень доступа, жмёшь «Опубликовать» — и он у подписчиков. Попробуй прямо тут:</p>
+    <div class="pb reveal">
+      <div class="pb__palette">
+        <span class="pb__phint">Собери пост из блоков:</span>
+        <button class="pb__add" type="button" data-block="text"><b>&#43;</b> Текст</button>
+        <button class="pb__add" type="button" data-block="video"><b>&#43;</b> Видео</button>
+        <button class="pb__add" type="button" data-block="audio"><b>&#43;</b> Аудио</button>
+        <button class="pb__add" type="button" data-block="gallery"><b>&#43;</b> Галерея</button>
+      </div>
+      <div class="pb__frame">
+        <div class="shots__bar"><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__dot"></span><span class="mock__url">contentbox.site/studio/posts/new</span></div>
+        <div class="pb__doc">
+          <input class="pb__title" value="Новый выпуск: разбор клипа" aria-label="Заголовок публикации">
+          <div class="pb__blocks" id="pbBlocks"></div>
+        </div>
+        <div class="pb__foot">
+          <div class="pb__access" role="group" aria-label="Уровень доступа">
+            <button type="button" class="is-on" data-acc="all">Всем</button>
+            <button type="button" data-acc="subs">Подписчикам</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span class="pb__toast" id="pbToast">&#10003; Опубликовано</span>
+            <button class="pb__publish" type="button" id="pbPublish">Опубликовать</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ВОЗМОЖНОСТИ ===== -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Возможности</div>
+    <h2 class="sec reveal">Всё, что нужно фан-автору</h2>
+    <p class="sec-lede reveal">Форматы, которые ты уже делаешь — только теперь у себя.</p>
+    <div class="grid-3 feats">
+      <div class="feat reveal"><div class="feat__k">Видео</div><p class="muted">Защищённая загрузка, привязка к домену. Никто не стащит ссылку.</p></div>
+      <div class="feat reveal"><div class="feat__k">Фото</div><p class="muted">Альбомы, галереи, закулисье. Высокое качество без сжатия «в кашу».</p></div>
+      <div class="feat reveal"><div class="feat__k">Аудио</div><p class="muted">Подкасты, переводы, озвучки. Слушают прямо в приложении.</p></div>
+      <div class="feat reveal"><div class="feat__k">Тексты</div><p class="muted">Переводы, разборы, новости. Редактор с форматированием.</p></div>
+      <div class="feat reveal"><div class="feat__k">Уровни доступа</div><p class="muted">Часть — всем, часть — подписчикам. Ты решаешь, что за какую подписку.</p></div>
+      <div class="feat reveal"><div class="feat__k">Push и email</div><p class="muted">Новый пост — уведомление на телефон. Фандом не пропустит.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ЦЕНА ===== -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="eyebrow reveal">Сколько стоит</div>
+    <h2 class="sec reveal">Ноль на старте. 10% — когда зарабатываешь ты.</h2>
+    <p class="sec-lede reveal">Никаких абонентских плат и скрытых списаний. Платформа берёт процент только с успешных подписок — значит, зарабатывает, только когда зарабатываешь ты.</p>
+    <div class="grid-3">
+      <div class="card reveal"><div class="econ__cap">Старт</div><div class="econ__big">0 &#8381;<span> / запуск</span></div><p class="muted">Регистрация, своё приложение, домен и студия — без вложений на входе.</p></div>
+      <div class="card reveal"><div class="econ__cap">Комиссия</div><div class="econ__big">10%<span> с подписок</span></div><p class="muted">Берём процент только с успешных платежей. Нет подписок — нет комиссии.</p></div>
+      <div class="card reveal"><div class="econ__cap">Тебе остаётся</div><div class="econ__big">90%<span> дохода</span></div><p class="muted">Деньги идут на твой счёт. Без «заморозок до выяснения».</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ВОПРОСЫ / СНЯТИЕ СТРАХОВ ===== -->
+<section id="fears">
+  <div class="wrap">
+    <div class="eyebrow reveal">Вопросы, которые ты задаёшь</div>
+    <h2 class="sec reveal">Честно о том, что важно</h2>
+    <p class="sec-lede reveal">Мы не строим для тебя клетку. Мы даём инструмент, который всегда можно забрать с собой.</p>
+    <div class="faq reveal">
+      <details class="faq__i"><summary>А если я захочу уйти?</summary>
+        <p class="muted">Уходишь и забираешь всё: базу подписчиков (выгрузка в CSV), домен, контент. Это твоё изначально. Мы даём инфраструктуру, а не держим тебя в заложниках — для нас это принцип, а не уступка.</p></details>
+      <details class="faq__i"><summary>Кому принадлежит мой фандом?</summary>
+        <p class="muted">Тебе. Email-база подписчиков — твоя собственность. В отличие от площадок, где «твои» подписчики на самом деле принадлежат сервису, здесь связь с аудиторией всегда остаётся у тебя.</p></details>
+      <details class="faq__i"><summary>Что с блокировками?</summary>
+        <p class="muted">Приложение живёт на твоём домене — его не заблокируют вместе с чужой площадкой. Контент — на твоей ответственности; мы технический посредник, как хостинг, а не издатель.</p></details>
+      <details class="faq__i"><summary>Мне нужно уметь программировать?</summary>
+        <p class="muted">Нет. Регистрируешься, прописываешь домен по простой инструкции, публикуешь. Всё через понятный интерфейс, без единой строчки кода.</p></details>
+      <details class="faq__i"><summary>Сколько это стоит?</summary>
+        <p class="muted">Ноль вложений на старте. Платформа берёт 10% с успешных подписок — то есть мы зарабатываем, только когда зарабатываешь ты. Никаких абонентских плат и скрытых списаний.</p></details>
+      <details class="faq__i"><summary>Нужно ли ИП?</summary>
+        <p class="muted">Пока да — для приёма регулярных платежей. Мы подскажем, как оформить, если ещё нет. Поддержку самозанятых добавляем.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ===== КАК НАЧАТЬ ===== -->
+<section id="start">
+  <div class="wrap">
+    <div class="eyebrow reveal">Как начать</div>
+    <h2 class="sec reveal">От разговора до запуска — за выходные</h2>
+    <p class="sec-lede reveal">Мы рядом на каждом шаге. Ты не остаёшься один на один с настройками.</p>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step__n">1</div>
+        <div><h3>Поговорим</h3><p class="muted">Расскажешь про свой фандом и контент. Поймём, подходим ли друг другу. Без обязательств.</p></div>
+      </div>
+      <div class="step reveal">
+        <div class="step__n">2</div>
+        <div><h3>Настроим вместе</h3><p class="muted">Поможем с доменом, брендом, первыми материалами. Онбординг с живым человеком.</p></div>
+      </div>
+      <div class="step reveal">
+        <div class="step__n">3</div>
+        <div><h3>Запустишься</h3><p class="muted">Приложение в эфире, подписки подключены. Зовёшь свой фандом в новый дом.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA (мягкий, под «довериться») ===== -->
+<section id="talk" style="border-bottom:none;">
+  <div class="wrap">
+    <div class="cta reveal">
+      <h2 class="cta__title">Расскажи про свой фандом</h2>
+      <p class="cta__lede">Без продаж и давления. Познакомимся, покажем продукт вживую, ответим на вопросы. Реши сам, твоё это или нет.</p>
+      <form class="cta__form" onsubmit="return submitApply(event)">
+        <input type="email" class="cta__input" placeholder="твоя почта" required id="applyEmail">
+        <button type="submit" class="btn btn--primary btn--lg">Поговорить с нами</button>
+      </form>
+      <div class="cta__note">Ответим в течение суток. Живой человек, а не бот.</div>
+      <div class="cta__done" id="applyDone">
+        <span class="cta__check">✓</span> Спасибо! Свяжемся с тобой в течение суток.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ФУТЕР ===== -->
+<footer class="foot">
+  <div class="wrap foot__in">
+    <div class="logo"><span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"><animateTransform attributeName="transform" type="translate" values="0 0; -4 -4; 0 0" dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/></path><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><animateTransform attributeName="transform" type="translate" values="0 0; 4 4; 0 0" dur="3s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.5;1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1"/></path></g></svg></span>Контент&nbsp;<span class="logo__mono">Бокс</span></div>
+    <div class="foot__links">
+      <a href="#">Оферта</a><a href="#">Политика</a><a href="mailto:hey@contentbox.site">hey@contentbox.site</a>
+    </div>
+    <div class="foot__copy">© 2026 Контент Бокс</div>
+  </div>
+</footer>
+
+<script>
+  (function(){ var saved=null; try{ saved=localStorage.getItem('cb-theme2'); }catch(e){}
+    if(saved==='light') document.documentElement.className='theme-light'; })();
+  var icon=document.getElementById('themeIcon');
+  var moonPath='<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+  var sunSvg='<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4l1.4-1.4"/>';
+  function syncIcon(){ if(icon) icon.innerHTML = document.documentElement.className==='theme-light' ? moonPath : sunSvg; }
+  syncIcon();
+  function flipTheme(){
+    var light=document.documentElement.className==='theme-light';
+    document.documentElement.className = light ? 'theme-dark' : 'theme-light';
+    try{ localStorage.setItem('cb-theme2', light ? 'dark' : 'light'); }catch(e){}
+    syncIcon();
+  }
+  ['themeToggle','themeToggle2'].forEach(function(id){ var b=document.getElementById(id); if(b) b.addEventListener('click', flipTheme); });
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  },{threshold:0.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  var track=document.getElementById('shotsTrack');
+  var shotTabs=Array.prototype.slice.call(document.querySelectorAll('.shots__tab'));
+  function shotStep(){ var c=track&&track.querySelector('.shots__card'); return c?c.getBoundingClientRect().width+22:(track?track.clientWidth:0); }
+  function shotIndex(){ if(!track) return 0; var st=shotStep(); return st?Math.round(track.scrollLeft/st):0; }
+  function setShot(i){ shotTabs.forEach(function(t,k){ t.classList.toggle('is-active', k===i); }); }
+  function goShot(i){ if(!track) return; i=Math.max(0,Math.min(shotTabs.length-1,i)); track.scrollTo({ left:i*shotStep(), behavior:'smooth' }); setShot(i); }
+  shotTabs.forEach(function(t,i){ t.addEventListener('click', function(){ goShot(i); }); });
+  window.slideShots=function(dir){ goShot(shotIndex()+dir); };
+  if(track){ var _st; track.addEventListener('scroll', function(){ clearTimeout(_st); _st=setTimeout(function(){ setShot(shotIndex()); }, 60); }); }
+  window.submitApply=function(e){
+    e.preventDefault();
+    document.querySelector('.cta__form').style.display='none';
+    document.querySelector('.cta__note').style.display='none';
+    document.getElementById('applyDone').style.display='flex';
+    return false;
+  };
+  (function(){
+    var blocks=document.getElementById('pbBlocks'); if(!blocks) return;
+    var TPL={
+      text:'<div class="pbb-h">Текст</div><div class="pbb-lines"><span></span><span></span><span style="width:72%"></span></div>',
+      video:'<div class="pbb-h">Видео</div><div class="pbb-video"><span class="pbb-play"></span></div>',
+      audio:'<div class="pbb-h">Аудио</div><div class="pbb-audio"><span class="pbb-play"></span><span class="pbb-wave"></span></div>',
+      gallery:'<div class="pbb-h">Галерея</div><div class="pbb-gal"><i></i><i></i><i></i><i></i></div>'
+    };
+    function empty(){ if(!blocks.querySelector('.pb__block')) blocks.innerHTML='<div class="pb__empty">Пусто. Добавь блок кнопками выше &#8593;</div>'; }
+    function add(type){ var e=blocks.querySelector('.pb__empty'); if(e) e.remove(); var d=document.createElement('div'); d.className='pb__block'; d.innerHTML='<button class="pb__bx" type="button" aria-label="Убрать">&times;</button>'+(TPL[type]||''); blocks.appendChild(d); }
+    document.querySelectorAll('.pb__add').forEach(function(b){ b.addEventListener('click', function(){ add(b.getAttribute('data-block')); }); });
+    blocks.addEventListener('click', function(e){ var x=e.target.closest('.pb__bx'); if(x){ x.closest('.pb__block').remove(); empty(); } });
+    document.querySelectorAll('.pb__access button').forEach(function(b){ b.addEventListener('click', function(){ document.querySelectorAll('.pb__access button').forEach(function(o){ o.classList.remove('is-on'); }); b.classList.add('is-on'); }); });
+    var pub=document.getElementById('pbPublish'), toast=document.getElementById('pbToast');
+    if(pub) pub.addEventListener('click', function(){ if(toast){ toast.style.display='inline'; setTimeout(function(){ toast.style.display='none'; }, 1800); } });
+    add('text'); add('video'); add('gallery');
+  })();
+</script>
+</body>
+</html>
