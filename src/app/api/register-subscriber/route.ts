@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { stripPort } from '@/lib/subdomain'
-import { subscriberWelcomeEmail, emailBrandForTenant } from '@/emails'
+import {
+  subscriberWelcomeEmail,
+  emailBrandForTenant,
+  newEmailVerifyToken,
+  subscriberVerifyMail,
+  EMAIL_VERIFY_TTL_MS,
+} from '@/emails'
 
 /**
  * Регистрация подписчика с СЕРВЕРНОЙ привязкой тенанта.
@@ -81,6 +87,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Аккаунт с таким email уже существует.' }, { status: 409 })
   }
 
+  // Токен мягкого подтверждения email. Кладём при создании (overrideAccess
+  // обходит field-access этих полей) — извне их выставить нельзя.
+  const verifyToken = newEmailVerifyToken()
+  const verifyExpiry = new Date(Date.now() + EMAIL_VERIFY_TTL_MS).toISOString()
+
   try {
     await payload.create({
       collection: 'subscribers',
@@ -89,6 +100,9 @@ export async function POST(req: NextRequest) {
         password,
         displayName: displayName || undefined,
         tenant: tenantId,
+        emailVerified: false,
+        emailVerifyToken: verifyToken,
+        emailVerifyExpiry: verifyExpiry,
       } as any,
       overrideAccess: true,
     })
@@ -113,6 +127,16 @@ export async function POST(req: NextRequest) {
       siteUrl: `https://${tenant.domain}`,
     })
     await payload.sendEmail({ to: email, subject: mail.subject, html: mail.html })
+
+    // Мягкое подтверждение: письмо со ссылкой. Вход уже работает, письмо
+    // лишь просит подтвердить адрес. Сбой отправки не ломает регистрацию.
+    const verifyMail = subscriberVerifyMail({
+      brand,
+      tenantDomain: tenant.domain,
+      token: verifyToken,
+      displayName,
+    })
+    await payload.sendEmail({ to: email, subject: verifyMail.subject, html: verifyMail.html })
   } catch {
     // почта не критична для регистрации
   }

@@ -851,6 +851,9 @@ export interface Subscriber {
    */
   subscriptionUntil?: string | null;
   isBlocked?: boolean | null;
+  emailVerified?: boolean | null;
+  emailVerifyToken?: string | null;
+  emailVerifyExpiry?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1406,6 +1409,9 @@ export interface SubscribersSelect<T extends boolean = true> {
   activeTier?: T;
   subscriptionUntil?: T;
   isBlocked?: T;
+  emailVerified?: T;
+  emailVerifyToken?: T;
+  emailVerifyExpiry?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

@@ -81,6 +81,32 @@ export const Subscribers: CollectionConfig = {
       defaultValue: false,
       label: 'Заблокирован',
     },
+    // ── Подтверждение email (мягкое) ──────────────────────────────────────
+    // «Мягкое»: НЕ блокирует вход. Регистрация и логин работают как раньше,
+    // а флаг emailVerified лишь фиксирует, подтвердил ли адрес владелец.
+    // Токен/срок заполняются сервером (overrideAccess) — извне не выставить.
+    {
+      name: 'emailVerified',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Email подтверждён',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true },
+    },
+    {
+      name: 'emailVerifyToken',
+      type: 'text',
+      label: 'Токен подтверждения email',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+    },
+    {
+      name: 'emailVerifyExpiry',
+      type: 'date',
+      label: 'Срок действия токена',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+    },
     // `tenant` инжектит multi-tenant плагин.
   ],
   timestamps: true,
