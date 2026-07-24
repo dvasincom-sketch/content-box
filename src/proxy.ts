@@ -4,22 +4,26 @@ import type { NextRequest } from 'next/server'
 /**
  * Роутинг по хосту: платформенный домен vs клиентские (тенантные) домены.
  *
- * ПЛАТФОРМЕННЫЙ домен (contentbox.site): на `/` отдаём лендинг платформы
+ * ПЛАТФОРМЕННЫЙ домен (contentbox.site, www): на `/` отдаём лендинг платформы
  * (public/landing.html), а /studio и /admin пропускаем как есть — они скоупятся
  * по залогиненному пользователю, тенант по хосту им не нужен.
  *
- * КЛИЕНТСКИЕ домены: ищем ACTIVE + domainVerified тенанта по `domain` через
- * Payload REST API и инжектим его контекст в заголовки (рендер и запросы идут
- * в скоупе тенанта). ISR/CDN кэш варьируется по домену.
+ * ТЕНАНТНЫЕ хосты — два вида, оба ищут ACTIVE + domainVerified тенанта:
+ *  1. ПОДДОМЕН `<sub>.contentbox.site` → по полю `subdomain` (бесплатный
+ *     «резервный» адрес автора, всегда доступен, даже если позже подключён
+ *     собственный домен). Требует wildcard-DNS `*.contentbox.site` → приложение.
+ *  2. СОБСТВЕННЫЙ домен (например bts.example.com) → по полю `domain`.
  *
  * Файл подключается из src/middleware.ts.
  */
+
+const PLATFORM_ROOT = 'contentbox.site'
 
 // Пути мимо резолвинга тенанта (служебные + панели, они скоупятся по логину).
 const BYPASS_PREFIXES = ['/admin', '/studio', '/api', '/_next', '/favicon.ico']
 
 // Платформенные хосты: тут лендинг + студия + админка, а НЕ клиентский сайт.
-const PLATFORM_HOSTS = new Set(['contentbox.site', 'www.contentbox.site'])
+const PLATFORM_HOSTS = new Set([PLATFORM_ROOT, `www.${PLATFORM_ROOT}`])
 function isPlatformHost(host: string): boolean {
   // Технический домен Timeweb (*.twc1.net) тоже показывает лендинг — удобно
   // проверить всё ДО переключения DNS на contentbox.site.
@@ -30,9 +34,22 @@ function stripPort(host: string | null): string {
   return (host || '').split(':')[0].toLowerCase()
 }
 
-async function resolveTenantByDomain(domain: string, origin: string) {
+/**
+ * Прямой поддомен под `*.contentbox.site` → его метка (напр. `bts`).
+ * Возвращает null для платформенных хостов и для многоуровневых имён
+ * (`a.b.contentbox.site`) — такие уходят в резолвинг по собственному домену.
+ */
+function subdomainFromHost(host: string): string | null {
+  const suffix = `.${PLATFORM_ROOT}`
+  if (!host.endsWith(suffix)) return null
+  const sub = host.slice(0, -suffix.length)
+  if (!sub || sub === 'www' || sub.includes('.')) return null
+  return sub
+}
+
+async function resolveTenant(field: 'domain' | 'subdomain', value: string, origin: string) {
   const qs = new URLSearchParams({
-    'where[and][0][domain][equals]': domain,
+    [`where[and][0][${field}][equals]`]: value,
     'where[and][1][status][equals]': 'active',
     'where[and][2][domainVerified][equals]': 'true',
     limit: '1',
@@ -42,7 +59,7 @@ async function resolveTenantByDomain(domain: string, origin: string) {
   try {
     const res = await fetch(url, {
       headers: { 'content-type': 'application/json' },
-      next: { revalidate: 60, tags: [`tenant:${domain}`] },
+      next: { revalidate: 60, tags: [`tenant:${field}:${value}`] },
     })
     if (!res.ok) return null
     const data = await res.json()
@@ -75,14 +92,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Клиентский домен → резолвинг тенанта.
+  // Тенантный хост → резолвинг: поддомен по `subdomain`, иначе по `domain`.
   const proto = request.headers.get('x-forwarded-proto') ?? 'https'
   const origin = `${proto}://${host}`
-  console.log('[proxy] host=', host, '| origin=', origin)
-  const tenant = await resolveTenantByDomain(host, origin)
+  const sub = subdomainFromHost(host)
+  const tenant = sub
+    ? await resolveTenant('subdomain', sub, origin)
+    : await resolveTenant('domain', host, origin)
 
   if (!tenant) {
-    // Неизвестный / неверифицированный / приостановленный домен.
+    // Неизвестный / неверифицированный / приостановленный хост.
     const url = request.nextUrl.clone()
     url.pathname = '/domain-not-found'
     const res = NextResponse.rewrite(url)
