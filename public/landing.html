@@ -262,7 +262,10 @@
   .theme-toggle--wide { width:auto; height:36px; padding:0 14px; gap:8px; display:inline-flex; align-items:center;
     font-family:var(--mono); font-size:13px; color:var(--muted); }
   .theme-toggle--wide:hover { color:var(--text); }
-  .shots { width:100vw; margin-left:calc(50% - 50vw); }
+  /* color здесь важен: макеты держат СВОЮ тему (#shotsScope), а без явного
+     color базовый цвет текста наследовался бы от body (темы страницы) — при
+     несовпадении тем получался тёмный текст на тёмном фоне. Якорим на локальную тему. */
+  .shots { width:100vw; margin-left:calc(50% - 50vw); color:var(--text); }
   .shots__track { display:flex; gap:22px; overflow-x:auto; scroll-snap-type:x mandatory; scroll-behavior:smooth;
     scrollbar-width:none; -ms-overflow-style:none; padding:4px var(--gutter) 10px; scroll-padding-left:var(--gutter); align-items:flex-start; }
   .shots__track::-webkit-scrollbar { display:none; }
@@ -665,6 +668,32 @@
       <div class="feat reveal"><div class="feat__k">Тексты</div><p class="muted">Переводы, разборы, новости. Редактор с форматированием.</p></div>
       <div class="feat reveal"><div class="feat__k">Уровни доступа</div><p class="muted">Часть — всем, часть — подписчикам. Ты решаешь, что за какую подписку.</p></div>
       <div class="feat reveal"><div class="feat__k">Push и email</div><p class="muted">Новый пост — уведомление на телефон. Фандом не пропустит.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ВИДЕО (ядро площадки) ===== -->
+<section id="video">
+  <div class="wrap">
+    <div class="eyebrow reveal">Видео — ядро площадки</div>
+    <h2 class="sec reveal">Главный формат ваших авторов — видео</h2>
+    <p class="sec-lede reveal">Уроки, разборы, закулисье — у большинства авторов основной контент это видео. Поэтому видео у нас не «ещё один блок», а сердце платформы: защищённое, быстро перенесённое и удобное зрителю на любом интернете.</p>
+    <div class="grid-3">
+      <div class="card reveal">
+        <div class="pillar__num">Защита</div>
+        <h3>Защита от скачивания</h3>
+        <p class="muted">Видео нельзя просто «стащить»: защищённое воспроизведение и привязка к вашему домену. Контент остаётся у вас, а не расходится по чужим ссылкам.</p>
+      </div>
+      <div class="card reveal">
+        <div class="pillar__num">Миграция</div>
+        <h3>Перенос архива — бесплатно и быстро</h3>
+        <p class="muted">Перенесём ваш видеоархив с любой платформы — бесплатно и без ручной перезаливки. Приходите со своей библиотекой и продолжаете работать сразу.</p>
+      </div>
+      <div class="card reveal">
+        <div class="pillar__num">Качество</div>
+        <h3>Адаптивное качество 360p–4K</h3>
+        <p class="muted">Плеер сам подбирает качество под интернет зрителя — от 360p до 4K. Плавно на слабой сети, максимально чётко на быстрой — без «крутящегося колёсика».</p>
+      </div>
     </div>
   </div>
 </section>
