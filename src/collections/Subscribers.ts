@@ -107,6 +107,24 @@ export const Subscribers: CollectionConfig = {
       access: { create: () => false, read: () => false, update: () => false },
       admin: { hidden: true },
     },
+    // ── Дайджест-уведомления ──────────────────────────────────────────────
+    // notifyDigest — согласие получать дайджест новых материалов (по умолч.
+    // включено). unsubscribeToken — стабильный токен для ссылки «отписаться»
+    // в письме; заполняется сервером при первой рассылке.
+    {
+      name: 'notifyDigest',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Присылать дайджест',
+      access: { create: () => false },
+    },
+    {
+      name: 'unsubscribeToken',
+      type: 'text',
+      label: 'Токен отписки',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+    },
     // `tenant` инжектит multi-tenant плагин.
   ],
   timestamps: true,

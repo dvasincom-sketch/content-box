@@ -370,6 +370,10 @@ export interface SiteSetting {
     text?: string | null;
     copyright?: string | null;
   };
+  /**
+   * Служебное поле планировщика рассылки.
+   */
+  lastDigestAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -854,6 +858,8 @@ export interface Subscriber {
   emailVerified?: boolean | null;
   emailVerifyToken?: string | null;
   emailVerifyExpiry?: string | null;
+  notifyDigest?: boolean | null;
+  unsubscribeToken?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1199,6 +1205,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         text?: T;
         copyright?: T;
       };
+  lastDigestAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1412,6 +1419,8 @@ export interface SubscribersSelect<T extends boolean = true> {
   emailVerified?: T;
   emailVerifyToken?: T;
   emailVerifyExpiry?: T;
+  notifyDigest?: T;
+  unsubscribeToken?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
