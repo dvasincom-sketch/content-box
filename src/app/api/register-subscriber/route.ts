@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { stripPort } from '@/lib/subdomain'
+import { subscriberWelcomeEmail, emailBrandForTenant } from '@/emails'
 
 /**
  * Регистрация подписчика с СЕРВЕРНОЙ привязкой тенанта.
@@ -93,6 +94,27 @@ export async function POST(req: NextRequest) {
     })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message || 'Ошибка регистрации.' }, { status: 400 })
+  }
+
+  // Приветственное письмо подписчику в бренде тенанта (имя/цвет/лого из
+  // SiteSettings). В try/catch — сбой почты не должен ломать регистрацию.
+  try {
+    const settingsRes = await payload.find({
+      collection: 'site-settings',
+      where: { tenant: { equals: tenantId } },
+      depth: 1,
+      limit: 1,
+      overrideAccess: true,
+    })
+    const brand = emailBrandForTenant(tenant, settingsRes.docs[0])
+    const mail = subscriberWelcomeEmail({
+      brand,
+      displayName,
+      siteUrl: `https://${tenant.domain}`,
+    })
+    await payload.sendEmail({ to: email, subject: mail.subject, html: mail.html })
+  } catch {
+    // почта не критична для регистрации
   }
 
   return NextResponse.json({ ok: true })

@@ -53,12 +53,19 @@ export function toRecipients(to: SendEmailOptions['to']): Recipient[] {
   return out
 }
 
+// "Имя <mail@x>" → "Имя <mail@x>" (для заголовка Reply-To). Оставляем строку.
+function formatAddress(r: Recipient): string {
+  return r.name ? `${r.name} <${r.email}>` : r.email
+}
+
 export type RusenderAdapterOptions = {
   apiToken?: string
   keyId?: string
   apiBase?: string
   defaultFromAddress?: string
   defaultFromName?: string
+  /** Reply-To по умолчанию (реальный ящик для ответов). */
+  defaultReplyTo?: string
 }
 
 export const rusenderEmailAdapter = (opts: RusenderAdapterOptions = {}): EmailAdapter => {
@@ -72,6 +79,7 @@ export const rusenderEmailAdapter = (opts: RusenderAdapterOptions = {}): EmailAd
   const defaultFromAddress =
     opts.defaultFromAddress ?? process.env.EMAIL_FROM_ADDRESS ?? 'noreply@contentbox.site'
   const defaultFromName = opts.defaultFromName ?? process.env.EMAIL_FROM_NAME ?? 'Content Box'
+  const defaultReplyTo = opts.defaultReplyTo ?? process.env.EMAIL_REPLY_TO ?? ''
 
   return () => ({
     name: 'rusender',
@@ -96,6 +104,11 @@ export const rusenderEmailAdapter = (opts: RusenderAdapterOptions = {}): EmailAd
       const html = typeof message.html === 'string' ? message.html : undefined
       const text = typeof message.text === 'string' ? message.text : undefined
 
+      // Reply-To: из сообщения или дефолт из env; кладём в заголовки письма.
+      const replyTo =
+        parseAddress((message as { replyTo?: unknown }).replyTo) ?? parseAddress(defaultReplyTo)
+      const mailHeaders = replyTo ? { 'Reply-To': formatAddress(replyTo) } : undefined
+
       // RuSender шлёт по одному получателю на запрос — цикл по адресам.
       const results: unknown[] = []
       for (const to of recipients) {
@@ -113,6 +126,7 @@ export const rusenderEmailAdapter = (opts: RusenderAdapterOptions = {}): EmailAd
               subject,
               ...(html ? { html } : {}),
               ...(text ? { text } : {}),
+              ...(mailHeaders ? { headers: mailHeaders } : {}),
             },
           }),
         })

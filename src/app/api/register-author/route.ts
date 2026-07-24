@@ -8,6 +8,7 @@ import {
   isValidSubdomain,
   domainFromSubdomain,
 } from '@/lib/subdomain'
+import { authorWelcomeEmail, PLATFORM_BRAND } from '@/emails'
 
 /**
  * Регистрация АВТОРА (владельца тенанта). Отдельный поток от регистрации
@@ -165,7 +166,21 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // TODO(email): когда подключим SMTP — отправлять письмо с email+паролем и
-  // данными проекта. Сейчас пароль возвращается для одноразового показа на экране.
+  // Приветственное письмо автору с реквизитами входа (пароль показывается один
+  // раз). В try/catch — сбой почты не должен ломать регистрацию. Пароль всё ещё
+  // возвращается для одноразового показа на экране.
+  try {
+    const mail = authorWelcomeEmail({
+      name,
+      siteUrl: `https://${domainFromSubdomain(subdomain)}`,
+      studioUrl: `${PLATFORM_BRAND.siteUrl}/studio`,
+      loginEmail: email,
+      password,
+    })
+    await payload.sendEmail({ to: email, subject: mail.subject, html: mail.html })
+  } catch {
+    // почта не критична для регистрации
+  }
+
   return NextResponse.json({ ok: true, email, password })
 }

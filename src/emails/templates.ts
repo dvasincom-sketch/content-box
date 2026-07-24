@@ -50,14 +50,24 @@ export function authorWelcomeEmail(params: {
   name?: string | null
   siteUrl: string
   studioUrl: string
+  /** Логин (email) для блока «данные для входа». */
+  loginEmail?: string | null
+  /** Пароль показывается один раз — если передан, добавляем блок с реквизитами. */
+  password?: string | null
 }): RenderedEmail {
-  const { name, siteUrl, studioUrl } = params
+  const { name, siteUrl, studioUrl, loginEmail, password } = params
   const brand = PLATFORM_BRAND
   const hello = name?.trim() ? `Здравствуйте, ${esc(name)}!` : 'Здравствуйте!'
+  const creds = password
+    ? p('<b>Данные для входа</b> — сохраните, пароль показывается один раз:') +
+      `<div style="font-family: monospace; font-size:14px; color:#18181b; background:#f4f4f5; border:1px solid #e4e4e7; border-radius:10px; padding:12px 14px; margin:0 0 14px; line-height:1.7; word-break:break-all;">Email: ${esc(loginEmail)}<br>Пароль: ${esc(password)}</div>` +
+      p('<span style="color:#71717a; font-size:13px;">Пароль можно сменить в студии в разделе «Профиль».</span>')
+    : ''
   const bodyHtml =
     p(hello) +
     p('Ваш проект на <b>Content Box</b> создан и уже доступен по адресу:') +
     p(`<a href="${esc(siteUrl)}" target="_blank" style="color:${brand.color}; text-decoration:underline;">${esc(siteUrl)}</a>`) +
+    creds +
     p('В студии можно настроить бренд, добавить категории, публикации и видео, подключить подписки. Начните с кнопки ниже.') +
     p('<span style="color:#71717a; font-size:13px;">Если вы не создавали проект — просто проигнорируйте это письмо.</span>')
 
