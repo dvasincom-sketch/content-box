@@ -121,11 +121,6 @@ function initials(name: string): string {
   const w = name.replace(/[«»"]/g, '').trim().split(/\s+/)
   return ((w[0]?.[0] || '') + (w[1]?.[0] || '')).toUpperCase()
 }
-function formatCount(n: number): string {
-  if (n >= 1000) return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'K'
-  return String(n)
-}
-
 function LockBadge() {
   return (
     <span className="ex__lock" title="Готовится к запуску">
@@ -242,11 +237,6 @@ export function ExploreView({ featured }: { featured: FeaturedData | null }) {
             Смотрите, как авторы, контент-мейкеры и инфлюэнсеры запускают сообщества на Контент Боксе.
             Один проект уже в эфире, десятки — на старте.
           </p>
-          <div className="ex__stats">
-            <div className="ex__stat"><b>1</b><span>действующий</span></div>
-            <div className="ex__stat"><b>{RAW.length}</b><span>готовятся</span></div>
-            <div className="ex__stat"><b>{TOPICS.length}</b><span>тем</span></div>
-          </div>
         </div>
       </div>
 
@@ -276,13 +266,6 @@ export function ExploreView({ featured }: { featured: FeaturedData | null }) {
               <div className="ex__featured-topic">{BTS.topicLabel}</div>
               <h2 className="ex__featured-name">{BTS.name}</h2>
               <p className="ex__featured-tag">{BTS.tagline}</p>
-              {featured && (
-                <div className="ex__featured-stats">
-                  <div className="ex__fstat"><b>{formatCount(featured.subCount)}</b><span>подписчиков</span></div>
-                  <div className="ex__fstat"><b>{formatCount(featured.pubCount)}</b><span>публикаций</span></div>
-                  <div className="ex__fstat"><b>с 2024</b><span>на площадке</span></div>
-                </div>
-              )}
 
               {pubs.length > 0 && (
                 <div className="ex__feed">
