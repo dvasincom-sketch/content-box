@@ -11,7 +11,7 @@ import {
 
 /**
  * Регистрация АВТОРА (владельца тенанта). Отдельный поток от регистрации
- * подписчиков (/api/register-subscriber). См. claude/onboarding-implementation-plan.md.
+ * подписчиков (/api/register-subscriber).
  *
  * Тело: { email, name? }
  * Пароль НЕ приходит от клиента — генерируется здесь и возвращается ОДИН РАЗ

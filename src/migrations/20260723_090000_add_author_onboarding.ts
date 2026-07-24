@@ -1,7 +1,7 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
 /**
- * Регистрация-онбординг автора (см. claude/onboarding-implementation-plan.md).
+ * Регистрация-онбординг автора.
  *
  * users:   name (отображаемое имя автора).
  * tenants: subdomain (уник.), category (enum-ниша), description,

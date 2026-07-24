@@ -262,7 +262,7 @@ export function UIShowcaseExtra() {
         <div style={{ display: 'grid', gap: 14, maxWidth: 420 }}>
           <Dropdown placeholder="Выберите участника" options={['RM', 'Jin', 'SUGA', 'j-hope', 'Jimin', 'V', 'Jung Kook']} />
           <div style={{ position: 'relative' }}>
-            <input type={showPass ? 'text' : 'password'} defaultValue="secret123" style={{ width: '100%', padding: '11px 60px 11px 14px', fontSize: 15, color: 'var(--brand-text)', background: surfaceSoft(50), border: `1px solid ${soft(20)}`, borderRadius: 10, boxSizing: 'border-box' }} />
+            <input type={showPass ? 'text' : 'password'} defaultValue="" placeholder="••••••••" style={{ width: '100%', padding: '11px 60px 11px 14px', fontSize: 15, color: 'var(--brand-text)', background: surfaceSoft(50), border: `1px solid ${soft(20)}`, borderRadius: 10, boxSizing: 'border-box' }} />
             <button onClick={() => setShowPass((v) => !v)} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: 'var(--brand-primary)' }}>{showPass ? 'скрыть' : 'показать'}</button>
           </div>
           <div>

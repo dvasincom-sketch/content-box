@@ -1,67 +1,105 @@
-# Payload Blank Template
+# Content Box
 
-This template comes configured with the bare minimum to get started on anything you need.
+White-label платформа подписок для авторов, контент-мейкеров и инфлюэнсеров.
+Каждый автор получает своё приложение на своём домене (или бесплатном поддомене
+`*.contentbox.site`), студию управления контентом и сайт с подпиской для аудитории.
 
-## Quick start
+## Стек
 
-This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
+- **Next.js 16** (App Router, Turbopack), **React 19**
+- **Payload CMS 3.85** на **PostgreSQL** — миграции обязательны, `db.push` отключён
+- Плагины Payload: `multiTenantPlugin` (мультитенант), `nestedDocsPlugin` (дерево категорий)
+- Медиа — **Cloudflare R2** (S3-совместимо, `s3Storage`)
+- Видео — **Kinescope**
+- Деплой — **Timeweb Cloud** через Docker
 
-## Quick Start - local setup
+## Архитектура
 
-To spin up this template locally, follow these steps:
+Роутинг по хосту (`src/proxy.ts` → `src/middleware.ts`):
 
-### Clone
+- **Платформенный домен** (`contentbox.site`, `www`): на `/` — лендинг
+  (`public/landing.html`), витрина проектов на `/explore`, регистрация на
+  `/signup`, студия автора на `/studio`, админка Payload на `/admin`.
+- **Поддомен автора** (`<sub>.contentbox.site`): резолвится по полю
+  `tenants.subdomain` — бесплатный «резервный» адрес, всегда доступен.
+- **Собственный домен автора**: резолвится по `tenants.domain` (после
+  подтверждения). Поддомен продолжает работать как резерв.
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
+Тенант (`tenants`) — рабочее пространство автора. Пользователи (`users`, auth
+Payload) привязаны к тенанту через `tenant` + `tenantRole`; суперадмин —
+платформенная роль без тенанта. Изоляция данных — в `src/access/`.
 
-### Development
+Регистрация оформлена как онбординг: `/signup` (2 поля) → `/api/register-author`
+(создаёт tenant + user + site-settings) → автологин → мастер `/studio/onboarding`
+(бренд, адрес-поддомен, категория, аватар) → дашборд студии.
 
-1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URL` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
+## Локальный запуск
 
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
-4. open `http://localhost:3000` to open the app in your browser
+Нужен Node 20+ и PostgreSQL.
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+```bash
+cp .env.example .env      # заполните переменные (см. комментарии в файле)
+npm install
+npm run migrate           # применить миграции к базе
+npm run dev               # http://localhost:3000
+```
 
-#### Docker (Optional)
+Первого суперадмина создайте через `/admin`.
 
-If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
+## Миграции
 
-To do so, follow these steps:
+Схема управляется только миграциями (`db.push:false`). После изменения
+коллекций:
 
-- Modify the `MONGODB_URL` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
-- Modify the `docker-compose.yml` file's `MONGODB_URL` to match the above `<dbname>`
-- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
+```bash
+npm run payload -- migrate:create <название>   # сгенерировать по diff со схемой
+npm run migrate                                # применить
+```
 
-## How it works
+Миграции лежат в `src/migrations/` и регистрируются в `src/migrations/index.ts`.
+На старте контейнера в проде прогоняется `npm run migrate` (см. `Dockerfile`).
 
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
+## Медиа и видео
 
-### Collections
+- Картинки грузятся в Cloudflare R2 и раздаются с публичного домена
+  `R2_PUBLIC_URL` (минуя приложение).
+- Видео — через Kinescope (`KINESCOPE_*`). Импорт и загрузка — из студии.
 
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
+## Деплой (Timeweb Cloud, Docker)
 
-- #### Users (Authentication)
+Сборка из `Dockerfile` в корне. Ключевое:
 
-  Users are auth-enabled collections that have access to the admin panel.
+- **Build Argument:** `R2_PUBLIC_URL` (нужен для `next build`).
+- **Рантайм-переменные:** весь список из `.env.example` (особенно
+  `DATABASE_URL` и `PAYLOAD_SECRET`).
+- Порт контейнера — **3000**. Старт-команда зашита в образ:
+  `npm run migrate && npm run start`.
 
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/3.x/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
+Для поддоменов авторов нужен wildcard-DNS `*.contentbox.site` → приложение и
+соответствующий TLS.
 
-- #### Media
+## Структура
 
-  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
+```
+public/landing.html          Лендинг платформы
+src/proxy.ts                 Роутинг по хосту (платформа / тенант)
+src/payload.config.ts        Конфиг Payload (коллекции, плагины, R2)
+src/collections/             Коллекции (Tenants, Users, Publications, …)
+src/access/                  Контроль доступа и изоляция тенантов
+src/migrations/              SQL-миграции Payload
+src/app/(frontend)/          Публичный сайт тенанта + витрина /explore
+src/app/(signup)/            Регистрация автора /signup
+src/app/(studio)/            Студия автора /studio (+ онбординг)
+src/app/(payload)/           Админка Payload /admin
+```
 
-### Docker
+## Скрипты
 
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
-
-1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
-1. Next run `docker-compose up`
-1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
-
-That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
-
-## Questions
-
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+```bash
+npm run dev        # дев-сервер
+npm run build      # прод-сборка
+npm run start      # прод-сервер
+npm run migrate    # применить миграции
+npm run generate:types   # перегенерировать payload-types.ts
+npm run test:e2e   # Playwright e2e
+```

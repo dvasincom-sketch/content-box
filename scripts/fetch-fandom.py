@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Парсер статей Fandom через MediaWiki API.
-Запускать ЛОКАЛЬНО (у Claude нет доступа к bts.fandom.com).
+Запускать ЛОКАЛЬНО (нужен доступ к bts.fandom.com).
 
 Читает data/fandom-map.txt (формат: наш-путь | Fandom_страница),
 тянет статьи пачками по 20 с паузой, сохраняет markdown в content/fandom/.
