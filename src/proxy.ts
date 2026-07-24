@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { PLATFORM_ROOT, stripPort, subdomainFromHost } from '@/lib/subdomain'
 
 /**
  * Роутинг по хосту: платформенный домен vs клиентские (тенантные) домены.
@@ -14,10 +15,11 @@ import type { NextRequest } from 'next/server'
  *     собственный домен). Требует wildcard-DNS `*.contentbox.site` → приложение.
  *  2. СОБСТВЕННЫЙ домен (например bts.example.com) → по полю `domain`.
  *
- * Файл подключается из src/middleware.ts.
+ * В Next.js 16 middleware переименован в proxy: этот файл (`src/proxy.ts`,
+ * экспортит `proxy` + `config`) Next подхватывает автоматически по имени.
+ * Парсинг хоста (PLATFORM_ROOT, stripPort, subdomainFromHost) — из
+ * @/lib/subdomain (общее с серверными роутами; модуль чистый, Edge-совместимый).
  */
-
-const PLATFORM_ROOT = 'contentbox.site'
 
 // Пути мимо резолвинга тенанта (служебные + панели, они скоупятся по логину).
 const BYPASS_PREFIXES = ['/admin', '/studio', '/api', '/_next', '/favicon.ico']
@@ -28,23 +30,6 @@ function isPlatformHost(host: string): boolean {
   // Технический домен Timeweb (*.twc1.net) тоже показывает лендинг — удобно
   // проверить всё ДО переключения DNS на contentbox.site.
   return PLATFORM_HOSTS.has(host) || host.endsWith('.twc1.net')
-}
-
-function stripPort(host: string | null): string {
-  return (host || '').split(':')[0].toLowerCase()
-}
-
-/**
- * Прямой поддомен под `*.contentbox.site` → его метка (напр. `bts`).
- * Возвращает null для платформенных хостов и для многоуровневых имён
- * (`a.b.contentbox.site`) — такие уходят в резолвинг по собственному домену.
- */
-function subdomainFromHost(host: string): string | null {
-  const suffix = `.${PLATFORM_ROOT}`
-  if (!host.endsWith(suffix)) return null
-  const sub = host.slice(0, -suffix.length)
-  if (!sub || sub === 'www' || sub.includes('.')) return null
-  return sub
 }
 
 async function resolveTenant(field: 'domain' | 'subdomain', value: string, origin: string) {

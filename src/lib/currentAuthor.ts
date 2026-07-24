@@ -1,6 +1,4 @@
-import { getPayload } from 'payload'
-import { headers as getHeaders } from 'next/headers.js'
-import config from '@/payload.config'
+import { authenticatedUser } from '@/lib/currentUser'
 
 /**
  * Текущий залогиненный АВТОР (владелец тенанта) на серверной стороне.
@@ -17,23 +15,15 @@ import config from '@/payload.config'
  * Возвращает { user, tenantId } либо null.
  */
 export async function getCurrentAuthor() {
-  try {
-    const payloadConfig = await config
-    const payload = await getPayload({ config: payloadConfig })
-    const headers = await getHeaders()
-    const { user } = await payload.auth({ headers })
+  const user = await authenticatedUser()
+  if (!user || (user as any).collection !== 'users') return null
 
-    if (!user || (user as any).collection !== 'users') return null
+  // tenant может прийти как id (number) или как populated-объект
+  const rawTenant = (user as any).tenant
+  const tenantId =
+    rawTenant && typeof rawTenant === 'object' ? rawTenant.id : rawTenant
 
-    // tenant может прийти как id (number) или как populated-объект
-    const rawTenant = (user as any).tenant
-    const tenantId =
-      rawTenant && typeof rawTenant === 'object' ? rawTenant.id : rawTenant
+  if (!tenantId) return null
 
-    if (!tenantId) return null
-
-    return { user: user as any, tenantId: tenantId as number }
-  } catch {
-    return null
-  }
+  return { user: user as any, tenantId: tenantId as number }
 }

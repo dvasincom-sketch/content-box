@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { stripPort } from '@/lib/subdomain'
 
 /**
  * Регистрация подписчика с СЕРВЕРНОЙ привязкой тенанта.
@@ -12,10 +13,6 @@ import config from '@/payload.config'
  *
  * Тело: { email, password, displayName? }
  */
-
-function stripPort(host: string | null): string {
-  return (host || '').split(':')[0].toLowerCase()
-}
 
 export async function POST(req: NextRequest) {
   const host = stripPort(

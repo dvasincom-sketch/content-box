@@ -44,3 +44,23 @@ export function domainFromSubdomain(sub: string): string {
 export function normalizeSubdomain(input: string): string {
   return (input || '').trim().toLowerCase()
 }
+
+// --- Парсинг request-хоста (общее для proxy.ts и серверных роутов) ----------
+
+/** host без порта, в нижнем регистре (для сравнения с tenants.domain). */
+export function stripPort(host: string | null): string {
+  return (host || '').split(':')[0].toLowerCase()
+}
+
+/**
+ * Прямой поддомен под `*.contentbox.site` из request-хоста → его метка
+ * (напр. `bts`). Возвращает null для платформенных хостов и многоуровневых имён
+ * (`a.b.contentbox.site`) — такие уходят в резолвинг по собственному домену.
+ */
+export function subdomainFromHost(host: string): string | null {
+  const suffix = `.${PLATFORM_ROOT}`
+  if (!host.endsWith(suffix)) return null
+  const sub = host.slice(0, -suffix.length)
+  if (!sub || sub === 'www' || sub.includes('.')) return null
+  return sub
+}
