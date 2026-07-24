@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import '../(studio)/studio.css'
+import { THEME_INIT } from '@/lib/themeInit'
 
 /**
  * Оболочка страницы регистрации (/signup).
@@ -26,8 +27,6 @@ const plexMono = IBM_Plex_Mono({
   variable: '--font-mono',
   display: 'swap',
 })
-
-const THEME_INIT = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.classList.add('theme-'+t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.classList.add('theme-dark');}})();`
 
 export default async function SignupLayout({ children }: { children: React.ReactNode }) {
   const author = await getCurrentAuthor()

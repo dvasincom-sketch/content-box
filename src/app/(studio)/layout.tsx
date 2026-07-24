@@ -1,6 +1,7 @@
 import React from 'react'
 import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
 import './studio.css'
+import { THEME_INIT } from '@/lib/themeInit'
 
 // Родная пара IBM Plex: Sans — основной текст и заголовки, Mono — навигация и
 // подзаголовки («печатная машинка»). Оба с кириллицей, требуют явный weight.
@@ -28,8 +29,6 @@ const plexMono = IBM_Plex_Mono({
  * Так login и приватные экраны получают разные оболочки без middleware —
  * существующий proxy.ts проекта не затрагивается.
  */
-
-const THEME_INIT = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.classList.add('theme-'+t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.classList.add('theme-dark');}})();`
 
 export default function StudioRootLayout({ children }: { children: React.ReactNode }) {
   const fontVars = `${plexSans.variable} ${plexMono.variable}`
