@@ -1,4 +1,5 @@
 'use client'
+import './onboarding.css'
 
 import React, { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -155,7 +156,6 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
 
   return (
     <div className="studio-login onb">
-      <style>{ONB_CSS}</style>
 
       <div className="studio-login__bg" aria-hidden>
         <span className="studio-login__grid" />
@@ -340,69 +340,3 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
     </div>
   )
 }
-
-const ONB_CSS = `
-/* Онбординг живёт в шелле студийного логина: карточку прижимаем к верху
-   (чтобы не «прыгала» между шагами) и делаем шире стандартного логина. */
-.studio-login.onb { align-items: start; padding-top: var(--st-space-8); }
-.onb__card { max-width: 560px; }
-.onb .studio-field { margin-bottom: var(--st-space-4); }
-.onb__textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
-
-.onb__head { margin-bottom: var(--st-space-5); }
-.onb__eyebrow { font-family: var(--st-font-mono); font-size: 12px; letter-spacing: .12em; color: var(--st-text-muted); margin-bottom: 14px; }
-.onb__progress { display: flex; gap: 8px; margin-bottom: 10px; }
-.onb__dot { width: 26px; height: 4px; border-radius: 2px; background: var(--st-surface-hover); transition: background .2s ease; }
-.onb__dot.is-active { background: var(--st-accent); }
-.onb__dot.is-done { background: color-mix(in srgb, var(--st-accent) 55%, transparent); }
-.onb__stepno { font-family: var(--st-font-mono); font-size: 12px; color: var(--st-text-faint); }
-.onb__body { min-height: 220px; }
-.onb__title { font-size: var(--st-text-xl); font-weight: 600; letter-spacing: -.02em; margin: 0 0 6px; }
-.onb__lede { font-size: var(--st-text-sm); color: var(--st-text-muted); margin: 0 0 18px; line-height: 1.5; }
-
-.onb__addr { display: flex; align-items: stretch; }
-.onb__addr .onb__addr-input { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.onb__addr-suffix {
-  display: flex; align-items: center; padding: 0 12px; font-size: 14px; color: var(--st-text-muted);
-  background: var(--st-surface-hover); border: 1px solid var(--st-border); border-left: none;
-  border-top-right-radius: var(--st-radius-sm); border-bottom-right-radius: var(--st-radius-sm); white-space: nowrap;
-}
-.onb__preview { font-size: 13px; color: var(--st-text-muted); }
-.onb__preview b { color: var(--st-text); }
-.onb__subnote { margin-top: 12px; font-size: 12.5px; line-height: 1.5; color: var(--st-text-faint); }
-.onb__subnote b { color: var(--st-text-muted); font-weight: 500; }
-
-.onb__radios { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.onb__radio {
-  display: flex; align-items: center; gap: 11px; padding: 12px 14px; cursor: pointer;
-  background: var(--st-surface-2); border: 1px solid var(--st-border); border-radius: var(--st-radius-sm);
-  transition: border-color .15s ease, background .15s ease;
-}
-.onb__radio:hover { background: var(--st-surface-hover); }
-.onb__radio.is-active { border-color: var(--st-accent); background: var(--st-surface-hover); }
-.onb__radio input { position: absolute; opacity: 0; width: 0; height: 0; }
-.onb__radio-dot { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--st-border-strong); background: transparent; transition: border-color .15s ease; position: relative; }
-.onb__radio.is-active .onb__radio-dot { border-color: var(--st-accent); }
-.onb__radio.is-active .onb__radio-dot::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--st-accent); }
-.onb__radio input:focus-visible + .onb__radio-dot { box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-accent) 30%, transparent); }
-.onb__radio-label { font-size: 14px; color: var(--st-text); }
-
-.onb__avatar { display: flex; align-items: center; gap: 18px; }
-.onb__avatar-preview { width: 88px; height: 88px; border-radius: 16px; overflow: hidden; flex: none; background: var(--st-surface-2); border: 1px solid var(--st-border); display: flex; align-items: center; justify-content: center; }
-.onb__avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
-.onb__avatar-empty { font-size: 34px; font-weight: 600; color: var(--st-text-faint); }
-.onb__avatar-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.onb__hint { font-size: 12px; color: var(--st-text-faint); }
-
-.onb__summary { display: flex; flex-direction: column; gap: 2px; }
-.onb__row { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--st-border); font-size: 14px; }
-.onb__row:last-child { border-bottom: none; }
-.onb__row span { color: var(--st-text-muted); }
-.onb__row b { color: var(--st-text); font-weight: 500; text-align: right; word-break: break-word; }
-
-.onb__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--st-border); }
-.onb__foot-right { display: flex; gap: 10px; }
-@media (max-width: 560px) {
-  .onb__radios { grid-template-columns: 1fr; }
-}
-`

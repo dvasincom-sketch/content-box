@@ -1,4 +1,5 @@
 'use client'
+import './signup.css'
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -72,7 +73,6 @@ export default function SignupPage() {
 
   return (
     <div className="studio-login">
-      <style>{SU_CSS}</style>
       <div className="studio-login__bg" aria-hidden>
         <span className="studio-login__grid" />
       </div>
@@ -176,26 +176,3 @@ export default function SignupPage() {
     </div>
   )
 }
-
-const SU_CSS = `
-.su-note { font-family: var(--st-font-mono); font-size: var(--st-text-xs, 12px); color: var(--st-text-faint); text-align: center; margin: 4px 0 0; line-height: 1.5; }
-.su-alt { margin-top: var(--st-space-5); text-align: center; font-size: var(--st-text-sm); color: var(--st-text-muted); }
-.su-alt a { color: var(--st-text); text-decoration: underline; }
-.su-creds { display: flex; flex-direction: column; gap: var(--st-space-4); margin-bottom: var(--st-space-4); }
-.su-cred { display: flex; flex-direction: column; gap: var(--st-space-2); }
-.su-val {
-  font-size: var(--st-text-base); color: var(--st-text);
-  background: color-mix(in srgb, var(--st-surface-2) 70%, transparent);
-  border: 1px solid var(--st-border); border-radius: var(--st-radius-sm);
-  padding: var(--st-space-3); word-break: break-all;
-}
-.su-row { display: flex; gap: var(--st-space-2); align-items: stretch; }
-.su-pass { flex: 1; font-family: var(--st-font-mono); letter-spacing: .04em; }
-.su-copy { white-space: nowrap; }
-.su-warn {
-  font-size: var(--st-text-sm); color: var(--st-text-muted); line-height: 1.5;
-  background: color-mix(in srgb, var(--st-accent) 8%, transparent);
-  border: 1px solid var(--st-border); border-radius: var(--st-radius-sm);
-  padding: var(--st-space-3); margin-bottom: var(--st-space-4);
-}
-`
