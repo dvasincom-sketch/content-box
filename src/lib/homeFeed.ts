@@ -3,6 +3,7 @@ import config from '@/payload.config'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { categoryHref } from '@/lib/categoryHref'
 import type { PublicationCard } from '@/blocks/LatestPublicationsBlock'
+import type { Publication, Category } from '@/payload-types'
 
 /**
  * Данные секций главной. Все наборы публикаций — с исключением дублей
@@ -56,13 +57,13 @@ export type HomeFeed = {
   posterRows: PosterRowData[]
 }
 
-function relId(val: any): string | number | null {
+function relId(val: number | { id?: string | number } | null | undefined): string | number | null {
   if (val == null) return null
   return typeof val === 'object' ? (val.id ?? null) : val
 }
 
 // Публикация → карточка (общая форма для всех секций).
-function toCard(p: any, stats?: { comments: number; reactions: number }): PublicationCard {
+function toCard(p: Publication, stats?: { comments: number; reactions: number }): PublicationCard {
   return {
     id: p.id,
     slug: p.slug,
@@ -98,8 +99,8 @@ export async function getHomeFeed(
     const payload = await getPayload({ config: payloadConfig })
 
     const shown = new Set<string>() // id уже показанных публикаций (дубли сверху вниз)
-    const takeNew = (docs: any[], n: number): any[] => {
-      const out: any[] = []
+    const takeNew = (docs: Publication[], n: number): Publication[] => {
+      const out: Publication[] = []
       for (const d of docs) {
         const id = String(d.id)
         if (shown.has(id)) continue
@@ -111,7 +112,7 @@ export async function getHomeFeed(
     }
 
     // Хелпер для статистики набора → карточки.
-    const cardsFor = async (docs: any[]): Promise<PublicationCard[]> => {
+    const cardsFor = async (docs: Publication[]): Promise<PublicationCard[]> => {
       if (docs.length === 0) return []
       const stats = await getPublicationCardStats(
         docs.map((d) => d.id),
@@ -131,7 +132,7 @@ export async function getHomeFeed(
       limit: SECTION_SIZE,
       overrideAccess: true,
     })
-    const newsDocs = takeNew(newsRes.docs as any[], SECTION_SIZE)
+    const newsDocs = takeNew(newsRes.docs, SECTION_SIZE)
 
     // ── 2. Последние (минус показанное) ──
     // Берём с запасом, чтобы после исключения дублей осталось до SECTION_SIZE.
@@ -143,7 +144,7 @@ export async function getHomeFeed(
       limit: SECTION_SIZE * 2,
       overrideAccess: true,
     })
-    const latestDocs = takeNew(latestRes.docs as any[], SECTION_SIZE)
+    const latestDocs = takeNew(latestRes.docs, SECTION_SIZE)
 
     // ── 3. Сейчас популярно: реакции+комменты за окно, топ по сумме ──
     const since = new Date(
@@ -164,7 +165,7 @@ export async function getHomeFeed(
       limit: 20000,
       overrideAccess: true,
     })
-    for (const r of recentReactions.docs as any[]) {
+    for (const r of recentReactions.docs) {
       const pid = String(relId(r.publication))
       if (pid !== 'null') activity.set(pid, (activity.get(pid) ?? 0) + 1)
     }
@@ -182,7 +183,7 @@ export async function getHomeFeed(
       limit: 20000,
       overrideAccess: true,
     })
-    for (const c of recentComments.docs as any[]) {
+    for (const c of recentComments.docs) {
       const pid = String(relId(c.publication))
       if (pid !== 'null') activity.set(pid, (activity.get(pid) ?? 0) + 1)
     }
@@ -194,7 +195,7 @@ export async function getHomeFeed(
       .slice(0, SECTION_SIZE)
       .map(([id]) => id)
 
-    let popularDocs: any[] = []
+    let popularDocs: Publication[] = []
     if (popularIds.length > 0) {
       const popRes = await payload.find({
         collection: 'publications',
@@ -206,8 +207,10 @@ export async function getHomeFeed(
         overrideAccess: true,
       })
       // сохранить порядок по активности
-      const byId = new Map((popRes.docs as any[]).map((d) => [String(d.id), d]))
-      popularDocs = popularIds.map((id) => byId.get(id)).filter(Boolean)
+      const byId = new Map(popRes.docs.map((d) => [String(d.id), d]))
+      popularDocs = popularIds
+        .map((id) => byId.get(id))
+        .filter((d): d is Publication => Boolean(d))
       popularDocs.forEach((d) => shown.add(String(d.id)))
     }
 
@@ -222,7 +225,7 @@ export async function getHomeFeed(
       overrideAccess: true,
     })
     const commentCounts = new Map<string, number>()
-    for (const c of allComments.docs as any[]) {
+    for (const c of allComments.docs) {
       const pid = String(relId(c.publication))
       if (pid !== 'null') commentCounts.set(pid, (commentCounts.get(pid) ?? 0) + 1)
     }
@@ -232,7 +235,7 @@ export async function getHomeFeed(
       .slice(0, SECTION_SIZE)
       .map(([id]) => id)
 
-    let discussedDocs: any[] = []
+    let discussedDocs: Publication[] = []
     if (discussedIds.length > 0) {
       const dRes = await payload.find({
         collection: 'publications',
@@ -243,8 +246,10 @@ export async function getHomeFeed(
         limit: SECTION_SIZE,
         overrideAccess: true,
       })
-      const byId = new Map((dRes.docs as any[]).map((d) => [String(d.id), d]))
-      discussedDocs = discussedIds.map((id) => byId.get(id)).filter(Boolean)
+      const byId = new Map(dRes.docs.map((d) => [String(d.id), d]))
+      discussedDocs = discussedIds
+        .map((id) => byId.get(id))
+        .filter((d): d is Publication => Boolean(d))
       discussedDocs.forEach((d) => shown.add(String(d.id)))
     }
 
@@ -267,7 +272,7 @@ export async function getHomeFeed(
         limit: 1000,
         overrideAccess: true,
       })
-      for (const p of actPubsRes.docs as any[]) {
+      for (const p of actPubsRes.docs) {
         const catId = relId(p.category)
         if (catId == null) continue
         const key = String(catId)
@@ -293,12 +298,12 @@ export async function getHomeFeed(
         limit: SECTION_SIZE,
         overrideAccess: true,
       })
-      const byId = new Map((catsRes.docs as any[]).map((c) => [String(c.id), c]))
+      const byId = new Map(catsRes.docs.map((c) => [String(c.id), c]))
       popularCategories = topCatIds
         .map((id) => {
           const c = byId.get(id)
           if (!c) return null
-          const crumbs = (c.breadcrumbs ?? []) as { url?: string }[]
+          const crumbs = c.breadcrumbs ?? []
           const href = crumbs.length
             ? `/category${crumbs[crumbs.length - 1].url ?? ''}`
             : `/category/${c.slug}`
@@ -329,7 +334,7 @@ export async function getHomeFeed(
       limit: 50,
       overrideAccess: true,
     })
-    const containers = containerRes.docs as any[]
+    const containers = containerRes.docs
 
     const posterRows: PosterRowData[] = []
     for (const container of containers) {
@@ -345,7 +350,7 @@ export async function getHomeFeed(
         overrideAccess: true,
       })
 
-      const items: PosterItem[] = (childrenRes.docs as any[]).map((c) => {
+      const items: PosterItem[] = childrenRes.docs.map((c) => {
         const cover = c.cover && typeof c.cover === 'object' ? c.cover : null
         const posterUrl = cover?.sizes?.poster?.url || cover?.url || null
         return { id: c.id, href: categoryHref(c), title: c.title, posterUrl }

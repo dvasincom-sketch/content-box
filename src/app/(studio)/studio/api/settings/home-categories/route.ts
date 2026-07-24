@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Сохранение категорий-плиток (homeCategories) секции «Категории» главной.
@@ -14,16 +11,9 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  * сверяем присланные id со списком категорий тенанта.
  */
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const rawIds = Array.isArray(data.categories) ? data.categories : []
 
@@ -39,15 +29,13 @@ export async function POST(req: NextRequest) {
     requested.push(raw)
   }
 
-  const payload = await getPayload({ config: await config })
-
   // Проверка принадлежности тенанту: берём все категории тенанта, оставляем
   // только присланные id, которые реально принадлежат ему. Порядок — как прислан.
   let allowed: (number | string)[] = requested
   if (requested.length > 0) {
     const catRes = await payload.find({
       collection: 'categories',
-      where: { tenant: { equals: author.tenantId } },
+      where: { tenant: { equals: tenantId } },
       limit: 500,
       depth: 0,
       overrideAccess: true,
@@ -56,9 +44,9 @@ export async function POST(req: NextRequest) {
     allowed = requested.filter((id) => ownIds.has(String(id)))
   }
 
-  const settings = await findSettings(payload, author.tenantId)
+  const settings = await findTenantSettings(payload, tenantId)
   if (!settings) {
-    return NextResponse.json({ error: 'Настройки сайта не найдены' }, { status: 404 })
+    return apiError('Настройки сайта не найдены', 404)
   }
 
   try {
@@ -68,23 +56,8 @@ export async function POST(req: NextRequest) {
       data: { homeCategories: allowed } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true })
+    return apiOk()
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сохранить' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось сохранить')
   }
-}
-
-/** Единственная запись site-settings тенанта. */
-async function findSettings(payload: any, tenantId: number) {
-  const res = await payload.find({
-    collection: 'site-settings',
-    where: { tenant: { equals: tenantId } },
-    limit: 1,
-    depth: 0,
-    overrideAccess: true,
-  })
-  return res.docs[0] || null
-}
+})

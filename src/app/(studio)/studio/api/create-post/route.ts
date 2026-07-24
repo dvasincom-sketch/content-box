@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { slugify } from '@/lib/slugify'
 
@@ -18,26 +15,14 @@ import { slugify } from '@/lib/slugify'
  *  { title, body, slug?, coverId?, categoryId?, minTierId?, relatedVideoIds?, publish }
  *  publish=true → publishedAt=now (опубликовано); false → черновик (без даты).
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) {
-    return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-  }
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const title = (data.title || '').trim()
   if (!title) {
-    return NextResponse.json({ error: 'Укажите заголовок' }, { status: 400 })
+    return apiError('Укажите заголовок')
   }
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
 
   // slug: из тела или авто из заголовка; гарантируем уникальность в тенанте
   const baseSlug = slugify(data.slug || title) || 'post'
@@ -91,30 +76,11 @@ export async function POST(req: NextRequest) {
       overrideAccess: true,
     })
 
-    return NextResponse.json({ ok: true, id: doc.id, slug })
+    return apiOk({ id: doc.id, slug })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сохранить публикацию' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Не удалось сохранить публикацию', 500)
   }
-}
-
-/** Проверяет, что документ существует и принадлежит тенанту. */
-async function belongsToTenant(
-  payload: any,
-  collection: string,
-  id: string | number,
-  tenantId: number,
-): Promise<boolean> {
-  try {
-    const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
-    const docTenant = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
-    return Number(docTenant) === Number(tenantId)
-  } catch {
-    return false
-  }
-}
+})
 
 /**
  * Из массива id видео оставляет только принадлежащие тенанту, в исходном

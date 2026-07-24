@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { categoryHref } from '@/lib/categoryHref'
 import type { MenuLocation } from '@/lib/buildMenu'
+import type { Category, MenuItem } from '@/payload-types'
 
 /**
  * Узел дерева ДЛЯ КОНСТРУКТОРА (не для публичного сайта).
@@ -48,7 +49,7 @@ export async function buildMenuAdmin(
     depth: 1,
     overrideAccess: true,
   })
-  const cats = catsRes.docs as any[]
+  const cats = catsRes.docs
 
   const itemsRes = await payload.find({
     collection: 'menu-items',
@@ -60,15 +61,15 @@ export async function buildMenuAdmin(
     depth: 1,
     overrideAccess: true,
   })
-  const items = itemsRes.docs as any[]
+  const items = itemsRes.docs
 
-  const idOf = (rel: any): number | null =>
+  const idOf = (rel: number | { id: number } | null | undefined): number | null =>
     rel == null ? null : typeof rel === 'object' ? rel.id : rel
 
   // Оверрайды авто-категорий: category.id → override.
-  const catOverride = new Map<number, any>()
+  const catOverride = new Map<number, MenuItem>()
   // Ручные пункты (page/url) по их menu-items parent id.
-  const manualByParent = new Map<number | null, any[]>()
+  const manualByParent = new Map<number | null, MenuItem[]>()
 
   for (const it of items) {
     if (it.kind === 'category') {
@@ -83,7 +84,7 @@ export async function buildMenuAdmin(
   }
 
   // Категории по родителю (таксономия).
-  const catsByParent = new Map<number | null, any[]>()
+  const catsByParent = new Map<number | null, Category[]>()
   for (const cat of cats) {
     const pid = idOf(cat.parent)
     const bucket = catsByParent.get(pid) ?? []
@@ -91,10 +92,10 @@ export async function buildMenuAdmin(
     catsByParent.set(pid, bucket)
   }
 
-  const orderOfManual = (it: any): number =>
+  const orderOfManual = (it: MenuItem): number =>
     typeof it.order === 'number' ? it.order : 0
 
-  const effectiveOrder = (cat: any): number => {
+  const effectiveOrder = (cat: Category): number => {
     const ov = catOverride.get(cat.id)
     if (ov && typeof ov.order === 'number') return ov.order
     return typeof cat.order === 'number' ? cat.order : 0
@@ -102,14 +103,14 @@ export async function buildMenuAdmin(
 
   // --- Ручные пункты (page/url) ----------------------------------------------
 
-  const manualOriginalLabel = (it: any): string => {
+  const manualOriginalLabel = (it: MenuItem): string => {
     if (it.kind === 'page' && it.page && typeof it.page === 'object') {
       return it.page.title || 'Страница'
     }
     return it.url || 'Ссылка'
   }
 
-  const manualHref = (it: any): string => {
+  const manualHref = (it: MenuItem): string => {
     if (it.kind === 'url') return it.url || '#'
     if (it.kind === 'page' && it.page && typeof it.page === 'object') {
       return `/page/${it.page.slug}`
@@ -117,7 +118,7 @@ export async function buildMenuAdmin(
     return '#'
   }
 
-  const buildManual = (it: any, depth: number): AdminMenuNode => {
+  const buildManual = (it: MenuItem, depth: number): AdminMenuNode => {
     const original = manualOriginalLabel(it)
     return {
       key: `item:${it.id}`,
@@ -142,7 +143,7 @@ export async function buildMenuAdmin(
 
   // --- Авто-категории --------------------------------------------------------
 
-  const buildCat = (cat: any, depth: number): AdminMenuNode => {
+  const buildCat = (cat: Category, depth: number): AdminMenuNode => {
     const ov = catOverride.get(cat.id)
     const childCats = depth >= MAX_DEPTH ? [] : catsByParent.get(cat.id) ?? []
 

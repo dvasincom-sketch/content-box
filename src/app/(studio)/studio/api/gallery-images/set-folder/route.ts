@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Назначить / снять папку у изображения галереи.
@@ -12,32 +9,22 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  *
  * Одно видео = одна папка, поэтому просто перезаписываем поле folder.
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const imageId = data.imageId
-  if (!imageId) return NextResponse.json({ error: 'Не указано изображение' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!imageId) return apiError('Не указано изображение')
 
   // Видео принадлежит тенанту?
   const image: any = await payload
     .findByID({ collection: 'gallery-images', id: imageId, depth: 0, overrideAccess: true })
     .catch(() => null)
-  if (!image) return NextResponse.json({ error: 'Изображение не найдено' }, { status: 404 })
+  if (!image) return apiError('Изображение не найдено', 404)
   const vTenant =
     image.tenant && typeof image.tenant === 'object' ? image.tenant.id : image.tenant
   if (Number(vTenant) !== Number(tenantId)) {
-    return NextResponse.json({ error: 'Изображение не найдено' }, { status: 404 })
+    return apiError('Изображение не найдено', 404)
   }
 
   // Целевая папка
@@ -48,7 +35,7 @@ export async function POST(req: NextRequest) {
       .catch(() => null)
     const fTenant = f && (typeof f.tenant === 'object' ? f.tenant.id : f.tenant)
     if (!f || Number(fTenant) !== Number(tenantId)) {
-      return NextResponse.json({ error: 'Папка не найдена' }, { status: 400 })
+      return apiError('Папка не найдена')
     }
     folder = Number(data.folderId)
   }
@@ -60,11 +47,8 @@ export async function POST(req: NextRequest) {
       data: { folder } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, folderId: folder })
+    return apiOk({ folderId: folder })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось изменить папку изображения' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось изменить папку изображения')
   }
-}
+})

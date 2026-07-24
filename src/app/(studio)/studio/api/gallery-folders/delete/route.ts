@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Удаление папки видео.
@@ -13,32 +10,22 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  *
  * Body: { id }
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const id = data.id
-  if (!id) return NextResponse.json({ error: 'Не указана папка' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!id) return apiError('Не указана папка')
 
   // Папка принадлежит тенанту?
   const existing: any = await payload
     .findByID({ collection: 'gallery-folders', id, depth: 0, overrideAccess: true })
     .catch(() => null)
-  if (!existing) return NextResponse.json({ error: 'Папка не найдена' }, { status: 404 })
+  if (!existing) return apiError('Папка не найдена', 404)
   const fTenant =
     existing.tenant && typeof existing.tenant === 'object' ? existing.tenant.id : existing.tenant
   if (Number(fTenant) !== Number(tenantId)) {
-    return NextResponse.json({ error: 'Папка не найдена' }, { status: 404 })
+    return apiError('Папка не найдена', 404)
   }
 
   // 1) Есть ли подпапки? Если да — запрещаем удаление.
@@ -52,10 +39,7 @@ export async function POST(req: NextRequest) {
     overrideAccess: true,
   })
   if (children.totalDocs > 0) {
-    return NextResponse.json(
-      { error: 'Сначала удалите или переместите вложенные папки' },
-      { status: 409 },
-    )
+    return apiError('Сначала удалите или переместите вложенные папки', 409)
   }
 
   // 2) Открепляем изображения из этой папки (folder → null). Батчами по 100.
@@ -83,20 +67,14 @@ export async function POST(req: NextRequest) {
       if (vids.docs.length < 100) break
     }
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось открепить изображения из папки' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Не удалось открепить изображения из папки', 500)
   }
 
   // 3) Удаляем саму папку
   try {
     await payload.delete({ collection: 'gallery-folders', id, overrideAccess: true })
-    return NextResponse.json({ ok: true })
+    return apiOk()
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось удалить папку' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Не удалось удалить папку', 500)
   }
-}
+})

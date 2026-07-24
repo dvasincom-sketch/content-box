@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { streamSignToken } from '@/lib/cfStream'
 
 /**
@@ -19,51 +16,42 @@ import { streamSignToken } from '@/lib/cfStream'
  */
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
+export const GET = withAuthor(async ({ req, payload, tenantId }) => {
   const id = req.nextUrl.searchParams.get('id')
-  if (!id) return NextResponse.json({ error: 'Не указан id' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
+  if (!id) return apiError('Не указан id')
 
   let doc: any
   try {
     doc = await payload.findByID({ collection: 'videos', id, depth: 0, overrideAccess: true })
   } catch {
-    return NextResponse.json({ error: 'Видео не найдено' }, { status: 404 })
+    return apiError('Видео не найдено', 404)
   }
 
   const docTenant = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
-  if (Number(docTenant) !== Number(author.tenantId)) {
-    return NextResponse.json({ error: 'Нет доступа' }, { status: 403 })
+  if (Number(docTenant) !== Number(tenantId)) {
+    return apiError('Нет доступа', 403)
   }
 
   const ref = doc.videoRef
-  if (!ref) return NextResponse.json({ error: 'У видео нет привязки к хранилищу' }, { status: 400 })
+  if (!ref) return apiError('У видео нет привязки к хранилищу')
 
   const provider = doc.provider === 'kinescope' ? 'kinescope' : 'stream'
 
   // Kinescope: токен не нужен.
   if (provider === 'kinescope') {
-    return NextResponse.json({ ok: true, provider: 'kinescope', embedId: ref })
+    return apiOk({ provider: 'kinescope', embedId: ref })
   }
 
   // Cloudflare Stream: signed-токен.
   try {
     const token = await streamSignToken(ref, 2 * 60 * 60) // 2 часа
-    return NextResponse.json({
-      ok: true,
+    return apiOk({
       provider: 'stream',
       token,
       uid: ref,
       customerCode: process.env.CF_STREAM_CUSTOMER_CODE || null,
     })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: `Не удалось подписать токен: ${e?.message || 'ошибка'}` },
-      { status: 500 },
-    )
+    return apiError(`Не удалось подписать токен: ${e?.message || 'ошибка'}`, 500)
   }
-}
+})

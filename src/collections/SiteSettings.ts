@@ -293,6 +293,15 @@ export const SiteSettings: CollectionConfig = {
         { name: 'copyright', type: 'text' },
       ],
     },
+    // Водяная метка дайджеста: до этого момента материалы уже разосланы.
+    // Двигает планировщик рассылки — правится только сервером.
+    {
+      name: 'lastDigestAt',
+      type: 'date',
+      label: 'Последний дайджест отправлен',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Служебное поле планировщика рассылки.' },
+    },
   ],
   timestamps: true,
 }

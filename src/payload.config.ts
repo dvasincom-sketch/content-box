@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
 import { isSuperAdmin } from './access'
+import { rusenderEmailAdapter } from './emails/rusenderAdapter'
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
 import { SiteSettings } from './collections/SiteSettings'
@@ -145,6 +146,9 @@ export default buildConfig({
     Reactions,
   ],
   editor: lexicalEditor(),
+  // Почта через RuSender API (Bearer-токен + ID ключа). Подключается ТОЛЬКО при
+  // заданном RUSENDER_API_TOKEN — без него поведение прежнее (письма не шлём).
+  email: process.env.RUSENDER_API_TOKEN ? rusenderEmailAdapter() : undefined,
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

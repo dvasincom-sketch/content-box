@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Загрузка обложки категории в media (R2). Возвращает { id, url } — привязка к
@@ -15,37 +12,32 @@ export const runtime = 'nodejs'
 const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   let form: FormData
   try {
     form = await req.formData()
   } catch {
-    return NextResponse.json({ error: 'Ожидается форма с файлом' }, { status: 400 })
+    return apiError('Ожидается форма с файлом')
   }
 
   const file = form.get('file')
   if (!file || typeof file === 'string') {
-    return NextResponse.json({ error: 'Файл не передан' }, { status: 400 })
+    return apiError('Файл не передан')
   }
 
   const blob = file as File
   if (!ALLOWED.includes(blob.type)) {
-    return NextResponse.json({ error: 'Поддерживаются JPEG, PNG, WebP, AVIF, GIF' }, { status: 400 })
+    return apiError('Поддерживаются JPEG, PNG, WebP, AVIF, GIF')
   }
   if (blob.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'Файл больше 8 МБ' }, { status: 400 })
+    return apiError('Файл больше 8 МБ')
   }
-
-  const payload = await getPayload({ config: await config })
 
   try {
     const buffer = Buffer.from(await blob.arrayBuffer())
     const media = await payload.create({
       collection: 'media',
-      data: { tenant: author.tenantId } as any,
+      data: { tenant: tenantId } as any,
       file: {
         data: buffer,
         name: (blob as any).name || `cat-cover-${Date.now()}`,
@@ -62,7 +54,7 @@ export async function POST(req: NextRequest) {
         .findByID({ collection: 'categories', id: categoryId, depth: 0, overrideAccess: true })
         .catch(() => null)
       const catTenant = cat?.tenant && typeof cat.tenant === 'object' ? cat.tenant.id : cat?.tenant
-      if (cat && Number(catTenant) === Number(author.tenantId)) {
+      if (cat && Number(catTenant) === Number(tenantId)) {
         await payload.update({
           collection: 'categories',
           id: categoryId,
@@ -72,8 +64,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, id: media.id, url: (media as any).url || null })
+    return apiOk({ id: media.id, url: (media as any).url || null })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Не удалось загрузить' }, { status: 500 })
+    return apiError(e?.message || 'Не удалось загрузить', 500)
   }
-}
+})

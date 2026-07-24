@@ -10,6 +10,7 @@ import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { SiteFooter } from '@/components/SiteFooter'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { THEME_INIT } from '@/lib/themeInit'
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter', display: 'swap' })
 const montserrat = Montserrat({ subsets: ['latin', 'cyrillic'], variable: '--font-montserrat', display: 'swap' })
@@ -24,8 +25,6 @@ const fontVars = [inter, montserrat, manrope, golos, ptSans, unbounded, roboto]
   .join(' ')
 
 
-
-const THEME_INIT = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.classList.add('theme-'+t);document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.classList.add('theme-dark');}})();`
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props

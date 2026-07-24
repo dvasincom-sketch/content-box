@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import type { Reaction } from '@/payload-types'
 import type {
   PublicationReaction,
   CommentNode,
@@ -100,7 +101,7 @@ export async function getPublicationEngagement(
       limit: 500,
       overrideAccess: true,
     })
-    const commentDocs = (commentsRes as any)?.docs ?? []
+    const commentDocs = commentsRes.docs
 
     // ── Реакции публикации ──
     const pubReactionsRes = await payload.find({
@@ -116,11 +117,11 @@ export async function getPublicationEngagement(
       limit: 2000,
       overrideAccess: true,
     })
-    const pubReactionDocs = (pubReactionsRes as any)?.docs ?? []
+    const pubReactionDocs = pubReactionsRes.docs
 
     // ── Реакции на комментарии этой публикации ──
     const commentIds = commentDocs.map((c: any) => c.id)
-    let commentReactionDocs: any[] = []
+    let commentReactionDocs: Reaction[] = []
     if (commentIds.length > 0) {
       const cRes = await payload.find({
         collection: 'reactions',
@@ -135,7 +136,7 @@ export async function getPublicationEngagement(
         limit: 5000,
         overrideAccess: true,
       })
-      commentReactionDocs = (cRes as any)?.docs ?? []
+      commentReactionDocs = cRes.docs
     }
 
     // ── Агрегация реакций публикации по эмодзи ──

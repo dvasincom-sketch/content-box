@@ -46,7 +46,7 @@ export async function getPublicationCardStats(
       limit: 10000,
       overrideAccess: true,
     })
-    for (const c of (commentsRes as any)?.docs ?? []) {
+    for (const c of commentsRes.docs) {
       const pid = String(typeof c.publication === 'object' ? c.publication?.id : c.publication)
       const cur = result.get(pid)
       if (cur) cur.comments += 1
@@ -66,7 +66,7 @@ export async function getPublicationCardStats(
       limit: 20000,
       overrideAccess: true,
     })
-    for (const r of (reactionsRes as any)?.docs ?? []) {
+    for (const r of reactionsRes.docs) {
       const pid = String(typeof r.publication === 'object' ? r.publication?.id : r.publication)
       const cur = result.get(pid)
       if (cur) cur.reactions += 1

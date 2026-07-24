@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { NextResponse } from 'next/server'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { kinescopeGetVideo } from '@/lib/kinescope'
 
@@ -17,28 +15,19 @@ import { kinescopeGetVideo } from '@/lib/kinescope'
  */
 export const runtime = 'nodejs'
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const videoId = String(data.videoId || '').trim()
-  if (!videoId) return NextResponse.json({ error: 'Не передан id видео' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
+  if (!videoId) return apiError('Не передан id видео')
 
   // 1) Защита от дубля: это видео уже в студии?
   const dup = await payload.find({
     collection: 'videos',
     where: {
       and: [
-        { tenant: { equals: author.tenantId } },
+        { tenant: { equals: tenantId } },
         { provider: { equals: 'kinescope' } },
         { videoRef: { equals: videoId } },
       ],
@@ -59,10 +48,7 @@ export async function POST(req: NextRequest) {
   try {
     meta = await kinescopeGetVideo(videoId)
   } catch (e: any) {
-    return NextResponse.json(
-      { error: `Kinescope: ${e?.message || 'видео не найдено'}` },
-      { status: 502 },
-    )
+    return apiError(`Kinescope: ${e?.message || 'видео не найдено'}`, 502)
   }
 
   // 3) Создаём запись Videos
@@ -82,18 +68,15 @@ export async function POST(req: NextRequest) {
         isPreview: Boolean(data.isPreview),
         category: numOrNull(data.categoryId),
         folder: numOrNull(data.folderId),
-        tenant: author.tenantId,
+        tenant: tenantId,
       } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, id: doc.id, videoId, ready: meta.ready })
+    return apiOk({ id: doc.id, videoId, ready: meta.ready })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось создать запись видео' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Не удалось создать запись видео', 500)
   }
-}
+})
 
 function numOrNull(v: any): number | null {
   if (v == null || v === '') return null

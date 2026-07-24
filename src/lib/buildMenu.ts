@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { categoryHref } from '@/lib/categoryHref'
+import type { Category, MenuItem } from '@/payload-types'
 
 /**
  * Узел меню — форма совместима с прежним lib/headerMenu, чтобы SiteHeader /
@@ -53,7 +54,7 @@ export async function buildMenu(
     depth: 1,
     overrideAccess: true,
   })
-  const cats = catsRes.docs as any[]
+  const cats = catsRes.docs
 
   // Все оверрайды/ручные пункты этого location.
   const itemsRes = await payload.find({
@@ -66,17 +67,17 @@ export async function buildMenu(
     depth: 1, // подтянуть page (slug) и category у ручных пунктов
     overrideAccess: true,
   })
-  const items = itemsRes.docs as any[]
+  const items = itemsRes.docs
 
   // --- Индексы ---------------------------------------------------------------
 
-  const idOf = (rel: any): number | null =>
+  const idOf = (rel: number | { id: number } | null | undefined): number | null =>
     rel == null ? null : typeof rel === 'object' ? rel.id : rel
 
   // Оверрайды авто-категорий: category.id → override.
-  const catOverride = new Map<number, any>()
+  const catOverride = new Map<number, MenuItem>()
   // Ручные пункты (page/url), сгруппированные по их menu-items parent id.
-  const manualByParent = new Map<number | null, any[]>()
+  const manualByParent = new Map<number | null, MenuItem[]>()
 
   for (const it of items) {
     if (it.kind === 'category') {
@@ -92,8 +93,8 @@ export async function buildMenu(
   }
 
   // Категории, сгруппированные по родителю (таксономия).
-  const catParentOf = (cat: any): number | null => idOf(cat.parent)
-  const catsByParent = new Map<number | null, any[]>()
+  const catParentOf = (cat: Category): number | null => idOf(cat.parent)
+  const catsByParent = new Map<number | null, Category[]>()
   for (const cat of cats) {
     const pid = catParentOf(cat)
     const bucket = catsByParent.get(pid) ?? []
@@ -103,7 +104,7 @@ export async function buildMenu(
 
   // --- Хелперы отображения ---------------------------------------------------
 
-  const manualLabel = (it: any): string => {
+  const manualLabel = (it: MenuItem): string => {
     if (it.labelOverride) return it.labelOverride
     if (it.kind === 'page' && it.page && typeof it.page === 'object') {
       return it.page.title || 'Страница'
@@ -111,7 +112,7 @@ export async function buildMenu(
     return 'Ссылка'
   }
 
-  const manualHref = (it: any): string => {
+  const manualHref = (it: MenuItem): string => {
     if (it.kind === 'url') return it.url || '#'
     if (it.kind === 'page' && it.page && typeof it.page === 'object') {
       return `/page/${it.page.slug}`
@@ -120,12 +121,12 @@ export async function buildMenu(
   }
 
   // Эффективный порядок ручного пункта / авто-узла — для сортировки уровня.
-  const orderOfManual = (it: any): number =>
+  const orderOfManual = (it: MenuItem): number =>
     typeof it.order === 'number' ? it.order : 0
 
   // --- Сборка ручной ветки (page/url) ---------------------------------------
 
-  const buildManual = (it: any, depth: number): MenuNode => ({
+  const buildManual = (it: MenuItem, depth: number): MenuNode => ({
     id: it.id,
     title: manualLabel(it),
     href: manualHref(it),
@@ -140,7 +141,7 @@ export async function buildMenu(
 
   // --- Сборка авто-узла категории (с оверрайдом) ----------------------------
 
-  const buildCat = (cat: any, depth: number): MenuNode | null => {
+  const buildCat = (cat: Category, depth: number): MenuNode | null => {
     const ov = catOverride.get(cat.id)
     if (ov?.hidden) return null // скрыл раздел — скрылось всё под ним
 
@@ -149,11 +150,11 @@ export async function buildMenu(
 
     // Дети-категории (с их оверрайдами), затем ручные пункты, подвешенные
     // под ОВЕРРАЙД этой категории (если он материализован).
-    const childNodes: MenuNode[] = []
+    const childNodes: Array<MenuNode & { _order?: number }> = []
 
     for (const child of childCats) {
       const node = buildCat(child, depth + 1)
-      if (node) childNodes.push({ ...node, _order: effectiveOrder(child) } as any)
+      if (node) childNodes.push({ ...node, _order: effectiveOrder(child) })
     }
 
     // Ручные пункты цепляются к menu-items id. Для авто-категории таким id
@@ -161,12 +162,12 @@ export async function buildMenu(
     if (ov && depth < MAX_DEPTH) {
       const manualChildren = manualByParent.get(ov.id) ?? []
       for (const m of manualChildren) {
-        childNodes.push({ ...buildManual(m, depth + 1), _order: orderOfManual(m) } as any)
+        childNodes.push({ ...buildManual(m, depth + 1), _order: orderOfManual(m) })
       }
     }
 
-    childNodes.sort((a: any, b: any) => (a._order ?? 0) - (b._order ?? 0))
-    for (const n of childNodes) delete (n as any)._order
+    childNodes.sort((a, b) => (a._order ?? 0) - (b._order ?? 0))
+    for (const n of childNodes) delete n._order
 
     return {
       id: cat.id,
@@ -177,7 +178,7 @@ export async function buildMenu(
   }
 
   // Эффективный порядок авто-узла: оверрайд.order приоритетнее Category.order.
-  const effectiveOrder = (cat: any): number => {
+  const effectiveOrder = (cat: Category): number => {
     const ov = catOverride.get(cat.id)
     if (ov && typeof ov.order === 'number') return ov.order
     return typeof cat.order === 'number' ? cat.order : 0

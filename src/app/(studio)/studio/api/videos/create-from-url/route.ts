@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { streamCopyFromUrl, resolveDirectUrl } from '@/lib/cfStream'
 
@@ -17,29 +14,17 @@ import { streamCopyFromUrl, resolveDirectUrl } from '@/lib/cfStream'
  */
 export const runtime = 'nodejs'
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const title = String(data.title || '').trim()
   const url = String(data.url || '').trim()
 
-  if (!title) return NextResponse.json({ error: 'Укажите название' }, { status: 400 })
+  if (!title) return apiError('Укажите название')
   if (!isHttpUrl(url)) {
-    return NextResponse.json(
-      { error: 'Укажите прямую ссылку на видеофайл (http/https)' },
-      { status: 400 },
-    )
+    return apiError('Укажите прямую ссылку на видеофайл (http/https)')
   }
-
-  const payload = await getPayload({ config: await config })
 
   // 1) Запускаем копирование в Stream
   let uid: string
@@ -54,10 +39,7 @@ export async function POST(req: NextRequest) {
     })
     uid = video.uid
   } catch (e: any) {
-    return NextResponse.json(
-      { error: `${e?.message || 'не удалось начать загрузку'}` },
-      { status: 502 },
-    )
+    return apiError(`${e?.message || 'не удалось начать загрузку'}`, 502)
   }
 
   // 2) Создаём запись Videos с uid в videoRef
@@ -71,18 +53,15 @@ export async function POST(req: NextRequest) {
         minTier: numOrNull(data.minTierId),
         isPreview: Boolean(data.isPreview),
         category: numOrNull(data.categoryId),
-        tenant: author.tenantId,
+        tenant: tenantId,
       } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, id: doc.id, uid })
+    return apiOk({ id: doc.id, uid })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Видео ушло в Stream, но запись создать не удалось' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Видео ушло в Stream, но запись создать не удалось', 500)
   }
-}
+})
 
 function isHttpUrl(s: string): boolean {
   try {

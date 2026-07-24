@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Обновить название и уровень доступа видео.
@@ -14,35 +11,25 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  * По образцу set-folder: авторизация → проверка принадлежности видео тенанту →
  * проверка целевого уровня на тенант → payload.update.
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const videoId = data.videoId
-  if (!videoId) return NextResponse.json({ error: 'Не указано видео' }, { status: 400 })
+  if (!videoId) return apiError('Не указано видео')
 
   const title = typeof data.title === 'string' ? data.title.trim() : ''
-  if (!title) return NextResponse.json({ error: 'Укажите название' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!title) return apiError('Укажите название')
 
   // Видео принадлежит тенанту?
   const video: any = await payload
     .findByID({ collection: 'videos', id: videoId, depth: 0, overrideAccess: true })
     .catch(() => null)
-  if (!video) return NextResponse.json({ error: 'Видео не найдено' }, { status: 404 })
+  if (!video) return apiError('Видео не найдено', 404)
   const vTenant =
     video.tenant && typeof video.tenant === 'object' ? video.tenant.id : video.tenant
   if (Number(vTenant) !== Number(tenantId)) {
-    return NextResponse.json({ error: 'Видео не найдено' }, { status: 404 })
+    return apiError('Видео не найдено', 404)
   }
 
   // Целевой уровень доступа
@@ -58,7 +45,7 @@ export async function POST(req: NextRequest) {
       .catch(() => null)
     const tTenant = t && (typeof t.tenant === 'object' ? t.tenant.id : t.tenant)
     if (!t || Number(tTenant) !== Number(tenantId)) {
-      return NextResponse.json({ error: 'Уровень не найден' }, { status: 400 })
+      return apiError('Уровень не найден')
     }
     minTier = Number(data.minTierId)
   }
@@ -70,11 +57,8 @@ export async function POST(req: NextRequest) {
       data: { title, minTier } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, title, minTierId: minTier })
+    return apiOk({ title, minTierId: minTier })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось обновить видео' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось обновить видео')
   }
-}
+})

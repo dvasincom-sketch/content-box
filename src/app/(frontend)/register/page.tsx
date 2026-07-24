@@ -1,8 +1,17 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import {
+  authCardStyle,
+  authHeadingStyle,
+  authLabelStyle,
+  authInputStyle,
+  authButtonStyle,
+  authErrorStyle,
+  authAltLinkStyle,
+} from '../authFormStyles'
 
 /**
  * Страница регистрации подписчика (/register).
@@ -61,84 +70,53 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: '64px auto', padding: '32px 28px', borderRadius: 16, background: 'color-mix(in srgb, var(--brand-surface) 40%, transparent)', border: '1px solid color-mix(in srgb, var(--brand-text) 10%, transparent)' }}>
-      <h1 style={{ marginBottom: 24, fontSize: 28, color: 'var(--brand-text)' }}>Регистрация</h1>
+    <div style={authCardStyle}>
+      <h1 style={authHeadingStyle}>Регистрация</h1>
 
-      <label style={labelStyle}>
+      <label style={authLabelStyle}>
         Имя
         <input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          style={inputStyle}
+          style={authInputStyle}
           autoComplete="name"
         />
       </label>
 
-      <label style={labelStyle}>
+      <label style={authLabelStyle}>
         Email
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={inputStyle}
+          style={authInputStyle}
           autoComplete="email"
           required
         />
       </label>
 
-      <label style={labelStyle}>
+      <label style={authLabelStyle}>
         Пароль
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={inputStyle}
+          style={authInputStyle}
           autoComplete="new-password"
           required
         />
       </label>
 
-      {error && <p style={{ color: '#c00', fontSize: 14, marginTop: 8 }}>{error}</p>}
+      {error && <p style={authErrorStyle}>{error}</p>}
 
-      <button onClick={handleSubmit} disabled={loading} style={buttonStyle}>
+      <button onClick={handleSubmit} disabled={loading} style={authButtonStyle}>
         {loading ? 'Регистрируем…' : 'Зарегистрироваться'}
       </button>
 
-      <p style={{ marginTop: 16, fontSize: 14 }}>
+      <p style={authAltLinkStyle}>
         Уже есть аккаунт? <Link href="/login">Войти</Link>
       </p>
     </div>
   )
-}
-
-const labelStyle: React.CSSProperties = {
-  display: 'block',
-  marginBottom: 16,
-  fontSize: 14,
-  fontWeight: 500,
-}
-const inputStyle: React.CSSProperties = {
-  display: 'block',
-  width: '100%',
-  marginTop: 6,
-  padding: '11px 14px',
-  fontSize: 15,
-  color: 'var(--brand-text)',
-  background: 'color-mix(in srgb, var(--brand-surface) 50%, transparent)',
-  border: '1px solid color-mix(in srgb, var(--brand-text) 20%, transparent)',
-  borderRadius: 10,
-  boxSizing: 'border-box',
-}
-const buttonStyle: React.CSSProperties = {
-  width: '100%',
-  marginTop: 8,
-  padding: '12px',
-  fontSize: 15,
-  fontWeight: 600,
-  color: '#fff',
-  background: 'var(--brand-primary)',
-  border: 'none',
-  borderRadius: 10,
-  cursor: 'pointer',
 }

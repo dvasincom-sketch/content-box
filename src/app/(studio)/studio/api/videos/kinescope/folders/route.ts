@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, apiError } from '@/app/(studio)/studio/api/_lib'
 import { kinescopeListFolders } from '@/lib/kinescope'
 
 /**
@@ -9,10 +9,7 @@ import { kinescopeListFolders } from '@/lib/kinescope'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
+export const GET = withAuthor(async () => {
   try {
     const folders = await kinescopeListFolders()
     return NextResponse.json(
@@ -20,9 +17,6 @@ export async function GET() {
       { headers: { 'Cache-Control': 'no-store' } },
     )
   } catch (e: any) {
-    return NextResponse.json(
-      { error: `Kinescope: ${e?.message || 'не удалось получить папки'}` },
-      { status: 502 },
-    )
+    return apiError(`Kinescope: ${e?.message || 'не удалось получить папки'}`, 502)
   }
-}
+})

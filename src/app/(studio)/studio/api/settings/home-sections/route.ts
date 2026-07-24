@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '@/app/(studio)/studio/api/_lib'
 import { isHomeSectionType, type HomeSectionType } from '@/lib/homeSections'
 
 /**
@@ -15,16 +12,9 @@ import { isHomeSectionType, type HomeSectionType } from '@/lib/homeSections'
  * стандартном порядке, см. normalizeHomeSections), т.е. это способ сброса.
  */
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const rawSections = Array.isArray(data.homeSections) ? data.homeSections : []
   // валидация и очистка
@@ -33,19 +23,18 @@ export async function POST(req: NextRequest) {
   for (const s of rawSections) {
     const type = s?.type
     if (!isHomeSectionType(type)) {
-      return NextResponse.json({ error: `Неизвестная секция: ${String(type)}` }, { status: 400 })
+      return apiError(`Неизвестная секция: ${String(type)}`)
     }
     if (seen.has(type)) {
-      return NextResponse.json({ error: `Дубликат секции: ${type}` }, { status: 400 })
+      return apiError(`Дубликат секции: ${type}`)
     }
     seen.add(type)
     homeSections.push({ type, enabled: Boolean(s?.enabled) })
   }
 
-  const payload = await getPayload({ config: await config })
-  const settings = await findSettings(payload, author.tenantId)
+  const settings = await findTenantSettings(payload, tenantId)
   if (!settings) {
-    return NextResponse.json({ error: 'Настройки сайта не найдены' }, { status: 404 })
+    return apiError('Настройки сайта не найдены', 404)
   }
 
   try {
@@ -55,23 +44,8 @@ export async function POST(req: NextRequest) {
       data: { homeSections } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true })
+    return apiOk()
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сохранить' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось сохранить')
   }
-}
-
-/** Единственная запись site-settings тенанта. */
-async function findSettings(payload: any, tenantId: number) {
-  const res = await payload.find({
-    collection: 'site-settings',
-    where: { tenant: { equals: tenantId } },
-    limit: 1,
-    depth: 0,
-    overrideAccess: true,
-  })
-  return res.docs[0] || null
-}
+})

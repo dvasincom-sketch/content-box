@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID } from '../access'
+import { subscriberResetSubject, subscriberResetHTML } from '../emails/authEmails'
 
 /**
  * Subscribers — зрители сайта (auth-коллекция), ОТДЕЛЬНО от CMS-users.
@@ -23,7 +24,13 @@ const subscribersScoped: Access = ({ req: { user } }) => {
 
 export const Subscribers: CollectionConfig = {
   slug: 'subscribers',
-  auth: true,
+  auth: {
+    // Брендированное письмо сброса пароля в бренде тенанта, ссылка на его сайт.
+    forgotPassword: {
+      generateEmailSubject: (args) => subscriberResetSubject(args),
+      generateEmailHTML: (args) => subscriberResetHTML(args),
+    },
+  },
   labels: { singular: 'Подписчик', plural: 'Пользователи' },
   admin: {
     useAsTitle: 'email',
@@ -73,6 +80,50 @@ export const Subscribers: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       label: 'Заблокирован',
+    },
+    // ── Подтверждение email (мягкое) ──────────────────────────────────────
+    // «Мягкое»: НЕ блокирует вход. Регистрация и логин работают как раньше,
+    // а флаг emailVerified лишь фиксирует, подтвердил ли адрес владелец.
+    // Токен/срок заполняются сервером (overrideAccess) — извне не выставить.
+    {
+      name: 'emailVerified',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Email подтверждён',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true },
+    },
+    {
+      name: 'emailVerifyToken',
+      type: 'text',
+      label: 'Токен подтверждения email',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+    },
+    {
+      name: 'emailVerifyExpiry',
+      type: 'date',
+      label: 'Срок действия токена',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
+    },
+    // ── Дайджест-уведомления ──────────────────────────────────────────────
+    // notifyDigest — согласие получать дайджест новых материалов (по умолч.
+    // включено). unsubscribeToken — стабильный токен для ссылки «отписаться»
+    // в письме; заполняется сервером при первой рассылке.
+    {
+      name: 'notifyDigest',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Присылать дайджест',
+      access: { create: () => false },
+    },
+    {
+      name: 'unsubscribeToken',
+      type: 'text',
+      label: 'Токен отписки',
+      access: { create: () => false, read: () => false, update: () => false },
+      admin: { hidden: true },
     },
     // `tenant` инжектит multi-tenant плагин.
   ],

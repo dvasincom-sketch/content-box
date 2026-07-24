@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Удаление категории. БЕЗОПАСНЫЙ режим: удаляем только «пустую» категорию.
@@ -12,31 +9,21 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  *
  * Body: { id }
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const id = data.id
-  if (!id) return NextResponse.json({ error: 'Не указана категория' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!id) return apiError('Не указана категория')
 
   // Принадлежит тенанту?
   const doc: any = await payload
     .findByID({ collection: 'categories', id, depth: 0, overrideAccess: true })
     .catch(() => null)
-  if (!doc) return NextResponse.json({ error: 'Категория не найдена' }, { status: 404 })
+  if (!doc) return apiError('Категория не найдена', 404)
   const docTenant = doc.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc.tenant
   if (Number(docTenant) !== Number(tenantId)) {
-    return NextResponse.json({ error: 'Категория не найдена' }, { status: 404 })
+    return apiError('Категория не найдена', 404)
   }
 
   // Есть дети?
@@ -48,10 +35,7 @@ export async function POST(req: NextRequest) {
     overrideAccess: true,
   })
   if (children.totalDocs > 0) {
-    return NextResponse.json(
-      { error: 'Сначала удалите или перенесите подкатегории' },
-      { status: 409 },
-    )
+    return apiError('Сначала удалите или перенесите подкатегории', 409)
   }
 
   // Есть публикации?
@@ -63,19 +47,13 @@ export async function POST(req: NextRequest) {
     overrideAccess: true,
   })
   if (pubs.totalDocs > 0) {
-    return NextResponse.json(
-      { error: `В категории есть публикации (${pubs.totalDocs}). Сначала переназначьте их.` },
-      { status: 409 },
-    )
+    return apiError(`В категории есть публикации (${pubs.totalDocs}). Сначала переназначьте их.`, 409)
   }
 
   try {
     await payload.delete({ collection: 'categories', id, overrideAccess: true })
-    return NextResponse.json({ ok: true })
+    return apiOk()
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось удалить категорию' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось удалить категорию')
   }
-}
+})

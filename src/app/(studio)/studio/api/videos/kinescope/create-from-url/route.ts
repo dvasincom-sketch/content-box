@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { resolveDirectUrl } from '@/lib/cfStream'
 import { kinescopeUploadFromUrl } from '@/lib/kinescope'
@@ -18,28 +15,16 @@ import { kinescopeUploadFromUrl } from '@/lib/kinescope'
  */
 export const runtime = 'nodejs'
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const title = String(data.title || '').trim()
   const url = String(data.url || '').trim()
-  if (!title) return NextResponse.json({ error: 'Укажите название' }, { status: 400 })
+  if (!title) return apiError('Укажите название')
   if (!isHttpUrl(url)) {
-    return NextResponse.json(
-      { error: 'Укажите прямую ссылку на видеофайл (http/https) или YouTube' },
-      { status: 400 },
-    )
+    return apiError('Укажите прямую ссылку на видеофайл (http/https) или YouTube')
   }
-
-  const payload = await getPayload({ config: await config })
 
   // 1) Запускаем загрузку в Kinescope
   let videoId: string
@@ -56,10 +41,7 @@ export async function POST(req: NextRequest) {
     videoId = video.id
     if (!videoId) throw new Error('Kinescope не вернул id видео')
   } catch (e: any) {
-    return NextResponse.json(
-      { error: `Kinescope: ${e?.message || 'не удалось начать загрузку'}` },
-      { status: 502 },
-    )
+    return apiError(`Kinescope: ${e?.message || 'не удалось начать загрузку'}`, 502)
   }
 
   // 2) Создаём запись Videos с provider=kinescope
@@ -74,18 +56,15 @@ export async function POST(req: NextRequest) {
         minTier: numOrNull(data.minTierId),
         isPreview: Boolean(data.isPreview),
         category: numOrNull(data.categoryId),
-        tenant: author.tenantId,
+        tenant: tenantId,
       } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, id: doc.id, videoId })
+    return apiOk({ id: doc.id, videoId })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Видео ушло в Kinescope, но запись создать не удалось' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Видео ушло в Kinescope, но запись создать не удалось', 500)
   }
-}
+})
 
 function isHttpUrl(s: string): boolean {
   try {
