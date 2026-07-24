@@ -169,8 +169,18 @@ function toggleTheme() {
   }
 }
 
+function ThemeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4l1.4-1.4" />
+    </svg>
+  )
+}
+
 export function ExploreView({ featured }: { featured: FeaturedData | null }) {
   const [topic, setTopic] = useState('all')
+  const [menuOpen, setMenuOpen] = useState(false)
   const showFeatured = topic === 'all' || topic === 'music'
   const sections = topic === 'all' ? TOPICS : TOPICS.filter((t) => t.value === topic)
   const newList = topic === 'new' ? RAW.filter((p) => p.isNew) : []
@@ -181,7 +191,7 @@ export function ExploreView({ featured }: { featured: FeaturedData | null }) {
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <style>{EXPLORE_CSS}</style>
 
-      {/* Шапка — единый стиль с лендингом */}
+      {/* Шапка — сквозная, как на лендинге (на мобиле: только знак + бургер) */}
       <header className="ex__hdr">
         <div className="ex-wrap ex__nav">
           <Link href="/" className="ex__logo">
@@ -195,14 +205,31 @@ export function ExploreView({ featured }: { featured: FeaturedData | null }) {
             <a href="/#fears">Вопросы</a>
           </nav>
           <div className="ex__nav-right">
+            <button
+              className={`ex__burger ${menuOpen ? 'is-open' : ''}`}
+              type="button"
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label="Меню"
+              aria-expanded={menuOpen}
+            >
+              <span /><span /><span />
+            </button>
             <button className="ex__theme" type="button" onClick={toggleTheme} aria-label="Сменить тему" title="Сменить тему">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4l1.4-1.4" />
-              </svg>
+              <ThemeIcon />
             </button>
             <Link href="/studio" className="btn btn--ghost">Войти в студию</Link>
             <Link href="/signup" className="btn btn--primary">Создать проект</Link>
           </div>
+        </div>
+        <div className={`ex__mmenu ${menuOpen ? 'is-open' : ''}`}>
+          <Link href="/explore" onClick={() => setMenuOpen(false)}>Проекты</Link>
+          <a href="/#studio-shots" onClick={() => setMenuOpen(false)}>Студия</a>
+          <a href="/#pricing" onClick={() => setMenuOpen(false)}>Цена</a>
+          <a href="/#fears" onClick={() => setMenuOpen(false)}>Вопросы</a>
+          <button className="ex__theme-wide" type="button" onClick={toggleTheme}>
+            <ThemeIcon /> Сменить тему
+          </button>
+          <Link href="/signup" className="btn btn--primary" onClick={() => setMenuOpen(false)}>Создать проект</Link>
         </div>
       </header>
 
@@ -369,6 +396,18 @@ const EXPLORE_CSS = `
 .ex__nav-right { display:flex; align-items:center; gap:14px; }
 .ex__theme { width:34px; height:34px; border:1px solid var(--border); border-radius:6px; background:transparent; color:var(--muted); cursor:pointer; display:grid; place-items:center; transition:background .14s ease, color .14s ease; }
 .ex__theme:hover { background:var(--surface-hover); color:var(--text); }
+/* Бургер + мобильное меню — как на лендинге (скрыты на десктопе) */
+.ex__burger { display:none; width:38px; height:38px; border:1px solid var(--border); border-radius:6px; background:transparent; cursor:pointer; flex-direction:column; gap:4px; align-items:center; justify-content:center; }
+.ex__burger span { width:16px; height:2px; background:var(--text); border-radius:2px; transition:transform .2s ease, opacity .2s ease; }
+.ex__burger.is-open span:nth-child(1){ transform:translateY(6px) rotate(45deg); }
+.ex__burger.is-open span:nth-child(2){ opacity:0; }
+.ex__burger.is-open span:nth-child(3){ transform:translateY(-6px) rotate(-45deg); }
+.ex__mmenu { display:none; flex-direction:column; gap:14px; padding:16px 24px 22px; border-bottom:1px solid var(--border); background:color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter:blur(12px); }
+.ex__mmenu.is-open { display:flex; }
+.ex__mmenu > a { font-family:var(--mono); font-size:15px; color:var(--muted); text-decoration:none; }
+.ex__mmenu > a:hover { color:var(--text); }
+.ex__theme-wide { display:inline-flex; align-items:center; gap:8px; align-self:flex-start; height:36px; padding:0 14px; border:1px solid var(--border); border-radius:6px; background:transparent; color:var(--muted); cursor:pointer; font-family:var(--sans); font-size:14px; }
+.ex__theme-wide:hover { color:var(--text); background:var(--surface-hover); }
 .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:6px; font-family:var(--sans); font-weight:550; font-size:14px; cursor:pointer; border:1px solid transparent; text-decoration:none; transition:background .14s ease, border-color .14s ease; white-space:nowrap; }
 .btn--primary { background:var(--accent); color:var(--accent-text); }
 .btn--primary:hover { background:var(--accent-hover); }
@@ -401,7 +440,7 @@ const EXPLORE_CSS = `
 .ex__featured-avatar { position:absolute; left:26px; bottom:26px; width:104px; height:104px; border-radius:26px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:32px; color:#fff; background:rgba(0,0,0,.35); border:2px solid rgba(255,255,255,.7); backdrop-filter:blur(4px); }
 .ex__verified { position:absolute; right:-6px; bottom:-6px; width:26px; height:26px; border-radius:50%; background:var(--live); color:#062; display:flex; align-items:center; justify-content:center; border:2px solid var(--surface); }
 .ex__badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; font-family:var(--mono); font-size:11.5px; font-weight:500; }
-.ex__badge--live { position:absolute; top:18px; left:18px; background:rgba(0,0,0,.42); color:#fff; }
+.ex__badge--live { position:absolute; top:18px; right:18px; left:auto; background:rgba(0,0,0,.42); color:#fff; }
 .ex__featured-body { padding:26px 30px; display:flex; flex-direction:column; }
 .ex__featured-topic { font-family:var(--mono); font-size:12px; color:var(--muted); letter-spacing:.08em; margin-bottom:8px; }
 .ex__featured-name { font-size:30px; font-weight:700; letter-spacing:-.02em; margin:0 0 8px; }
@@ -457,13 +496,17 @@ const EXPLORE_CSS = `
   .ex__card-shine { display:none; }
 }
 @media (max-width:820px){
+  /* Мобильная шапка как на лендинге: только знак лого + бургер */
   .ex__nav-links { display:none; }
+  .ex__burger { display:flex; }
+  .ex__theme { display:none; }
+  .ex__nav-right .btn--primary { display:none; }
+  .ex__logo { font-size:0; gap:0; }
   .ex__featured { grid-template-columns:1fr; }
   .ex__featured-cover { min-height:180px; }
   .ex__feed-strip { grid-template-columns:repeat(2, 1fr); }
 }
-@media (max-width:520px){
+@media (max-width:400px){
   .ex__nav-right .btn--ghost { display:none; }
-  .ex__feed-strip { grid-template-columns:repeat(2, 1fr); }
 }
 `
