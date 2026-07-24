@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import { headers as getHeaders } from 'next/headers.js'
 import config from '@/payload.config'
+import type { User, Subscriber } from '@/payload-types'
 
 /**
  * Ядро серверной аутентификации: читает httpOnly-cookie через payload.auth и
@@ -8,9 +9,9 @@ import config from '@/payload.config'
  * null. Ошибки глотаются → null.
  *
  * Обёртки `getCurrentAuthor` и `getCurrentSubscriber` фильтруют результат по
- * нужной коллекции — раньше обе повторяли этот же блок getPayload/auth.
+ * полю-дискриминанту `collection` — раньше обе повторяли этот же блок.
  */
-export async function authenticatedUser(): Promise<any | null> {
+export async function authenticatedUser(): Promise<User | Subscriber | null> {
   try {
     const payload = await getPayload({ config: await config })
     const headers = await getHeaders()

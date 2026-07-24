@@ -1,5 +1,6 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import type { Category } from '@/payload-types'
 
 export type MenuNode = {
   id: number
@@ -27,7 +28,7 @@ export async function getHeaderMenu(tenantID: number): Promise<MenuNode[]> {
     depth: 0,
     overrideAccess: true,
   })
-  const roots = rootsRes.docs as any[]
+  const roots = rootsRes.docs
   if (roots.length === 0) return []
 
   // Все категории тенанта разом — дешевле, чем ветка за веткой.
@@ -39,9 +40,9 @@ export async function getHeaderMenu(tenantID: number): Promise<MenuNode[]> {
     depth: 1, // нужны breadcrumbs для href
     overrideAccess: true,
   })
-  const all = allRes.docs as any[]
+  const all = allRes.docs
 
-  const hrefOf = (cat: any): string => {
+  const hrefOf = (cat: Category): string => {
     const crumbs = cat.breadcrumbs
     if (Array.isArray(crumbs) && crumbs.length > 0) {
       const last = crumbs[crumbs.length - 1]?.url
@@ -50,14 +51,14 @@ export async function getHeaderMenu(tenantID: number): Promise<MenuNode[]> {
     return `/category/${cat.slug}`
   }
 
-  const parentIDOf = (cat: any): number | null => {
+  const parentIDOf = (cat: Category): number | null => {
     const p = cat.parent
     if (!p) return null
     return typeof p === 'object' ? p.id : p
   }
 
   // Группируем детей по родителю.
-  const childrenByParent = new Map<number | null, any[]>()
+  const childrenByParent = new Map<number | null, Category[]>()
   for (const cat of all) {
     const pid = parentIDOf(cat)
     const bucket = childrenByParent.get(pid) ?? []
@@ -65,7 +66,7 @@ export async function getHeaderMenu(tenantID: number): Promise<MenuNode[]> {
     childrenByParent.set(pid, bucket)
   }
 
-  const build = (cat: any, depth: number): MenuNode => ({
+  const build = (cat: Category, depth: number): MenuNode => ({
     id: cat.id,
     title: cat.title,
     href: hrefOf(cat),
@@ -103,7 +104,7 @@ export async function getFooterCategories(
     depth: 0,
     overrideAccess: true,
   })
-  const root = (rootRes.docs as any[])[0]
+  const root = rootRes.docs[0]
   if (!root) return []
 
   const childrenRes = await payload.find({
@@ -117,7 +118,7 @@ export async function getFooterCategories(
     overrideAccess: true,
   })
 
-  return (childrenRes.docs as any[]).map((cat) => {
+  return childrenRes.docs.map((cat) => {
     const crumbs = cat.breadcrumbs
     const last = Array.isArray(crumbs) && crumbs.length > 0 ? crumbs[crumbs.length - 1]?.url : null
     return {
@@ -150,7 +151,7 @@ export async function getFooterColumns(tenantID: number): Promise<FooterColumn[]
     depth: 0,
     overrideAccess: true,
   })
-  const roots = rootsRes.docs as any[]
+  const roots = rootsRes.docs
   if (roots.length === 0) return []
 
   const columns: FooterColumn[] = []
@@ -171,7 +172,7 @@ export async function getFooterColumns(tenantID: number): Promise<FooterColumn[]
       overrideAccess: true,
     })
 
-    const items = (childrenRes.docs as any[]).map((cat) => {
+    const items = childrenRes.docs.map((cat) => {
       const crumbs = cat.breadcrumbs
       const last =
         Array.isArray(crumbs) && crumbs.length > 0 ? crumbs[crumbs.length - 1]?.url : null

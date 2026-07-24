@@ -10,7 +10,7 @@ import { MobileMenu } from '@/components/MobileMenu'
 import type { MenuNode } from '@/lib/headerMenu'
 
 export type NavItem = { label: string; url: string }
-export type HeaderSubscriber = { email?: string; displayName?: string } | null
+export type HeaderSubscriber = { email?: string | null; displayName?: string | null } | null
 export type SiteHeaderProps = {
   logoUrl?: string | null
   logoAlt?: string | null

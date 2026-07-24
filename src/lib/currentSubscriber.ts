@@ -1,4 +1,5 @@
 import { authenticatedUser } from '@/lib/currentUser'
+import type { Subscriber } from '@/payload-types'
 
 /**
  * Текущий залогиненный подписчик (или null) на серверной стороне.
@@ -7,10 +8,10 @@ import { authenticatedUser } from '@/lib/currentUser'
  * Возвращает пользователя ТОЛЬКО если он из коллекции subscribers — админ
  * (users) сюда не просочится (разные коллекции/куки).
  */
-export async function getCurrentSubscriber() {
+export async function getCurrentSubscriber(): Promise<Subscriber | null> {
   const user = await authenticatedUser()
-  if (user && (user as any).collection === 'subscribers') {
-    return user as any
+  if (user && user.collection === 'subscribers') {
+    return user
   }
   return null
 }
