@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export function LoginForm() {
   const router = useRouter()
@@ -86,6 +87,10 @@ export function LoginForm() {
       >
         {loading ? 'Вход…' : 'Войти'}
       </button>
+
+      <p style={{ marginTop: 12, fontSize: 13, textAlign: 'center' }}>
+        <Link href="/studio/forgot-password">Забыли пароль?</Link>
+      </p>
     </div>
   )
 }

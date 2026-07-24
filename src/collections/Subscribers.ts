@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID } from '../access'
+import { subscriberResetSubject, subscriberResetHTML } from '../emails/authEmails'
 
 /**
  * Subscribers — зрители сайта (auth-коллекция), ОТДЕЛЬНО от CMS-users.
@@ -23,7 +24,13 @@ const subscribersScoped: Access = ({ req: { user } }) => {
 
 export const Subscribers: CollectionConfig = {
   slug: 'subscribers',
-  auth: true,
+  auth: {
+    // Брендированное письмо сброса пароля в бренде тенанта, ссылка на его сайт.
+    forgotPassword: {
+      generateEmailSubject: (args) => subscriberResetSubject(args),
+      generateEmailHTML: (args) => subscriberResetHTML(args),
+    },
+  },
   labels: { singular: 'Подписчик', plural: 'Пользователи' },
   admin: {
     useAsTitle: 'email',

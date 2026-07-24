@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID, superAdminFieldAccess } from '../access'
+import { authorResetSubject, authorResetHTML } from '../emails/authEmails'
 
 /**
  * Users (ТЗ §3.2) — auth collection (the admin-panel user collection).
@@ -25,6 +26,11 @@ export const Users: CollectionConfig = {
   // не нужна. Кука выставляется с maxAge = tokenExpiration.
   auth: {
     tokenExpiration: 60 * 60 * 24 * 7, // 604800 сек = 7 дней
+    // Брендированное письмо сброса пароля (бренд платформы, ссылка на студию).
+    forgotPassword: {
+      generateEmailSubject: () => authorResetSubject(),
+      generateEmailHTML: (args) => authorResetHTML(args),
+    },
   },
   labels: { singular: 'Пользователь', plural: 'Пользователи' },
   admin: {

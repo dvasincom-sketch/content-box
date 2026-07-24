@@ -84,6 +84,10 @@ export default function LoginPage() {
       </button>
 
       <p style={authAltLinkStyle}>
+        <Link href="/forgot-password">Забыли пароль?</Link>
+      </p>
+
+      <p style={authAltLinkStyle}>
         Нет аккаунта? <Link href="/register">Зарегистрироваться</Link>
       </p>
     </div>
