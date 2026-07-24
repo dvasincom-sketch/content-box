@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { NextResponse } from 'next/server'
+import { withAuthor, apiError } from '@/app/(studio)/studio/api/_lib'
 import { kinescopeListVideos } from '@/lib/kinescope'
 
 /**
@@ -13,10 +13,7 @@ import { kinescopeListVideos } from '@/lib/kinescope'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
+export const GET = withAuthor(async ({ req }) => {
   const url = new URL(req.url)
   const page = Math.max(1, Number(url.searchParams.get('page') || '1') || 1)
   const query = url.searchParams.get('q') || undefined
@@ -30,9 +27,6 @@ export async function GET(req: NextRequest) {
       { headers: { 'Cache-Control': 'no-store' } },
     )
   } catch (e: any) {
-    return NextResponse.json(
-      { error: `Kinescope: ${e?.message || 'не удалось получить список видео'}` },
-      { status: 502 },
-    )
+    return apiError(`Kinescope: ${e?.message || 'не удалось получить список видео'}`, 502)
   }
-}
+})

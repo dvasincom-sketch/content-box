@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 
 /**
@@ -10,31 +7,22 @@ import { slugify } from '@/lib/slugify'
  */
 const PERK_TYPES = ['included', 'star', 'warning', 'info']
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const name = String(data.name || '').trim()
-  if (!name) return NextResponse.json({ error: 'Укажите название' }, { status: 400 })
+  if (!name) return apiError('Укажите название')
 
   const weight = Number(data.weight)
   if (Number.isNaN(weight) || weight < 0) {
-    return NextResponse.json({ error: 'Вес должен быть числом ≥ 0' }, { status: 400 })
+    return apiError('Вес должен быть числом ≥ 0')
   }
 
   const priceRub = Number(data.priceRub)
   if (Number.isNaN(priceRub) || priceRub < 0) {
-    return NextResponse.json({ error: 'Цена должна быть числом ≥ 0' }, { status: 400 })
+    return apiError('Цена должна быть числом ≥ 0')
   }
-
-  const payload = await getPayload({ config: await config })
 
   try {
     const doc = await payload.create({
@@ -47,15 +35,15 @@ export async function POST(req: NextRequest) {
         description: typeof data.description === 'string' ? data.description : undefined,
         isActive: data.isActive !== false,
         perks: Array.isArray(data.perks) ? normalizePerks(data.perks) : [],
-        tenant: author.tenantId,
+        tenant: tenantId,
       } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, id: doc.id })
+    return apiOk({ id: doc.id })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Не удалось создать уровень' }, { status: 400 })
+    return apiError(e?.message || 'Не удалось создать уровень')
   }
-}
+})
 
 function normalizePerks(raw: any[]): { type: string; text: string }[] {
   return raw

@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 
 /**
@@ -11,32 +8,22 @@ import { htmlToLexical } from '@/lib/lexical'
  *
  * Body: { id, title?, content? }  (content — HTML-строка из RichEditor)
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const id = data.id
-  if (!id) return NextResponse.json({ error: 'Не указана страница' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!id) return apiError('Не указана страница')
 
   // Страница принадлежит тенанту?
   const own = await belongsToTenant(payload, 'pages', id, tenantId)
-  if (!own) return NextResponse.json({ error: 'Страница не найдена' }, { status: 404 })
+  if (!own) return apiError('Страница не найдена', 404)
 
   const patch: any = {}
 
   if (typeof data.title === 'string') {
     const t = data.title.trim()
-    if (!t) return NextResponse.json({ error: 'Заголовок не может быть пустым' }, { status: 400 })
+    if (!t) return apiError('Заголовок не может быть пустым')
     patch.title = t
   }
 
@@ -46,7 +33,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ error: 'Нет изменений' }, { status: 400 })
+    return apiError('Нет изменений')
   }
 
   try {
@@ -56,26 +43,8 @@ export async function POST(req: NextRequest) {
       data: patch,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true })
+    return apiOk()
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сохранить' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось сохранить')
   }
-}
-
-async function belongsToTenant(
-  payload: any,
-  collection: string,
-  id: string | number,
-  tenantId: number,
-): Promise<boolean> {
-  try {
-    const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
-    const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
-    return Number(t) === Number(tenantId)
-  } catch {
-    return false
-  }
-}
+})

@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 const MAX_DEPTH = 4
 
@@ -21,23 +18,13 @@ const MAX_DEPTH = 4
  * Сначала ПОЛНАЯ валидация всех операций, затем запись — чтобы при ошибке
  * не осталось частично применённого состояния.
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const location = data.location === 'footer' ? 'footer' : 'header'
   const ops = Array.isArray(data.ops) ? data.ops : null
-  if (!ops) return NextResponse.json({ error: 'Нет операций' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!ops) return apiError('Нет операций')
 
   const parseKey = (key: any): { type: 'cat' | 'item'; id: number } | null => {
     if (typeof key !== 'string') return null
@@ -83,31 +70,31 @@ export async function POST(req: NextRequest) {
 
   for (const op of ops) {
     const self = parseKey(op?.key)
-    if (!self) return NextResponse.json({ error: 'Некорректный ключ узла' }, { status: 400 })
+    if (!self) return apiError('Некорректный ключ узла')
     const order = Number(op?.order)
     if (!Number.isFinite(order)) {
-      return NextResponse.json({ error: 'Некорректный порядок' }, { status: 400 })
+      return apiError('Некорректный порядок')
     }
 
     // Узел принадлежит тенанту?
     if (self.type === 'cat') {
       const cat = await loadCat(self.id)
       if (!cat || tenantOf(cat) !== tenantId) {
-        return NextResponse.json({ error: 'Категория не найдена' }, { status: 404 })
+        return apiError('Категория не найдена', 404)
       }
     } else {
       const item = await loadItem(self.id)
       if (!item || tenantOf(item) !== tenantId) {
-        return NextResponse.json({ error: 'Пункт не найден' }, { status: 404 })
+        return apiError('Пункт не найден', 404)
       }
       if (item.location !== location) {
-        return NextResponse.json({ error: 'Пункт из другого меню' }, { status: 400 })
+        return apiError('Пункт из другого меню')
       }
     }
 
     const parentKey = op?.parentKey == null ? null : parseKey(op.parentKey)
     if (op?.parentKey != null && !parentKey) {
-      return NextResponse.json({ error: 'Некорректный ключ родителя' }, { status: 400 })
+      return apiError('Некорректный ключ родителя')
     }
 
     // Для ручных пунктов проверяем родителя (тенант, location, цикл, глубина).
@@ -116,38 +103,29 @@ export async function POST(req: NextRequest) {
       if (parentKey.type === 'cat') {
         const pcat = await loadCat(parentKey.id)
         if (!pcat || tenantOf(pcat) !== tenantId) {
-          return NextResponse.json({ error: 'Родитель не найден' }, { status: 400 })
+          return apiError('Родитель не найден')
         }
       } else {
         // Родитель — menu-item.
         const pitem = await loadItem(parentKey.id)
         if (!pitem || tenantOf(pitem) !== tenantId) {
-          return NextResponse.json({ error: 'Родитель не найден' }, { status: 400 })
+          return apiError('Родитель не найден')
         }
         if (pitem.location !== location) {
-          return NextResponse.json({ error: 'Родитель из другого меню' }, { status: 400 })
+          return apiError('Родитель из другого меню')
         }
         if (parentKey.id === self.id) {
-          return NextResponse.json(
-            { error: 'Пункт не может быть родителем самого себя' },
-            { status: 400 },
-          )
+          return apiError('Пункт не может быть родителем самого себя')
         }
         // Цикл: новый родитель не должен быть потомком перемещаемого пункта.
         const cyc = await isDescendantItem(loadItem, parentKey.id, self.id)
         if (cyc) {
-          return NextResponse.json(
-            { error: 'Нельзя переместить пункт внутрь его собственного потомка' },
-            { status: 400 },
-          )
+          return apiError('Нельзя переместить пункт внутрь его собственного потомка')
         }
         // Глубина: (глубина родителя) + 1 ≤ MAX_DEPTH.
         const pd = await itemDepth(loadItem, parentKey.id)
         if (pd + 1 > MAX_DEPTH) {
-          return NextResponse.json(
-            { error: `Превышена максимальная вложенность (${MAX_DEPTH} уровня)` },
-            { status: 400 },
-          )
+          return apiError(`Превышена максимальная вложенность (${MAX_DEPTH} уровня)`)
         }
       }
     }
@@ -219,14 +197,11 @@ export async function POST(req: NextRequest) {
         })
       }
     }
-    return NextResponse.json({ ok: true, count: plans.length })
+    return apiOk({ count: plans.length })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сохранить порядок' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось сохранить порядок')
   }
-}
+})
 
 /** Глубина menu-item: 1 = корень. Идём вверх по parent. */
 async function itemDepth(

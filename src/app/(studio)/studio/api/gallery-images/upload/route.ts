@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Загрузка одного изображения в коллекцию gallery-images. Файл идёт в R2
@@ -21,35 +18,26 @@ export const runtime = 'nodejs'
 const MAX_BYTES = 25 * 1024 * 1024 // 25 MB — фото галереи крупнее обложек
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   let form: FormData
   try {
     form = await req.formData()
   } catch {
-    return NextResponse.json({ error: 'Ожидается форма с файлом' }, { status: 400 })
+    return apiError('Ожидается форма с файлом')
   }
 
   const file = form.get('file')
   if (!file || typeof file === 'string') {
-    return NextResponse.json({ error: 'Файл не передан' }, { status: 400 })
+    return apiError('Файл не передан')
   }
 
   const blob = file as File
   if (!ALLOWED.includes(blob.type)) {
-    return NextResponse.json(
-      { error: 'Поддерживаются изображения: JPEG, PNG, WebP, GIF, AVIF' },
-      { status: 400 },
-    )
+    return apiError('Поддерживаются изображения: JPEG, PNG, WebP, GIF, AVIF')
   }
   if (blob.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'Файл больше 25 МБ' }, { status: 400 })
+    return apiError('Файл больше 25 МБ')
   }
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
 
   // Папка (если задана) — проверяем принадлежность тенанту
   let folderId: number | null = null
@@ -82,8 +70,7 @@ export async function POST(req: NextRequest) {
     })
 
     const d = doc as any
-    return NextResponse.json({
-      ok: true,
+    return apiOk({
       id: d.id,
       url: d.url || null,
       width: d.width || null,
@@ -91,24 +78,6 @@ export async function POST(req: NextRequest) {
       alt: d.alt || '',
     })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось загрузить изображение' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Не удалось загрузить изображение', 500)
   }
-}
-
-async function belongsToTenant(
-  payload: any,
-  collection: string,
-  id: string | number,
-  tenantId: number,
-): Promise<boolean> {
-  try {
-    const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
-    const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
-    return Number(t) === Number(tenantId)
-  } catch {
-    return false
-  }
-}
+})

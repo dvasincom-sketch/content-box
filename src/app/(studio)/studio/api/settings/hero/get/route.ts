@@ -1,7 +1,4 @@
-import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Чтение секции «Hero» (заголовок главной) для редактора в студии.
@@ -16,22 +13,17 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  * Ответ: { ok, hero: { eyebrow, titleLines }, chips: [{ id, title, coverUrl }] } | { error }
  */
 
-export async function GET() {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  const payload = await getPayload({ config: await config })
-
+export const GET = withAuthor(async ({ payload, tenantId }) => {
   const res = await payload.find({
     collection: 'site-settings',
-    where: { tenant: { equals: author.tenantId } },
+    where: { tenant: { equals: tenantId } },
     limit: 1,
     depth: 1,
     overrideAccess: true,
   })
   const settings = res.docs[0] as any
   if (!settings) {
-    return NextResponse.json({ error: 'Настройки сайта не найдены' }, { status: 404 })
+    return apiError('Настройки сайта не найдены', 404)
   }
 
   const hero = settings.hero || {}
@@ -45,12 +37,11 @@ export async function GET() {
       return { id: c.id, title: c.title ?? '', coverUrl }
     })
 
-  return NextResponse.json({
-    ok: true,
+  return apiOk({
     hero: {
       eyebrow: hero.eyebrow ?? '',
       titleLines: hero.titleLines ?? '',
     },
     chips,
   })
-}
+})

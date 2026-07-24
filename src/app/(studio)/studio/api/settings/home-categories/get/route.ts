@@ -1,7 +1,4 @@
-import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Чтение выбранных категорий-плиток (homeCategories) для редактора секции
@@ -16,22 +13,17 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  * Ответ: { ok, selected: [{ id, title, coverUrl }] } | { error }
  */
 
-export async function GET() {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  const payload = await getPayload({ config: await config })
-
+export const GET = withAuthor(async ({ payload, tenantId }) => {
   const res = await payload.find({
     collection: 'site-settings',
-    where: { tenant: { equals: author.tenantId } },
+    where: { tenant: { equals: tenantId } },
     limit: 1,
     depth: 1,
     overrideAccess: true,
   })
   const settings = res.docs[0] as any
   if (!settings) {
-    return NextResponse.json({ error: 'Настройки сайта не найдены' }, { status: 404 })
+    return apiError('Настройки сайта не найдены', 404)
   }
 
   const raw = Array.isArray(settings.homeCategories) ? settings.homeCategories : []
@@ -44,5 +36,5 @@ export async function GET() {
       return { id: c.id, title: c.title ?? '', coverUrl }
     })
 
-  return NextResponse.json({ ok: true, selected })
-}
+  return apiOk({ selected })
+})

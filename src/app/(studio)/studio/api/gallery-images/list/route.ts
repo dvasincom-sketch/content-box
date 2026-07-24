@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Список изображений библиотеки тенанта — для модалки «выбрать из библиотеки»
@@ -14,13 +11,7 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  *
  * Возвращает { images: [{id, url, width, height, alt, folderId}], totalPages, page, total }.
  */
-export async function GET(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
-
+export const GET = withAuthor(async ({ req, payload, tenantId }) => {
   const { searchParams } = new URL(req.url)
   const folder = searchParams.get('folder') || ''
   const page = Math.max(1, Number(searchParams.get('page') || '1') || 1)
@@ -53,17 +44,13 @@ export async function GET(req: NextRequest) {
       folderId: d.folder ? (typeof d.folder === 'object' ? d.folder.id : d.folder) : null,
     }))
 
-    return NextResponse.json({
-      ok: true,
+    return apiOk({
       images,
       page: res.page || page,
       totalPages: res.totalPages || 1,
       total: res.totalDocs || images.length,
     })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось загрузить библиотеку' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Не удалось загрузить библиотеку', 500)
   }
-}
+})

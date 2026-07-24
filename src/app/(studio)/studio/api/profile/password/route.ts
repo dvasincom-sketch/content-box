@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Смена собственного пароля. Меняем ТОЛЬКО аккаунт из сессии — id берём из
@@ -12,31 +9,23 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  *
  * Body: { currentPassword, newPassword }
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, author }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const currentPassword = String(data.currentPassword || '')
   const newPassword = String(data.newPassword || '')
 
   if (!currentPassword || !newPassword) {
-    return NextResponse.json({ error: 'Заполните оба поля' }, { status: 400 })
+    return apiError('Заполните оба поля')
   }
   if (newPassword.length < 8) {
-    return NextResponse.json({ error: 'Новый пароль — минимум 8 символов' }, { status: 400 })
+    return apiError('Новый пароль — минимум 8 символов')
   }
   if (newPassword === currentPassword) {
-    return NextResponse.json({ error: 'Новый пароль совпадает со старым' }, { status: 400 })
+    return apiError('Новый пароль совпадает со старым')
   }
 
-  const payload = await getPayload({ config: await config })
   const email = author.user.email
 
   // Проверка текущего пароля
@@ -46,7 +35,7 @@ export async function POST(req: NextRequest) {
       data: { email, password: currentPassword },
     })
   } catch {
-    return NextResponse.json({ error: 'Текущий пароль неверный' }, { status: 400 })
+    return apiError('Текущий пароль неверный')
   }
 
   // Смена пароля своего аккаунта
@@ -57,11 +46,8 @@ export async function POST(req: NextRequest) {
       data: { password: newPassword } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true })
+    return apiOk()
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сменить пароль' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось сменить пароль')
   }
-}
+})

@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Сохранение соцсетей. SiteSettings — одна запись на тенант (isGlobal через
@@ -13,16 +10,9 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
 
 const PLATFORMS = ['boosty', 'vk', 'telegram', 'youtube', 'instagram']
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const rawSocials = Array.isArray(data.socials) ? data.socials : []
   // валидация и очистка
@@ -31,18 +21,17 @@ export async function POST(req: NextRequest) {
     const platform = String(s?.platform || '').trim()
     const url = String(s?.url || '').trim()
     if (!PLATFORMS.includes(platform)) {
-      return NextResponse.json({ error: `Неизвестная площадка: ${platform}` }, { status: 400 })
+      return apiError(`Неизвестная площадка: ${platform}`)
     }
     if (!url) {
-      return NextResponse.json({ error: 'У каждой соцсети должна быть ссылка' }, { status: 400 })
+      return apiError('У каждой соцсети должна быть ссылка')
     }
     socials.push({ platform, url })
   }
 
-  const payload = await getPayload({ config: await config })
-  const settings = await findSettings(payload, author.tenantId)
+  const settings = await findTenantSettings(payload, tenantId)
   if (!settings) {
-    return NextResponse.json({ error: 'Настройки сайта не найдены' }, { status: 404 })
+    return apiError('Настройки сайта не найдены', 404)
   }
 
   try {
@@ -52,23 +41,8 @@ export async function POST(req: NextRequest) {
       data: { socials } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true })
+    return apiOk()
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сохранить' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось сохранить')
   }
-}
-
-/** Единственная запись site-settings тенанта. */
-async function findSettings(payload: any, tenantId: number) {
-  const res = await payload.find({
-    collection: 'site-settings',
-    where: { tenant: { equals: tenantId } },
-    limit: 1,
-    depth: 0,
-    overrideAccess: true,
-  })
-  return res.docs[0] || null
-}
+})

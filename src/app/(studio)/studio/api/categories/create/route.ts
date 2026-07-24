@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 
 /**
@@ -14,28 +11,18 @@ import { slugify } from '@/lib/slugify'
  * slug уникален В ПРЕДЕЛАХ РОДИТЕЛЯ — проверку делает beforeValidate коллекции;
  * ловим её ошибку и возвращаем читаемо.
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const title = (data.title || '').trim()
-  if (!title) return NextResponse.json({ error: 'Укажите название' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!title) return apiError('Укажите название')
 
   // Родитель (опционально) — проверяем принадлежность тенанту
   let parentId: number | undefined
   if (data.parentId) {
     const ok = await belongsToTenant(payload, 'categories', data.parentId, tenantId)
-    if (!ok) return NextResponse.json({ error: 'Родитель не найден' }, { status: 400 })
+    if (!ok) return apiError('Родитель не найден')
     parentId = Number(data.parentId)
   }
 
@@ -52,27 +39,9 @@ export async function POST(req: NextRequest) {
       } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, id: doc.id })
+    return apiOk({ id: doc.id })
   } catch (e: any) {
     // Коллизия slug в пределах родителя (из beforeValidate) — читаемое сообщение
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось создать категорию' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось создать категорию')
   }
-}
-
-async function belongsToTenant(
-  payload: any,
-  collection: string,
-  id: string | number,
-  tenantId: number,
-): Promise<boolean> {
-  try {
-    const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
-    const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
-    return Number(t) === Number(tenantId)
-  } catch {
-    return false
-  }
-}
+})

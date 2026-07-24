@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { normalizeSubdomain, subdomainError, domainFromSubdomain } from '@/lib/subdomain'
 
 /**
@@ -18,23 +15,15 @@ export const dynamic = 'force-dynamic'
 
 const CATEGORIES = ['blogger', 'musician', 'podcaster', 'streamer', 'artist', 'education', 'other']
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const body = await readJson<Record<string, unknown>>(req)
+  if (body === undefined) return apiError('Некорректный запрос.')
 
-  let body: Record<string, unknown>
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос.' }, { status: 400 })
-  }
-
-  const payload = await getPayload({ config: await config })
   const patch: Record<string, unknown> = {}
 
   if (typeof body.name === 'string') {
     const name = body.name.trim()
-    if (!name) return NextResponse.json({ error: 'Название проекта не может быть пустым.' }, { status: 400 })
+    if (!name) return apiError('Название проекта не может быть пустым.')
     patch.name = name.slice(0, 200)
   }
 
@@ -44,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   if (body.category !== undefined && body.category !== '') {
     if (typeof body.category !== 'string' || !CATEGORIES.includes(body.category)) {
-      return NextResponse.json({ error: 'Неизвестная категория.' }, { status: 400 })
+      return apiError('Неизвестная категория.')
     }
     patch.category = body.category
   }
@@ -52,20 +41,20 @@ export async function POST(req: NextRequest) {
   if (typeof body.subdomain === 'string' && body.subdomain !== '') {
     const sub = normalizeSubdomain(body.subdomain)
     const err = subdomainError(sub)
-    if (err) return NextResponse.json({ error: err }, { status: 400 })
+    if (err) return apiError(err)
 
     // Уникальность среди тенантов, исключая себя.
     const taken = await payload.find({
       collection: 'tenants',
       where: {
-        and: [{ subdomain: { equals: sub } }, { id: { not_equals: author.tenantId } }],
+        and: [{ subdomain: { equals: sub } }, { id: { not_equals: tenantId } }],
       },
       limit: 1,
       depth: 0,
       overrideAccess: true,
     })
     if (taken.docs.length > 0) {
-      return NextResponse.json({ error: 'Этот адрес уже занят. Выберите другой.' }, { status: 409 })
+      return apiError('Этот адрес уже занят. Выберите другой.', 409)
     }
     patch.subdomain = sub
     patch.domain = domainFromSubdomain(sub)
@@ -80,26 +69,22 @@ export async function POST(req: NextRequest) {
   }
 
   if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ ok: true })
+    return apiOk()
   }
 
   try {
     await payload.update({
       collection: 'tenants',
-      id: author.tenantId,
+      id: tenantId,
       data: patch as any,
       overrideAccess: true,
     })
   } catch (e) {
-    return NextResponse.json(
-      { error: (e as Error).message || 'Не удалось сохранить.' },
-      { status: 400 },
-    )
+    return apiError((e as Error).message || 'Не удалось сохранить.')
   }
 
-  return NextResponse.json({
-    ok: true,
+  return apiOk({
     subdomain: patch.subdomain ?? undefined,
     domain: patch.domain ?? undefined,
   })
-}
+})

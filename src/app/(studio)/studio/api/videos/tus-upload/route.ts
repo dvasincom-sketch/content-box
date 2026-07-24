@@ -1,5 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { streamCreateTusUpload, buildUploadMetadata } from '@/lib/cfStream'
 
 /**
@@ -13,24 +12,17 @@ import { streamCreateTusUpload, buildUploadMetadata } from '@/lib/cfStream'
  */
 export const runtime = 'nodejs'
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const size = Number(data.size)
   if (!Number.isFinite(size) || size <= 0) {
-    return NextResponse.json({ error: 'Не указан размер файла' }, { status: 400 })
+    return apiError('Не указан размер файла')
   }
   // здравый лимит — 20 ГБ, чтобы отсечь мусор
   if (size > 20 * 1024 * 1024 * 1024) {
-    return NextResponse.json({ error: 'Файл слишком большой (>20 ГБ)' }, { status: 400 })
+    return apiError('Файл слишком большой (>20 ГБ)')
   }
 
   const name = String(data.name || 'video').slice(0, 200)
@@ -41,11 +33,8 @@ export async function POST(req: NextRequest) {
       uploadLength: size,
       uploadMetadata: metadata,
     })
-    return NextResponse.json({ ok: true, uploadURL, uid })
+    return apiOk({ uploadURL, uid })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: `Cloudflare Stream: ${e?.message || 'не удалось начать загрузку'}` },
-      { status: 502 },
-    )
+    return apiError(`Cloudflare Stream: ${e?.message || 'не удалось начать загрузку'}`, 502)
   }
-}
+})

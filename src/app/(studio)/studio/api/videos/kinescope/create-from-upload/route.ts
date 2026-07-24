@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { kinescopeUploadFile } from '@/lib/kinescope'
 
@@ -27,37 +24,29 @@ export const runtime = 'nodejs'
 
 const MAX_BYTES = 200 * 1024 * 1024 // 200 MB — потолок для загрузки через сервер
 
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   let form: FormData
   try {
     form = await req.formData()
   } catch {
-    return NextResponse.json({ error: 'Ожидается форма с файлом' }, { status: 400 })
+    return apiError('Ожидается форма с файлом')
   }
 
   const fileField = form.get('file')
   if (!fileField || typeof fileField === 'string') {
-    return NextResponse.json({ error: 'Файл не передан' }, { status: 400 })
+    return apiError('Файл не передан')
   }
   const blob = fileField as File
 
   const title = String(form.get('title') || '').trim()
-  if (!title) return NextResponse.json({ error: 'Укажите название' }, { status: 400 })
+  if (!title) return apiError('Укажите название')
 
   if (!blob.type.startsWith('video/')) {
-    return NextResponse.json({ error: 'Ожидается видеофайл' }, { status: 400 })
+    return apiError('Ожидается видеофайл')
   }
   if (blob.size > MAX_BYTES) {
-    return NextResponse.json(
-      { error: 'Файл больше 200 МБ — для крупных видео используйте загрузку по ссылке' },
-      { status: 413 },
-    )
+    return apiError('Файл больше 200 МБ — для крупных видео используйте загрузку по ссылке', 413)
   }
-
-  const payload = await getPayload({ config: await config })
 
   // 1) Льём файл в Kinescope
   let videoId: string
@@ -73,10 +62,7 @@ export async function POST(req: NextRequest) {
     videoId = video.id
     if (!videoId) throw new Error('Kinescope не вернул id видео')
   } catch (e: any) {
-    return NextResponse.json(
-      { error: `Kinescope: ${e?.message || 'не удалось загрузить файл'}` },
-      { status: 502 },
-    )
+    return apiError(`Kinescope: ${e?.message || 'не удалось загрузить файл'}`, 502)
   }
 
   // 2) Создаём запись Videos
@@ -91,18 +77,15 @@ export async function POST(req: NextRequest) {
         minTier: numOrNull(form.get('minTierId')),
         isPreview: form.get('isPreview') === 'true',
         category: numOrNull(form.get('categoryId')),
-        tenant: author.tenantId,
+        tenant: tenantId,
       } as any,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, id: doc.id, videoId })
+    return apiOk({ id: doc.id, videoId })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Видео ушло в Kinescope, но запись создать не удалось' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Видео ушло в Kinescope, но запись создать не удалось', 500)
   }
-}
+})
 
 function numOrNull(v: any): number | null {
   if (v == null || v === '') return null

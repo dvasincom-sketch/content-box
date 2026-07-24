@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { NextResponse } from 'next/server'
+import { withAuthor, apiError } from '@/app/(studio)/studio/api/_lib'
 import { streamGetVideo } from '@/lib/cfStream'
 import { kinescopeGetVideo } from '@/lib/kinescope'
 
@@ -15,25 +13,20 @@ import { kinescopeGetVideo } from '@/lib/kinescope'
  */
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
+export const GET = withAuthor(async ({ req, payload, tenantId }) => {
   const id = req.nextUrl.searchParams.get('id')
-  if (!id) return NextResponse.json({ error: 'Не указан id' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
+  if (!id) return apiError('Не указан id')
 
   // берём запись, проверяем тенант
   let doc: any
   try {
     doc = await payload.findByID({ collection: 'videos', id, depth: 0, overrideAccess: true })
   } catch {
-    return NextResponse.json({ error: 'Видео не найдено' }, { status: 404 })
+    return apiError('Видео не найдено', 404)
   }
   const docTenant = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
-  if (Number(docTenant) !== Number(author.tenantId)) {
-    return NextResponse.json({ error: 'Нет доступа' }, { status: 403 })
+  if (Number(docTenant) !== Number(tenantId)) {
+    return apiError('Нет доступа', 403)
   }
 
   const ref = doc.videoRef
@@ -82,9 +75,6 @@ export async function GET(req: NextRequest) {
       duration: v.duration || null,
     })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || `Ошибка ${provider === 'kinescope' ? 'Kinescope' : 'Stream'}` },
-      { status: 502 },
-    )
+    return apiError(e?.message || `Ошибка ${provider === 'kinescope' ? 'Kinescope' : 'Stream'}`, 502)
   }
-}
+})

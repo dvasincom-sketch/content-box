@@ -1,7 +1,4 @@
-import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Список категорий тенанта для селектов и деревьев в студии.
@@ -16,15 +13,10 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  * Ответ: { ok, categories: [{ id, title, parentId, coverUrl }] } | { error }
  */
 
-export async function GET() {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  const payload = await getPayload({ config: await config })
-
+export const GET = withAuthor(async ({ payload, tenantId }) => {
   const res = await payload.find({
     collection: 'categories',
-    where: { tenant: { equals: author.tenantId } },
+    where: { tenant: { equals: tenantId } },
     sort: 'title',
     limit: 200,
     depth: 1,
@@ -45,5 +37,5 @@ export async function GET() {
     }
   })
 
-  return NextResponse.json({ ok: true, categories })
-}
+  return apiOk({ categories })
+})

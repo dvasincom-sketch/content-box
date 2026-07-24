@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { NextResponse } from 'next/server'
+import { withAuthor, apiError } from '@/app/(studio)/studio/api/_lib'
 import { lexicalToHtml } from '@/lib/lexical'
 
 /**
@@ -10,16 +8,10 @@ import { lexicalToHtml } from '@/lib/lexical'
  * Возвращает { id, title, contentHtml } — content разворачивается из Lexical
  * в HTML для RichEditor.
  */
-export async function GET(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
+export const GET = withAuthor(async ({ req, payload, tenantId }) => {
   const url = new URL(req.url)
   const id = url.searchParams.get('id')
-  if (!id) return NextResponse.json({ error: 'Не указана страница' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!id) return apiError('Не указана страница')
 
   try {
     const page = await payload
@@ -28,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     const t = page?.tenant && typeof page.tenant === 'object' ? page.tenant.id : page?.tenant
     if (!page || Number(t) !== Number(tenantId)) {
-      return NextResponse.json({ error: 'Страница не найдена' }, { status: 404 })
+      return apiError('Страница не найдена', 404)
     }
 
     return NextResponse.json({
@@ -37,9 +29,6 @@ export async function GET(req: NextRequest) {
       contentHtml: lexicalToHtml(page.content),
     })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось загрузить страницу' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Не удалось загрузить страницу', 500)
   }
-}
+})

@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Upsert оверрайда авто-категории (ленивая материализация).
@@ -13,29 +10,19 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  * Body: { location, categoryId, hidden?, labelOverride?, order? }
  *   - labelOverride: '' или null → сбросить (вернуть имя категории)
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const location = data.location === 'footer' ? 'footer' : 'header'
   const categoryId = data.categoryId
   if (!categoryId) {
-    return NextResponse.json({ error: 'Не указана категория' }, { status: 400 })
+    return apiError('Не указана категория')
   }
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
 
   // Категория принадлежит тенанту?
   const own = await belongsToTenant(payload, 'categories', categoryId, tenantId)
-  if (!own) return NextResponse.json({ error: 'Категория не найдена' }, { status: 404 })
+  if (!own) return apiError('Категория не найдена', 404)
 
   // Собираем патч только из переданных полей.
   const patch: any = {}
@@ -71,7 +58,7 @@ export async function POST(req: NextRequest) {
         data: patch,
         overrideAccess: true,
       })
-      return NextResponse.json({ ok: true, id: (updated as any).id, created: false })
+      return apiOk({ id: (updated as any).id, created: false })
     }
 
     // Создаём новый оверрайд. tenant проставляем явно (наш access-паттерн).
@@ -88,26 +75,8 @@ export async function POST(req: NextRequest) {
       },
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, id: (created as any).id, created: true })
+    return apiOk({ id: (created as any).id, created: true })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сохранить' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось сохранить')
   }
-}
-
-async function belongsToTenant(
-  payload: any,
-  collection: string,
-  id: string | number,
-  tenantId: number,
-): Promise<boolean> {
-  try {
-    const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
-    const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
-    return Number(t) === Number(tenantId)
-  } catch {
-    return false
-  }
-}
+})

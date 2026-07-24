@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { htmlToLexical } from '@/lib/lexical'
 
@@ -14,32 +11,22 @@ import { htmlToLexical } from '@/lib/lexical'
  *
  * Body: { id, title?, slug?, parentId? }  (parentId: null → в корень)
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const id = data.id
-  if (!id) return NextResponse.json({ error: 'Не указана категория' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!id) return apiError('Не указана категория')
 
   // Категория принадлежит тенанту?
   const own = await belongsToTenant(payload, 'categories', id, tenantId)
-  if (!own) return NextResponse.json({ error: 'Категория не найдена' }, { status: 404 })
+  if (!own) return apiError('Категория не найдена', 404)
 
   const patch: any = {}
 
   if (typeof data.title === 'string') {
     const t = data.title.trim()
-    if (!t) return NextResponse.json({ error: 'Название не может быть пустым' }, { status: 400 })
+    if (!t) return apiError('Название не может быть пустым')
     patch.title = t
   }
 
@@ -74,18 +61,15 @@ export async function POST(req: NextRequest) {
       patch.parent = null // в корень
     } else {
       if (String(newParent) === String(id)) {
-        return NextResponse.json({ error: 'Категория не может быть родителем самой себя' }, { status: 400 })
+        return apiError('Категория не может быть родителем самой себя')
       }
       const parentOk = await belongsToTenant(payload, 'categories', newParent, tenantId)
-      if (!parentOk) return NextResponse.json({ error: 'Родитель не найден' }, { status: 400 })
+      if (!parentOk) return apiError('Родитель не найден')
 
       // Защита от цикла: новый родитель не должен быть потомком этой категории
       const wouldCycle = await isDescendant(payload, Number(newParent), Number(id), tenantId)
       if (wouldCycle) {
-        return NextResponse.json(
-          { error: 'Нельзя переместить категорию внутрь её собственной подкатегории' },
-          { status: 400 },
-        )
+        return apiError('Нельзя переместить категорию внутрь её собственной подкатегории')
       }
       patch.parent = Number(newParent)
     }
@@ -98,14 +82,11 @@ export async function POST(req: NextRequest) {
       data: patch,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true })
+    return apiOk()
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сохранить изменения' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось сохранить изменения')
   }
-}
+})
 
 /** Является ли candidate потомком ancestor (идём вверх по parent от candidate). */
 async function isDescendant(
@@ -130,19 +111,4 @@ async function isDescendant(
     guard += 1
   }
   return false
-}
-
-async function belongsToTenant(
-  payload: any,
-  collection: string,
-  id: string | number,
-  tenantId: number,
-): Promise<boolean> {
-  try {
-    const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
-    const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
-    return Number(t) === Number(tenantId)
-  } catch {
-    return false
-  }
 }

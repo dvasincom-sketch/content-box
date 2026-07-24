@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 
 const MAX_DEPTH = 4
 
@@ -22,25 +19,15 @@ const MAX_DEPTH = 4
  * Родитель обязан принадлежать тому же тенанту и тому же location.
  * Глубина ограничена MAX_DEPTH.
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const location = data.location === 'footer' ? 'footer' : 'header'
   const kind = data.kind
   if (kind !== 'page' && kind !== 'url') {
-    return NextResponse.json({ error: 'Некорректный тип пункта' }, { status: 400 })
+    return apiError('Некорректный тип пункта')
   }
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
 
   const newData: any = {
     tenant: tenantId,
@@ -53,23 +40,20 @@ export async function POST(req: NextRequest) {
   // --- Источник пункта -------------------------------------------------------
   if (kind === 'page') {
     if (!data.pageId) {
-      return NextResponse.json({ error: 'Не указана страница' }, { status: 400 })
+      return apiError('Не указана страница')
     }
     const pageOk = await belongsToTenant(payload, 'pages', data.pageId, tenantId)
-    if (!pageOk) return NextResponse.json({ error: 'Страница не найдена' }, { status: 404 })
+    if (!pageOk) return apiError('Страница не найдена', 404)
     newData.page = Number(data.pageId)
     if (typeof data.labelOverride === 'string' && data.labelOverride.trim()) {
       newData.labelOverride = data.labelOverride.trim()
     }
   } else {
     const url = typeof data.url === 'string' ? data.url.trim() : ''
-    if (!url) return NextResponse.json({ error: 'Не указан URL' }, { status: 400 })
+    if (!url) return apiError('Не указан URL')
     const label = typeof data.labelOverride === 'string' ? data.labelOverride.trim() : ''
     if (!label) {
-      return NextResponse.json(
-        { error: 'Для внешней ссылки укажите название' },
-        { status: 400 },
-      )
+      return apiError('Для внешней ссылки укажите название')
     }
     newData.url = url
     newData.labelOverride = label
@@ -83,20 +67,17 @@ export async function POST(req: NextRequest) {
     // Явный parent — ручной пункт или уже материализованный оверрайд.
     const parent = await getMenuItem(payload, data.parentId, tenantId)
     if (!parent) {
-      return NextResponse.json({ error: 'Родитель не найден' }, { status: 400 })
+      return apiError('Родитель не найден')
     }
     if (parent.location !== location) {
-      return NextResponse.json(
-        { error: 'Родитель принадлежит другому меню' },
-        { status: 400 },
-      )
+      return apiError('Родитель принадлежит другому меню')
     }
     parentItemId = Number(data.parentId)
   } else if (data.parentCategoryId != null) {
     // Родитель — категория: материализуем её оверрайд, если нужно.
     const catOk = await belongsToTenant(payload, 'categories', data.parentCategoryId, tenantId)
     if (!catOk) {
-      return NextResponse.json({ error: 'Категория-родитель не найдена' }, { status: 400 })
+      return apiError('Категория-родитель не найдена')
     }
     parentItemId = await materializeCategory(
       payload,
@@ -109,10 +90,7 @@ export async function POST(req: NextRequest) {
   if (parentItemId != null) {
     const parentDepth = await depthOf(payload, parentItemId, tenantId)
     if (parentDepth + 1 > MAX_DEPTH) {
-      return NextResponse.json(
-        { error: `Превышена максимальная вложенность (${MAX_DEPTH} уровня)` },
-        { status: 400 },
-      )
+      return apiError(`Превышена максимальная вложенность (${MAX_DEPTH} уровня)`)
     }
     newData.parent = parentItemId
   }
@@ -123,14 +101,11 @@ export async function POST(req: NextRequest) {
       data: newData,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true, id: (created as any).id })
+    return apiOk({ id: (created as any).id })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось создать пункт' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось создать пункт')
   }
-}
+})
 
 /** Материализует оверрайд авто-категории (или возвращает id существующего). */
 async function materializeCategory(
@@ -210,20 +185,5 @@ async function getMenuItem(
     return doc
   } catch {
     return null
-  }
-}
-
-async function belongsToTenant(
-  payload: any,
-  collection: string,
-  id: string | number,
-  tenantId: number,
-): Promise<boolean> {
-  try {
-    const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
-    const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
-    return Number(t) === Number(tenantId)
-  } catch {
-    return false
   }
 }

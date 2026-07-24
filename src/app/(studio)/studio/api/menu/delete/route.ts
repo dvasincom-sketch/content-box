@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Удаление записи menu-items с каскадом по ручным потомкам.
@@ -18,19 +15,9 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  * Каскад: собираем поддерево и удаляем снизу вверх (листья раньше родителя),
  * чтобы FK parent не упёрся в живого родителя.
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   // --- Определяем целевую запись menu-items ----------------------------------
 
@@ -42,7 +29,7 @@ export async function POST(req: NextRequest) {
     const [type, raw] = data.key.split(':')
     const num = Number(raw)
     if (!Number.isFinite(num)) {
-      return NextResponse.json({ error: 'Некорректный ключ' }, { status: 400 })
+      return apiError('Некорректный ключ')
     }
     if (type === 'item') {
       targetId = num
@@ -64,18 +51,18 @@ export async function POST(req: NextRequest) {
       const found = ov.docs[0] as any
       if (!found) {
         // Чистый автоген — удалять нечего.
-        return NextResponse.json({ ok: true, deleted: 0 })
+        return apiOk({ deleted: 0 })
       }
       targetId = found.id
     } else {
-      return NextResponse.json({ error: 'Некорректный ключ' }, { status: 400 })
+      return apiError('Некорректный ключ')
     }
   } else {
-    return NextResponse.json({ error: 'Не указан пункт' }, { status: 400 })
+    return apiError('Не указан пункт')
   }
 
   if (targetId == null || !Number.isFinite(targetId)) {
-    return NextResponse.json({ error: 'Не указан пункт' }, { status: 400 })
+    return apiError('Не указан пункт')
   }
 
   // --- Проверка принадлежности тенанту ---------------------------------------
@@ -85,7 +72,7 @@ export async function POST(req: NextRequest) {
     .catch(() => null)
   const t = target?.tenant && typeof target.tenant === 'object' ? target.tenant.id : target?.tenant
   if (!target || Number(t) !== Number(tenantId)) {
-    return NextResponse.json({ error: 'Пункт не найден' }, { status: 404 })
+    return apiError('Пункт не найден', 404)
   }
 
   // --- Сбор поддерева ручных потомков (BFS вниз по parent) -------------------
@@ -137,11 +124,8 @@ export async function POST(req: NextRequest) {
       await payload.delete({ collection: 'menu-items', id, overrideAccess: true })
       deleted += 1
     }
-    return NextResponse.json({ ok: true, deleted })
+    return apiOk({ deleted })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось удалить' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось удалить')
   }
-}
+})

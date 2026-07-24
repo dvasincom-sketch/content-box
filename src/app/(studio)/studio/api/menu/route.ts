@@ -1,7 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { NextResponse } from 'next/server'
+import { withAuthor, apiError } from '@/app/(studio)/studio/api/_lib'
 import { buildMenuAdmin } from '@/lib/buildMenuAdmin'
 import type { MenuLocation } from '@/lib/buildMenu'
 
@@ -15,19 +13,12 @@ import type { MenuLocation } from '@/lib/buildMenu'
  *
  * Только чтение. Материализация/правки — отдельными роутами записи.
  */
-export async function GET(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
+export const GET = withAuthor(async ({ req, payload, tenantId }) => {
   const url = new URL(req.url)
   const locParam = url.searchParams.get('location')
   const location: MenuLocation = locParam === 'footer' ? 'footer' : 'header'
 
-  const tenantId = author.tenantId
-
   try {
-    const payload = await getPayload({ config: await config })
-
     const [tree, pagesRes] = await Promise.all([
       buildMenuAdmin(tenantId, location),
       payload.find({
@@ -48,9 +39,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ location, tree, pages })
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось загрузить меню' },
-      { status: 500 },
-    )
+    return apiError(e?.message || 'Не удалось загрузить меню', 500)
   }
-}
+})

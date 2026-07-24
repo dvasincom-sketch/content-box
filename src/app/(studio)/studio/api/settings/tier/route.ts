@@ -1,7 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Редактирование уровня подписки: name, priceRub, isActive.
@@ -10,45 +7,35 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
  *
  * Body: { id, name?, priceRub?, isActive? }
  */
-export async function POST(req: NextRequest) {
-  const author = await getCurrentAuthor()
-  if (!author) return NextResponse.json({ error: 'Не авторизован' }, { status: 401 })
-
-  let data: any
-  try {
-    data = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Некорректный запрос' }, { status: 400 })
-  }
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  const data = await readJson(req)
+  if (data === undefined) return apiError('Некорректный запрос')
 
   const id = data.id
-  if (!id) return NextResponse.json({ error: 'Не указан уровень' }, { status: 400 })
-
-  const payload = await getPayload({ config: await config })
-  const tenantId = author.tenantId
+  if (!id) return apiError('Не указан уровень')
 
   // принадлежит тенанту?
   const doc: any = await payload
     .findByID({ collection: 'subscription-tiers', id, depth: 0, overrideAccess: true })
     .catch(() => null)
-  if (!doc) return NextResponse.json({ error: 'Уровень не найден' }, { status: 404 })
+  if (!doc) return apiError('Уровень не найден', 404)
   const t = doc.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc.tenant
   if (Number(t) !== Number(tenantId)) {
-    return NextResponse.json({ error: 'Уровень не найден' }, { status: 404 })
+    return apiError('Уровень не найден', 404)
   }
 
   const patch: any = {}
 
   if (typeof data.name === 'string') {
     const name = data.name.trim()
-    if (!name) return NextResponse.json({ error: 'Название не может быть пустым' }, { status: 400 })
+    if (!name) return apiError('Название не может быть пустым')
     patch.name = name
   }
 
   if (data.priceRub !== undefined) {
     const price = Number(data.priceRub)
     if (Number.isNaN(price) || price < 0) {
-      return NextResponse.json({ error: 'Цена должна быть числом ≥ 0' }, { status: 400 })
+      return apiError('Цена должна быть числом ≥ 0')
     }
     patch.priceRub = price
   }
@@ -60,7 +47,7 @@ export async function POST(req: NextRequest) {
   if (data.weight !== undefined) {
     const w = Number(data.weight)
     if (Number.isNaN(w) || w < 0) {
-      return NextResponse.json({ error: 'Вес должен быть числом ≥ 0' }, { status: 400 })
+      return apiError('Вес должен быть числом ≥ 0')
     }
     patch.weight = w
   }
@@ -86,14 +73,11 @@ export async function POST(req: NextRequest) {
       data: patch,
       overrideAccess: true,
     })
-    return NextResponse.json({ ok: true })
+    return apiOk()
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || 'Не удалось сохранить' },
-      { status: 400 },
-    )
+    return apiError(e?.message || 'Не удалось сохранить')
   }
-}
+})
 
 const PERK_TYPES = ['included', 'star', 'warning', 'info']
 
