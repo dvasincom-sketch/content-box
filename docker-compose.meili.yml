@@ -1,0 +1,27 @@
+# Meilisearch service for Timeweb (Docker).
+# Merge into your existing compose file, or run standalone on the same network as the app.
+services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      MEILI_ENV: production
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meili_data:/meili_data
+    # Do NOT publish 7700 publicly. Keep it on the internal app network only,
+    # so only the Next app (server-side) can reach it. Uncomment for local dev:
+    # ports:
+    #   - "127.0.0.1:7700:7700"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # RAM budget: Phase 1 (keyword only) ~100-200 MB for this dataset size.
+    # Phase 2 adds a local embedder (separate container) — check RAM before enabling.
+    # mem_limit: 512m
+
+volumes:
+  meili_data:

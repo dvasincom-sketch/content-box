@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
 import { isSuperAdmin } from './access'
+import { meiliSearchPlugin } from './search/plugin'
 import { rusenderEmailAdapter } from './emails/rusenderAdapter'
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
@@ -220,5 +221,10 @@ export default buildConfig({
         reactions: { useTenantAccess: false },
       },
     }),
+
+    // Поиск на Meilisearch: вешает хуки синхронизации на publications/categories/
+    // videos/pages и создаёт индекс на старте (onInit). Последним — чтобы видеть
+    // коллекции после инъекции `tenant` мульти-тенант плагином.
+    meiliSearchPlugin(),
   ],
 })

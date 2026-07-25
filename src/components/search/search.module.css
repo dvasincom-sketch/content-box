@@ -1,0 +1,210 @@
+/* Placeholder styling — swap for your design system. Structure/behaviour is the point. */
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+/* --- search box + toggle --- */
+.box {
+  position: relative;
+}
+.form {
+  display: flex;
+  gap: 8px;
+}
+.input {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 16px;
+  border: 1px solid #d0d0d8;
+  border-radius: 10px;
+  outline: none;
+}
+.input:focus {
+  border-color: #6b5bd2;
+}
+.submit {
+  padding: 0 20px;
+  font-size: 15px;
+  border: none;
+  border-radius: 10px;
+  background: #6b5bd2;
+  color: #fff;
+  cursor: pointer;
+}
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* --- typeahead dropdown --- */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e2e2ea;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(20, 16, 60, 0.14);
+}
+.suggest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+.suggest:hover {
+  background: #f4f3fb;
+}
+.suggestThumb,
+.suggestThumbPlaceholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: #ece9f6;
+}
+.suggestBody {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.suggestTitle {
+  font-size: 15px;
+  color: #1c1830;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.suggestType {
+  font-size: 12px;
+  color: #8a86a0;
+}
+
+/* --- results --- */
+.meta {
+  margin: 20px 0 8px;
+  font-size: 13px;
+  color: #8a86a0;
+}
+.facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.facet,
+.facetActive {
+  padding: 5px 12px;
+  font-size: 13px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 1px solid #e2e2ea;
+  color: #555;
+}
+.facetActive {
+  background: #6b5bd2;
+  border-color: #6b5bd2;
+  color: #fff;
+}
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.item {
+  border-radius: 12px;
+}
+.itemLink {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.itemLink:hover {
+  background: #f4f3fb;
+}
+.itemLink[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.72;
+}
+.thumb,
+.thumbPlaceholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: #ece9f6;
+}
+.itemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.itemTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1c1830;
+}
+.excerpt {
+  font-size: 14px;
+  color: #66627a;
+}
+.lock {
+  font-size: 13px;
+  color: #a06a1f;
+}
+.itemTitle mark,
+.excerpt mark,
+.suggestTitle mark {
+  background: #fce8a6;
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+/* --- misc --- */
+.hint {
+  margin-top: 24px;
+  color: #8a86a0;
+  font-size: 15px;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 28px;
+  font-size: 14px;
+}
+.pager a {
+  color: #6b5bd2;
+  text-decoration: none;
+}
+.pagerDisabled {
+  color: #c4c2d0;
+}
