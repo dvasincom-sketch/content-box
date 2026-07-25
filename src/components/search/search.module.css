@@ -1,150 +1,235 @@
-/* Placeholder styling — swap for your design system. Structure/behaviour is the point. */
+/* Современный «стеклянный» поиск на брендовых токенах (--brand-*).
+   Работает и в тёмной, и в светлой теме; акцент берётся из тенанта. */
 
 .page {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: 40px 16px 80px;
 }
 
-/* --- search box + toggle --- */
+/* --- строка поиска --- */
 .box {
   position: relative;
 }
 .form {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  align-items: stretch;
+}
+.inputWrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.searchIcon {
+  position: absolute;
+  left: 18px;
+  width: 20px;
+  height: 20px;
+  color: var(--brand-muted);
+  pointer-events: none;
 }
 .input {
-  flex: 1;
-  padding: 12px 16px;
-  font-size: 16px;
-  border: 1px solid #d0d0d8;
-  border-radius: 10px;
+  width: 100%;
+  padding: 15px 18px 15px 48px;
+  font: inherit;
+  font-size: 17px;
+  color: var(--brand-text);
+  background: color-mix(in srgb, var(--brand-surface) 60%, transparent);
+  border: 1px solid var(--brand-border);
+  border-radius: 16px;
   outline: none;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.input::placeholder {
+  color: var(--brand-muted);
 }
 .input:focus {
-  border-color: #6b5bd2;
+  border-color: color-mix(in srgb, var(--brand-primary) 60%, var(--brand-border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+  background: color-mix(in srgb, var(--brand-surface) 78%, transparent);
 }
 .submit {
-  padding: 0 20px;
+  padding: 0 24px;
+  font: inherit;
+  font-weight: 600;
   font-size: 15px;
-  border: none;
-  border-radius: 10px;
-  background: #6b5bd2;
   color: #fff;
+  background: var(--brand-primary);
+  border: none;
+  border-radius: 16px;
   cursor: pointer;
+  transition: filter 0.15s, transform 0.05s;
 }
+.submit:hover {
+  filter: brightness(1.08);
+}
+.submit:active {
+  transform: translateY(1px);
+}
+
+/* --- переключатель --- */
 .toggle {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 10px;
-  font-size: 14px;
-  color: #555;
+  gap: 10px;
+  margin-top: 14px;
   cursor: pointer;
   user-select: none;
 }
+.toggleInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggleTrack {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--brand-border);
+  transition: background 0.18s;
+}
+.toggleKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--brand-text);
+  transition: transform 0.18s, background 0.18s;
+}
+.toggleInput:checked + .toggleTrack {
+  background: var(--brand-primary);
+}
+.toggleInput:checked + .toggleTrack .toggleKnob {
+  transform: translateX(16px);
+  background: #fff;
+}
+.toggleInput:focus-visible + .toggleTrack {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 25%, transparent);
+}
+.toggleLabel {
+  font-size: 14px;
+  color: var(--brand-muted);
+}
 
-/* --- typeahead dropdown --- */
+/* --- typeahead-дропдаун --- */
 .dropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 10px);
   left: 0;
   right: 0;
-  z-index: 20;
+  z-index: 30;
   margin: 0;
-  padding: 6px;
+  padding: 8px;
   list-style: none;
-  background: #fff;
-  border: 1px solid #e2e2ea;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(20, 16, 60, 0.14);
+  background: color-mix(in srgb, var(--brand-surface) 88%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--brand-border);
+  border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 .suggest {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
   text-decoration: none;
   color: inherit;
+  transition: background 0.12s;
 }
 .suggest:hover {
-  background: #f4f3fb;
+  background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
 }
 .suggestThumb,
 .suggestThumbPlaceholder {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  object-fit: cover;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
-  background: #ece9f6;
+  border-radius: 10px;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--brand-primary) 14%, transparent);
 }
 .suggestBody {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  gap: 2px;
 }
 .suggestTitle {
+  font-family: var(--font-heading);
   font-size: 15px;
-  color: #1c1830;
+  color: var(--brand-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .suggestType {
   font-size: 12px;
-  color: #8a86a0;
+  color: var(--brand-muted);
 }
 
-/* --- results --- */
-.meta {
-  margin: 20px 0 8px;
-  font-size: 13px;
-  color: #8a86a0;
-}
+/* --- результаты --- */
 .facets {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
+  margin: 26px 0 18px;
 }
 .facet,
 .facetActive {
-  padding: 5px 12px;
+  padding: 7px 14px;
   font-size: 13px;
   border-radius: 999px;
   text-decoration: none;
-  border: 1px solid #e2e2ea;
-  color: #555;
+  border: 1px solid var(--brand-border);
+  color: var(--brand-muted);
+  background: transparent;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.facet:hover {
+  color: var(--brand-text);
+  border-color: color-mix(in srgb, var(--brand-primary) 40%, var(--brand-border));
 }
 .facetActive {
-  background: #6b5bd2;
-  border-color: #6b5bd2;
-  color: #fff;
+  color: var(--brand-text);
+  background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+  border-color: color-mix(in srgb, var(--brand-primary) 45%, transparent);
 }
+
 .results {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-.item {
-  border-radius: 12px;
+  gap: 8px;
 }
 .itemLink {
   display: flex;
   gap: 14px;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 14px;
+  border-radius: 16px;
   text-decoration: none;
   color: inherit;
+  background: color-mix(in srgb, var(--brand-primary) 5%, transparent);
+  border: 1px solid var(--brand-border);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.14s, border-color 0.14s, transform 0.05s;
 }
 .itemLink:hover {
-  background: #f4f3fb;
+  background: color-mix(in srgb, var(--brand-primary) 11%, transparent);
+  border-color: color-mix(in srgb, var(--brand-primary) 30%, var(--brand-border));
 }
 .itemLink[aria-disabled='true'] {
   cursor: default;
@@ -152,45 +237,61 @@
 }
 .thumb,
 .thumbPlaceholder {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  object-fit: cover;
+  width: 60px;
+  height: 60px;
   flex: 0 0 auto;
-  background: #ece9f6;
+  border-radius: 12px;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--brand-primary) 14%, transparent);
 }
 .itemBody {
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+  justify-content: center;
 }
 .itemTitle {
-  font-size: 16px;
+  font-family: var(--font-heading);
   font-weight: 600;
-  color: #1c1830;
+  font-size: 17px;
+  color: var(--brand-text);
 }
 .excerpt {
   font-size: 14px;
-  color: #66627a;
+  color: var(--brand-muted);
+  overflow: hidden;
 }
 .lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
-  color: #a06a1f;
+  color: color-mix(in srgb, var(--brand-primary) 70%, var(--brand-text));
 }
+
+/* подсветка совпадений в акцентном цвете (вместо жёлтого) */
 .itemTitle mark,
 .excerpt mark,
 .suggestTitle mark {
-  background: #fce8a6;
+  background: color-mix(in srgb, var(--brand-primary) 26%, transparent);
   color: inherit;
-  border-radius: 3px;
-  padding: 0 1px;
+  border-radius: 4px;
+  padding: 0 2px;
 }
 
-/* --- misc --- */
+/* счётчик «Найдено N · Xмс» — как в референсе, справа снизу */
+.resultsFooter {
+  margin-top: 16px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--brand-muted);
+}
+
+/* --- прочее --- */
 .hint {
-  margin-top: 24px;
-  color: #8a86a0;
+  margin-top: 28px;
+  color: var(--brand-muted);
   font-size: 15px;
 }
 .pager {
@@ -198,13 +299,17 @@
   align-items: center;
   justify-content: center;
   gap: 20px;
-  margin-top: 28px;
+  margin-top: 30px;
   font-size: 14px;
+  color: var(--brand-muted);
 }
 .pager a {
-  color: #6b5bd2;
+  color: var(--brand-primary);
   text-decoration: none;
 }
+.pager a:hover {
+  text-decoration: underline;
+}
 .pagerDisabled {
-  color: #c4c2d0;
+  color: var(--brand-border);
 }

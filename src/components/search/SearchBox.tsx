@@ -19,7 +19,6 @@ type Hit = {
 const TYPE_LABELS: Record<string, string> = {
   publication: 'Публикация',
   category: 'Категория',
-  'gallery-image': 'Фото',
   video: 'Видео',
   page: 'Страница',
 }
@@ -89,15 +88,30 @@ export function SearchBox({
   return (
     <div className={styles.box} ref={boxRef}>
       <form onSubmit={submit} className={styles.form} role="search">
-        <input
-          className={styles.input}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onFocus={() => hits.length > 0 && setOpen(true)}
-          placeholder="Поиск по сайту…"
-          aria-label="Поиск по сайту"
-          autoComplete="off"
-        />
+        <span className={styles.inputWrap}>
+          <svg
+            className={styles.searchIcon}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          <input
+            className={styles.input}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onFocus={() => hits.length > 0 && setOpen(true)}
+            placeholder="Поиск по сайту…"
+            aria-label="Поиск по сайту"
+            autoComplete="off"
+          />
+        </span>
         <button type="submit" className={styles.submit}>
           Найти
         </button>
@@ -106,10 +120,14 @@ export function SearchBox({
       <label className={styles.toggle}>
         <input
           type="checkbox"
+          className={styles.toggleInput}
           checked={includeLocked}
           onChange={(e) => setIncludeLocked(e.target.checked)}
         />
-        Искать в закрытом контенте
+        <span className={styles.toggleTrack}>
+          <span className={styles.toggleKnob} />
+        </span>
+        <span className={styles.toggleLabel}>Искать в закрытом контенте</span>
       </label>
 
       {open && hits.length > 0 && (

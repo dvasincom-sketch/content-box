@@ -86,8 +86,6 @@ export default async function SearchPage({
 
       {q && result && (
         <>
-          <div className={styles.meta}>Найдено: {result.totalHits}</div>
-
           {Object.keys(typeFacets).length > 0 && (
             <nav className={styles.facets} aria-label="Фильтр по типу">
               <Link
@@ -113,7 +111,7 @@ export default async function SearchPage({
           ) : (
             <ul className={styles.results}>
               {result.hits.map((h) => (
-                <li key={h.id} className={styles.item}>
+                <li key={h.id}>
                   <Link
                     href={h.locked ? '#' : h.url}
                     className={styles.itemLink}
@@ -161,6 +159,12 @@ export default async function SearchPage({
                 <span className={styles.pagerDisabled}>Вперёд →</span>
               )}
             </nav>
+          )}
+
+          {result.totalHits > 0 && (
+            <div className={styles.resultsFooter}>
+              Найдено {result.totalHits} · {result.processingTimeMs} мс
+            </div>
           )}
         </>
       )}

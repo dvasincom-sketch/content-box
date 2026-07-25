@@ -20,6 +20,7 @@ export type SearchResult = {
   page: number
   totalPages: number
   totalHits: number
+  processingTimeMs: number
   facets: Record<string, Record<string, number>>
   hits: SearchHit[]
 }
@@ -78,6 +79,7 @@ export async function runSearch(args: SearchArgs): Promise<SearchResult> {
     page: (res as any).page ?? 1,
     totalPages: (res as any).totalPages ?? 1,
     totalHits: (res as any).totalHits ?? hits.length,
+    processingTimeMs: (res as any).processingTimeMs ?? 0,
     facets: (res.facetDistribution as Record<string, Record<string, number>>) ?? {},
     hits,
   }
