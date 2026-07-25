@@ -1,5 +1,5 @@
 import { headers as nextHeaders } from 'next/headers'
-import { getPayload } from 'payload'
+import { getPayload, type Where } from 'payload'
 import config from '@payload-config'
 import { stripPort, subdomainFromHost } from '@/lib/subdomain'
 
@@ -20,21 +20,14 @@ async function tenantIdByHost(host: string): Promise<string | null> {
   const sub = subdomainFromHost(h)
   const payload = await getPayload({ config })
 
-  const where = sub
-    ? {
-        and: [
-          { subdomain: { equals: sub } },
-          { status: { equals: 'active' } },
-          { domainVerified: { equals: true } },
-        ],
-      }
-    : {
-        and: [
-          { domain: { equals: h } },
-          { status: { equals: 'active' } },
-          { domainVerified: { equals: true } },
-        ],
-      }
+  // Typed as Where[] so each condition literal is checked individually
+  // (avoids TS widening the ternary branches into an incompatible union).
+  const and: Where[] = [
+    sub ? { subdomain: { equals: sub } } : { domain: { equals: h } },
+    { status: { equals: 'active' } },
+    { domainVerified: { equals: true } },
+  ]
+  const where: Where = { and }
 
   const res = await payload.find({
     collection: 'tenants',
