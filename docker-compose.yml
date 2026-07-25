@@ -1,15 +1,12 @@
-# Timeweb App Platform — Docker Compose деплой (заменяет старый template-compose).
+# Timeweb App Platform — Docker Compose деплой.
 #
-# Ограничения App Platform, учтённые здесь:
-#  - На домен проксируется ТОЛЬКО первый сервис (app). meilisearch — без ports,
-#    виден приложению внутри compose-сети по имени `meilisearch:7700`, наружу не торчит.
-#  - Persistent volumes ЗАПРЕЩЕНЫ → у Meili нет тома, индекс эфемерный. Приложение
-#    само перестраивает его на старте, если пусто (src/search/plugin.ts onInit).
-#  - env задаются в панели Timeweb; в compose — только интерполяция ${...}.
-#    (DATABASE_URL, PAYLOAD_SECRET, R2_*, KINESCOPE_*, RUSENDER_* — из панели.)
+# Все переменные задаются в панели Timeweb (раздел «Переменные»). Здесь они явно
+# пробрасываются в сервис app через ${...} — чтобы контейнер приложения гарантированно
+# их получил (в compose панельные env не всегда инжектятся во все сервисы сами).
 #
-# В панели добавь новую переменную: MEILI_MASTER_KEY = <openssl rand -base64 48>.
-# MEILI_HOST задавать в панели НЕ нужно — он зашит в сервис app ниже.
+# Ограничения App Platform: на домен проксируется первый сервис (app);
+# meilisearch — внутренний (без ports); persistent volumes запрещены, поэтому
+# индекс Meili эфемерный и перестраивается на старте приложения (см. plugin.ts).
 
 services:
   app:
@@ -22,6 +19,20 @@ services:
     environment:
       MEILI_HOST: http://meilisearch:7700
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      DATABASE_URL: ${DATABASE_URL}
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_BUCKET: ${R2_BUCKET}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL}
+      KINESCOPE_API_TOKEN: ${KINESCOPE_API_TOKEN}
+      KINESCOPE_PARENT_ID: ${KINESCOPE_PARENT_ID}
+      RUSENDER_API_TOKEN: ${RUSENDER_API_TOKEN}
+      RUSENDER_API_KEY_ID: ${RUSENDER_API_KEY_ID}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
+      CRON_SECRET: ${CRON_SECRET}
     depends_on:
       - meilisearch
     restart: unless-stopped
