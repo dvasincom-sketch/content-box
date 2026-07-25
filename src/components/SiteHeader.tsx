@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Star } from 'lucide-react'
+import { Menu, X, Star, Search } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DesktopMenu } from '@/components/DesktopMenu'
 import { MobileMenu } from '@/components/MobileMenu'
@@ -39,6 +39,7 @@ export function SiteHeader({
 
   const borderSoft = 'color-mix(in srgb, var(--brand-text) 12%, transparent)'
   const supportBorder = 'color-mix(in srgb, var(--brand-primary) 60%, transparent)'
+  const iconBtn = 'color-mix(in srgb, var(--brand-surface) 60%, transparent)'
 
   async function logout() {
     setLoggingOut(true)
@@ -92,6 +93,16 @@ export function SiteHeader({
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* Поиск — доступен на любой странице (десктоп и мобайл) */}
+            <Link
+              href="/search"
+              aria-label="Поиск"
+              className="inline-flex items-center justify-center h-10 w-10 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+              style={{ color: 'var(--brand-text)', background: iconBtn }}
+            >
+              <Search size={18} />
+            </Link>
+
             {/* Авторизация (десктоп) — вариант B: аккаунт-блок слитно */}
             {subscriber ? (
               <div className="hidden sm:flex items-center gap-3">
@@ -173,6 +184,15 @@ export function SiteHeader({
             className="lg:hidden pb-4 flex flex-col gap-1 border-t pt-3"
             style={{ borderColor: borderSoft }}
           >
+            <Link
+              href="/search"
+              onClick={() => setOpen(false)}
+              className="py-2 px-2 rounded-lg text-base font-medium opacity-90 hover:opacity-100 inline-flex items-center gap-2"
+              style={{ color: 'var(--brand-text)' }}
+            >
+              <Search size={18} /> Поиск
+            </Link>
+
             <MobileMenu nodes={menu} onNavigate={() => setOpen(false)} />
             {items.map((item, i) => (
               <Link

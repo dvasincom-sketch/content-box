@@ -35,7 +35,9 @@ export function SearchBox({
   const [includeLocked, setIncludeLocked] = useState(initialIncludeLocked)
   const [hits, setHits] = useState<Hit[]>([])
   const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(-1) // индекс подсветки для клавиатуры
   const boxRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   // Debounced typeahead
   useEffect(() => {
@@ -55,6 +57,7 @@ export function SearchBox({
         })
         const data = await res.json()
         setHits(data.hits ?? [])
+        setActive(-1)
         setOpen(true)
       } catch {
         /* aborted or network error — ignore */
@@ -75,14 +78,47 @@ export function SearchBox({
     return () => document.removeEventListener('mousedown', onDoc)
   }, [])
 
-  const submit = (e?: React.FormEvent) => {
-    e?.preventDefault()
+  const goToSearch = () => {
     const query = q.trim()
     if (!query) return
     const params = new URLSearchParams({ q: query })
     if (!includeLocked) params.set('locked', '0')
     setOpen(false)
     router.push(`/search?${params.toString()}`)
+  }
+
+  const submit = (e?: React.FormEvent) => {
+    e?.preventDefault()
+    goToSearch()
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setOpen(false)
+      return
+    }
+    if (!open || hits.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActive((a) => Math.min(a + 1, hits.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActive((a) => Math.max(a - 1, -1))
+    } else if (e.key === 'Enter' && active >= 0) {
+      const h = hits[active]
+      if (h && !h.locked) {
+        e.preventDefault()
+        setOpen(false)
+        router.push(h.url)
+      }
+    }
+  }
+
+  const clear = () => {
+    setQ('')
+    setHits([])
+    setOpen(false)
+    inputRef.current?.focus()
   }
 
   return (
@@ -103,14 +139,26 @@ export function SearchBox({
             <path d="m21 21-4.3-4.3" />
           </svg>
           <input
+            ref={inputRef}
             className={styles.input}
             value={q}
             onChange={(e) => setQ(e.target.value)}
+            onKeyDown={onKeyDown}
             onFocus={() => hits.length > 0 && setOpen(true)}
             placeholder="Поиск по сайту…"
             aria-label="Поиск по сайту"
             autoComplete="off"
           />
+          {q && (
+            <button
+              type="button"
+              className={styles.clearBtn}
+              onClick={clear}
+              aria-label="Очистить"
+            >
+              ×
+            </button>
+          )}
         </span>
         <button type="submit" className={styles.submit}>
           Найти
@@ -131,12 +179,13 @@ export function SearchBox({
       </label>
 
       {open && hits.length > 0 && (
-        <ul className={styles.dropdown}>
-          {hits.map((h) => (
-            <li key={h.id}>
+        <ul className={styles.dropdown} role="listbox">
+          {hits.map((h, i) => (
+            <li key={h.id} role="option" aria-selected={i === active}>
               <Link
                 href={h.locked ? '#' : h.url}
-                className={styles.suggest}
+                className={`${styles.suggest} ${i === active ? styles.suggestActive : ''}`}
+                onMouseEnter={() => setActive(i)}
                 onClick={() => setOpen(false)}
               >
                 {h.thumb ? (
@@ -158,6 +207,11 @@ export function SearchBox({
               </Link>
             </li>
           ))}
+          <li>
+            <button type="button" className={styles.showAll} onClick={goToSearch}>
+              Показать все результаты «{q.trim()}»
+            </button>
+          </li>
         </ul>
       )}
     </div>

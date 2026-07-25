@@ -32,7 +32,7 @@
 }
 .input {
   width: 100%;
-  padding: 15px 18px 15px 48px;
+  padding: 15px 44px 15px 48px;
   font: inherit;
   font-size: 17px;
   color: var(--brand-text);
@@ -52,6 +52,27 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-primary) 18%, transparent);
   background: color-mix(in srgb, var(--brand-surface) 78%, transparent);
 }
+.clearBtn {
+  position: absolute;
+  right: 14px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand-text) 10%, transparent);
+  color: var(--brand-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+.clearBtn:hover {
+  color: var(--brand-text);
+  background: color-mix(in srgb, var(--brand-text) 16%, transparent);
+}
+
 .submit {
   padding: 0 24px;
   font: inherit;
@@ -147,8 +168,30 @@
   color: inherit;
   transition: background 0.12s;
 }
-.suggest:hover {
+.suggest:hover,
+.suggestActive {
   background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+}
+
+.showAll {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  margin-top: 4px;
+  border: none;
+  border-top: 1px solid var(--brand-border);
+  border-radius: 0 0 12px 12px;
+  background: transparent;
+  color: var(--brand-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.showAll:hover {
+  background: color-mix(in srgb, var(--brand-primary) 10%, transparent);
 }
 .suggestThumb,
 .suggestThumbPlaceholder {
