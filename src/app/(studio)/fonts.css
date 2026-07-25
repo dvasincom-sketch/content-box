@@ -1,0 +1,6 @@
+/* Локальные шрифты студии/регистрации (offline). Переменные повторяют прежние
+   --font-sans / --font-mono из next/font/google (IBM Plex). */
+:root {
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+}

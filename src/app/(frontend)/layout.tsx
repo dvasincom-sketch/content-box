@@ -1,6 +1,17 @@
 import React from 'react'
 import './styles.css'
-import { Inter, Montserrat, Manrope, Golos_Text, PT_Sans, Unbounded, Roboto } from 'next/font/google'
+// Локальные шрифты (@fontsource) вместо next/font/google: ставятся как
+// npm-зависимости, поэтому `next build` НЕ ходит за ними в Google Fonts
+// (это убирает зависание сборки на РФ-сети). Переменные --font-* — в fonts.css.
+import '@fontsource-variable/inter'
+import '@fontsource-variable/montserrat'
+import '@fontsource-variable/manrope'
+import '@fontsource-variable/golos-text'
+import '@fontsource/pt-sans/400.css'
+import '@fontsource/pt-sans/700.css'
+import '@fontsource-variable/unbounded'
+import '@fontsource-variable/roboto'
+import './fonts.css'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { buildMenu } from '@/lib/buildMenu'
 import { footerFromTree } from '@/lib/footerFromTree'
@@ -11,20 +22,6 @@ import { SiteFooter } from '@/components/SiteFooter'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { THEME_INIT } from '@/lib/themeInit'
-
-const inter = Inter({ subsets: ['latin', 'cyrillic'], variable: '--font-inter', display: 'swap' })
-const montserrat = Montserrat({ subsets: ['latin', 'cyrillic'], variable: '--font-montserrat', display: 'swap' })
-const manrope = Manrope({ subsets: ['latin', 'cyrillic'], variable: '--font-manrope', display: 'swap' })
-const golos = Golos_Text({ subsets: ['latin', 'cyrillic'], variable: '--font-golos', display: 'swap' })
-const ptSans = PT_Sans({ subsets: ['latin', 'cyrillic'], weight: ['400', '700'], variable: '--font-ptsans', display: 'swap' })
-const unbounded = Unbounded({ subsets: ['latin', 'cyrillic'], variable: '--font-unbounded', display: 'swap' })
-const roboto = Roboto({ subsets: ['latin', 'cyrillic'], variable: '--font-roboto', display: 'swap' })
-
-const fontVars = [inter, montserrat, manrope, golos, ptSans, unbounded, roboto]
-  .map((f) => f.variable)
-  .join(' ')
-
-
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
@@ -68,7 +65,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const logoAlt = logo && typeof logo === 'object' ? logo.alt : null
 
   return (
-    <html lang="ru" className={fontVars} suppressHydrationWarning>
+    <html lang="ru" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>

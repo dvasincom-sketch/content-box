@@ -1,0 +1,12 @@
+/* Локальные шрифты (offline): переменные повторяют прежние --font-* из
+   next/font/google. Сами @font-face подключаются JS-импортами @fontsource
+   в layout.tsx — на билде в сеть за шрифтами не ходим. */
+:root {
+  --font-inter: 'Inter Variable', system-ui, sans-serif;
+  --font-montserrat: 'Montserrat Variable', system-ui, sans-serif;
+  --font-manrope: 'Manrope Variable', system-ui, sans-serif;
+  --font-golos: 'Golos Text Variable', system-ui, sans-serif;
+  --font-ptsans: 'PT Sans', system-ui, sans-serif;
+  --font-unbounded: 'Unbounded Variable', system-ui, sans-serif;
+  --font-roboto: 'Roboto Variable', system-ui, sans-serif;
+}

@@ -1,9 +1,22 @@
 import React from 'react'
 import { redirect } from 'next/navigation'
-import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import '../(studio)/studio.css'
+// Локальные шрифты IBM Plex (@fontsource) вместо next/font/google — без обращения
+// к Google Fonts на билде. Переменные --font-sans / --font-mono — из studio/fonts.css.
+import '@fontsource/ibm-plex-sans/400.css'
+import '@fontsource/ibm-plex-sans/500.css'
+import '@fontsource/ibm-plex-sans/600.css'
+import '@fontsource/ibm-plex-sans/700.css'
+import '@fontsource/ibm-plex-mono/400.css'
+import '@fontsource/ibm-plex-mono/500.css'
+import '@fontsource/ibm-plex-mono/600.css'
+import '../(studio)/fonts.css'
 import { THEME_INIT } from '@/lib/themeInit'
+
+// Регистрация зависит от auth/БД (getCurrentAuthor) — не пререндерим на билде,
+// иначе `next build` виснет на запросе к недоступной БД.
+export const dynamic = 'force-dynamic'
 
 /**
  * Оболочка страницы регистрации (/signup).
@@ -15,27 +28,13 @@ import { THEME_INIT } from '@/lib/themeInit'
  *
  * Guard: уже залогиненного автора уводим в /studio (как (studio)/(auth)).
  */
-const plexSans = IBM_Plex_Sans({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-sans',
-  display: 'swap',
-})
-const plexMono = IBM_Plex_Mono({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500', '600'],
-  variable: '--font-mono',
-  display: 'swap',
-})
-
 export default async function SignupLayout({ children }: { children: React.ReactNode }) {
   const author = await getCurrentAuthor()
   if (author) {
     redirect('/studio')
   }
-  const fontVars = `${plexSans.variable} ${plexMono.variable}`
   return (
-    <html lang="ru" className={fontVars} suppressHydrationWarning>
+    <html lang="ru" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
