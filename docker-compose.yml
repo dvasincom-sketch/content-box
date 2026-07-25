@@ -1,38 +1,23 @@
-# Timeweb App Platform — Docker Compose деплой.
+# Timeweb App Platform — Docker Compose.
 #
-# Все переменные задаются в панели Timeweb (раздел «Переменные»). Здесь они явно
-# пробрасываются в сервис app через ${...} — чтобы контейнер приложения гарантированно
-# их получил (в compose панельные env не всегда инжектятся во все сервисы сами).
+# ВАЖНО: Timeweb вставляет переменные из панели напрямую в контейнеры, но НЕ
+# подставляет их в ${...} внутри этого файла. Поэтому здесь НЕ используем ${...}
+# для панельных переменных — иначе пустая интерполяция перетирает реальные значения.
+# Всё (DATABASE_URL, PAYLOAD_SECRET, R2_*, KINESCOPE_*, RUSENDER_*, MEILI_MASTER_KEY, ...)
+# задаётся в панели Timeweb и инжектится в оба контейнера автоматически.
 #
-# Ограничения App Platform: на домен проксируется первый сервис (app);
-# meilisearch — внутренний (без ports); persistent volumes запрещены, поэтому
-# индекс Meili эфемерный и перестраивается на старте приложения (см. plugin.ts).
+# Здесь только КОНСТАНТЫ:
+#  - app.MEILI_HOST — внутренний адрес Meili (имя сервиса в compose-сети);
+#  - meilisearch.MEILI_ENV / MEILI_NO_ANALYTICS — режим Meili.
 
 services:
   app:
     build:
       context: .
-      args:
-        - R2_PUBLIC_URL=${R2_PUBLIC_URL}
     ports:
       - '3000:3000'
     environment:
       MEILI_HOST: http://meilisearch:7700
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
-      DATABASE_URL: ${DATABASE_URL}
-      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
-      R2_ENDPOINT: ${R2_ENDPOINT}
-      R2_BUCKET: ${R2_BUCKET}
-      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
-      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
-      R2_PUBLIC_URL: ${R2_PUBLIC_URL}
-      KINESCOPE_API_TOKEN: ${KINESCOPE_API_TOKEN}
-      KINESCOPE_PARENT_ID: ${KINESCOPE_PARENT_ID}
-      RUSENDER_API_TOKEN: ${RUSENDER_API_TOKEN}
-      RUSENDER_API_KEY_ID: ${RUSENDER_API_KEY_ID}
-      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
-      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
-      CRON_SECRET: ${CRON_SECRET}
     depends_on:
       - meilisearch
     restart: unless-stopped
@@ -40,7 +25,6 @@ services:
   meilisearch:
     image: getmeili/meilisearch:v1.10
     environment:
-      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       MEILI_ENV: production
       MEILI_NO_ANALYTICS: 'true'
     restart: unless-stopped
