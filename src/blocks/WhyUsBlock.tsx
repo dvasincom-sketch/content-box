@@ -37,19 +37,15 @@ export function WhyUsBlock({ heading = 'Почему мы', items }: WhyUsBlockP
           return (
             <div
               key={i}
-              className="rounded-2xl p-5 flex flex-col gap-3"
-              style={{ background: 'var(--brand-surface)' }}
+              className="c-card c-spotlight p-5 flex flex-col gap-3"
             >
-              <span
-                className="inline-flex items-center justify-center w-11 h-11 rounded-xl"
-                style={{ background: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)', color: 'var(--brand-primary)' }}
-              >
+              <span className="c-icon-chip">
                 <Icon size={22} strokeWidth={2} />
               </span>
               <h3 className="font-semibold text-lg leading-tight" style={{ color: 'var(--brand-text)' }}>
                 {a.title}
               </h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--brand-muted)' }}>
                 {a.text}
               </p>
             </div>

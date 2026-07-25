@@ -2,7 +2,7 @@ import type {
   CollectionAfterChangeHook,
   CollectionAfterDeleteHook,
 } from 'payload'
-import { contentIndex } from './meili'
+import { contentIndex, isMeiliConfigured } from './meili'
 import { mapDoc, indexId } from './map'
 
 /**
@@ -14,6 +14,7 @@ import { mapDoc, indexId } from './map'
 
 export function makeAfterChange(collectionSlug: string): CollectionAfterChangeHook {
   return async ({ doc, req }) => {
+    if (!isMeiliConfigured()) return doc
     try {
       const mapped = await mapDoc(req.payload, collectionSlug, doc)
       if (mapped) {
@@ -35,6 +36,7 @@ export function makeAfterChange(collectionSlug: string): CollectionAfterChangeHo
 
 export function makeAfterDelete(collectionSlug: string): CollectionAfterDeleteHook {
   return async ({ id, req }) => {
+    if (!isMeiliConfigured()) return
     try {
       await contentIndex().deleteDocument(indexId(collectionSlug, id))
     } catch (err) {

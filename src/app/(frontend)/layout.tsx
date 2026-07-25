@@ -19,6 +19,7 @@ import { brandVars } from '@/lib/brand'
 import { SiteHeader } from '@/components/SiteHeader'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { SiteFooter } from '@/components/SiteFooter'
+import { SpotlightController } from '@/components/SpotlightController'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { THEME_INIT } from '@/lib/themeInit'
@@ -81,6 +82,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
           minHeight: '100vh',
         }}
       >
+        <SpotlightController />
         {ctx && (
           <SiteHeader
             logoUrl={logoUrl}

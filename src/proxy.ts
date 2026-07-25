@@ -54,6 +54,62 @@ async function resolveTenant(field: 'domain' | 'subdomain', value: string, origi
   }
 }
 
+// Локальные хосты дев-сервера.
+function isLocalHost(host: string): boolean {
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host.endsWith('.localhost')
+}
+
+/**
+ * DEV-ONLY: резолвинг тенанта для локальных хостов (`localhost`, `*.localhost`).
+ *
+ * Прод-путь (`resolveTenant`) в локали нежизнеспособен: origin собирается из
+ * host БЕЗ порта и по `https`, а ещё требует `domainVerified=true`. Здесь:
+ *  • фетчим сам dev-сервер по loopback с реальным портом (DNS `*.localhost`
+ *    из Node не резолвится — 127.0.0.1 надёжнее);
+ *  • НЕ требуем `domainVerified`;
+ *  • пробуем сопоставить метку поддомена (`bts.localhost` → subdomain `bts`),
+ *    затем host как `domain`, затем — первый активный тенант (чтобы работал и
+ *    голый `localhost:3000`).
+ * Никогда не вызывается в production (см. гард в proxy()).
+ */
+async function resolveDevTenant(host: string, port: string) {
+  const origin = `http://127.0.0.1:${port || '3000'}`
+  const fetchOne = async (params: Record<string, string>) => {
+    const qs = new URLSearchParams({ limit: '1', depth: '0', ...params })
+    try {
+      const res = await fetch(`${origin}/api/tenants?${qs.toString()}`, {
+        headers: { 'content-type': 'application/json' },
+        cache: 'no-store',
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      return data?.docs?.[0] || null
+    } catch {
+      return null
+    }
+  }
+
+  const label = host.endsWith('.localhost')
+    ? host.slice(0, -'.localhost'.length).split('.').pop() || ''
+    : ''
+
+  if (label) {
+    const bySub = await fetchOne({
+      'where[and][0][subdomain][equals]': label,
+      'where[and][1][status][equals]': 'active',
+    })
+    if (bySub) return bySub
+    const byDomain = await fetchOne({
+      'where[and][0][domain][equals]': host,
+      'where[and][1][status][equals]': 'active',
+    })
+    if (byDomain) return byDomain
+  }
+
+  // Фолбэк: первый активный тенант.
+  return await fetchOne({ 'where[status][equals]': 'active' })
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   if (BYPASS_PREFIXES.some((p) => pathname.startsWith(p))) {
@@ -65,6 +121,23 @@ export async function proxy(request: NextRequest) {
     request.headers.get('host') ??
     request.nextUrl.hostname,
   )
+
+  // DEV-ONLY: локальные хосты (localhost, *.localhost) → тенант без требования
+  // verified, фетч по loopback. В production ветка выключена и не влияет на
+  // обычный резолвинг по домену/поддомену.
+  if (process.env.NODE_ENV !== 'production' && isLocalHost(host)) {
+    const tenant = await resolveDevTenant(host, request.nextUrl.port)
+    if (tenant) {
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-tenant-id', String(tenant.id))
+      requestHeaders.set('x-tenant-domain', host)
+      const res = NextResponse.next({ request: { headers: requestHeaders } })
+      res.headers.set('x-tenant-id', String(tenant.id))
+      res.headers.set('x-tenant-domain', host)
+      return res
+    }
+    // Тенантов нет вовсе → падаем в обычную ветку (покажет /domain-not-found).
+  }
 
   // Платформенный домен: лендинг на `/`, без резолвинга тенанта.
   if (isPlatformHost(host)) {

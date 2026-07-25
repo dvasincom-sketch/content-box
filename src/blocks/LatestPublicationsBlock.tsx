@@ -40,12 +40,10 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
         {items.map((p) => {
           const badge = relativeDayLabel(p.publishedAt)
           return (
-            <article key={p.id} className="rounded-2xl overflow-hidden flex flex-col"
-              style={{ background: 'var(--brand-surface)' }}>
-              {/* Обложка публикации; градиент — фолбэк, если cover не задан */}
-              <div className="relative h-36"
-                style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}>
-                {coverUrl(p.cover) && (
+            <article key={p.id} className="c-card c-card--interactive c-spotlight overflow-hidden flex flex-col">
+              {/* Обложка — только при наличии картинки; без неё блок не выводим (без градиента) */}
+              {coverUrl(p.cover) && (
+                <div className="relative h-36">
                   <Image
                     src={coverUrl(p.cover) as string}
                     alt={(typeof p.cover === 'object' && p.cover?.alt) || p.title}
@@ -53,23 +51,35 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
                     className="object-cover"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
+                  {badge && (
+                    <span className="absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      style={{ background: 'rgba(0,0,0,0.45)', color: '#fff' }}>
+                      {badge}
+                    </span>
+                  )}
+                  {/* Бейдж платной публикации */}
+                  {p.minTierName && (
+                    <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', backdropFilter: 'blur(4px)' }}>
+                      <Lock size={12} />
+                      {p.minTierName}
+                    </span>
+                  )}
+                </div>
+              )}
+              <div className="p-5 flex flex-col gap-3 flex-1">
+                {/* Без обложки — дата и «замок» уходят в текст */}
+                {!coverUrl(p.cover) && (badge || p.minTierName) && (
+                  <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--brand-muted)' }}>
+                    {badge && <span>{badge}</span>}
+                    {p.minTierName && (
+                      <span className="inline-flex items-center gap-1">
+                        <Lock size={12} />
+                        {p.minTierName}
+                      </span>
+                    )}
+                  </div>
                 )}
-                {badge && (
-                  <span className="absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full"
-                    style={{ background: 'rgba(0,0,0,0.45)', color: '#fff' }}>
-                    {badge}
-                  </span>
-                )}
-                {/* Бейдж платной публикации */}
-                {p.minTierName && (
-                  <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
-                    style={{ background: 'rgba(0,0,0,0.55)', color: '#fff', backdropFilter: 'blur(4px)' }}>
-                    <Lock size={12} />
-                    {p.minTierName}
-                  </span>
-                )}
-              </div>
-              <div className="p-4 flex flex-col gap-3 flex-1">
                 <h3 className="font-semibold leading-snug" style={{ color: 'var(--brand-text)' }}>
                   <a href={`/publication/${p.slug}`} className="transition-opacity hover:opacity-70">{p.title}</a>
                 </h3>

@@ -11,6 +11,15 @@ let client: Meilisearch | null = null
  *
  * meilisearch-js v0.60: class is `Meilisearch` (lowercase s).
  */
+/**
+ * Задан ли бэкенд поиска. Позволяет мягко отключать поиск там, где Meilisearch
+ * не поднят (напр. локальная разработка без docker-compose.meili) — без падений
+ * и без шумных стеков в логах.
+ */
+export function isMeiliConfigured(): boolean {
+  return Boolean(process.env.MEILI_HOST && process.env.MEILI_MASTER_KEY)
+}
+
 export function getMeili(): Meilisearch {
   if (!client) {
     const host = process.env.MEILI_HOST

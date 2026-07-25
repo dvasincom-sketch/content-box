@@ -12,7 +12,46 @@
   --brand-text: #F5F3FF;
   --brand-muted: rgba(245, 243, 255, 0.65);
   --brand-border: rgba(245, 243, 255, 0.12);
-  --brand-card-shadow: none;
+
+  /* ── Дизайн-система «матовое стекло» (design-system.md) ──
+     Всё на color-mix от --brand-*, поэтому адаптируется под акцент тенанта. */
+
+  /* Радиусы — единая шкала (заменяет 8 разрозненных значений) */
+  --radius-sm: 10px;   /* тамбы, иконки-чипы, мелочь */
+  --radius-md: 14px;   /* инпуты, кнопки, постер-фреймы */
+  --radius-lg: 20px;   /* карточка по умолчанию, плитки */
+  --radius-xl: 28px;   /* крупные поверхности: hero, плашки, баннер */
+  --radius-pill: 999px;
+
+  /* Стекло — прозрачность + блюр, 3 уровня матовости */
+  --glass-1: color-mix(in srgb, var(--brand-surface) 55%, transparent);
+  --glass-2: color-mix(in srgb, var(--brand-surface) 70%, transparent);
+  --glass-3: color-mix(in srgb, var(--brand-surface) 88%, transparent);
+  --glass-blur-1: 8px;
+  --glass-blur-2: 16px;
+  --glass-blur-3: 24px;
+
+  /* Глубина — тёмная тема: мягкая чёрная тень без свечения */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.20);
+  --elev-2: 0 6px 24px rgba(0, 0, 0, 0.28);
+  --elev-3: 0 20px 50px rgba(0, 0, 0, 0.40);
+  --brand-card-shadow: var(--elev-2); /* алиас для обратной совместимости */
+
+  /* Свечения — атмосфера фона и акцентные ореолы.
+     Больше акцента в тёмной теме: верхний подъём тонирован в primary (не серый),
+     ореолы primary/accent ярче и крупнее. Привязка к вьюпорту — в .page-canvas. */
+  --glow-primary: color-mix(in srgb, var(--brand-primary) 48%, transparent);
+  --glow-accent: color-mix(in srgb, var(--brand-accent) 40%, transparent);
+  --page-glow:
+    radial-gradient(140% 100% at 50% -20%, color-mix(in srgb, var(--brand-primary) 26%, transparent), transparent 60%),
+    radial-gradient(95% 80% at 0% -6%, var(--glow-primary), transparent 60%),
+    radial-gradient(90% 75% at 100% 0%, var(--glow-accent), transparent 58%),
+    radial-gradient(110% 85% at 50% 122%, var(--glow-primary), transparent 66%);
+
+  /* Взаимодействие — единые состояния */
+  --card-border-hover: color-mix(in srgb, var(--brand-primary) 30%, var(--brand-border));
+  --focus-ring: 0 0 0 4px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+  --lift: -4px; /* единственная величина подъёма карточки на hover */
 }
 
 .theme-light {
@@ -21,7 +60,39 @@
   --brand-text: #1E1A2E;
   --brand-muted: rgba(30, 26, 46, 0.60);
   --brand-border: rgba(30, 26, 46, 0.10);
-  --brand-card-shadow: 0 1px 3px rgba(30, 26, 46, 0.08), 0 4px 16px rgba(124, 58, 237, 0.06);
+
+  /* ── Дизайн-система «матовое стекло» — дельты светлой темы ──
+     Стекло плотнее (бело-на-белом иначе не читается), свечения слабее,
+     тени мягкие сине-фиолетовые вместо чёрных. Остальное наследуется. */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  --glass-1: color-mix(in srgb, var(--brand-surface) 70%, transparent);
+  --glass-2: color-mix(in srgb, var(--brand-surface) 82%, transparent);
+  --glass-3: color-mix(in srgb, var(--brand-surface) 92%, transparent);
+  --glass-blur-1: 8px;
+  --glass-blur-2: 16px;
+  --glass-blur-3: 24px;
+
+  --elev-1: 0 1px 2px rgba(30, 26, 46, 0.06);
+  --elev-2: 0 1px 3px rgba(30, 26, 46, 0.08), 0 8px 24px rgba(124, 58, 237, 0.08);
+  --elev-3: 0 20px 50px rgba(30, 26, 46, 0.16);
+  --brand-card-shadow: var(--elev-2);
+
+  --glow-primary: color-mix(in srgb, var(--brand-primary) 15%, transparent);
+  --glow-accent: color-mix(in srgb, var(--brand-accent) 12%, transparent);
+  --page-glow:
+    radial-gradient(120% 85% at 50% -12%, color-mix(in srgb, var(--brand-primary) 6%, transparent), transparent 55%),
+    radial-gradient(75% 60% at 8% -6%, var(--glow-primary), transparent 60%),
+    radial-gradient(68% 58% at 100% 4%, var(--glow-accent), transparent 58%),
+    radial-gradient(85% 65% at 50% 116%, var(--glow-primary), transparent 66%);
+
+  --card-border-hover: color-mix(in srgb, var(--brand-primary) 30%, var(--brand-border));
+  --focus-ring: 0 0 0 4px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+  --lift: -4px;
 }
 
 html { transition: background-color 0.2s ease; }
@@ -115,6 +186,157 @@ a {
 
 svg {
   vertical-align: middle;
+}
+
+/* ============================================================================
+   ДИЗАЙН-СИСТЕМА «матовое стекло» — общие поверхности и состояния.
+   Одна карточка-контракт, единый hover, всё на --brand-* токенах.
+   Работает в обеих темах. Подробности — claude/design-system.md.
+   ============================================================================ */
+
+/* Холст страницы: фоновое свечение за контентом (глубина).
+   Свечение привязано к вьюпорту (fixed) — держится на весь скролл, а не только
+   у краёв длинной страницы. isolation:isolate замыкает стекинг-контекст, чтобы
+   свечение не наезжало на шапку/футер (они вне этого main). Прямые дети
+   поднимаются над свечением (z-index:1). */
+.page-canvas {
+  position: relative;
+  isolation: isolate;
+  background: var(--brand-bg);
+}
+.page-canvas::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--page-glow);
+}
+.page-canvas > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Карточка-стекло: база (статичная поверхность) */
+.c-card {
+  background: var(--glass-2);
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-2);
+  -webkit-backdrop-filter: blur(var(--glass-blur-2));
+  backdrop-filter: blur(var(--glass-blur-2));
+}
+
+/* Интерактивная карточка (ссылка/кнопка): единый hover-подъём + акцентный бордер */
+.c-card--interactive {
+  transition: transform 0.18s ease, border-color 0.18s ease,
+    background 0.18s ease, box-shadow 0.18s ease;
+}
+.c-card--interactive:hover {
+  transform: translateY(var(--lift));
+  border-color: var(--card-border-hover);
+  background: color-mix(in srgb, var(--brand-primary) 5%, var(--glass-2));
+  box-shadow: var(--elev-3);
+}
+
+/* Плитка (категория): стеклянный фрейм с обложкой + один скрим + акцентное кольцо */
+.c-tile {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--elev-2);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.c-tile:hover {
+  transform: translateY(var(--lift));
+  border-color: color-mix(in srgb, var(--brand-primary) 40%, var(--brand-border));
+  box-shadow: var(--elev-3);
+}
+.c-tile__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent 65%);
+}
+
+/* Акцентный чип под иконку (WhyUs / Social) */
+.c-icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 14%, transparent);
+}
+
+/* Единственный санкционированный градиент — фолбэк обложки без картинки */
+.c-cover-fallback {
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c-card--interactive,
+  .c-tile {
+    transition: none;
+  }
+  .c-card--interactive:hover,
+  .c-tile:hover {
+    transform: none;
+  }
+}
+
+/* «Спотлайт» под курсором (как на meilisearch.com): мягкое акцентное свечение
+   следует за мышью внутри карточки. Координаты --mx/--my ставит onMouseMove на
+   самом элементе (без ре-рендера React). Комбинируется с .c-card. */
+.c-spotlight {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+.c-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(
+    360px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--brand-primary) 22%, transparent),
+    transparent 68%
+  );
+}
+.c-spotlight:hover {
+  border-color: var(--card-border-hover);
+}
+.c-spotlight:hover::before {
+  opacity: 1;
+}
+/* Контент поверх свечения */
+.c-spotlight > * {
+  position: relative;
+  z-index: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .c-spotlight::before {
+    transition: none;
+  }
+}
+/* Вариант для сплошных (solid) кнопок: светлое свечение — на заливке акцентом
+   primary-на-primary не читается. Идёт после .c-spotlight, поэтому
+   переопределяет фон ::before. */
+.c-spotlight-bright::before {
+  background: radial-gradient(
+    200px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, #fff 22%, transparent),
+    transparent 70%
+  );
 }
 
 .home {

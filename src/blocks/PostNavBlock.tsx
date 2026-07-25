@@ -62,17 +62,12 @@ function NavCard({ item, align }: { item: PostNavItem; align: 'start' | 'end' })
   return (
     <Link
       href={item.href}
-      className="group relative flex gap-4 rounded-2xl p-3 transition-all hover:-translate-y-0.5"
-      style={{
-        background: 'color-mix(in srgb, var(--brand-primary) 8%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--brand-primary) 18%, transparent)',
-      }}
+      className="c-card c-card--interactive c-spotlight relative flex gap-4 p-4"
     >
       {/* Обложка слева для prev/related, справа для next — направление читается вёрсткой */}
       <div className={`order-1 ${isEnd ? 'sm:order-2' : ''}`}>
         <div
-          className="relative w-24 h-24 rounded-xl overflow-hidden flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}
+          className="c-cover-fallback relative w-24 h-24 rounded-[var(--radius-md)] overflow-hidden flex-shrink-0"
         >
           {item.coverUrl && (
             <Image

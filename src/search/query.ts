@@ -1,4 +1,4 @@
-import { contentIndex } from './meili'
+import { contentIndex, isMeiliConfigured } from './meili'
 
 /** Highlight sentinels — swapped for <mark> after HTML-escaping on render (XSS-safe). */
 export const HL_PRE = '[[hl]]'
@@ -39,6 +39,19 @@ export type SearchArgs = {
 
 /** Shared by /api/search AND the SSR /search page (no self-HTTP). */
 export async function runSearch(args: SearchArgs): Promise<SearchResult> {
+  // Бэкенд поиска не поднят → пустой результат без падения (dev без Meilisearch).
+  if (!isMeiliConfigured()) {
+    return {
+      query: args.q,
+      page: 1,
+      totalPages: 0,
+      totalHits: 0,
+      processingTimeMs: 0,
+      facets: {},
+      hits: [],
+    }
+  }
+
   const page = Math.max(1, args.page ?? 1)
   const hitsPerPage = Math.min(50, Math.max(1, args.limit ?? 20))
   const includeLocked = args.includeLocked ?? true
@@ -95,6 +108,9 @@ export type SuggestArgs = {
 
 /** Lightweight typeahead — titles only, small limit. Shared by /api/search/suggest. */
 export async function runSuggest(args: SuggestArgs): Promise<SearchHit[]> {
+  // Бэкенд поиска не поднят → пустые подсказки без падения (dev без Meilisearch).
+  if (!isMeiliConfigured()) return []
+
   const includeLocked = args.includeLocked ?? true
 
   const filter = [`tenant = "${args.tenantId}"`]

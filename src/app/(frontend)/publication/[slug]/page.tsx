@@ -222,7 +222,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
 
 
   return (
-    <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
+    <main className="page-canvas" style={{ ...brandVars(settings?.theme), minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Хлебные крошки: путь до категории (сам пост не дублируем — он в H1).
             Одна строка, горизонтальный скролл на мобиле, приглушённая плашка. */}
@@ -251,13 +251,10 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           ))}
         </nav>
 
-        {/* Обложка: чистое фото (или брендовый градиент-фолбэк) + Ken Burns.
-            Без текста и затемнения — заголовок вынесен ниже. */}
-        <div
-          className="pubhero-cover relative rounded-3xl overflow-hidden h-72 lg:h-96"
-          style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}
-        >
-          {pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
+        {/* Обложка: только при наличии фото (Ken Burns). Нет обложки — блок не
+            выводим вообще, без градиента-заглушки. Заголовок идёт ниже. */}
+        {pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
+          <div className="pubhero-cover relative rounded-3xl overflow-hidden h-72 lg:h-96">
             <Image
               src={pub.cover.url}
               alt={pub.cover.alt || pub.title}
@@ -266,8 +263,8 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               sizes="(max-width: 768px) 100vw, 768px"
               priority
             />
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Заголовок — отдельной зоной под обложкой, брендовым цветом.
             Характер «тех-кампания»: шрифт тенанта (var(--font-heading)),

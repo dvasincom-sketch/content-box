@@ -30,23 +30,18 @@ export function SocialLinksBlock({ heading = 'Присоединяйся к на
           const m = META[s.platform!]
           const Icon = m.Icon
           return (
-            
             <a
               key={i}
               href={s.url!}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-2xl p-5 flex flex-col gap-3 transition-transform hover:-translate-y-1"
-              style={{ background: 'var(--brand-surface)' }}
+              className="c-card c-card--interactive c-spotlight p-5 flex flex-col gap-3"
             >
-              <span
-                className="inline-flex items-center justify-center w-11 h-11 rounded-xl"
-                style={{ background: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)', color: 'var(--brand-primary)' }}
-              >
+              <span className="c-icon-chip">
                 <Icon size={22} strokeWidth={2} />
               </span>
               <span className="font-semibold" style={{ color: 'var(--brand-text)' }}>{m.label}</span>
-              <span className="text-sm" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>{m.hint}</span>
+              <span className="text-sm" style={{ color: 'var(--brand-muted)' }}>{m.hint}</span>
             </a>
           )
         })}

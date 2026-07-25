@@ -59,7 +59,7 @@ export default async function ContentPage({ params }: { params: Promise<Params> 
   if (!page) notFound()
 
   return (
-    <main style={{ ...brandVars(settings?.theme), background: 'var(--brand-bg)', minHeight: '100vh' }}>
+    <main className="page-canvas" style={{ ...brandVars(settings?.theme), minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-10">
         {/* Крошки и заголовок — во всю ширину, как на странице категории. */}
         <a href="/" className="text-sm inline-block mb-6" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>← На главную</a>

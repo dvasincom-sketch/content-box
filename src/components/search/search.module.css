@@ -38,7 +38,7 @@
   color: var(--brand-text);
   background: color-mix(in srgb, var(--brand-surface) 60%, transparent);
   border: 1px solid var(--brand-border);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   outline: none;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -81,7 +81,7 @@
   color: #fff;
   background: var(--brand-primary);
   border: none;
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   transition: filter 0.15s, transform 0.05s;
 }
@@ -155,8 +155,8 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--brand-border);
-  border-radius: 18px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-3);
 }
 .suggest {
   display: flex;
@@ -198,7 +198,7 @@
   width: 44px;
   height: 44px;
   flex: 0 0 auto;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   object-fit: cover;
   background: color-mix(in srgb, var(--brand-primary) 14%, transparent);
 }
@@ -261,7 +261,7 @@
   display: flex;
   gap: 14px;
   padding: 14px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   text-decoration: none;
   color: inherit;
   background: color-mix(in srgb, var(--brand-primary) 5%, transparent);
@@ -283,7 +283,7 @@
   width: 60px;
   height: 60px;
   flex: 0 0 auto;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   object-fit: cover;
   background: color-mix(in srgb, var(--brand-primary) 14%, transparent);
 }

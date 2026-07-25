@@ -160,7 +160,7 @@ export function SearchBox({
             </button>
           )}
         </span>
-        <button type="submit" className={styles.submit}>
+        <button type="submit" className={`${styles.submit} c-spotlight c-spotlight-bright`}>
           Найти
         </button>
       </form>
@@ -184,7 +184,7 @@ export function SearchBox({
             <li key={h.id} role="option" aria-selected={i === active}>
               <Link
                 href={h.locked ? '#' : h.url}
-                className={`${styles.suggest} ${i === active ? styles.suggestActive : ''}`}
+                className={`${styles.suggest} c-spotlight ${i === active ? styles.suggestActive : ''}`}
                 onMouseEnter={() => setActive(i)}
                 onClick={() => setOpen(false)}
               >

@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { MenuNode } from '@/lib/headerMenu'
 
-const SURFACE = 'var(--brand-surface)'
-const BORDER = 'color-mix(in srgb, var(--brand-text) 12%, transparent)'
-const HOVER = 'color-mix(in srgb, var(--brand-primary) 15%, transparent)'
+// Матовое стекло — единый язык дизайна (см. .c-card / поиск).
+const SURFACE = 'color-mix(in srgb, var(--brand-surface) 88%, transparent)'
+const BORDER = 'var(--brand-border)'
+const HOVER = 'color-mix(in srgb, var(--brand-primary) 12%, transparent)'
 
 /** Вложенный список 2-го уровня и глубже. Раскрывается вправо по наведению. */
 function SubMenu({ nodes, level }: { nodes: MenuNode[]; level: number }) {
@@ -14,10 +15,14 @@ function SubMenu({ nodes, level }: { nodes: MenuNode[]; level: number }) {
 
   return (
     <ul
-      className="absolute min-w-[220px] py-2 rounded-xl shadow-xl z-50"
+      className="absolute min-w-[220px] px-2 py-2 z-50"
       style={{
         background: SURFACE,
         border: `1px solid ${BORDER}`,
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--elev-3)',
+        backdropFilter: 'blur(var(--glass-blur-3))',
+        WebkitBackdropFilter: 'blur(var(--glass-blur-3))',
         // 2-й уровень падает вниз, глубже — вправо от родителя
         ...(level === 2 ? { top: '100%', left: 0 } : { top: 0, left: '100%' }),
       }}
@@ -33,7 +38,7 @@ function SubMenu({ nodes, level }: { nodes: MenuNode[]; level: number }) {
           >
             <Link
               href={node.href}
-              className="flex items-center justify-between gap-3 px-4 py-2 text-sm transition-colors"
+              className="c-spotlight rounded-[var(--radius-md)] flex items-center justify-between gap-3 px-4 py-2 text-sm transition-colors"
               style={{ color: 'var(--brand-text)' }}
               onMouseEnter={(e) => (e.currentTarget.style.background = HOVER)}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}

@@ -97,7 +97,7 @@ export function SiteHeader({
             <Link
               href="/search"
               aria-label="Поиск"
-              className="inline-flex items-center justify-center h-10 w-10 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
+              className="c-spotlight inline-flex items-center justify-center h-10 w-10 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
               style={{ color: 'var(--brand-text)', background: iconBtn }}
             >
               <Search size={18} />
@@ -134,7 +134,7 @@ export function SiteHeader({
               </div>
             ) : (
               <div
-                className="hidden sm:inline-flex items-center rounded-full overflow-hidden"
+                className="c-spotlight hidden sm:inline-flex items-center rounded-full overflow-hidden"
                 style={{ border: `1px solid ${supportBorder}` }}
               >
                 <Link
@@ -160,7 +160,7 @@ export function SiteHeader({
 
             <Link
               href={supportUrl}
-              className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full transition-colors"
+              className="c-spotlight c-spotlight-bright hidden sm:inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full transition-colors"
               style={{ color: '#fff', background: 'var(--brand-primary)', border: 'none' }}
             >
               <Star size={15} />

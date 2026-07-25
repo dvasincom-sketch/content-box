@@ -15,24 +15,36 @@ export function BroadcastBannerBlock({
 }: BroadcastBannerBlockProps) {
   return (
     <div
-      className="relative rounded-3xl overflow-hidden px-8 py-14 mt-16 flex flex-col items-center justify-center text-center"
+      className="relative overflow-hidden px-8 py-14 mt-16 flex flex-col items-center justify-center text-center rounded-[var(--radius-xl)]"
       style={{
-        background:
-          'radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--brand-primary) 50%, transparent), #140E24 68%)',
+        background: 'var(--glass-2)',
+        border: '1px solid var(--brand-border)',
+        boxShadow: 'var(--elev-2)',
+        backdropFilter: 'blur(var(--glass-blur-2))',
+        WebkitBackdropFilter: 'blur(var(--glass-blur-2))',
       }}
     >
+      {/* Одно акцентное свечение снизу за текстом — вместо неонового text-shadow */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(60% 120% at 50% 120%, var(--glow-accent), transparent 70%)',
+        }}
+      />
       <span
-        className="text-xs font-semibold uppercase tracking-[0.3em] mb-3"
+        className="relative text-xs font-semibold uppercase tracking-[0.3em] mb-3"
         style={{ color: 'var(--brand-accent)' }}
       >
         {tagline}
       </span>
       <span
-        className="text-5xl lg:text-7xl font-extrabold tracking-tight"
+        className="relative text-5xl lg:text-7xl font-extrabold tracking-tight"
         style={{
-          color: '#fff',
+          color: 'var(--brand-text)',
           textShadow:
-            '0 0 6px var(--brand-accent), 0 0 18px var(--brand-accent), 0 0 40px color-mix(in srgb, var(--brand-accent) 55%, transparent)',
+            '0 0 24px color-mix(in srgb, var(--brand-accent) 45%, transparent)',
         }}
       >
         {onAirText}

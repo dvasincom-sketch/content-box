@@ -1,7 +1,7 @@
 import type { Config, Plugin } from 'payload'
 import { INDEXED_COLLECTIONS } from './map'
 import { makeAfterChange, makeAfterDelete } from './hooks'
-import { ensureSearchIndex } from './meili'
+import { ensureSearchIndex, isMeiliConfigured } from './meili'
 import { reindexAll, indexDocCount } from './reindex-core'
 
 /**
@@ -35,6 +35,14 @@ export function meiliSearchPlugin(): Plugin {
     const prevOnInit = config.onInit
     config.onInit = async (payload) => {
       if (prevOnInit) await prevOnInit(payload)
+      // Нет бэкенда поиска (напр. локальная разработка без Meilisearch) —
+      // тихо пропускаем инициализацию: одна строка warn вместо стека ошибки.
+      if (!isMeiliConfigured()) {
+        payload.logger.warn(
+          '[search] MEILI_HOST / MEILI_MASTER_KEY не заданы — индексация и поиск отключены в этом окружении',
+        )
+        return
+      }
       try {
         await ensureSearchIndex()
         const count = await indexDocCount()
