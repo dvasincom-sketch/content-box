@@ -257,6 +257,16 @@
   .cta__check { color:var(--success); font-weight:700; }
   @media (max-width:480px){ .cta__form { flex-direction:column; } }
 
+  /* Преимущества — плашки с чередующимся контрастом (без иконок) */
+  .benes { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin-top:38px; }
+  .bene { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:28px;
+    transition:border-color .2s var(--ease); }
+  .bene:hover { border-color:var(--border-strong); }
+  .bene__t { font-size:18px; font-weight:650; letter-spacing:-.01em; line-height:1.15; margin-bottom:10px; }
+  .bene__d { color:var(--muted); font-size:14px; line-height:1.5; }
+  @media (max-width:900px){ .benes { grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:520px){ .benes { grid-template-columns:1fr; } }
+
   /* Скрины студии — карточки-браузеры бок о бок, горизонтальный скролл */
   .shots__head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
   .theme-toggle--wide { width:auto; height:36px; padding:0 14px; gap:8px; display:inline-flex; align-items:center;
@@ -546,6 +556,48 @@
   </div>
 </section>
 
+<!-- ===== ПРЕИМУЩЕСТВА (плашки-обзор, раскрываются в секциях ниже) ===== -->
+<section id="benefits">
+  <div class="wrap">
+    <div class="eyebrow reveal">Почему наше решение</div>
+    <h2 class="sec reveal">Своя площадка для авторского контента с подпиской</h2>
+    <div class="benes reveal">
+        <div class="bene reveal">
+          <div class="bene__t">Монетизация</div>
+          <div class="bene__d">Платный доступ по подписке — приём оплаты в рублях и валюте, по всему миру. Деньги идут тебе.</div>
+        </div>
+        <div class="bene reveal">
+          <div class="bene__t">Соцсеть</div>
+          <div class="bene__d">Комментарии и реакции: подписчики живут в контенте, а не просто смотрят.</div>
+        </div>
+        <div class="bene reveal">
+          <div class="bene__t">Готовые темы</div>
+          <div class="bene__d">5 тем-шаблонов: светлая и тёмная версии и шрифты под нишу. Без дизайнера.</div>
+        </div>
+        <div class="bene reveal">
+          <div class="bene__t">Поиск</div>
+          <div class="bene__d">Мгновенный поиск по каталогу — находят нужное, даже когда контента много.</div>
+        </div>
+        <div class="bene reveal">
+          <div class="bene__t">SEO</div>
+          <div class="bene__d">Встроенная оптимизация: тебя находят в Яндексе и Google, трафик — на твой бренд.</div>
+        </div>
+        <div class="bene reveal">
+          <div class="bene__t">Роли</div>
+          <div class="bene__d">Команда: владелец и помощники с ограниченными правами.</div>
+        </div>
+        <div class="bene reveal">
+          <div class="bene__t">Все форматы в одном месте</div>
+          <div class="bene__d">Видео, статьи, галереи, аудио — весь контент в одном доме.</div>
+        </div>
+        <div class="bene reveal">
+          <div class="bene__t">Уведомления для удержания</div>
+          <div class="bene__d">Email-дайджесты и push: вышло новое — подписчик вернулся.</div>
+        </div>
+    </div>
+  </div>
+</section>
+
 <!-- ===== КАК ВЫГЛЯДИТ СТУДИЯ (5 экранов, живая вёрстка) ===== -->
 <section id="studio-shots">
   <div class="wrap">
@@ -676,7 +728,7 @@
 <section id="video">
   <div class="wrap">
     <div class="eyebrow reveal">Видео — ядро площадки</div>
-    <h2 class="sec reveal">Главный формат ваших авторов — видео</h2>
+    <h2 class="sec reveal">Главный формат авторов — видео</h2>
     <p class="sec-lede reveal">Уроки, разборы, закулисье — у большинства авторов основной контент это видео. Поэтому видео у нас не «ещё один блок», а сердце платформы: защищённое, быстро перенесённое и удобное зрителю на любом интернете.</p>
     <div class="grid-3">
       <div class="card reveal">
