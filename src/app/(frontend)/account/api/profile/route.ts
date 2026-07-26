@@ -12,6 +12,13 @@ export const POST = withSubscriber(async ({ payload, subscriber, tenantId, req }
 
   const patch: Record<string, unknown> = {}
 
+  // публичное имя
+  if (data.displayName !== undefined) {
+    const dn = String(data.displayName || '').trim().slice(0, 60)
+    if (!dn) return apiError('Укажите публичное имя')
+    patch.displayName = dn
+  }
+
   // bio
   if (data.bio !== undefined) {
     const bio = String(data.bio || '').trim().slice(0, 280)

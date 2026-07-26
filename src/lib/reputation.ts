@@ -50,6 +50,24 @@ export function nextLevel(points: number): { min: number; name: string } | null 
   return null
 }
 
+/** Прогресс до следующего уровня (для статус-бара). */
+export function levelProgress(points: number): {
+  idx: number
+  name: string
+  nextName: string | null
+  nextMin: number | null
+  currentMin: number
+  pct: number
+  toNext: number
+} {
+  const p = Number(points) || 0
+  const idx = levelIndexForPoints(p)
+  const cur = LEVELS[idx]
+  const next = LEVELS[idx + 1] || null
+  const pct = next ? Math.max(0, Math.min(100, Math.round(((p - cur.min) / (next.min - cur.min)) * 100))) : 100
+  return { idx, name: cur.name, nextName: next?.name ?? null, nextMin: next?.min ?? null, currentMin: cur.min, pct, toNext: next ? Math.max(0, next.min - p) : 0 }
+}
+
 const SLUG = 'activity-events'
 
 function relID(v: any): number | null {

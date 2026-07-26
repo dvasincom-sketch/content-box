@@ -34,6 +34,7 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   const [open, setOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const router = useRouter()
   const items = nav ?? []
 
@@ -98,25 +99,40 @@ export function SiteHeader({
               <span className="c-tooltip c-tooltip--below" role="tooltip">Поиск</span>
             </span>
 
-            {/* Авторизация (десктоп) — вариант B: аккаунт-блок слитно */}
+            {/* Авторизация (десктоп) — аватар с выпадающим меню */}
             {subscriber ? (
-              <div className="hidden sm:flex items-center gap-3">
-                <Link href="/account" className="flex items-center gap-2" title="Мой профиль">
+              <div className="hidden sm:block acct-menu">
+                <button
+                  type="button"
+                  className="acct-menu__trigger"
+                  onClick={() => setMenuOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                  title="Аккаунт"
+                >
                   <span className="c-avatar c-avatar--soft c-avatar--sm">
                     {(subscriberName || '?').charAt(0).toUpperCase()}
                   </span>
-                  <span className="text-sm" style={{ color: 'var(--brand-text)' }}>
-                    {subscriberName}
-                  </span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={logout}
-                  disabled={loggingOut}
-                  className="c-btn c-btn--ghost c-btn--sm"
-                >
-                  {loggingOut ? '…' : 'Выйти'}
                 </button>
+                {menuOpen && (
+                  <>
+                    <div className="acct-menu__backdrop" onClick={() => setMenuOpen(false)} />
+                    <div className="acct-menu__panel" role="menu">
+                      <div className="acct-menu__head">{subscriberName}</div>
+                      <Link href="/account" className="acct-menu__item" onClick={() => setMenuOpen(false)}>Профиль</Link>
+                      <Link href="/account/publications" className="acct-menu__item" onClick={() => setMenuOpen(false)}>Мои публикации</Link>
+                      <Link href="/account/settings" className="acct-menu__item" onClick={() => setMenuOpen(false)}>Настройки</Link>
+                      <button
+                        type="button"
+                        className="acct-menu__item acct-menu__item--danger"
+                        onClick={() => { setMenuOpen(false); logout() }}
+                        disabled={loggingOut}
+                      >
+                        {loggingOut ? '…' : 'Выйти'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <div className="c-segment hidden sm:inline-flex">
