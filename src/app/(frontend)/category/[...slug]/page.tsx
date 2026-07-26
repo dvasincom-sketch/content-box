@@ -1,7 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
@@ -144,26 +144,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
     <main className="page-canvas" style={{ ...brandVars(settings?.theme), minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Хлебные крошки */}
-        <nav className="text-sm mb-6 flex flex-wrap items-center gap-x-2 gap-y-1"
-          style={{ color: 'var(--brand-muted)' }}
-          aria-label="Хлебные крошки">
-          <Link href="/" className="c-navlink">Главная</Link>
-          {crumbs.map((crumb, i) => {
-            const isLast = i === crumbs.length - 1
-            return (
-              <span key={crumb.url ?? i} className="flex items-center gap-x-2">
-                <span aria-hidden="true">/</span>
-                {isLast ? (
-                  <span style={{ color: 'var(--brand-text)' }}>{crumb.label}</span>
-                ) : (
-                  <Link href={`/category${crumb.url}`} className="c-navlink">
-                    {crumb.label}
-                  </Link>
-                )}
-              </span>
-            )
-          })}
-        </nav>
+        <Breadcrumbs crumbs={crumbs as any} lastIsCurrent className="mb-6" />
 
         <h1 className="text-3xl lg:text-5xl font-extrabold mb-2" style={{ color: 'var(--brand-text)' }}>
           {category.title}

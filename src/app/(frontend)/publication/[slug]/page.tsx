@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { categoryHref } from '@/lib/categoryHref'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -226,29 +227,10 @@ export default async function PublicationPage({ params }: { params: Promise<Para
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Хлебные крошки: путь до категории (сам пост не дублируем — он в H1).
             Одна строка, горизонтальный скролл на мобиле, приглушённая плашка. */}
-        <nav
-          className="breadcrumbs pubhero-reveal pubhero-d0 mb-5 flex items-center gap-x-1.5 text-sm rounded-xl px-3 py-2"
-          style={{
-            color: 'var(--brand-text)',
-            background: 'color-mix(in srgb, var(--brand-text) 6%, transparent)',
-          }}
-          aria-label="Хлебные крошки"
-        >
-          <Link href="/" className="whitespace-nowrap shrink-0 c-navlink">
-            Главная
-          </Link>
-          {((category?.breadcrumbs ?? []) as { url?: string; label?: string }[]).map((crumb, i) => (
-            <span key={crumb.url ?? i} className="flex items-center gap-x-1.5 shrink-0">
-              <span aria-hidden="true" style={{ color: 'var(--brand-muted)' }}>›</span>
-              <Link
-                href={`/category${crumb.url}`}
-                className="whitespace-nowrap c-navlink"
-              >
-                {crumb.label}
-              </Link>
-            </span>
-          ))}
-        </nav>
+        <Breadcrumbs
+          crumbs={(category?.breadcrumbs ?? []) as any}
+          className="pubhero-reveal pubhero-d0 mb-5"
+        />
 
         {/* Обложка: только при наличии фото (Ken Burns). Нет обложки — блок не
             выводим вообще, без градиента-заглушки. Заголовок идёт ниже. */}

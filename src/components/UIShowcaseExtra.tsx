@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import { Breadcrumbs } from '@/components/Breadcrumbs'
 
 /* ============================================================================
    Витрина-канон UI-kit (/ui). Полный реестр элементов фан-сайта: нет здесь —
@@ -343,9 +344,7 @@ export function UIShowcaseExtra() {
                   </div>
                 </Item>
                 <Item id="crumbs" name="Хлебные крошки" code=".breadcrumbs" status={{ used: true, count: 3 }}>
-                  <nav className="breadcrumbs" style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, color: 'var(--brand-muted)' }}>
-                    <a href="#" style={{ textDecoration: 'none', color: 'inherit' }}>Главная</a><span>/</span><a href="#" style={{ textDecoration: 'none', color: 'inherit' }}>Концерты</a><span>/</span><span style={{ color: 'var(--brand-text)' }}>2026</span>
-                  </nav>
+                  <Breadcrumbs crumbs={[{ url: '/videography', label: 'Видеография' }, { url: '/videography/concerts', label: 'Концерты' }]} lastIsCurrent />
                 </Item>
                 <Item id="pager" name="Пагинация" code=".c-pager" status={{ used: true, count: 3 }}>
                   <div className="c-pager">
