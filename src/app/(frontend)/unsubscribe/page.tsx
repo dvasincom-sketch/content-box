@@ -2,13 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import {
-  authCardStyle,
-  authHeadingStyle,
-  authButtonStyle,
-  authErrorStyle,
-  authAltLinkStyle,
-} from '../authFormStyles'
 
 /**
  * Отписка от дайджеста (/unsubscribe?token=…).
@@ -55,15 +48,15 @@ export default function UnsubscribePage() {
   }
 
   return (
-    <div style={authCardStyle}>
-      <h1 style={authHeadingStyle}>Отписка от дайджеста</h1>
+    <div className="c-card" style={{ maxWidth: 420, margin: '64px auto', padding: '32px 28px' }}>
+      <h1 style={{ marginBottom: 24, fontSize: 28, color: 'var(--brand-text)' }}>Отписка от дайджеста</h1>
 
       {state === 'done' ? (
         <>
           <p style={{ fontSize: 15, lineHeight: 1.6 }}>
             Готово — вы больше не будете получать дайджест новых материалов.
           </p>
-          <p style={authAltLinkStyle}>
+          <p style={{ marginTop: 16, fontSize: 14 }}>
             <Link href="/">На главную</Link>
           </p>
         </>
@@ -73,15 +66,15 @@ export default function UnsubscribePage() {
             Отписаться от писем с новыми материалами? Это не удаляет ваш аккаунт —
             вход и подписка останутся.
           </p>
-          {state === 'error' && <p style={authErrorStyle}>{error}</p>}
+          {state === 'error' && <p className="c-field__error" style={{ marginTop: 8 }}>{error}</p>}
           <button
             onClick={handleUnsub}
             disabled={state === 'sending'}
-            style={authButtonStyle}
+            className="c-btn c-btn--primary c-btn--block c-spotlight c-spotlight-bright" style={{ marginTop: 8 }}
           >
             {state === 'sending' ? 'Отписываем…' : 'Отписаться'}
           </button>
-          <p style={authAltLinkStyle}>
+          <p style={{ marginTop: 16, fontSize: 14 }}>
             <Link href="/">Остаться подписанным</Link>
           </p>
         </>

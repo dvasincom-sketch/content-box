@@ -30,7 +30,7 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
   if (!items || items.length === 0) return null
 
   return (
-    <section className="mt-14">
+    <section className="mt-10">
       {heading && (
         <h2 className="text-2xl lg:text-3xl font-bold mb-6" style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}>
           {heading}

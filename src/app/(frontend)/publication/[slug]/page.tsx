@@ -234,16 +234,15 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           }}
           aria-label="Хлебные крошки"
         >
-          <Link href="/" className="whitespace-nowrap shrink-0 hover:opacity-100" style={{ opacity: 0.7 }}>
+          <Link href="/" className="whitespace-nowrap shrink-0 c-navlink">
             Главная
           </Link>
           {((category?.breadcrumbs ?? []) as { url?: string; label?: string }[]).map((crumb, i) => (
             <span key={crumb.url ?? i} className="flex items-center gap-x-1.5 shrink-0">
-              <span aria-hidden="true" style={{ opacity: 0.4 }}>›</span>
+              <span aria-hidden="true" style={{ color: 'var(--brand-muted)' }}>›</span>
               <Link
                 href={`/category${crumb.url}`}
-                className="whitespace-nowrap hover:opacity-100"
-                style={{ opacity: 0.7 }}
+                className="whitespace-nowrap c-navlink"
               >
                 {crumb.label}
               </Link>
@@ -274,8 +273,8 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           style={{
             color: 'var(--brand-text)',
             fontFamily: 'var(--font-heading)',
-            fontWeight: 500,
-            letterSpacing: '-0.025em',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
             lineHeight: 1.08,
           }}
         >
@@ -328,7 +327,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
             )}
 
             {pub.description && (
-              <div className="prose-invert max-w-none mb-8 leading-relaxed" style={{ color: 'var(--brand-text)', opacity: 0.9 }}>
+              <div className="prose-invert max-w-none mb-8 leading-relaxed" style={{ color: 'var(--brand-text)' }}>
                 <RichText data={pub.description} />
               </div>
             )}
@@ -400,10 +399,9 @@ function PublicationLock({
         <Lock size={24} style={{ color: 'var(--brand-text)' }} />
       </div>
       <div className="text-2xl font-bold mb-2" style={{ color: 'var(--brand-text)' }}>{heading}</div>
-      <p className="mb-6 text-sm max-w-md mx-auto" style={{ color: 'var(--brand-text)', opacity: 0.75 }}>{text}</p>
+      <p className="mb-6 text-sm max-w-md mx-auto" style={{ color: 'var(--brand-muted)' }}>{text}</p>
       {reason !== 'blocked' && (
-        <Link href="/subscribe" className="inline-block text-sm font-semibold px-6 py-3 rounded-xl transition-transform hover:-translate-y-0.5"
-          style={{ background: 'var(--brand-primary)', color: '#fff' }}>
+        <Link href="/subscribe" className="c-btn c-btn--primary c-spotlight c-spotlight-bright">
           {reason === 'expired' ? 'Продлить подписку' : reason === 'need-login' ? 'Войти или подписаться' : 'Оформить подписку'}
         </Link>
       )}

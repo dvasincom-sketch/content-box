@@ -318,6 +318,7 @@ export interface SiteSetting {
           | 'hero'
           | 'heroTeam'
           | 'news'
+          | 'search'
           | 'latest'
           | 'popular'
           | 'discussed'

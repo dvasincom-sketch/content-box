@@ -22,11 +22,11 @@ export function CategoriesGridBlock({ heading = 'Категории', items }: C
   if (!items || items.length === 0) return null
 
   return (
-    <section className="mt-14">
+    <section className="mt-10">
       <h2 className="text-2xl lg:text-3xl font-bold mb-6" style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}>
         {heading}
       </h2>
-      <div className="grid gap-5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid gap-5 grid-cols-1 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((c) => {
           const url = coverUrl(c.cover)
           // Без обложки — стеклянная плашка со спотлайтом (без градиента-заглушки).
@@ -35,7 +35,7 @@ export function CategoriesGridBlock({ heading = 'Категории', items }: C
               <a
                 key={c.id}
                 href={c.href}
-                className="c-card c-card--interactive c-spotlight aspect-[4/3] p-5 flex items-end"
+                className="c-card c-card--interactive c-spotlight aspect-[16/6] sm:aspect-[4/3] p-5 flex items-end"
               >
                 <h3 className="font-semibold text-lg leading-tight" style={{ color: 'var(--brand-text)' }}>
                   {c.title}
@@ -48,7 +48,7 @@ export function CategoriesGridBlock({ heading = 'Категории', items }: C
             <a
               key={c.id}
               href={c.href}
-              className="c-tile aspect-[4/3] p-5"
+              className="c-tile aspect-[16/6] sm:aspect-[4/3] p-5"
             >
               <Image
                 src={url}

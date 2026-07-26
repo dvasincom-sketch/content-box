@@ -3,15 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  authCardStyle,
-  authHeadingStyle,
-  authLabelStyle,
-  authInputStyle,
-  authButtonStyle,
-  authErrorStyle,
-  authAltLinkStyle,
-} from '../authFormStyles'
 
 /**
  * Страница регистрации подписчика (/register).
@@ -70,51 +61,51 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={authCardStyle}>
-      <h1 style={authHeadingStyle}>Регистрация</h1>
+    <div className="c-card" style={{ maxWidth: 420, margin: '64px auto', padding: '32px 28px' }}>
+      <h1 style={{ marginBottom: 24, fontSize: 28, color: 'var(--brand-text)' }}>Регистрация</h1>
 
-      <label style={authLabelStyle}>
+      <label style={{ display: 'block', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>
         Имя
         <input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          style={authInputStyle}
+          className="c-input" style={{ marginTop: 6 }}
           autoComplete="name"
         />
       </label>
 
-      <label style={authLabelStyle}>
+      <label style={{ display: 'block', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>
         Email
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={authInputStyle}
+          className="c-input" style={{ marginTop: 6 }}
           autoComplete="email"
           required
         />
       </label>
 
-      <label style={authLabelStyle}>
+      <label style={{ display: 'block', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>
         Пароль
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={authInputStyle}
+          className="c-input" style={{ marginTop: 6 }}
           autoComplete="new-password"
           required
         />
       </label>
 
-      {error && <p style={authErrorStyle}>{error}</p>}
+      {error && <p className="c-field__error" style={{ marginTop: 8 }}>{error}</p>}
 
-      <button onClick={handleSubmit} disabled={loading} style={authButtonStyle}>
+      <button onClick={handleSubmit} disabled={loading} className="c-btn c-btn--primary c-btn--block c-spotlight c-spotlight-bright" style={{ marginTop: 8 }}>
         {loading ? 'Регистрируем…' : 'Зарегистрироваться'}
       </button>
 
-      <p style={authAltLinkStyle}>
+      <p style={{ marginTop: 16, fontSize: 14 }}>
         Уже есть аккаунт? <Link href="/login">Войти</Link>
       </p>
     </div>

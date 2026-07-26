@@ -2,15 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import {
-  authCardStyle,
-  authHeadingStyle,
-  authLabelStyle,
-  authInputStyle,
-  authButtonStyle,
-  authErrorStyle,
-  authAltLinkStyle,
-} from '../authFormStyles'
 
 /**
  * Запрос сброса пароля подписчиком. Бьёт в дефолтный Payload-эндпоинт
@@ -45,8 +36,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div style={authCardStyle}>
-      <h1 style={authHeadingStyle}>Сброс пароля</h1>
+    <div className="c-card" style={{ maxWidth: 420, margin: '64px auto', padding: '32px 28px' }}>
+      <h1 style={{ marginBottom: 24, fontSize: 28, color: 'var(--brand-text)' }}>Сброс пароля</h1>
 
       {sent ? (
         <p style={{ fontSize: 15, lineHeight: 1.6 }}>
@@ -55,27 +46,27 @@ export default function ForgotPasswordPage() {
         </p>
       ) : (
         <>
-          <label style={authLabelStyle}>
+          <label style={{ display: 'block', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>
             Email
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={authInputStyle}
+              className="c-input" style={{ marginTop: 6 }}
               autoComplete="email"
               required
             />
           </label>
 
-          {error && <p style={authErrorStyle}>{error}</p>}
+          {error && <p className="c-field__error" style={{ marginTop: 8 }}>{error}</p>}
 
-          <button onClick={handleSubmit} disabled={loading} style={authButtonStyle}>
+          <button onClick={handleSubmit} disabled={loading} className="c-btn c-btn--primary c-btn--block c-spotlight c-spotlight-bright" style={{ marginTop: 8 }}>
             {loading ? 'Отправляем…' : 'Отправить ссылку'}
           </button>
         </>
       )}
 
-      <p style={authAltLinkStyle}>
+      <p style={{ marginTop: 16, fontSize: 14 }}>
         <Link href="/login">Вернуться ко входу</Link>
       </p>
     </div>

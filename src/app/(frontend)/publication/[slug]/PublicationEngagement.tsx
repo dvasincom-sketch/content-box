@@ -160,7 +160,7 @@ function ReactionPill({
             {REACTION_EMOJI[r.key]} {r.reactors.length}
           </div>
           {r.reactors.length === 0 && (
-            <div className="rx-pop__name" style={{ padding: '5px 6px', opacity: 0.6 }}>
+            <div className="rx-pop__name" style={{ padding: '5px 6px', color: 'var(--brand-muted)' }}>
               Пока никто
             </div>
           )}
@@ -534,7 +534,8 @@ export function PublicationEngagement({
             {draft.trim() && (
               <button
                 type="button"
-                className="cm-submit"
+                className="c-btn c-btn--primary c-btn--sm"
+                style={{ marginTop: 10 }}
                 onClick={handleSubmit}
                 disabled={isPending}
               >
@@ -572,7 +573,7 @@ export function PublicationEngagement({
               <div className="cm-gate__sub">
                 Войдите или зарегистрируйтесь, чтобы читать комментарии и оставлять свои.
               </div>
-              <Link href={loginHref} className="cm-gate__btn">
+              <Link href={loginHref} className="c-btn c-btn--primary">
                 Войти
               </Link>
             </div>

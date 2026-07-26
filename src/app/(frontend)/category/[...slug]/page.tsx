@@ -145,18 +145,18 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Хлебные крошки */}
         <nav className="text-sm mb-6 flex flex-wrap items-center gap-x-2 gap-y-1"
-          style={{ color: 'var(--brand-text)', opacity: 0.7 }}
+          style={{ color: 'var(--brand-muted)' }}
           aria-label="Хлебные крошки">
-          <Link href="/" className="hover:opacity-100">Главная</Link>
+          <Link href="/" className="c-navlink">Главная</Link>
           {crumbs.map((crumb, i) => {
             const isLast = i === crumbs.length - 1
             return (
               <span key={crumb.url ?? i} className="flex items-center gap-x-2">
                 <span aria-hidden="true">/</span>
                 {isLast ? (
-                  <span style={{ opacity: 1 }}>{crumb.label}</span>
+                  <span style={{ color: 'var(--brand-text)' }}>{crumb.label}</span>
                 ) : (
-                  <Link href={`/category${crumb.url}`} className="hover:opacity-100">
+                  <Link href={`/category${crumb.url}`} className="c-navlink">
                     {crumb.label}
                   </Link>
                 )}
@@ -211,14 +211,14 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
               })}
             </div>
           ) : category.description ? null : (
-            <p style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
+            <p style={{ color: 'var(--brand-muted)' }}>
               В этом разделе пока нет подразделов.
             </p>
           )
         ) : pubs.length === 0 ? (
           // Если есть статья или подкатегории — раздел не пустой.
           category.description || children.length > 0 ? null : (
-            <p style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
+            <p style={{ color: 'var(--brand-muted)' }}>
               В этой категории пока нет публикаций.
             </p>
           )

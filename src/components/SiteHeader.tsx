@@ -38,8 +38,6 @@ export function SiteHeader({
   const items = nav ?? []
 
   const borderSoft = 'color-mix(in srgb, var(--brand-text) 12%, transparent)'
-  const supportBorder = 'color-mix(in srgb, var(--brand-primary) 60%, transparent)'
-  const iconBtn = 'color-mix(in srgb, var(--brand-surface) 60%, transparent)'
 
   async function logout() {
     setLoggingOut(true)
@@ -81,12 +79,7 @@ export function SiteHeader({
           <nav className="hidden lg:flex items-center gap-7">
             <DesktopMenu nodes={menu} />
             {items.map((item, i) => (
-              <Link
-                key={i}
-                href={item.url}
-                className="text-sm font-medium opacity-80 hover:opacity-100 transition-opacity"
-                style={{ color: 'var(--brand-text)' }}
-              >
+              <Link key={i} href={item.url} className="text-sm font-medium c-navlink">
                 {item.label}
               </Link>
             ))}
@@ -94,31 +87,25 @@ export function SiteHeader({
 
           <div className="flex items-center gap-3">
             {/* Поиск — доступен на любой странице (десктоп и мобайл) */}
-            <Link
-              href="/search"
-              aria-label="Поиск"
-              className="c-spotlight inline-flex items-center justify-center h-10 w-10 rounded-lg opacity-80 hover:opacity-100 transition-opacity"
-              style={{ color: 'var(--brand-text)', background: iconBtn }}
-            >
-              <Search size={18} />
-            </Link>
+            <span className="c-tooltip-wrap">
+              <Link
+                href="/search"
+                aria-label="Поиск"
+                className="c-btn c-btn--surface c-btn--icon c-spotlight"
+              >
+                <Search size={18} />
+              </Link>
+              <span className="c-tooltip c-tooltip--below" role="tooltip">Поиск</span>
+            </span>
 
             {/* Авторизация (десктоп) — вариант B: аккаунт-блок слитно */}
             {subscriber ? (
               <div className="hidden sm:flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <span
-                    className="inline-flex items-center justify-center rounded-full text-sm font-semibold"
-                    style={{
-                      width: 30,
-                      height: 30,
-                      background: 'color-mix(in srgb, var(--brand-primary) 18%, transparent)',
-                      color: 'var(--brand-primary)',
-                    }}
-                  >
+                  <span className="c-avatar c-avatar--soft c-avatar--sm">
                     {(subscriberName || '?').charAt(0).toUpperCase()}
                   </span>
-                  <span className="text-sm opacity-90" style={{ color: 'var(--brand-text)' }}>
+                  <span className="text-sm" style={{ color: 'var(--brand-text)' }}>
                     {subscriberName}
                   </span>
                 </div>
@@ -126,42 +113,22 @@ export function SiteHeader({
                   type="button"
                   onClick={logout}
                   disabled={loggingOut}
-                  className="text-sm font-medium opacity-70 hover:opacity-100 transition-opacity"
-                  style={{ color: 'var(--brand-text)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  className="c-btn c-btn--ghost c-btn--sm"
                 >
                   {loggingOut ? '…' : 'Выйти'}
                 </button>
               </div>
             ) : (
-              <div
-                className="c-spotlight hidden sm:inline-flex items-center rounded-full overflow-hidden"
-                style={{ border: `1px solid ${supportBorder}` }}
-              >
-                <Link
-                  href="/login"
-                  className="text-sm font-medium px-4 py-2 transition-colors hover:opacity-100 opacity-80"
-                  style={{ color: 'var(--brand-text)' }}
-                >
-                  Войти
-                </Link>
-                <span style={{ width: 1, alignSelf: 'stretch', background: supportBorder }} />
-                <Link
-                  href="/register"
-                  className="text-sm font-semibold px-4 py-2 transition-colors"
-                  style={{
-                    color: 'var(--brand-text)',
-                    background: 'color-mix(in srgb, var(--brand-surface) 60%, transparent)',
-                  }}
-                >
-                  Регистрация
-                </Link>
+              <div className="c-segment hidden sm:inline-flex">
+                <Link href="/login" className="c-segment__item">Войти</Link>
+                <span className="c-segment__divider" />
+                <Link href="/register" className="c-segment__item c-segment__item--primary">Регистрация</Link>
               </div>
             )}
 
             <Link
               href={supportUrl}
-              className="c-spotlight c-spotlight-bright hidden sm:inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full transition-colors"
-              style={{ color: '#fff', background: 'var(--brand-primary)', border: 'none' }}
+              className="c-btn c-btn--primary c-btn--pill c-btn--sm c-spotlight c-spotlight-bright hidden sm:inline-flex"
             >
               <Star size={15} />
               {supportLabel}
@@ -170,8 +137,7 @@ export function SiteHeader({
             <button
               type="button"
               aria-label="Меню"
-              className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg"
-              style={{ color: 'var(--brand-text)', background: 'color-mix(in srgb, var(--brand-surface) 60%, transparent)' }}
+              className="c-btn c-btn--surface c-btn--icon lg:hidden"
               onClick={() => setOpen((v) => !v)}
             >
               {open ? <X size={20} /> : <Menu size={20} />}
@@ -187,8 +153,7 @@ export function SiteHeader({
             <Link
               href="/search"
               onClick={() => setOpen(false)}
-              className="py-2 px-2 rounded-lg text-base font-medium opacity-90 hover:opacity-100 inline-flex items-center gap-2"
-              style={{ color: 'var(--brand-text)' }}
+              className="c-navlink py-2 px-2 rounded-lg text-base font-medium inline-flex items-center gap-2"
             >
               <Search size={18} /> Поиск
             </Link>
@@ -199,8 +164,7 @@ export function SiteHeader({
                 key={i}
                 href={item.url}
                 onClick={() => setOpen(false)}
-                className="py-2 px-2 rounded-lg text-base font-medium opacity-90 hover:opacity-100"
-                style={{ color: 'var(--brand-text)' }}
+                className="c-navlink py-2 px-2 rounded-lg text-base font-medium"
               >
                 {item.label}
               </Link>
@@ -210,15 +174,15 @@ export function SiteHeader({
             <div className="mt-2 pt-2 border-t flex flex-col gap-1" style={{ borderColor: borderSoft }}>
               {subscriber ? (
                 <>
-                  <span className="py-2 px-2 text-base opacity-80" style={{ color: 'var(--brand-text)' }}>
+                  <span className="py-2 px-2 text-base" style={{ color: 'var(--brand-muted)' }}>
                     {subscriberName}
                   </span>
                   <button
                     type="button"
                     onClick={() => { setOpen(false); logout() }}
                     disabled={loggingOut}
-                    className="py-2 px-2 rounded-lg text-base font-medium opacity-90 hover:opacity-100 text-left"
-                    style={{ color: 'var(--brand-text)', background: 'none', border: 'none', cursor: 'pointer' }}
+                    className="c-navlink py-2 px-2 rounded-lg text-base font-medium text-left"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                   >
                     Выйти
                   </button>
@@ -228,16 +192,14 @@ export function SiteHeader({
                   <Link
                     href="/login"
                     onClick={() => setOpen(false)}
-                    className="py-2 px-2 rounded-lg text-base font-medium opacity-90 hover:opacity-100"
-                    style={{ color: 'var(--brand-text)' }}
+                    className="c-navlink py-2 px-2 rounded-lg text-base font-medium"
                   >
                     Войти
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setOpen(false)}
-                    className="py-2 px-2 rounded-lg text-base font-semibold opacity-90 hover:opacity-100"
-                    style={{ color: 'var(--brand-text)' }}
+                    className="c-navlink py-2 px-2 rounded-lg text-base font-semibold"
                   >
                     Регистрация
                   </Link>
@@ -248,8 +210,7 @@ export function SiteHeader({
             <Link
               href={supportUrl}
               onClick={() => setOpen(false)}
-              className="mt-2 inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full w-max"
-              style={{ color: '#fff', background: 'var(--brand-primary)', border: 'none' }}
+              className="c-btn c-btn--primary c-btn--pill c-btn--sm c-spotlight c-spotlight-bright mt-2 w-max"
             >
               <Star size={15} />
               {supportLabel}

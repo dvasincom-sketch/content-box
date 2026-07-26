@@ -3,15 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import {
-  authCardStyle,
-  authHeadingStyle,
-  authLabelStyle,
-  authInputStyle,
-  authButtonStyle,
-  authErrorStyle,
-  authAltLinkStyle,
-} from '../authFormStyles'
 
 /**
  * Страница входа подписчика (/login).
@@ -50,44 +41,44 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={authCardStyle}>
-      <h1 style={authHeadingStyle}>Вход</h1>
+    <div className="c-card" style={{ maxWidth: 420, margin: '64px auto', padding: '32px 28px' }}>
+      <h1 style={{ marginBottom: 24, fontSize: 28, color: 'var(--brand-text)' }}>Вход</h1>
 
-      <label style={authLabelStyle}>
+      <label style={{ display: 'block', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>
         Email
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={authInputStyle}
+          className="c-input" style={{ marginTop: 6 }}
           autoComplete="email"
           required
         />
       </label>
 
-      <label style={authLabelStyle}>
+      <label style={{ display: 'block', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>
         Пароль
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={authInputStyle}
+          className="c-input" style={{ marginTop: 6 }}
           autoComplete="current-password"
           required
         />
       </label>
 
-      {error && <p style={authErrorStyle}>{error}</p>}
+      {error && <p className="c-field__error" style={{ marginTop: 8 }}>{error}</p>}
 
-      <button onClick={handleSubmit} disabled={loading} style={authButtonStyle}>
+      <button onClick={handleSubmit} disabled={loading} className="c-btn c-btn--primary c-btn--block c-spotlight c-spotlight-bright" style={{ marginTop: 8 }}>
         {loading ? 'Входим…' : 'Войти'}
       </button>
 
-      <p style={authAltLinkStyle}>
+      <p style={{ marginTop: 16, fontSize: 14 }}>
         <Link href="/forgot-password">Забыли пароль?</Link>
       </p>
 
-      <p style={authAltLinkStyle}>
+      <p style={{ marginTop: 16, fontSize: 14 }}>
         Нет аккаунта? <Link href="/register">Зарегистрироваться</Link>
       </p>
     </div>

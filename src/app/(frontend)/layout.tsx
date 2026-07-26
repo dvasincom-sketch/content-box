@@ -101,6 +101,13 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             nav={footerNav}
             columns={footerColumns}
             support={[]}
+            legal={[
+              { label: 'Публичная оферта', href: '/page/offer' },
+              { label: 'Политика конфиденциальности', href: '/page/privacy' },
+              { label: 'Пользовательское соглашение', href: '/page/terms' },
+            ]}
+            paymentCards={['Visa', 'Mastercard', 'МИР']}
+            complianceNote={'Сайт соблюдает требования 54-ФЗ «О применении ККТ» и 152-ФЗ «О персональных данных». Приём платежей по банковским картам, чек об оплате направляется на e-mail.'}
           />
         )}
       </body>

@@ -1,42 +1,19 @@
 import React from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
-
-type Source = { type?: string | null; platform?: string | null; url?: string | null }
+import { HeroFeaturedSlider, type HeroSlide } from '@/components/HeroFeaturedSlider'
 
 export type HeroBlockProps = {
   eyebrow?: string
-  titleLines: string[]          // строки заголовка-слогана
-  chips?: { title: string; href: string }[]   // категории-чипсы под заголовком
-  featured?: {
-    title: string
-    badge?: string
-    sources?: Source[]
-    cover?: { url?: string | null; alt?: string | null } | string | number | null
-  } | null
+  titleLines: string[]                          // строки заголовка-слогана
+  chips?: { title: string; href: string }[]     // категории-чипсы под заголовком
+  slides?: HeroSlide[]                           // новинки для карусели справа
 }
 
-const PLATFORM_LABEL: Record<string, string> = {
-  boosty: 'Boosty',
-  vk: 'VK Видео',
-  telegram: 'Telegram',
-  youtube: 'YouTube',
-}
-
-function coverUrl(cover: unknown): string | null {
-  if (cover && typeof cover === 'object' && 'url' in cover && (cover as any).url) {
-    return (cover as any).url
-  }
-  return null
-}
-
-export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlockProps) {
-  const external = (featured?.sources ?? []).filter((s) => s.type === 'external' && s.url)
-
+export function HeroBlock({ eyebrow, titleLines, chips = [], slides = [] }: HeroBlockProps) {
   return (
     <section
       className="grid gap-8 lg:grid-cols-2 lg:gap-12 items-center px-6 py-10 lg:px-10 lg:py-12 rounded-[var(--radius-xl)]"
-      style={{ background: 'var(--brand-bg)', color: 'var(--brand-text)' }}
+      style={{ color: 'var(--brand-text)' }}
     >
       {/* Левая колонка — слоган */}
       <div>
@@ -52,10 +29,7 @@ export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlo
           {titleLines.map((line, i) => (
             <span key={i} className="block">
               {i === titleLines.length - 1 ? (
-                <span style={{
-                  background: 'linear-gradient(90deg, var(--brand-primary), var(--brand-accent))',
-                  WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent',
-                }}>
+                <span style={{ background: 'linear-gradient(90deg, var(--brand-primary), var(--brand-accent))', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
                   {line}
                 </span>
               ) : line}
@@ -65,16 +39,7 @@ export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlo
         {chips.length > 0 && (
           <div className="mt-6 flex flex-wrap gap-2">
             {chips.map((chip) => (
-              <Link
-                key={chip.href}
-                href={chip.href}
-                className="text-sm px-3.5 py-1.5 rounded-full transition-colors"
-                style={{
-                  color: 'var(--brand-text)',
-                  background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--brand-primary) 30%, transparent)',
-                }}
-              >
+              <Link key={chip.href} href={chip.href} className="pubmeta-chip">
                 {chip.title}
               </Link>
             ))}
@@ -82,50 +47,15 @@ export function HeroBlock({ eyebrow, titleLines, chips = [], featured }: HeroBlo
         )}
       </div>
 
-      {/* Правая колонка — карточка featured; градиент — фолбэк без обложки */}
-      <div className="relative rounded-[var(--radius-lg)] overflow-hidden min-h-[340px] flex flex-col justify-end p-6 lg:p-8"
-        style={{
-          background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))',
-        }}
-      >
-        {coverUrl(featured?.cover) && (
-          <Image
-            src={coverUrl(featured?.cover) as string}
-            alt={featured?.title || ''}
-            fill
-            className="object-cover"
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            priority
-          />
-        )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.45) 40%, transparent 75%)' }} />
-        {featured ? (
-          <div className="relative">
-            {featured.badge && (
-              <span className="inline-block text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-full mb-3"
-                style={{ background: 'var(--brand-accent)', color: '#fff' }}>
-                {featured.badge}
-              </span>
-            )}
-            <h2 className="text-2xl lg:text-3xl font-bold text-white leading-tight mb-5">
-              {featured.title}
-            </h2>
-            {external.length > 0 && (
-              <div className="flex flex-wrap gap-3">
-                {external.map((s, i) => (
-                  <a key={i} href={s.url!} target="_blank" rel="noopener noreferrer"
-                    className="text-sm font-semibold px-4 py-2 rounded-[var(--radius-md)] bg-white/15 hover:bg-white/25 backdrop-blur transition-colors"
-                style={{ color: '#fff' }}>
-                    {PLATFORM_LABEL[s.platform ?? ''] ?? s.platform}
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="relative text-white/80">Нет featured-публикации</p>
-        )}
-      </div>
+      {/* Правая колонка — карусель новинок (фолбэк-фон градиент без обложек) */}
+      {slides.length > 0 ? (
+        <HeroFeaturedSlider slides={slides} />
+      ) : (
+        <div className="relative rounded-[var(--radius-lg)] overflow-hidden min-h-[340px] flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}>
+          <p className="text-white/80">Нет публикаций</p>
+        </div>
+      )}
     </section>
   )
 }

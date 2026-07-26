@@ -26,9 +26,8 @@ function AccordionNode({
         <Link
           href={node.href}
           onClick={onNavigate}
-          className="flex-1 py-2.5 px-2 rounded-lg text-base opacity-90 hover:opacity-100"
+          className="flex-1 py-2.5 px-2 rounded-lg text-base c-navlink"
           style={{
-            color: 'var(--brand-text)',
             fontWeight: level === 1 ? 600 : 400,
             fontSize: level >= 3 ? '0.9rem' : undefined,
           }}
@@ -50,7 +49,7 @@ function AccordionNode({
               style={{
                 transition: 'transform 150ms',
                 transform: open ? 'rotate(180deg)' : 'none',
-                opacity: 0.6,
+                color: 'var(--brand-muted)',
               }}
             />
           </button>

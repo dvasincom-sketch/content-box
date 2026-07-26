@@ -11,6 +11,9 @@ export type SiteFooterProps = {
   supportHeading?: string
   support?: FooterItem[]
   columns?: FooterColumn[]   // колонки категорий (BTS, Дискография, Видеография)
+  legal?: FooterItem[]       // юридические ссылки (оферта, политика, соглашение)
+  paymentCards?: string[]    // принимаемые карты (Visa, Mastercard, МИР)
+  complianceNote?: string    // строка о соответствии закону (54-ФЗ, 152-ФЗ)
 }
 
 function FooterLinks({ items }: { items: FooterItem[] }) {
@@ -21,8 +24,7 @@ function FooterLinks({ items }: { items: FooterItem[] }) {
         <li key={i}>
           <Link
             href={item.href}
-            className="text-sm transition-opacity hover:opacity-100"
-            style={{ color: 'var(--brand-text)', opacity: 0.8 }}
+            className="text-sm c-navlink"
           >
             {item.label}
           </Link>
@@ -35,6 +37,8 @@ function FooterLinks({ items }: { items: FooterItem[] }) {
 /**
  * Общий футер сайта (в layout, на всех страницах).
  * Колонки наполняются страницами из Pages по showInFooter + footerColumn.
+ * Нижняя полоса (legal / оплата / соответствие закону) — обязательная
+ * коммерческая информация для сайта с приёмом платежей.
  */
 export function SiteFooter({
   brandName = '',
@@ -44,7 +48,11 @@ export function SiteFooter({
   supportHeading = 'Поддержка',
   support = [],
   columns = [],
+  legal = [],
+  paymentCards = [],
+  complianceNote = '',
 }: SiteFooterProps) {
+  const hasBottomBar = legal.length > 0 || paymentCards.length > 0 || !!complianceNote
   return (
     <footer className="max-w-6xl mx-auto px-4 mt-16">
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5 pb-10 border-t pt-10"
@@ -85,6 +93,54 @@ export function SiteFooter({
           </nav>
         )}
       </div>
+
+      {hasBottomBar && (
+        <div
+          className="pb-12 pt-6 flex flex-col gap-5 border-t"
+          style={{ borderColor: 'color-mix(in srgb, var(--brand-text) 10%, transparent)' }}
+        >
+          {legal.length > 0 && (
+            <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              {legal.map((item, i) => (
+                <Link key={i} href={item.href} className="text-sm c-navlink">
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          )}
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {paymentCards.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs" style={{ color: 'var(--brand-muted)' }}>
+                  Оплата картами
+                </span>
+                {paymentCards.map((c) => (
+                  <span
+                    key={c}
+                    className="text-xs font-semibold px-2.5 py-1 rounded-md"
+                    style={{
+                      color: 'var(--brand-text)',
+                      background: 'color-mix(in srgb, var(--brand-text) 6%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--brand-text) 12%, transparent)',
+                    }}
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+            {complianceNote && (
+              <p
+                className="text-xs sm:text-right"
+                style={{ color: 'var(--brand-muted)', margin: 0, maxWidth: 560 }}
+              >
+                {complianceNote}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </footer>
   )
 }

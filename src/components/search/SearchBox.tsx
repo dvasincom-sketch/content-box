@@ -26,9 +26,11 @@ const TYPE_LABELS: Record<string, string> = {
 export function SearchBox({
   initialQuery = '',
   initialIncludeLocked = true,
+  showLockedToggle = true,
 }: {
   initialQuery?: string
   initialIncludeLocked?: boolean
+  showLockedToggle?: boolean
 }) {
   const router = useRouter()
   const [q, setQ] = useState(initialQuery)
@@ -165,18 +167,20 @@ export function SearchBox({
         </button>
       </form>
 
-      <label className={styles.toggle}>
-        <input
-          type="checkbox"
-          className={styles.toggleInput}
-          checked={includeLocked}
-          onChange={(e) => setIncludeLocked(e.target.checked)}
-        />
-        <span className={styles.toggleTrack}>
-          <span className={styles.toggleKnob} />
-        </span>
-        <span className={styles.toggleLabel}>Искать в закрытом контенте</span>
-      </label>
+      {showLockedToggle && (
+        <label className={styles.toggle}>
+          <input
+            type="checkbox"
+            className={styles.toggleInput}
+            checked={includeLocked}
+            onChange={(e) => setIncludeLocked(e.target.checked)}
+          />
+          <span className={styles.toggleTrack}>
+            <span className={styles.toggleKnob} />
+          </span>
+          <span className={styles.toggleLabel}>Искать в закрытом контенте</span>
+        </label>
+      )}
 
       {open && hits.length > 0 && (
         <ul className={styles.dropdown} role="listbox">

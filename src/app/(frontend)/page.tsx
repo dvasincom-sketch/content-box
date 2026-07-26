@@ -8,6 +8,8 @@ import { getHomeFeed } from '@/lib/homeFeed'
 import { PosterRow } from '@/blocks/PosterRow'
 import { HeroTeamBlock } from '@/blocks/HeroTeamBlock'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
+import { SearchBlock } from '@/blocks/SearchBlock'
+import { type HeroSlide } from '@/components/HeroFeaturedSlider'
 import { WhyUsBlock } from '@/blocks/WhyUsBlock'
 import { SocialLinksBlock } from '@/blocks/SocialLinksBlock'
 import { BroadcastBannerBlock } from '@/blocks/BroadcastBannerBlock'
@@ -27,7 +29,6 @@ export const revalidate = 3600
  * фолбэк 3-простой: пусто → показываем эти значения, чтобы главная не осталась
  * без слогана). Единый источник дефолта.
  */
-const DEFAULT_HERO_EYEBROW = 'BTS TV · 24/7 Broadcast'
 const DEFAULT_HERO_TITLE_LINES = ['Полные выпуски BTS', 'с русской озвучкой']
 
 /** Дефолтные тексты баннера «ON AIR» — фолбэк, когда settings.banner пуст. */
@@ -47,6 +48,42 @@ function resolveHeroTitleLines(raw: unknown): string[] {
     .map((l) => l.trim())
     .filter((l) => l.length > 0)
   return lines.length > 0 ? lines : DEFAULT_HERO_TITLE_LINES
+}
+
+/**
+ * Слайды новинок для карусели hero: сначала featured-публикации, если их
+ * меньше 6 — добираем последними по дате (дедуп по id). До 6 слайдов.
+ */
+async function getHeroSlides(payload: any, tenantId: number): Promise<HeroSlide[]> {
+  const N = 6
+  const seen = new Set<string | number>()
+  const out: HeroSlide[] = []
+  const push = (d: any) => {
+    if (out.length >= N || seen.has(d.id)) return
+    seen.add(d.id)
+    out.push({
+      id: d.id,
+      title: d.title,
+      coverUrl: d.cover && typeof d.cover === 'object' ? (d.cover.url ?? null) : null,
+      href: `/publication/${d.slug}`,
+      badge: 'Новинка',
+    })
+  }
+  const feat = await payload.find({
+    collection: 'publications',
+    where: { and: [{ tenant: { equals: tenantId } }, { featured: { equals: true } }] },
+    sort: '-publishedAt', depth: 1, limit: N, overrideAccess: true,
+  })
+  ;(feat.docs as any[]).forEach(push)
+  if (out.length < N) {
+    const latest = await payload.find({
+      collection: 'publications',
+      where: { tenant: { equals: tenantId } },
+      sort: '-publishedAt', depth: 1, limit: N, overrideAccess: true,
+    })
+    ;(latest.docs as any[]).forEach(push)
+  }
+  return out
 }
 
 /** SEO главной (ТЗ §6): только дефолты тенанта, без titleTemplate. */
@@ -83,6 +120,7 @@ export default async function HomePage() {
   const needsFeatured = activeTypes.has('hero')
   const needsFeed =
     activeTypes.has('news') ||
+    activeTypes.has('search') ||
     activeTypes.has('latest') ||
     activeTypes.has('popular') ||
     activeTypes.has('discussed') ||
@@ -92,15 +130,7 @@ export default async function HomePage() {
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
 
-  const featured = needsFeatured
-    ? ((
-        await payload.find({
-          collection: 'publications',
-          where: { and: [{ tenant: { equals: tenant.id } }, { featured: { equals: true } }] },
-          sort: '-publishedAt', depth: 1, limit: 1, overrideAccess: true,
-        })
-      ).docs[0] as any)
-    : null
+  const heroSlides = needsFeatured ? await getHeroSlides(payload, tenant.id as number) : []
 
   // Ручные категории (для секции categories) — их id исключаем из «Популярных разделов».
   const manualCategoryIds = (((settings as any)?.homeCategories ?? []) as any[])
@@ -118,12 +148,9 @@ export default async function HomePage() {
   const renderers: Record<HomeSectionType, () => ReactNode> = {
     hero: () => (
       <HeroBlock
-        eyebrow={textOr((settings as any)?.hero?.eyebrow, DEFAULT_HERO_EYEBROW)}
+        eyebrow={(settings as any)?.hero?.eyebrow || undefined}
         titleLines={resolveHeroTitleLines((settings as any)?.hero?.titleLines)}
-        chips={(((settings as any)?.heroChips ?? []) as any[])
-          .filter((c) => c && typeof c === 'object' && c.slug)
-          .map((c) => ({ title: c.title, href: categoryHref(c) }))}
-        featured={featured ? { title: featured.title, badge: 'Новинка', cover: featured.cover } : null}
+        slides={heroSlides}
       />
     ),
     heroTeam: () => (
@@ -135,6 +162,17 @@ export default async function HomePage() {
     ),
     news: () => <LatestPublicationsBlock heading="Новости" items={feed.news} />,
     latest: () => <LatestPublicationsBlock heading="Последние публикации" items={feed.latest} />,
+    search: () => {
+      // Быстрые чипсы: популярные разделы (авто); если их нет — фолбэк на
+      // hero-чипсы тенанта, чтобы ряд не пропадал.
+      const popular = feed.popularCategories
+        .slice(0, 6)
+        .map((c) => ({ title: c.title, href: c.href }))
+      const heroChipList = (((settings as any)?.heroChips ?? []) as any[])
+        .filter((c) => c && typeof c === 'object' && c.slug)
+        .map((c) => ({ title: c.title, href: categoryHref(c) }))
+      return <SearchBlock chips={popular.length ? popular : heroChipList} />
+    },
     popular: () => <LatestPublicationsBlock heading="Сейчас популярно" items={feed.popular} />,
     discussed: () => <LatestPublicationsBlock heading="Обсуждаемое" items={feed.discussed} />,
     posterRows: () => (
@@ -209,7 +247,7 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="page-canvas" style={{ ...brandVars(settings?.theme, settings?.typography), minHeight: '100vh' }}>
+    <main className="page-canvas page-canvas--home" style={{ ...brandVars(settings?.theme, settings?.typography), minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
         {sections
           .filter((s) => s.enabled)

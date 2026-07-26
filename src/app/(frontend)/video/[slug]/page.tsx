@@ -47,20 +47,20 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Хлебные крошки */}
         <nav className="text-sm mb-6 flex flex-wrap items-center gap-x-2 gap-y-1"
-          style={{ color: 'var(--brand-text)', opacity: 0.7 }}
+          style={{ color: 'var(--brand-muted)' }}
           aria-label="Хлебные крошки">
-          <Link href="/" className="hover:opacity-100">Главная</Link>
+          <Link href="/" className="c-navlink">Главная</Link>
           {((category?.breadcrumbs ?? []) as { url?: string; label?: string }[]).map((crumb, i) => (
             <span key={crumb.url ?? i} className="flex items-center gap-x-2">
               <span aria-hidden="true">/</span>
-              <Link href={`/category${crumb.url}`} className="hover:opacity-100">{crumb.label}</Link>
+              <Link href={`/category${crumb.url}`} className="c-navlink">{crumb.label}</Link>
             </span>
           ))}
           <span aria-hidden="true">/</span>
-          <span style={{ opacity: 1 }}>{video.title}</span>
+          <span style={{ color: 'var(--brand-text)' }}>{video.title}</span>
         </nav>
 
-        <div className="flex items-center gap-3 mb-4 text-sm" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
+        <div className="flex items-center gap-3 mb-4 text-sm" style={{ color: 'var(--brand-muted)' }}>
           {category && (
             <Link href={categoryHref(category)} className="px-3 py-1 rounded-full" style={{ background: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)' }}>{category.title}</Link>
           )}
@@ -78,7 +78,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
 
         {/* Описание (textarea — обычный текст, не richText) */}
         {video.description && (
-          <div className="max-w-none leading-relaxed whitespace-pre-line" style={{ color: 'var(--brand-text)', opacity: 0.9 }}>
+          <div className="max-w-none leading-relaxed whitespace-pre-line" style={{ color: 'var(--brand-text)' }}>
             {video.description}
           </div>
         )}

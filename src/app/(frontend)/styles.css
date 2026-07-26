@@ -16,11 +16,12 @@
   /* ── Дизайн-система «матовое стекло» (design-system.md) ──
      Всё на color-mix от --brand-*, поэтому адаптируется под акцент тенанта. */
 
-  /* Радиусы — единая шкала (заменяет 8 разрозненных значений) */
-  --radius-sm: 10px;   /* тамбы, иконки-чипы, мелочь */
-  --radius-md: 14px;   /* инпуты, кнопки, постер-фреймы */
-  --radius-lg: 20px;   /* карточка по умолчанию, плитки */
-  --radius-xl: 28px;   /* крупные поверхности: hero, плашки, баннер */
+  /* Радиусы — сведены к 2 (контрол/поверхность) + pill. Имена токенов
+     сохранены для обратной совместимости markup. */
+  --radius-sm: 12px;   /* контрол */
+  --radius-md: 12px;   /* контрол: кнопки, поля, чипы, постер-фреймы */
+  --radius-lg: 16px;   /* поверхность: карточки, плитки, поповеры, панели */
+  --radius-xl: 16px;   /* поверхность (крупная): hero, баннер */
   --radius-pill: 999px;
 
   /* Стекло — прозрачность + блюр, 3 уровня матовости */
@@ -52,6 +53,14 @@
   --card-border-hover: color-mix(in srgb, var(--brand-primary) 30%, var(--brand-border));
   --focus-ring: 0 0 0 4px color-mix(in srgb, var(--brand-primary) 18%, transparent);
   --lift: -4px; /* единственная величина подъёма карточки на hover */
+
+  /* Семантические статус-цвета — единственное санкционированное отступление
+     от чистого акцента. Приглушены под стекло; идут в алерты, ошибки полей,
+     статус-бейджи. Тёмная тема — чуть ярче для читаемости на тёмном фоне. */
+  --success: #34D399;
+  --danger: #FB7185;
+  --info: #56A8F5;
+  --warn: #FBBF24;
 }
 
 .theme-light {
@@ -64,10 +73,10 @@
   /* ── Дизайн-система «матовое стекло» — дельты светлой темы ──
      Стекло плотнее (бело-на-белом иначе не читается), свечения слабее,
      тени мягкие сине-фиолетовые вместо чёрных. Остальное наследуется. */
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-sm: 12px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 16px;
   --radius-pill: 999px;
 
   --glass-1: color-mix(in srgb, var(--brand-surface) 70%, transparent);
@@ -93,6 +102,12 @@
   --card-border-hover: color-mix(in srgb, var(--brand-primary) 30%, var(--brand-border));
   --focus-ring: 0 0 0 4px color-mix(in srgb, var(--brand-primary) 18%, transparent);
   --lift: -4px;
+
+  /* Семантические статус-цвета — дельта светлой темы (глубже/насыщеннее). */
+  --success: #059669;
+  --danger: #E11D48;
+  --info: #2563EB;
+  --warn: #D97706;
 }
 
 html { transition: background-color 0.2s ease; }
@@ -215,6 +230,23 @@ svg {
 .page-canvas > * {
   position: relative;
   z-index: 1;
+}
+/* Главная: яркая градиентная подложка (как на /ui), закреплённая у верха и
+   уходящая при скролле. Отключаем общий fixed-глоу, чтобы не удваивать. */
+.page-canvas--home {
+  background:
+    radial-gradient(50% 40% at 12% 4%, color-mix(in srgb, var(--brand-primary) 60%, transparent), transparent 55%),
+    radial-gradient(45% 40% at 88% 12%, color-mix(in srgb, var(--brand-accent) 52%, transparent), transparent 55%),
+    radial-gradient(65% 50% at 50% 106%, color-mix(in srgb, var(--brand-primary) 42%, transparent), transparent 62%),
+    var(--brand-bg);
+}
+.page-canvas--home::before { content: none; }
+.theme-light .page-canvas--home {
+  background:
+    radial-gradient(50% 40% at 12% 4%, color-mix(in srgb, var(--brand-primary) 16%, transparent), transparent 58%),
+    radial-gradient(45% 40% at 90% 10%, color-mix(in srgb, var(--brand-accent) 14%, transparent), transparent 58%),
+    radial-gradient(65% 50% at 50% 108%, color-mix(in srgb, var(--brand-primary) 12%, transparent), transparent 64%),
+    var(--brand-bg);
 }
 
 /* Карточка-стекло: база (статичная поверхность) */
@@ -1051,6 +1083,9 @@ svg {
   background: color-mix(in srgb, var(--brand-primary) 8%, transparent);
 }
 .rx-pop__name { font-size: 13px; }
+/* Открытый поповер реакций поднимает свою карточку над соседними
+   (у демо-карточек backdrop-filter создаёт stacking context и перекрывает поповер). */
+.uikit-item:has(.rx-pop) { position: relative; z-index: 50; }
 
 /* ── Аватар-инициал ── */
 .cm-av {
@@ -1540,3 +1575,589 @@ svg {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+@layer components {
+/* ============================================================================
+   UI-KIT «матовое стекло» — единый источник правды для примитивов (.c-*).
+   Канон живёт на /ui. Реальные экраны берут ТОЛЬКО эти классы — новые
+   элементы добавляются сюда, а не плодятся инлайном. Всё на --brand-* и
+   семантических статус-токенах (--success/--danger/--info/--warn), обе темы.
+   Спецификация — claude/design-system.md, аудит — claude/ui-kit-audit.md.
+   ============================================================================ */
+
+/* ── Кнопка ─────────────────────────────────────────────────────────────── */
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1;
+  padding: 11px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  color: var(--brand-text);
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.05s ease, filter 0.15s ease, background 0.15s ease,
+    border-color 0.15s ease, color 0.15s ease;
+}
+.c-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-color: color-mix(in srgb, var(--brand-primary) 60%, var(--brand-border));
+}
+.c-btn:active { transform: translateY(1px); }
+.c-btn:disabled,
+.c-btn[aria-disabled='true'] {
+  opacity: 0.72;
+  cursor: default;
+  filter: none;
+  transform: none;
+  pointer-events: none;
+}
+/* Варианты */
+.c-btn--primary { background: var(--brand-primary); color: #fff; border-color: transparent; }
+.c-btn--primary:hover { filter: brightness(1.08); }
+.c-btn--outline { background: transparent; border-color: var(--brand-border); color: var(--brand-text); }
+.c-btn--outline:hover {
+  border-color: var(--card-border-hover);
+  background: color-mix(in srgb, var(--brand-primary) 6%, transparent);
+}
+.c-btn--soft { background: color-mix(in srgb, var(--brand-primary) 14%, transparent); color: var(--brand-primary); }
+.c-btn--soft:hover { background: color-mix(in srgb, var(--brand-primary) 22%, transparent); }
+.c-btn--ghost { background: transparent; color: var(--brand-text); }
+.c-btn--ghost:hover { background: color-mix(in srgb, var(--brand-text) 8%, transparent); }
+.c-btn--danger { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+.c-btn--danger:hover { background: color-mix(in srgb, var(--danger) 22%, transparent); }
+/* Размеры / форма */
+.c-btn--sm { padding: 8px 14px; font-size: 13.5px; }
+.c-btn--lg { padding: 13px 26px; font-size: 16px; }
+.c-btn--pill { border-radius: var(--radius-pill); }
+.c-btn--block { display: flex; width: 100%; }
+/* Иконочная (квадратная) */
+.c-btn--icon { padding: 0; width: 40px; height: 40px; }
+.c-btn--icon.c-btn--sm { width: 32px; height: 32px; }
+
+/* ── Поля ввода ─────────────────────────────────────────────────────────── */
+.c-input,
+.c-textarea,
+.c-select {
+  width: 100%;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--brand-text);
+  background: color-mix(in srgb, var(--brand-surface) 60%, transparent);
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  -webkit-backdrop-filter: blur(var(--glass-blur-2));
+  backdrop-filter: blur(var(--glass-blur-2));
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.c-input::placeholder,
+.c-textarea::placeholder { color: var(--brand-muted); }
+.c-input:focus,
+.c-textarea:focus,
+.c-select:focus {
+  border-color: color-mix(in srgb, var(--brand-primary) 60%, var(--brand-border));
+  box-shadow: var(--focus-ring);
+  background: color-mix(in srgb, var(--brand-surface) 78%, transparent);
+}
+.c-input:disabled,
+.c-textarea:disabled,
+.c-select:disabled { opacity: 0.72; cursor: default; }
+.c-textarea { resize: vertical; min-height: 92px; line-height: 1.5; }
+.c-input--error,
+.c-textarea--error { border-color: color-mix(in srgb, var(--danger) 60%, var(--brand-border)); }
+.c-input--error:focus,
+.c-textarea--error:focus { box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 18%, transparent); }
+
+/* Нативный select: свой каретка-указатель, без системной стрелки */
+.c-select { -webkit-appearance: none; -moz-appearance: none; appearance: none; padding-right: 40px; cursor: pointer; }
+.c-select-wrap { position: relative; display: block; }
+.c-select-wrap::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--brand-muted);
+  border-bottom: 2px solid var(--brand-muted);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+/* Обёртка поля с меткой */
+.c-field { display: block; }
+.c-field + .c-field { margin-top: 14px; }
+.c-field__label { display: block; margin-bottom: 6px; font-size: 13.5px; font-weight: 500; color: var(--brand-text); }
+.c-field__hint { margin-top: 6px; font-size: 12.5px; color: var(--brand-muted); }
+.c-field__error { margin-top: 6px; font-size: 12.5px; color: var(--danger); }
+/* Поле с кнопкой-суффиксом (напр. «показать пароль») */
+.c-input-affix { position: relative; display: flex; align-items: center; }
+.c-input-affix .c-input { padding-right: 76px; }
+.c-input-affix__btn {
+  position: absolute;
+  right: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--brand-primary);
+  padding: 6px 8px;
+}
+
+/* ── Тумблер / чекбокс / радио ──────────────────────────────────────────── */
+.c-toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-size: 14px; color: var(--brand-text); }
+.c-toggle__input { position: absolute; opacity: 0; width: 0; height: 0; }
+.c-toggle__track { position: relative; width: 40px; height: 24px; flex: 0 0 auto; border-radius: 999px; background: var(--brand-border); transition: background 0.18s; }
+.c-toggle__knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--brand-text); transition: transform 0.18s, background 0.18s; }
+.c-toggle__input:checked + .c-toggle__track { background: var(--brand-primary); }
+.c-toggle__input:checked + .c-toggle__track .c-toggle__knob { transform: translateX(16px); background: #fff; }
+.c-toggle__input:focus-visible + .c-toggle__track { box-shadow: var(--focus-ring); }
+.c-toggle__input:disabled + .c-toggle__track { opacity: 0.5; }
+
+.c-check,
+.c-radio { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-size: 14px; color: var(--brand-text); }
+.c-check__input,
+.c-radio__input { position: absolute; opacity: 0; width: 0; height: 0; }
+.c-check__box {
+  width: 20px; height: 20px; flex: 0 0 auto;
+  border-radius: 6px;
+  border: 1px solid var(--brand-border);
+  background: color-mix(in srgb, var(--brand-surface) 60%, transparent);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff;
+  transition: background 0.15s, border-color 0.15s;
+}
+.c-check__box svg { opacity: 0; transition: opacity 0.12s; }
+.c-check__input:checked + .c-check__box { background: var(--brand-primary); border-color: var(--brand-primary); }
+.c-check__input:checked + .c-check__box svg { opacity: 1; }
+.c-check__input:focus-visible + .c-check__box { box-shadow: var(--focus-ring); }
+.c-radio__box {
+  width: 20px; height: 20px; flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1px solid var(--brand-border);
+  background: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s;
+}
+.c-radio__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--brand-primary); transform: scale(0); transition: transform 0.12s; }
+.c-radio__input:checked + .c-radio__box { border-color: var(--brand-primary); }
+.c-radio__input:checked + .c-radio__box .c-radio__dot { transform: scale(1); }
+.c-radio__input:focus-visible + .c-radio__box { box-shadow: var(--focus-ring); }
+
+/* ── Поповер / дропдаун / селект-панель ─────────────────────────────────── */
+.c-popover {
+  background: color-mix(in srgb, var(--brand-surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(var(--glass-blur-3));
+  backdrop-filter: blur(var(--glass-blur-3));
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-3);
+  padding: 8px;
+}
+.c-popover__item {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  font: inherit; font-size: 14px;
+  color: var(--brand-text);
+  background: transparent;
+  border: none;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.c-popover__item:hover,
+.c-popover__item.is-active { background: color-mix(in srgb, var(--brand-primary) 12%, transparent); }
+
+/* ── Чипы (фильтры) ─────────────────────────────────────────────────────── */
+.c-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  border: 1px solid var(--brand-border);
+  color: var(--brand-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.c-chip:hover { color: var(--brand-text); border-color: color-mix(in srgb, var(--brand-primary) 40%, var(--brand-border)); }
+.c-chip.is-active,
+.c-chip--active {
+  color: var(--brand-text);
+  background: color-mix(in srgb, var(--brand-primary) 18%, transparent);
+  border-color: color-mix(in srgb, var(--brand-primary) 45%, transparent);
+}
+
+/* ── Бейджи (статус-метки) ──────────────────────────────────────────────── */
+.c-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  border-radius: var(--radius-pill);
+}
+.c-badge--primary { color: #fff; background: var(--brand-primary); }
+.c-badge--accent { color: #fff; background: var(--brand-accent); }
+.c-badge--soft { color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 14%, transparent); }
+.c-badge--neutral { color: var(--brand-text); background: color-mix(in srgb, var(--brand-surface) 60%, transparent); border: 1px solid var(--brand-border); }
+.c-badge--success { color: var(--success); background: color-mix(in srgb, var(--success) 15%, transparent); }
+.c-badge--danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 15%, transparent); }
+.c-badge--warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
+.c-badge--info { color: var(--info); background: color-mix(in srgb, var(--info) 15%, transparent); }
+
+/* ── Алерты ─────────────────────────────────────────────────────────────── */
+.c-alert {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--brand-text);
+  background: color-mix(in srgb, var(--brand-surface) 55%, transparent);
+  border: 1px solid var(--brand-border);
+  border-left: 3px solid var(--brand-border);
+  -webkit-backdrop-filter: blur(var(--glass-blur-1));
+  backdrop-filter: blur(var(--glass-blur-1));
+}
+.c-alert__icon { flex: 0 0 auto; margin-top: 1px; display: inline-flex; color: var(--brand-muted); }
+.c-alert__body { flex: 1; min-width: 0; }
+.c-alert--success { border-left-color: var(--success); background: color-mix(in srgb, var(--success) 10%, transparent); }
+.c-alert--success .c-alert__icon { color: var(--success); }
+.c-alert--danger { border-left-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.c-alert--danger .c-alert__icon { color: var(--danger); }
+.c-alert--info { border-left-color: var(--info); background: color-mix(in srgb, var(--info) 10%, transparent); }
+.c-alert--info .c-alert__icon { color: var(--info); }
+.c-alert--warn { border-left-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.c-alert--warn .c-alert__icon { color: var(--warn); }
+
+/* ── Аватар (инициал/фото) ──────────────────────────────────────────────── */
+.c-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+  background: var(--brand-primary);
+}
+.c-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.c-avatar--soft { color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 16%, transparent); }
+.c-avatar--sm { width: 28px; height: 28px; font-size: 12px; }
+.c-avatar--lg { width: 56px; height: 56px; font-size: 20px; }
+.c-avatar-stack { display: inline-flex; }
+.c-avatar-stack .c-avatar { border: 2px solid var(--brand-bg); margin-left: -10px; }
+.c-avatar-stack .c-avatar:first-child { margin-left: 0; }
+
+/* ── Пагинация ──────────────────────────────────────────────────────────── */
+.c-pager { display: inline-flex; align-items: center; gap: 6px; }
+.c-pager__item {
+  min-width: 38px; height: 38px; padding: 0 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md);
+  font-size: 14px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-text);
+  background: transparent;
+  border: 1px solid var(--brand-border);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.c-pager__item:hover { border-color: color-mix(in srgb, var(--brand-primary) 40%, var(--brand-border)); }
+.c-pager__item.is-active { background: var(--brand-primary); border-color: var(--brand-primary); color: #fff; }
+.c-pager__item:disabled,
+.c-pager__item[aria-disabled='true'] { opacity: 0.5; cursor: default; pointer-events: none; }
+
+/* ── Пустое состояние ───────────────────────────────────────────────────── */
+.c-empty { text-align: center; padding: 40px 24px; }
+.c-empty__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px;
+  border-radius: var(--radius-md);
+  color: var(--brand-primary);
+  background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
+  margin-bottom: 14px;
+}
+.c-empty__title { font-family: var(--font-heading); font-weight: 600; font-size: 16px; color: var(--brand-text); margin-bottom: 6px; }
+.c-empty__text { font-size: 14px; color: var(--brand-muted); margin-bottom: 16px; }
+
+/* ── Табы ───────────────────────────────────────────────────────────────── */
+.c-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--brand-border); }
+.c-tab {
+  padding: 10px 16px;
+  font: inherit; font-size: 14px; font-weight: 600;
+  background: none; border: none;
+  color: var(--brand-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.c-tab:hover { color: var(--brand-text); }
+.c-tab.is-active { color: var(--brand-primary); border-bottom-color: var(--brand-primary); }
+.c-tab:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+/* ── Таблица ────────────────────────────────────────────────────────────── */
+.c-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.c-table th {
+  text-align: left; padding: 12px 16px;
+  font-weight: 600; color: var(--brand-text);
+  border-bottom: 1px solid var(--brand-border);
+}
+.c-table td {
+  padding: 12px 16px; color: var(--brand-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--brand-border) 60%, transparent);
+}
+.c-table tbody tr:last-child td { border-bottom: none; }
+.c-table td.is-muted { color: var(--brand-muted); }
+.c-table tbody tr { transition: background 0.12s; }
+.c-table tbody tr:hover { background: color-mix(in srgb, var(--brand-primary) 5%, transparent); }
+
+/* ── Стат-плитка (метрика) ──────────────────────────────────────────────── */
+.c-stat {
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-2);
+  border: 1px solid var(--brand-border);
+  -webkit-backdrop-filter: blur(var(--glass-blur-2));
+  backdrop-filter: blur(var(--glass-blur-2));
+}
+.c-stat__label { font-size: 13px; color: var(--brand-muted); margin-bottom: 4px; }
+.c-stat__value { font-size: 24px; font-weight: 700; color: var(--brand-text); font-variant-numeric: tabular-nums; }
+
+/* ── Прогресс ───────────────────────────────────────────────────────────── */
+.c-progress { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--brand-text) 10%, transparent); overflow: hidden; }
+.c-progress__bar { height: 100%; background: var(--brand-primary); border-radius: 999px; transition: width 0.3s ease; }
+
+/* ── Спиннер + скелетон ─────────────────────────────────────────────────── */
+.c-spinner {
+  width: 24px; height: 24px;
+  border: 3px solid color-mix(in srgb, var(--brand-text) 15%, transparent);
+  border-top-color: var(--brand-primary);
+  border-radius: 50%;
+  animation: c-spin 0.8s linear infinite;
+}
+@keyframes c-spin { to { transform: rotate(360deg); } }
+.c-skeleton {
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--brand-text) 10%, transparent);
+  animation: c-pulse 1.4s ease-in-out infinite;
+}
+@keyframes c-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) {
+  .c-spinner { animation-duration: 1.6s; }
+  .c-skeleton { animation: none; }
+}
+
+/* ── Тултип ─────────────────────────────────────────────────────────────── */
+.c-tooltip-wrap { position: relative; display: inline-flex; }
+.c-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  white-space: nowrap;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: var(--brand-text);
+  background: color-mix(in srgb, var(--brand-surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(var(--glass-blur-2));
+  backdrop-filter: blur(var(--glass-blur-2));
+  border: 1px solid var(--brand-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--elev-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+.c-tooltip-wrap:hover .c-tooltip,
+.c-tooltip-wrap:focus-within .c-tooltip { opacity: 1; }
+.c-tooltip--below { bottom: auto; top: calc(100% + 8px); }
+
+/* ============================================================================
+   ВИТРИНА /ui — каркас страницы-канона (только для /ui, не для реальных экранов)
+   ============================================================================ */
+.uikit-canvas { min-height: 100vh; background: var(--brand-bg); color: var(--brand-text); }
+.uikit { max-width: 1160px; margin: 0 auto; padding: 40px 24px 96px; }
+.uikit__bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+.uikit__title { font-family: var(--font-heading); font-size: 32px; font-weight: 800; letter-spacing: -0.02em; color: var(--brand-text); }
+.uikit__sub { color: var(--brand-muted); font-size: 14px; margin-top: 4px; max-width: 560px; }
+.uikit__legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 20px 0 8px; font-size: 12.5px; color: var(--brand-muted); }
+.uikit-group__label {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--brand-muted);
+  margin: 48px 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--brand-border);
+}
+.uikit-group__note { font-size: 13px; color: var(--brand-muted); margin: 10px 0 20px; }
+.uikit-item { margin-top: 26px; }
+.uikit-item__head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.uikit-item__name { font-family: var(--font-heading); font-size: 16px; font-weight: 600; color: var(--brand-text); }
+.uikit-item__code { font-size: 12px; color: var(--brand-muted); font-family: var(--font-mono); }
+.uikit-item__demo {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-1);
+  border: 1px solid var(--brand-border);
+  -webkit-backdrop-filter: blur(var(--glass-blur-1));
+  backdrop-filter: blur(var(--glass-blur-1));
+}
+.uikit-item__demo--col { flex-direction: column; align-items: stretch; }
+.uikit-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill); white-space: nowrap; }
+.uikit-status__dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.uikit-status--used { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
+.uikit-status--new { color: var(--brand-muted); background: color-mix(in srgb, var(--brand-text) 8%, transparent); }
+.uikit-swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; }
+.uikit-swatch__chip { height: 64px; border-radius: var(--radius-md); border: 1px solid var(--brand-border); margin-bottom: 8px; }
+.uikit-swatch__name { font-size: 13px; font-weight: 500; color: var(--brand-text); }
+.uikit-swatch__val { font-size: 11px; color: var(--brand-muted); font-family: var(--font-mono); }
+.uikit-radii { display: flex; gap: 16px; flex-wrap: wrap; }
+.uikit-radii__box { width: 88px; height: 64px; border: 1px solid var(--brand-border); background: color-mix(in srgb, var(--brand-primary) 12%, transparent); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 11px; color: var(--brand-muted); font-family: var(--font-mono); }
+
+/* ── Сплит-контрол (сегмент): «Войти / Регистрация» в шапке ─────────────── */
+.c-segment { display: inline-flex; align-items: stretch; border: 1px solid var(--brand-border); border-radius: var(--radius-pill); overflow: hidden; }
+.c-segment__item {
+  display: inline-flex; align-items: center;
+  padding: 8px 16px;
+  font: inherit; font-size: 14px; font-weight: 500;
+  color: var(--brand-text);
+  text-decoration: none;
+  background: transparent; border: none; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.c-segment__item:hover { background: color-mix(in srgb, var(--brand-primary) 12%, transparent); }
+.c-segment__item--primary { font-weight: 600; color: var(--brand-text); }
+.c-segment__divider { width: 1px; align-self: stretch; background: var(--brand-border); }
+
+/* ── Витрина: двухколоночный каркас с липкой навигацией ─────────────────── */
+.uikit-shell { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 36px; align-items: start; }
+.uikit-nav { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 1px; }
+.uikit-nav__group { margin-top: 16px; margin-bottom: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-muted); }
+.uikit-nav__group:first-child { margin-top: 0; }
+.uikit-nav__link { font-size: 13px; color: var(--brand-muted); text-decoration: none; padding: 4px 10px; border-radius: var(--radius-md); transition: color 0.12s, background 0.12s; }
+.uikit-nav__link:hover { color: var(--brand-text); background: color-mix(in srgb, var(--brand-primary) 8%, transparent); }
+.uikit-anchor { scroll-margin-top: 20px; }
+@media (max-width: 900px) {
+  .uikit-shell { grid-template-columns: 1fr; }
+  .uikit-nav { position: static; flex-direction: row; flex-wrap: wrap; gap: 6px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--brand-border); }
+  .uikit-nav__group { width: 100%; margin: 8px 0 0; }
+}
+
+/* ── Витрина: плотная сетка, подложка под стекло, scroll-spy, состояния ──── */
+.uikit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; align-items: start; margin-top: 16px; }
+.uikit-grid .uikit-item { margin-top: 0; }
+.uikit-item--wide { grid-column: 1 / -1; }
+.uikit-item__head > .uikit-status { margin-left: auto; }
+
+/* Подложка: демо-зона на цветном градиенте — чтобы читался блюр/полупрозрачность
+   стекла (у самих компонентов свой backdrop-filter, здесь его гасим). */
+.uikit-item__demo--bg {
+  background:
+    radial-gradient(70% 90% at 18% 12%, color-mix(in srgb, var(--brand-primary) 60%, transparent), transparent 55%),
+    radial-gradient(70% 90% at 85% 82%, color-mix(in srgb, var(--brand-accent) 52%, transparent), transparent 55%),
+    var(--brand-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Контролы в шапке навигации (липкие вместе с nav) */
+.uikit-nav__controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--brand-border); }
+.uikit-nav__seg { display: flex; gap: 6px; }
+.uikit-nav__link.is-active { color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 12%, transparent); font-weight: 600; }
+
+/* Строка состояний */
+.uikit-states { display: flex; gap: 22px; flex-wrap: wrap; }
+.uikit-state { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.uikit-state__label { font-size: 11px; color: var(--brand-muted); font-family: var(--font-mono); }
+.c-btn.u-hover { filter: brightness(1.08); }
+.c-btn.u-focus { box-shadow: var(--focus-ring); border-color: color-mix(in srgb, var(--brand-primary) 60%, var(--brand-border)); }
+
+@media (max-width: 900px) {
+  .uikit-nav__controls { flex-direction: row; align-items: center; flex-wrap: wrap; border-bottom: none; padding-bottom: 0; }
+}
+
+/* Компактная метка «в деле»: бледный кружок с числом (число = мест на сайте) */
+.uikit-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--brand-muted); background: color-mix(in srgb, var(--brand-text) 8%, transparent); }
+.uikit-count--dot { min-width: 0; width: 9px; height: 9px; padding: 0; }
+
+/* ── Единообразие интеракций kit: focus-visible, hover-аффорданс, переходы ─
+   Клавиатурный фокус — одно кольцо --focus-ring на всех кликабельных примитивах;
+   поля/контролы получают hover-подсказку; поповер и каретка — плавные. ────── */
+.c-chip:focus-visible,
+.c-pager__item:focus-visible,
+.c-popover__item:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.c-chip:focus-visible { border-color: color-mix(in srgb, var(--brand-primary) 45%, var(--brand-border)); }
+/* Сегмент: кольцо клипнул бы overflow:hidden — фокус показываем заливкой стороны */
+.c-segment__item:focus-visible { outline: none; background: color-mix(in srgb, var(--brand-primary) 16%, transparent); }
+
+.c-input:hover:not(:focus):not(:disabled):not(.c-input--error),
+.c-textarea:hover:not(:focus):not(:disabled):not(.c-textarea--error),
+.c-select:hover:not(:focus):not(:disabled) { border-color: var(--card-border-hover); }
+.c-check:hover .c-check__box,
+.c-radio:hover .c-radio__box { border-color: var(--card-border-hover); }
+.c-toggle__track { transition: background 0.18s, filter 0.15s; }
+.c-toggle:hover .c-toggle__track { filter: brightness(1.1); }
+.c-input-affix__btn:hover { text-decoration: underline; }
+
+.c-popover__item { transition: background 0.12s ease; }
+.c-select-wrap::after { transition: transform 0.18s ease; }
+.c-select-wrap.is-open::after { transform: translateY(-30%) rotate(-135deg); }
+
+/* ── Навигационная ссылка (шапка/футер/меню): муть -> текст на hover ────── */
+.c-navlink { color: var(--brand-muted); text-decoration: none; transition: color 0.15s ease; }
+.c-navlink:hover { color: var(--brand-text); }
+/* ── Нейтральная кнопка на surface (иконки шапки) ───────────────────────── */
+.c-btn--surface { background: color-mix(in srgb, var(--brand-surface) 60%, transparent); color: var(--brand-text); }
+.c-btn--surface:hover { background: color-mix(in srgb, var(--brand-surface) 82%, transparent); }
+}
+
+.c-card--interactive:active, .c-tile:active { transform: translateY(-2px); }
+
+/* Подложка витрины /ui: градиент на весь фон (тумблер «Подложка»). Стеклянные
+   демо-боксы (backdrop-filter) ложатся поверх — виден блюр/полупрозрачность. */
+.uikit-canvas--bg {
+  background:
+    radial-gradient(60% 50% at 15% 0%, color-mix(in srgb, var(--brand-primary) 45%, transparent), transparent 60%),
+    radial-gradient(55% 50% at 90% 12%, color-mix(in srgb, var(--brand-accent) 40%, transparent), transparent 58%),
+    radial-gradient(70% 60% at 50% 108%, color-mix(in srgb, var(--brand-primary) 35%, transparent), transparent 65%),
+    var(--brand-bg);
+}
+
+/* ── Фикс цвета текста kit-классов на <a>/<Link> ─────────────────────────────
+   Глобальный `a { color: currentColor }` объявлен вне каскадных слоёв и потому
+   перебивает цвета из @layer components, когда кнопка/чип/ссылка отрендерены
+   как <a>. Дублируем нужные цвета здесь (тоже вне слоя): специфичность класса
+   выше тега `a`, поэтому эти правила выигрывают. ────────────────────────────── */
+.c-btn--primary { color: #fff; }
+.c-btn--soft { color: var(--brand-primary); }
+.c-btn--danger { color: var(--danger); }
+.c-btn--outline, .c-btn--ghost, .c-btn--surface { color: var(--brand-text); }
+.c-segment__item { color: var(--brand-text); }
+.c-segment__item--primary { color: var(--brand-text); }
+.c-navlink { color: var(--brand-muted); }
+.c-navlink:hover { color: var(--brand-text); }
+.c-chip { color: var(--brand-muted); }
+.c-chip.is-active,
+.c-chip--active { color: var(--brand-text); }
+.c-popover__item { color: var(--brand-text); }

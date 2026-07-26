@@ -21,7 +21,7 @@ export function SocialLinksBlock({ heading = 'Присоединяйся к на
   if (links.length === 0) return null
 
   return (
-    <section className="mt-14">
+    <section className="mt-10">
       <h2 className="text-2xl lg:text-3xl font-bold mb-6" style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}>
         {heading}
       </h2>

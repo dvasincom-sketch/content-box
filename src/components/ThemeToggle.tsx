@@ -23,18 +23,18 @@ export function ThemeToggle() {
     setTheme(next)
   }
 
+  const label = theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'
   return (
-    <button
-      type="button"
-      aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-      onClick={toggle}
-      className="inline-flex items-center justify-center h-10 w-10 rounded-lg transition-colors"
-      style={{
-        color: 'var(--brand-text)',
-        background: 'color-mix(in srgb, var(--brand-surface) 60%, transparent)',
-      }}
-    >
-      {mounted && theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-    </button>
+    <span className="c-tooltip-wrap">
+      <button
+        type="button"
+        aria-label={label}
+        onClick={toggle}
+        className="c-btn c-btn--surface c-btn--icon c-spotlight"
+      >
+        {mounted && theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
+      <span className="c-tooltip c-tooltip--below" role="tooltip">{label}</span>
+    </span>
   )
 }

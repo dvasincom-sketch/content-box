@@ -55,14 +55,14 @@ export function VideoPlayer({ videoId }: { videoId: string | number }) {
       {error ? (
         <div
           className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-6"
-          style={{ color: 'var(--brand-text)', opacity: 0.8 }}
+          style={{ color: 'var(--brand-muted)' }}
         >
           <span>{error}</span>
         </div>
       ) : !src ? (
         <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ color: 'var(--brand-text)', opacity: 0.6 }}
+          style={{ color: 'var(--brand-muted)' }}
         >
           Загрузка плеера…
         </div>

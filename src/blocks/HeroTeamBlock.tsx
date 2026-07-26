@@ -34,14 +34,11 @@ export function HeroTeamBlock({ members = [], caption, avatarSize }: HeroTeamBlo
 
   return (
     <section className="mt-10">
-      <style>{`.team-avatar-row::-webkit-scrollbar{display:none}`}</style>
-      <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-5">
+      <style>{`.team-avatar-row::-webkit-scrollbar{display:none}@media (min-width:1024px){.team-avatar-row{overflow:visible;flex-shrink:0}}`}</style>
+      <div className="max-w-2xl mx-auto flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-5">
         <div
           className="team-avatar-row flex items-center overflow-x-auto"
           style={{
-            // Плавное угасание аватарок по краям ряда.
-            maskImage: 'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%)',
             // Вынос на края экрана, чтобы скролл шёл «от края до края» на мобиле.
             paddingBlock: 4,
             // Немного правого запаса, чтобы последняя аватарка не липла к краю при скролле.

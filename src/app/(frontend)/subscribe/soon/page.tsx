@@ -35,15 +35,14 @@ export default async function SubscribeSoonPage() {
           Оплата скоро появится
         </h1>
 
-        <p className="text-base mb-8 max-w-md mx-auto" style={{ color: 'var(--brand-text)', opacity: 0.75 }}>
+        <p className="text-base mb-8 max-w-md mx-auto" style={{ color: 'var(--brand-muted)' }}>
           Мы заканчиваем подключение приёма платежей. Совсем скоро вы сможете оформить
           подписку и открыть весь контент. Спасибо за терпение!
         </p>
 
         <Link
           href="/subscribe"
-          className="inline-flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-xl transition-transform hover:-translate-y-0.5"
-          style={{ background: 'var(--brand-primary)', color: '#fff' }}
+          className="c-btn c-btn--primary c-btn--lg c-spotlight c-spotlight-bright"
         >
           <ArrowLeft size={16} />
           К тарифам

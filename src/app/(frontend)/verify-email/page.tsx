@@ -2,13 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import {
-  authCardStyle,
-  authHeadingStyle,
-  authButtonStyle,
-  authErrorStyle,
-  authAltLinkStyle,
-} from '../authFormStyles'
 
 /**
  * Подтверждение email подписчика по ссылке из письма (/verify-email?token=…).
@@ -59,8 +52,8 @@ export default function VerifyEmailPage() {
   }, [])
 
   return (
-    <div style={authCardStyle}>
-      <h1 style={authHeadingStyle}>Подтверждение email</h1>
+    <div className="c-card" style={{ maxWidth: 420, margin: '64px auto', padding: '32px 28px' }}>
+      <h1 style={{ marginBottom: 24, fontSize: 28, color: 'var(--brand-text)' }}>Подтверждение email</h1>
 
       {state === 'checking' && <p style={{ fontSize: 15 }}>Подтверждаем адрес…</p>}
 
@@ -69,7 +62,7 @@ export default function VerifyEmailPage() {
           <p style={{ fontSize: 15, lineHeight: 1.6 }}>
             Готово — ваш email подтверждён. Спасибо!
           </p>
-          <Link href="/" style={{ ...authButtonStyle, display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+          <Link href="/" className="c-btn c-btn--primary c-btn--block c-spotlight c-spotlight-bright" style={{ marginTop: 8 }}>
             На главную
           </Link>
         </>
@@ -77,8 +70,8 @@ export default function VerifyEmailPage() {
 
       {state === 'error' && (
         <>
-          <p style={authErrorStyle}>{error}</p>
-          <p style={authAltLinkStyle}>
+          <p className="c-field__error" style={{ marginTop: 8 }}>{error}</p>
+          <p style={{ marginTop: 16, fontSize: 14 }}>
             <Link href="/">Вернуться на главную</Link>
           </p>
         </>

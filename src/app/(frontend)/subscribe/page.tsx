@@ -72,11 +72,11 @@ export default async function SubscribePage() {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <nav
           className="text-sm mb-8 flex items-center gap-x-2"
-          style={{ color: 'var(--brand-text)', opacity: 0.7 }}
+          style={{ color: 'var(--brand-muted)' }}
         >
-          <Link href="/" className="hover:opacity-100">Главная</Link>
+          <Link href="/" className="c-navlink">Главная</Link>
           <span aria-hidden="true">/</span>
-          <span style={{ opacity: 1 }}>Подписка</span>
+          <span style={{ color: 'var(--brand-text)' }}>Подписка</span>
         </nav>
 
         <header className="text-center mb-12">
@@ -88,7 +88,7 @@ export default async function SubscribePage() {
           </h1>
           <p
             className="text-base lg:text-lg max-w-2xl mx-auto"
-            style={{ color: 'var(--brand-text)', opacity: 0.75 }}
+            style={{ color: 'var(--brand-muted)' }}
           >
             Выберите уровень доступа. Высший уровень открывает весь контент уровней ниже.
           </p>
@@ -98,8 +98,7 @@ export default async function SubscribePage() {
           <div
             className="text-center py-16 rounded-2xl"
             style={{
-              color: 'var(--brand-text)',
-              opacity: 0.7,
+              color: 'var(--brand-muted)',
               background: 'color-mix(in srgb, var(--brand-primary) 8%, transparent)',
             }}
           >
@@ -115,7 +114,7 @@ export default async function SubscribePage() {
 
         <p
           className="text-center text-sm mt-10"
-          style={{ color: 'var(--brand-text)', opacity: 0.6 }}
+          style={{ color: 'var(--brand-muted)' }}
         >
           Оплата картами РФ. Подписку можно отменить в любой момент.
         </p>
@@ -152,11 +151,11 @@ function TierCard({ tier, highlighted }: { tier: Tier; highlighted: boolean }) {
       <div className="sub-card__price" style={{ color: 'var(--brand-text)' }}>
         {tier.priceRub}
         <span className="sub-card__price-cur">₽</span>
-        <span className="sub-card__price-per" style={{ opacity: 0.6 }}>/мес</span>
+        <span className="sub-card__price-per" style={{ color: 'var(--brand-muted)' }}>/мес</span>
       </div>
 
       {tier.description && (
-        <p className="sub-card__desc" style={{ color: 'var(--brand-text)', opacity: 0.7 }}>
+        <p className="sub-card__desc" style={{ color: 'var(--brand-muted)' }}>
           {tier.description}
         </p>
       )}
@@ -174,7 +173,7 @@ function TierCard({ tier, highlighted }: { tier: Tier; highlighted: boolean }) {
                 style={{
                   color:
                     perk.type === 'warning'
-                      ? '#e0a800'
+                      ? 'var(--warn)'
                       : perk.type === 'star'
                         ? 'var(--brand-accent)'
                         : 'var(--brand-primary)',
@@ -190,16 +189,8 @@ function TierCard({ tier, highlighted }: { tier: Tier; highlighted: boolean }) {
 
       <Link
         href="/subscribe/soon"
-        className="sub-card__btn"
-        style={
-          highlighted
-            ? { background: 'var(--brand-primary)', color: '#fff' }
-            : {
-                background: 'transparent',
-                color: 'var(--brand-text)',
-                border: '1px solid var(--brand-border)',
-              }
-        }
+        className={`c-btn c-btn--block c-spotlight${highlighted ? ' c-btn--primary c-spotlight-bright' : ' c-btn--outline'}`}
+        style={{ marginTop: 'auto' }}
       >
         Оформить
       </Link>
