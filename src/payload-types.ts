@@ -86,6 +86,9 @@ export interface Config {
     reactions: Reaction;
     'activity-events': ActivityEvent;
     submissions: Submission;
+    bookmarks: Bookmark;
+    follows: Follow;
+    views: View;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -111,6 +114,9 @@ export interface Config {
     reactions: ReactionsSelect<false> | ReactionsSelect<true>;
     'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
+    bookmarks: BookmarksSelect<false> | BookmarksSelect<true>;
+    follows: FollowsSelect<false> | FollowsSelect<true>;
+    views: ViewsSelect<false> | ViewsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -624,6 +630,7 @@ export interface Subscriber {
   emailVerified?: boolean | null;
   emailVerifyToken?: string | null;
   emailVerifyExpiry?: string | null;
+  historyEnabled?: boolean | null;
   notifyDigest?: boolean | null;
   unsubscribeToken?: string | null;
   updatedAt: string;
@@ -1013,6 +1020,53 @@ export interface Submission {
   createdAt: string;
 }
 /**
+ * «Посмотреть позже» участников.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookmarks".
+ */
+export interface Bookmark {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  subscriber: number | Subscriber;
+  targetType: 'publication' | 'video';
+  publication?: (number | null) | Publication;
+  video?: (number | null) | Video;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Кто на кого подписан.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "follows".
+ */
+export interface Follow {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  follower: number | Subscriber;
+  following: number | Subscriber;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * История просмотров участников (приватная).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "views".
+ */
+export interface View {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  subscriber: number | Subscriber;
+  targetType: 'publication' | 'video';
+  publication?: (number | null) | Publication;
+  video?: (number | null) | Video;
+  viewedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -1107,6 +1161,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'submissions';
         value: number | Submission;
+      } | null)
+    | ({
+        relationTo: 'bookmarks';
+        value: number | Bookmark;
+      } | null)
+    | ({
+        relationTo: 'follows';
+        value: number | Follow;
+      } | null)
+    | ({
+        relationTo: 'views';
+        value: number | View;
       } | null);
   globalSlug?: string | null;
   user:
@@ -1520,6 +1586,7 @@ export interface SubscribersSelect<T extends boolean = true> {
   emailVerified?: T;
   emailVerifyToken?: T;
   emailVerifyExpiry?: T;
+  historyEnabled?: T;
   notifyDigest?: T;
   unsubscribeToken?: T;
   updatedAt?: T;
@@ -1701,6 +1768,44 @@ export interface SubmissionsSelect<T extends boolean = true> {
   rejectReason?: T;
   reviewedBy?: T;
   publication?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookmarks_select".
+ */
+export interface BookmarksSelect<T extends boolean = true> {
+  tenant?: T;
+  subscriber?: T;
+  targetType?: T;
+  publication?: T;
+  video?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "follows_select".
+ */
+export interface FollowsSelect<T extends boolean = true> {
+  tenant?: T;
+  follower?: T;
+  following?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "views_select".
+ */
+export interface ViewsSelect<T extends boolean = true> {
+  tenant?: T;
+  subscriber?: T;
+  targetType?: T;
+  publication?: T;
+  video?: T;
+  viewedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

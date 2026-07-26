@@ -155,6 +155,13 @@ export const Subscribers: CollectionConfig = {
     // включено). unsubscribeToken — стабильный токен для ссылки «отписаться»
     // в письме; заполняется сервером при первой рассылке.
     {
+      name: 'historyEnabled',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Вести историю просмотров',
+      access: { create: () => false },
+    },
+    {
       name: 'notifyDigest',
       type: 'checkbox',
       defaultValue: true,

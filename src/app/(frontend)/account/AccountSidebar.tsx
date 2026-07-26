@@ -3,11 +3,14 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { User, FileText, Settings, CreditCard, LogOut } from 'lucide-react'
+import { User, FileText, Settings, CreditCard, LogOut, Rss, Bookmark, History } from 'lucide-react'
 
 const NAV = [
   { href: '/account', label: 'Профиль', Icon: User, exact: true },
+  { href: '/account/feed', label: 'Лента', Icon: Rss },
   { href: '/account/publications', label: 'Мои публикации', Icon: FileText },
+  { href: '/account/saved', label: 'Сохранённое', Icon: Bookmark },
+  { href: '/account/history', label: 'История', Icon: History },
   { href: '/account/settings', label: 'Настройки', Icon: Settings },
   { href: '/subscribe', label: 'Подписка', Icon: CreditCard },
 ]

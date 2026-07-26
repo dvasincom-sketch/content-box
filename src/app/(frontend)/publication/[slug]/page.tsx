@@ -8,6 +8,9 @@ import { notFound } from 'next/navigation'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
+import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { BookmarkButton } from '@/components/social/BookmarkButton'
+import { ViewTracker } from '@/components/social/ViewTracker'
 import { buildMetadata } from '@/lib/seo'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { checkVideoAccess } from '@/lib/videoAccess'
@@ -149,6 +152,17 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   const pub = res.docs[0] as any
   if (!pub) notFound()
 
+  const viewer = await getCurrentSubscriber().catch(() => null)
+  let bookmarked = false
+  if (viewer && tenant?.id) {
+    const bm = await payload.find({
+      collection: 'bookmarks' as any,
+      where: { and: [{ subscriber: { equals: viewer.id } }, { tenant: { equals: tenant.id } }, { publication: { equals: pub.id } }] },
+      limit: 1, depth: 0, overrideAccess: true,
+    })
+    bookmarked = bm.docs.length > 0
+  }
+
   const category = pub.category && typeof pub.category === 'object' ? pub.category : null
   const dateStr = pub.publishedAt
     ? new Date(pub.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -275,6 +289,13 @@ export default async function PublicationPage({ params }: { params: Promise<Para
             )}
           </div>
         )}
+
+        {viewer && (
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <BookmarkButton targetType="publication" targetId={pub.id} initialSaved={bookmarked} />
+          </div>
+        )}
+        <ViewTracker targetType="publication" targetId={pub.id} />
 
         {/* Контент: мета + тело публикации (без журнального наезда). */}
         <div className="relative">

@@ -1,12 +1,13 @@
 import React from 'react'
 import Link from 'next/link'
+import { ExternalLink, Settings as SettingsIcon } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
-import { levelProgress } from '@/lib/reputation'
+import { levelProgress, LEVELS, POINT_WEIGHTS } from '@/lib/reputation'
 import { earnedBadges } from '@/lib/badges'
 
-/** Витрина профиля (обзор): аватар, имя, email, уровень, значки, статистика. */
+/** Витрина профиля: кто я, уровень с объяснением, значки, статистика. */
 export const dynamic = 'force-dynamic'
 
 export default async function AccountOverviewPage() {
@@ -15,9 +16,9 @@ export default async function AccountOverviewPage() {
   const payload = await getPayload({ config: await config })
   const full = (await payload.findByID({ collection: 'subscribers', id: sub.id, depth: 1, overrideAccess: true })) as any
 
-  const avatarUrl = full?.avatar && typeof full.avatar === 'object' ? full.avatar.url : null
   const name = full?.displayName || full?.email || 'Участник'
   const handle: string = full?.handle || ''
+  const isPrivate = Boolean(full?.profilePrivate)
   const points = Number(full?.points) || 0
   const prog = levelProgress(points)
   const hasPaid = Boolean(full?.activeTier)
@@ -28,37 +29,42 @@ export default async function AccountOverviewPage() {
   const reactionsReceived = await payload
     .count({ collection: 'activity-events' as any, where: { and: [{ subscriber: { equals: sub.id } }, { type: { equals: 'reaction_received' } }] }, overrideAccess: true })
     .then((r: any) => r.totalDocs).catch(() => 0)
+  const followerCount = await payload
+    .count({ collection: 'follows' as any, where: { following: { equals: sub.id } }, overrideAccess: true })
+    .then((r: any) => r.totalDocs).catch(() => 0)
+  const followingCount = await payload
+    .count({ collection: 'follows' as any, where: { follower: { equals: sub.id } }, overrideAccess: true })
+    .then((r: any) => r.totalDocs).catch(() => 0)
   const badges = earnedBadges({ commentCount, reactionsReceived, level: Number(full?.level) || 0, hasPaidTier: hasPaid })
+
+  const ladder = LEVELS.map((l) => l.name).join(' → ')
 
   return (
     <>
       <h1 style={{ fontSize: 26, color: 'var(--brand-text)', marginBottom: 20 }}>Профиль</h1>
 
-      <div className="c-card" style={{ padding: 24, display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16 }}>
-        <span className="acct__ava" style={{ width: 64, height: 64, fontSize: 26 }}>
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="" />
-          ) : (
-            (name[0] || '?').toUpperCase()
-          )}
-        </span>
-        <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--brand-text)' }}>{name}</div>
-          {handle && <div style={{ color: 'var(--brand-muted)' }}>@{handle}</div>}
-          <div style={{ color: 'var(--brand-muted)', fontSize: 13, marginTop: 4 }}>{full?.email}</div>
+      {/* Кто я (без аватара — он в боковом меню) */}
+      <div className="c-card" style={{ padding: 24, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--brand-text)' }}>{name}</div>
+          {handle && <div style={{ color: 'var(--brand-muted)', marginTop: 2 }}>@{handle}</div>}
+          <div style={{ color: 'var(--brand-muted)', fontSize: 13, marginTop: 2 }}>{full?.email}</div>
         </div>
-        {handle && !full?.profilePrivate && (
-          <Link href={`/u/${handle}`} className="c-btn c-btn--surface">Публичный профиль</Link>
+        {handle && !isPrivate ? (
+          <Link href={`/u/${handle}`} className="c-btn c-btn--surface" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <ExternalLink size={16} /> Открыть публичный профиль
+          </Link>
+        ) : (
+          <Link href="/account/settings" className="c-btn c-btn--surface" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <SettingsIcon size={16} /> {handle ? 'Профиль скрыт — настройки' : 'Задать адрес профиля'}
+          </Link>
         )}
       </div>
 
+      {/* Уровень с объяснением */}
       <div className="c-card lvl" style={{ marginBottom: 16 }}>
         <div className="lvl__top">
-          <span className="lvl__name">
-            Уровень: {prog.name}
-            <span className="lvl__hint" title="Очки растут за одобренные комментарии и полученные реакции. Уровень открывает значки и новые возможности.">?</span>
-          </span>
+          <span className="lvl__name">Уровень: {prog.name}</span>
           {prog.nextName && <span className="lvl__next">Следующий: {prog.nextName}</span>}
         </div>
         <div className="lvl__bar"><div className="lvl__bar-fill" style={{ width: `${prog.pct}%` }} /></div>
@@ -66,8 +72,36 @@ export default async function AccountOverviewPage() {
           {points} очков{prog.nextName ? ` · до «${prog.nextName}» — ${prog.toNext}` : ' · максимальный уровень'}
         </div>
 
-        {badges.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+        <div style={{ marginTop: 14, fontSize: 14, color: 'var(--brand-muted)', lineHeight: 1.55 }}>
+          <p style={{ margin: 0 }}>
+            Очки — за активность: <b style={{ color: 'var(--brand-text)' }}>+{POINT_WEIGHTS.comment}</b> за одобренный комментарий и{' '}
+            <b style={{ color: 'var(--brand-text)' }}>+{POINT_WEIGHTS.reaction_received}</b> за реакцию на ваш комментарий.
+            {prog.nextName ? ` До «${prog.nextName}» осталось ${prog.toNext} — это буквально пара комментариев.` : ''}
+          </p>
+          <p style={{ margin: '8px 0 0' }}>
+            Всего 6 уровней: {ladder}. С каждым открываются новые значки и возможности — своя модерация в сообществе,
+            публикации без проверки, больше внимания к вашему профилю.
+          </p>
+        </div>
+
+        {!hasPaid && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--brand-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: 'var(--brand-text)', fontWeight: 600, marginBottom: 2 }}>Подписка ускоряет и выделяет</div>
+              <div style={{ color: 'var(--brand-muted)', fontSize: 14, lineHeight: 1.5 }}>
+                Эксклюзивный значок «Подписчик», ускоренная прокачка уровня и приоритет: ваш профиль и комментарии заметнее в сообществе.
+              </div>
+            </div>
+            <Link href="/subscribe" className="c-btn c-btn--primary">Оформить подписку</Link>
+          </div>
+        )}
+      </div>
+
+      {/* Значки */}
+      {badges.length > 0 && (
+        <div className="c-card" style={{ padding: 20, marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-text)', marginBottom: 10 }}>Значки</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {badges.map((b) => (
               <span
                 key={b.id}
@@ -82,20 +116,12 @@ export default async function AccountOverviewPage() {
               </span>
             ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {!hasPaid && (
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--brand-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-            <span style={{ color: 'var(--brand-muted)' }}>
-              Эксклюзивный значок и приоритет в сообществе — <span style={{ color: 'var(--brand-text)' }}>по подписке</span>.
-            </span>
-            <Link href="/subscribe" className="c-btn c-btn--primary">Оформить подписку</Link>
-          </div>
-        )}
-      </div>
-
+      {/* Статистика */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        {[{ k: 'Комментарии', v: commentCount }, { k: 'Реакции', v: reactionsReceived }].map((s) => (
+        {[{ k: 'Подписчики', v: followerCount }, { k: 'Подписки', v: followingCount }, { k: 'Комментарии', v: commentCount }, { k: 'Реакции', v: reactionsReceived }].map((s) => (
           <div key={s.k} className="c-card" style={{ padding: '14px 20px', minWidth: 120 }}>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--brand-text)' }}>{s.v}</div>
             <div style={{ fontSize: 13, color: 'var(--brand-muted)' }}>{s.k}</div>

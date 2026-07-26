@@ -30,6 +30,9 @@ import { Comments } from './collections/Comments'
 import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
 import { Submissions } from './collections/Submissions'
+import { Bookmarks } from './collections/Bookmarks'
+import { Follows } from './collections/Follows'
+import { ViewHistory } from './collections/ViewHistory'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -149,6 +152,9 @@ export default buildConfig({
     Reactions,
     ActivityEvents,
     Submissions,
+    Bookmarks,
+    Follows,
+    ViewHistory,
   ],
   editor: lexicalEditor(),
   // Почта через RuSender API (Bearer-токен + ID ключа). Подключается ТОЛЬКО при
@@ -225,6 +231,9 @@ export default buildConfig({
         reactions: { useTenantAccess: false },
         'activity-events': { useTenantAccess: false },
         submissions: { useTenantAccess: false },
+        bookmarks: { useTenantAccess: false },
+        follows: { useTenantAccess: false },
+        views: { useTenantAccess: false },
       } as any,
     }),
 

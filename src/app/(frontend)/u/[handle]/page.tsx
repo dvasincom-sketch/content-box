@@ -10,6 +10,7 @@ import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import { levelName } from '@/lib/reputation'
 import { earnedBadges } from '@/lib/badges'
+import { FollowButton } from '@/components/social/FollowButton'
 
 /**
  * Публичная страница профиля участника — /u/<handle> (Фаза 1 «Сообщество»).
@@ -72,6 +73,18 @@ export default async function ProfilePage({ params }: Params) {
   const isOwner = Boolean(viewer && viewer.id === profile.id)
   if (profile.isBlocked || (profile.profilePrivate && !isOwner)) notFound()
 
+  const followerCount = await payload
+    .count({ collection: 'follows' as any, where: { and: [{ tenant: { equals: tenant.id } }, { following: { equals: profile.id } }] }, overrideAccess: true })
+    .then((r: any) => r.totalDocs).catch(() => 0)
+  const followingCount = await payload
+    .count({ collection: 'follows' as any, where: { and: [{ tenant: { equals: tenant.id } }, { follower: { equals: profile.id } }] }, overrideAccess: true })
+    .then((r: any) => r.totalDocs).catch(() => 0)
+  let isFollowing = false
+  if (viewer && !isOwner) {
+    const f = await payload.find({ collection: 'follows' as any, where: { and: [{ tenant: { equals: tenant.id } }, { follower: { equals: viewer.id } }, { following: { equals: profile.id } }] }, limit: 1, depth: 0, overrideAccess: true })
+    isFollowing = f.docs.length > 0
+  }
+
   const commentsRes = await payload.find({
     collection: 'comments',
     where: {
@@ -132,7 +145,7 @@ export default async function ProfilePage({ params }: Params) {
           <div
             aria-hidden
             style={{
-              width: 84, height: 84, borderRadius: 999, flex: 'none', overflow: 'hidden',
+              width: 84, height: 84, borderRadius: 16, flex: 'none', overflow: 'hidden',
               display: 'grid', placeItems: 'center',
               background: 'color-mix(in srgb, var(--brand-primary) 16%, transparent)',
               color: 'var(--brand-text)', fontSize: 30, fontWeight: 700,
@@ -167,7 +180,13 @@ export default async function ProfilePage({ params }: Params) {
               Участник с {joinedLabel(profile.createdAt)}
               {'  ·  '}Уровень: {levelName(profile.level)} · {profile.points || 0} очков
             </div>
+            <div style={{ color: 'var(--brand-muted)', fontSize: 13, marginTop: 4 }}>
+              {followerCount} подписчиков · {followingCount} подписок
+            </div>
           </div>
+          {viewer && !isOwner && (
+            <FollowButton handle={profile.handle} targetId={profile.id} initialFollowing={isFollowing} />
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>

@@ -7,6 +7,11 @@ import { checkVideoAccess } from '@/lib/videoAccess'
 import { notFound } from 'next/navigation'
 import { Lock } from 'lucide-react'
 import { VideoPlayer } from './VideoPlayer'
+import { getPayload } from 'payload'
+import config from '@/payload.config'
+import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { BookmarkButton } from '@/components/social/BookmarkButton'
+import { ViewTracker } from '@/components/social/ViewTracker'
 import type { Metadata } from 'next'
 import '../../styles.css'
 
@@ -37,6 +42,18 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
   // сюда попадаем, если allowed:true ИЛИ allowed:false с другой причиной —
   // в обоих случаях video присутствует
   const video = access.video!
+
+  const viewer = await getCurrentSubscriber().catch(() => null)
+  let bookmarked = false
+  if (viewer && tenant?.id) {
+    const payload = await getPayload({ config: await config })
+    const bm = await payload.find({
+      collection: 'bookmarks' as any,
+      where: { and: [{ subscriber: { equals: viewer.id } }, { tenant: { equals: tenant.id } }, { video: { equals: video.id } }] },
+      limit: 1, depth: 0, overrideAccess: true,
+    })
+    bookmarked = bm.docs.length > 0
+  }
   const category = video.category && typeof video.category === 'object' ? video.category : null
   const dateStr = video.publishedAt
     ? new Date(video.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -68,6 +85,12 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
         </div>
 
         <h1 className="text-3xl lg:text-5xl font-extrabold mb-6" style={{ color: 'var(--brand-text)' }}>{video.title}</h1>
+        {viewer && (
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+            <BookmarkButton targetType="video" targetId={video.id} initialSaved={bookmarked} />
+          </div>
+        )}
+        <ViewTracker targetType="video" targetId={video.id} />
 
         {/* Плеер (если доступ) или замок (если нет) */}
         {access.allowed ? (
