@@ -290,11 +290,6 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           </div>
         )}
 
-        {viewer && (
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-            <BookmarkButton targetType="publication" targetId={pub.id} initialSaved={bookmarked} />
-          </div>
-        )}
         <ViewTracker targetType="publication" targetId={pub.id} />
 
         {/* Контент: мета + тело публикации (без журнального наезда). */}
@@ -302,13 +297,16 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           {/* Мета: категория-чип + дата. Характер «тех-кампания»:
               чип — сдержанная пилюля-подложка (.pubmeta-chip),
               дата — с акцентной точкой-маркером (.pubmeta-date). */}
-          <div className="pubhero-reveal pubhero-d3 flex items-center flex-wrap gap-3 mb-6">
-            {category && (
-              <Link href={categoryHref(category)} className="pubmeta-chip">
-                {category.title}
-              </Link>
-            )}
-            {dateStr && <span className="pubmeta-date">{dateStr}</span>}
+          <div className="pubhero-reveal pubhero-d3 flex items-center flex-wrap gap-3 mb-6" style={{ justifyContent: 'space-between' }}>
+            <div className="flex items-center flex-wrap gap-3">
+              {category && (
+                <Link href={categoryHref(category)} className="pubmeta-chip">
+                  {category.title}
+                </Link>
+              )}
+              {dateStr && <span className="pubmeta-date">{dateStr}</span>}
+            </div>
+            {viewer && <BookmarkButton targetType="publication" targetId={pub.id} initialSaved={bookmarked} />}
           </div>
 
 

@@ -19,9 +19,14 @@ export default async function HistoryPage() {
   const full = sub as any
   const tid = ((await getTenantFromHeaders()) as any)?.tenant?.id
   const payload = await getPayload({ config: await config })
-  const res = tid
-    ? await payload.find({ collection: 'views' as any, where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }] }, sort: '-viewedAt', limit: 100, depth: 1, overrideAccess: true })
-    : { docs: [] as any[] }
+  let res: { docs: any[] } = { docs: [] }
+  if (tid) {
+    try {
+      res = await payload.find({ collection: 'views' as any, where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }] }, sort: '-viewedAt', limit: 100, depth: 1, overrideAccess: true }) as any
+    } catch {
+      res = { docs: [] }
+    }
+  }
 
   const rows = (res.docs as any[])
     .map((v) => {
