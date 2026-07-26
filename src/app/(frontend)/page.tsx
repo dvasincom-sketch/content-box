@@ -247,7 +247,7 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="page-canvas page-canvas--home" style={{ ...brandVars(settings?.theme, settings?.typography), minHeight: '100vh' }}>
+    <main className="page-canvas page-canvas--home" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
         {sections
           .filter((s) => s.enabled)

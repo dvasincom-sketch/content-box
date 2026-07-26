@@ -96,7 +96,7 @@ export default async function ContentPage({ params }: { params: Promise<Params> 
     const stub = LEGAL_STUBS[slug]
     if (!stub) notFound()
     return (
-      <main className="page-canvas" style={{ ...brandVars(settings?.theme), minHeight: '100vh' }}>
+      <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-10">
           <a href="/" className="text-sm inline-block mb-6 c-navlink">← На главную</a>
           <h1
@@ -131,7 +131,7 @@ export default async function ContentPage({ params }: { params: Promise<Params> 
   }
 
   return (
-    <main className="page-canvas" style={{ ...brandVars(settings?.theme), minHeight: '100vh' }}>
+    <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-10">
         {/* Крошки и заголовок — во всю ширину, как на странице категории. */}
         <a href="/" className="text-sm inline-block mb-6 c-navlink">← На главную</a>

@@ -7,11 +7,11 @@
 /* ── Theme tokens (visitor-switchable). Brand colors (primary/accent)
    come from the tenant via brandVars; bg/surface/text switch with theme. ── */
 .theme-dark {
-  --brand-bg: #0F0A1E;
-  --brand-surface: #1A1330;
-  --brand-text: #F5F3FF;
-  --brand-muted: rgba(245, 243, 255, 0.65);
-  --brand-border: rgba(245, 243, 255, 0.12);
+  /* Цвета bg/surface/text/primary/accent инжектятся из выбранного пресета
+     (presetThemeCss → scoped by class). Здесь остаются только деривативы-формулы,
+     которые подхватывают инжектированный --brand-text автоматически. */
+  --brand-muted: color-mix(in srgb, var(--brand-text) 65%, transparent);
+  --brand-border: color-mix(in srgb, var(--brand-text) 12%, transparent);
 
   /* ── Дизайн-система «матовое стекло» (design-system.md) ──
      Всё на color-mix от --brand-*, поэтому адаптируется под акцент тенанта. */
@@ -64,11 +64,9 @@
 }
 
 .theme-light {
-  --brand-bg: #F7F5FB;
-  --brand-surface: #FFFFFF;
-  --brand-text: #1E1A2E;
-  --brand-muted: rgba(30, 26, 46, 0.60);
-  --brand-border: rgba(30, 26, 46, 0.10);
+  /* Цвета инжектятся из пресета (см. .theme-dark выше). Здесь — деривативы. */
+  --brand-muted: color-mix(in srgb, var(--brand-text) 60%, transparent);
+  --brand-border: color-mix(in srgb, var(--brand-text) 10%, transparent);
 
   /* ── Дизайн-система «матовое стекло» — дельты светлой темы ──
      Стекло плотнее (бело-на-белом иначе не читается), свечения слабее,
@@ -586,10 +584,12 @@ svg {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
 }
 .theme-light .cgal-plate {
-  background: #2A2A2E;
+  /* Тёмная плашка галереи — деривация от токенов пресета (не хардкод). */
+  background: color-mix(in srgb, var(--brand-text) 86%, var(--brand-surface));
 }
 .theme-dark .cgal-plate {
-  background: #241C3D; /* приподнятый над --brand-bg (#0F0A1E) */
+  /* Приподнятая над фоном поверхность — от токенов пресета. */
+  background: color-mix(in srgb, var(--brand-text) 8%, var(--brand-surface));
 }
 
 .cgal-plate__title {

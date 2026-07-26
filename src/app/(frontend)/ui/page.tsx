@@ -19,7 +19,7 @@ export default async function UIPage() {
   const settings = ctx?.settings as any
 
   return (
-    <main style={{ ...brandVars(settings?.theme, settings?.typography) }}>
+    <main style={{ ...brandVars(settings) }}>
       <UIShowcaseExtra />
     </main>
   )

@@ -141,7 +141,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
   const crumbs = (category.breadcrumbs ?? []) as { url?: string; label?: string }[]
 
   return (
-    <main className="page-canvas" style={{ ...brandVars(settings?.theme), minHeight: '100vh' }}>
+    <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Хлебные крошки */}
         <Breadcrumbs crumbs={crumbs as any} lastIsCurrent className="mb-6" />

@@ -43,7 +43,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
     : null
 
   return (
-    <main className="page-canvas" style={{ ...brandVars(settings?.theme), minHeight: '100vh' }}>
+    <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Хлебные крошки */}
         <nav className="text-sm mb-6 flex flex-wrap items-center gap-x-2 gap-y-1"

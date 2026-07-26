@@ -1,9 +1,21 @@
 import React from 'react'
+// Шрифты витрины (для сэмплов в карточках пресетов). Совпадают с фронтендом,
+// офлайн через @fontsource; PT Serif — вендорный @font-face.
+import '@fontsource-variable/inter'
+import '@fontsource-variable/montserrat'
+import '@fontsource-variable/manrope'
+import '@fontsource-variable/golos-text'
+import '@fontsource/pt-sans/400.css'
+import '@fontsource/pt-sans/700.css'
+import '@fontsource-variable/unbounded'
+import '@fontsource-variable/roboto'
+import '@/app/(frontend)/pt-serif.css'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { normalizeHomeSections } from '@/lib/homeSections'
 import { SettingsView } from './SettingsView'
+import { DEFAULT_PRESET_ID } from '@/lib/themePresets'
 
 /**
  * Экран «Настройки» (студия): логотип, соцсети, уровни подписки, тема студии.
@@ -59,5 +71,13 @@ export default async function SettingsPage() {
       : [],
   }))
 
-  return <SettingsView logoUrl={logoUrl} socials={socials} tiers={tiers} homeSections={homeSections} />
+  return (
+    <SettingsView
+      logoUrl={logoUrl}
+      socials={socials}
+      tiers={tiers}
+      homeSections={homeSections}
+      themePreset={settings?.themePreset ?? DEFAULT_PRESET_ID}
+    />
+  )
 }

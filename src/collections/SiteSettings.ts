@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID } from '../access'
 import { HOME_SECTION_OPTIONS } from '../lib/homeSections'
+import { PRESET_SELECT_OPTIONS, DEFAULT_PRESET_ID } from '../lib/themePresets'
 
 /**
  * SiteSettings (ТЗ §3.3) — one record per tenant (branding, theme, SEO
@@ -25,9 +26,23 @@ export const SiteSettings: CollectionConfig = {
     // `tenant` added by the multi-tenant plugin.
     { name: 'logo', type: 'upload', relationTo: 'media', label: 'Логотип' },
     {
+      name: 'themePreset',
+      type: 'select',
+      label: 'Тема оформления',
+      defaultValue: DEFAULT_PRESET_ID,
+      options: PRESET_SELECT_OPTIONS,
+      admin: {
+        description:
+          'Готовый пресет: палитра (светлая + тёмная версии) и пара шрифтов уже подобраны под нишу. Выбирается в Студии.',
+      },
+    },
+    {
       name: 'theme',
       type: 'group',
       label: 'Тема (токены)',
+      // Устарело: цвета задаёт пресет (themePreset). Оставлено ради данных,
+      // скрыто из админки — раздельный выбор цветов больше не поддерживается.
+      admin: { hidden: true },
       fields: [
         { name: 'primary', type: 'text', admin: { description: 'напр. #7C3AED' } },
         { name: 'accent', type: 'text' },
@@ -40,6 +55,8 @@ export const SiteSettings: CollectionConfig = {
       name: 'typography',
       type: 'group',
       label: 'Типографика',
+      // Устарело: шрифты задаёт пресет (themePreset). Скрыто из админки.
+      admin: { hidden: true },
       fields: [
         {
           name: 'headingFont',

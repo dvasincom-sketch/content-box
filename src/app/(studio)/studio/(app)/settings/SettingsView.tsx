@@ -7,6 +7,7 @@ import { PerkIcon, PERK_TYPES, type PerkType } from '@/components/studio/PerkIco
 import { StudioSelect } from '../_ui/StudioSelect'
 import { MenuBuilder } from './MenuBuilder'
 import { HomeBuilder } from './HomeBuilder'
+import { PresetPicker } from './PresetPicker'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 
 type Social = { platform: string; url: string }
@@ -45,11 +46,13 @@ export function SettingsView({
   socials: initialSocials,
   tiers: initialTiers,
   homeSections,
+  themePreset,
 }: {
   logoUrl: string | null
   socials: Social[]
   tiers: Tier[]
   homeSections: HomeSectionConfig[]
+  themePreset: string
 }) {
   const [tab, setTab] = useState<SettingsTab>('appearance')
 
@@ -78,6 +81,7 @@ export function SettingsView({
       <div className="settings">
         {tab === 'appearance' && (
           <>
+            <PresetBlock initial={themePreset} />
             <ThemeBlock />
             <LogoBlock initialUrl={logoUrl} />
           </>
@@ -119,6 +123,24 @@ function MenuBlock() {
       <div className="menubld-section">
         <MenuBuilder />
       </div>
+    </section>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Тема сайта — выбор готового пресета (палитра свет+тьма + шрифты)             */
+/* -------------------------------------------------------------------------- */
+function PresetBlock({ initial }: { initial: string }) {
+  return (
+    <section className="settings__block">
+      <div className="settings__block-head">
+        <h2>Тема сайта</h2>
+        <p>
+          Готовый пресет: палитра (светлая и тёмная версии) и пара шрифтов уже подобраны под нишу.
+          Переключатель света/тьмы в шапке сайта продолжает работать — он меняет вариант выбранного пресета.
+        </p>
+      </div>
+      <PresetPicker initial={initial} />
     </section>
   )
 }

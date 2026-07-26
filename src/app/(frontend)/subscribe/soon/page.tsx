@@ -18,7 +18,7 @@ export default async function SubscribeSoonPage() {
   return (
     <main
       style={{
-        ...brandVars(settings?.theme, settings?.typography),
+        ...brandVars(settings),
         background: 'var(--brand-bg)',
         minHeight: '100vh',
       }}

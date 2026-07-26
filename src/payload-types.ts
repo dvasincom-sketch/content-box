@@ -247,6 +247,10 @@ export interface SiteSetting {
   id: number;
   tenant?: (number | null) | Tenant;
   logo?: (number | null) | Media;
+  /**
+   * Готовый пресет: палитра (светлая + тёмная версии) и пара шрифтов уже подобраны под нишу. Выбирается в Студии.
+   */
+  themePreset?: ('neon-dawn' | 'warm-earth' | 'digital-monolith' | 'velvet-resonance' | 'amber-pulse') | null;
   theme?: {
     /**
      * напр. #7C3AED
@@ -1126,6 +1130,7 @@ export interface UsersSelect<T extends boolean = true> {
 export interface SiteSettingsSelect<T extends boolean = true> {
   tenant?: T;
   logo?: T;
+  themePreset?: T;
   theme?:
     | T
     | {

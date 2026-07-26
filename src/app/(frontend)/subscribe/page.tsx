@@ -64,7 +64,7 @@ export default async function SubscribePage() {
   return (
     <main
       style={{
-        ...brandVars(settings?.theme, settings?.typography),
+        ...brandVars(settings),
         background: 'var(--brand-bg)',
         minHeight: '100vh',
       }}

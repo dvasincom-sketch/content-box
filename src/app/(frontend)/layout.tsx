@@ -12,6 +12,8 @@ import '@fontsource/pt-sans/700.css'
 import '@fontsource-variable/unbounded'
 import '@fontsource-variable/roboto'
 import './fonts.css'
+// PT Serif — вендорный серифный шрифт (для пресета velvet-resonance), @font-face вручную.
+import './pt-serif.css'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { buildMenu } from '@/lib/buildMenu'
 import { footerFromTree } from '@/lib/footerFromTree'
@@ -23,6 +25,7 @@ import { SpotlightController } from '@/components/SpotlightController'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { THEME_INIT } from '@/lib/themeInit'
+import { presetThemeCss } from '@/lib/themePresets'
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
@@ -69,10 +72,13 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     <html lang="ru" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+        {/* Цвета выбранного пресета: обе версии (.theme-dark/.theme-light),
+            scoped by class. Тумблер темы флипает класс — применяется мгновенно. */}
+        <style dangerouslySetInnerHTML={{ __html: presetThemeCss(settings?.themePreset) }} />
       </head>
       <body
         style={{
-          ...brandVars(settings?.theme, settings?.typography),
+          ...brandVars(settings),
           background: 'var(--brand-bg)',
           color: 'var(--brand-text)',
           fontFamily: 'var(--font-body)',

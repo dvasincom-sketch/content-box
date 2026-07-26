@@ -223,7 +223,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
 
 
   return (
-    <main className="page-canvas" style={{ ...brandVars(settings?.theme), minHeight: '100vh' }}>
+    <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Хлебные крошки: путь до категории (сам пост не дублируем — он в H1).
             Одна строка, горизонтальный скролл на мобиле, приглушённая плашка. */}
