@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID } from '../access'
+import { awardActivity, reverseActivity } from '../lib/reputation'
 
 /**
  * Comments — комментарии зрителей под публикациями.
@@ -119,6 +120,22 @@ export const Comments: CollectionConfig = {
           throw new Error('Ответы допускаются только на корневой комментарий (один уровень).')
         }
         return data
+      },
+    ],
+    // Репутация: очки автору за ОПУБЛИКОВАННЫЙ коммент; откат при скрытии/удалении.
+    afterChange: [
+      async ({ doc, req }) => {
+        const authorId = doc?.author && typeof doc.author === 'object' ? doc.author.id : doc?.author
+        if (doc?.status === 'published') {
+          await awardActivity(req.payload, { subscriberId: authorId, type: 'comment', refType: 'comment', refId: doc.id })
+        } else {
+          await reverseActivity(req.payload, { type: 'comment', refType: 'comment', refId: doc.id })
+        }
+      },
+    ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        await reverseActivity(req.payload, { type: 'comment', refType: 'comment', refId: doc.id })
       },
     ],
   },

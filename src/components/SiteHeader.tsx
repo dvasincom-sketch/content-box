@@ -101,14 +101,14 @@ export function SiteHeader({
             {/* Авторизация (десктоп) — вариант B: аккаунт-блок слитно */}
             {subscriber ? (
               <div className="hidden sm:flex items-center gap-3">
-                <div className="flex items-center gap-2">
+                <Link href="/account" className="flex items-center gap-2" title="Мой профиль">
                   <span className="c-avatar c-avatar--soft c-avatar--sm">
                     {(subscriberName || '?').charAt(0).toUpperCase()}
                   </span>
                   <span className="text-sm" style={{ color: 'var(--brand-text)' }}>
                     {subscriberName}
                   </span>
-                </div>
+                </Link>
                 <button
                   type="button"
                   onClick={logout}
@@ -177,6 +177,13 @@ export function SiteHeader({
                   <span className="py-2 px-2 text-base" style={{ color: 'var(--brand-muted)' }}>
                     {subscriberName}
                   </span>
+                  <Link
+                    href="/account"
+                    onClick={() => setOpen(false)}
+                    className="c-navlink py-2 px-2 rounded-lg text-base font-medium"
+                  >
+                    Мой профиль
+                  </Link>
                   <button
                     type="button"
                     onClick={() => { setOpen(false); logout() }}

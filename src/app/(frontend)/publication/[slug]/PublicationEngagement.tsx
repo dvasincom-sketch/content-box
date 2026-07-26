@@ -4,7 +4,8 @@ import { useEffect, useOptimistic, useRef, useState, useTransition } from 'react
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Lock, Plus, X } from 'lucide-react'
-import { toggleReaction, submitComment } from './actions'
+import { toggleReaction, submitComment, hideComment } from './actions'
+import { levelName } from '@/lib/reputation'
 
 /* ============================================================================
    PublicationEngagement — реакции + комментарии под публикацией.
@@ -50,6 +51,9 @@ export type CommentReaction = {
 export type CommentNode = {
   id: string | number
   authorName: string
+  authorHandle?: string | null
+  authorLevel?: number
+  authorPaid?: boolean
   authorColor?: string | null
   timeLabel: string
   text: string
@@ -59,6 +63,7 @@ export type CommentNode = {
 
 export type PublicationEngagementProps = {
   isAuthed: boolean
+  canModerate?: boolean
   publicationId: string | number
   publicationSlug?: string | null
   reactions: PublicationReaction[]
@@ -267,12 +272,16 @@ function Comment({
   node,
   isAuthed,
   isReply,
+  canModerate,
+  onHide,
   onToggleCommentReaction,
   onReply,
 }: {
   node: CommentNode
   isAuthed: boolean
   isReply: boolean
+  canModerate?: boolean
+  onHide?: (id: string | number) => void
   onToggleCommentReaction: (id: string | number, key: ReactionKey) => void
   onReply: (node: CommentNode) => void
 }) {
@@ -282,8 +291,31 @@ function Comment({
       <Avatar name={node.authorName} color={node.authorColor} size={isReply ? 28 : 36} />
       <div className="cm-body">
         <div className="cm-meta">
-          <span className="cm-name">{node.authorName}</span>
+          {node.authorHandle ? (
+            <Link href={`/u/${node.authorHandle}`} className="cm-name">{node.authorName}</Link>
+          ) : (
+            <span className="cm-name">{node.authorName}</span>
+          )}
+          {node.authorLevel ? (
+            <span
+              className="cm-level"
+              title="Уровень активности"
+              style={{
+                fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 999,
+                color: 'var(--brand-primary)',
+                background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)',
+              }}
+            >
+              {levelName(node.authorLevel)}
+            </span>
+          ) : null}
+          {node.authorPaid ? (
+            <span className="cm-flair" title="Подписчик" style={{ fontSize: 11, fontWeight: 600, padding: '1px 7px', borderRadius: 999, color: 'var(--brand-accent)', background: 'color-mix(in srgb, var(--brand-accent) 14%, transparent)' }}>★</span>
+          ) : null}
           <span className="cm-when">{node.timeLabel}</span>
+          {canModerate && onHide ? (
+            <button type="button" className="cm-hide" title="Скрыть (модерация)" onClick={() => onHide(node.id)} style={{ marginLeft: 6, fontSize: 12, color: 'var(--brand-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Скрыть</button>
+          ) : null}
         </div>
         <div className="cm-text">{node.text}</div>
         <CommentActions
@@ -301,6 +333,8 @@ function Comment({
                 node={rc}
                 isAuthed={isAuthed}
                 isReply
+                canModerate={canModerate}
+                onHide={onHide}
                 onToggleCommentReaction={onToggleCommentReaction}
                 onReply={onReply}
               />
@@ -385,6 +419,7 @@ function commentsReducer(
 
 export function PublicationEngagement({
   isAuthed,
+  canModerate = false,
   publicationId,
   publicationSlug,
   reactions,
@@ -398,6 +433,14 @@ export function PublicationEngagement({
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLTextAreaElement>(null)
+
+  function handleHide(id: string | number) {
+    setError(null)
+    startTransition(async () => {
+      const res = await hideComment({ commentId: id, publicationSlug })
+      if (!res.ok) setError(res.error)
+    })
+  }
 
   // «Войти» ведёт на /login с возвратом на текущую публикацию.
   // /login прочитает redirect, когда научится (сейчас параметр просто задаётся).
@@ -554,6 +597,8 @@ export function PublicationEngagement({
               node={c}
               isAuthed={isAuthed}
               isReply={false}
+              canModerate={canModerate}
+              onHide={handleHide}
               onToggleCommentReaction={handleToggleCommentReaction}
               onReply={handleReply}
             />

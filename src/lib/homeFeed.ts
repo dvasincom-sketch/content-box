@@ -125,7 +125,7 @@ export async function getHomeFeed(
     const newsRes = await payload.find({
       collection: 'publications',
       where: {
-        and: [{ tenant: { equals: tenantId } }, { isNews: { equals: true } }],
+        and: [{ tenant: { equals: tenantId } }, { isNews: { equals: true } }, { section: { not_equals: 'community' } }],
       },
       sort: '-publishedAt',
       depth: 1,
@@ -138,7 +138,7 @@ export async function getHomeFeed(
     // Берём с запасом, чтобы после исключения дублей осталось до SECTION_SIZE.
     const latestRes = await payload.find({
       collection: 'publications',
-      where: { tenant: { equals: tenantId } },
+      where: { and: [{ tenant: { equals: tenantId } }, { section: { not_equals: 'community' } }] },
       sort: '-publishedAt',
       depth: 1,
       limit: SECTION_SIZE * 2,
@@ -200,7 +200,7 @@ export async function getHomeFeed(
       const popRes = await payload.find({
         collection: 'publications',
         where: {
-          and: [{ tenant: { equals: tenantId } }, { id: { in: popularIds } }],
+          and: [{ tenant: { equals: tenantId } }, { id: { in: popularIds } }, { section: { not_equals: 'community' } }],
         },
         depth: 1,
         limit: SECTION_SIZE,
@@ -240,7 +240,7 @@ export async function getHomeFeed(
       const dRes = await payload.find({
         collection: 'publications',
         where: {
-          and: [{ tenant: { equals: tenantId } }, { id: { in: discussedIds } }],
+          and: [{ tenant: { equals: tenantId } }, { id: { in: discussedIds } }, { section: { not_equals: 'community' } }],
         },
         depth: 1,
         limit: SECTION_SIZE,

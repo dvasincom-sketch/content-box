@@ -56,6 +56,49 @@ export const Subscribers: CollectionConfig = {
   fields: [
     // `email` / `password` инжектит `auth: true`.
     { name: 'displayName', type: 'text', label: 'Отображаемое имя' },
+    // ── Профиль участника (Фаза 1 «Сообщество») ──────────────────────────
+    // Публичная страница /u/<handle>. Профиль по умолчанию публичный и
+    // индексируемый (SEO-приоритет); participant может скрыть (profilePrivate).
+    { name: 'avatar', type: 'upload', relationTo: 'media', label: 'Аватар' },
+    {
+      name: 'bio',
+      type: 'textarea',
+      label: 'О себе',
+      maxLength: 280,
+      admin: { description: 'Короткое описание в профиле. Без ссылок.' },
+    },
+    {
+      name: 'handle',
+      type: 'text',
+      label: 'Адрес профиля (/u/…)',
+      admin: {
+        description: '3–30 символов: латиница, цифры, дефис. Уникален в рамках сайта.',
+      },
+    },
+    {
+      name: 'profilePrivate',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Скрыть профиль',
+      admin: { description: 'Публичный по умолчанию. Если включено — профиль не виден и не индексируется.' },
+    },
+    // Репутация (заглушки Фазы 1; наполняются в Фазе 2). Только сервер.
+    {
+      name: 'points',
+      type: 'number',
+      defaultValue: 0,
+      label: 'Очки активности',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true },
+    },
+    {
+      name: 'level',
+      type: 'number',
+      defaultValue: 0,
+      label: 'Уровень',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true },
+    },
     {
       name: 'activeTier',
       type: 'relationship',

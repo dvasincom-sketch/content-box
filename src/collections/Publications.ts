@@ -32,6 +32,24 @@ export const Publications: CollectionConfig = {
     { name: 'publishedAt', type: 'date', label: 'Дата публикации' },
     { name: 'category', type: 'relationship', relationTo: 'categories' },
     {
+      name: 'author',
+      type: 'relationship',
+      relationTo: 'subscribers',
+      label: 'Автор-участник',
+      admin: { description: 'Публикации сообщества (UGC). Пусто = материал редакции.' },
+    },
+    {
+      name: 'section',
+      type: 'select',
+      defaultValue: 'feed',
+      label: 'Раздел',
+      options: [
+        { label: 'Общая лента', value: 'feed' },
+        { label: 'Сообщество', value: 'community' },
+      ],
+      admin: { description: 'Сообщество — материалы участников; в главной ленте не показываются.' },
+    },
+    {
       name: 'minTier',
       type: 'relationship',
       relationTo: 'subscription-tiers',

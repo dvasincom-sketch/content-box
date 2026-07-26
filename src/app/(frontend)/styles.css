@@ -2161,3 +2161,21 @@ svg {
 .c-chip.is-active,
 .c-chip--active { color: var(--brand-text); }
 .c-popover__item { color: var(--brand-text); }
+
+/* ── Rich-редактор участника (UGC, Фаза 4). Классы совпадают с RichEditor;
+   на фронте — брендовые токены (в студии те же классы на --st-* токенах). ── */
+.rte { border: 1px solid var(--brand-border); border-radius: var(--radius-lg); background: var(--brand-surface); overflow: hidden; }
+.rte__toolbar { display: flex; align-items: center; gap: 2px; padding: 8px; border-bottom: 1px solid var(--brand-border); background: color-mix(in srgb, var(--brand-surface) 90%, transparent); }
+.rte__btn { display: grid; place-items: center; width: 30px; height: 30px; border: none; background: transparent; color: var(--brand-muted); border-radius: var(--radius-md); cursor: pointer; transition: background .15s, color .15s; }
+.rte__btn:hover { background: color-mix(in srgb, var(--brand-primary) 10%, transparent); color: var(--brand-text); }
+.rte__btn.is-active { background: color-mix(in srgb, var(--brand-primary) 16%, transparent); color: var(--brand-text); }
+.rte__divider { width: 1px; height: 20px; background: var(--brand-border); margin: 0 6px; }
+.rte__wrap { position: relative; }
+.rte__placeholder { position: absolute; top: 16px; left: 16px; color: var(--brand-muted); pointer-events: none; }
+.rte__editable { min-height: 220px; padding: 16px; line-height: 1.6; color: var(--brand-text); outline: none; }
+.rte__editable p { margin: 0 0 12px; }
+.rte__editable p:last-child { margin-bottom: 0; }
+.rte__editable ul, .rte__editable ol { margin: 0 0 12px; padding-left: 24px; }
+.rte__editable li { margin-bottom: 4px; }
+.rte__editable strong { font-weight: 700; }
+.rte__editable em { font-style: italic; }

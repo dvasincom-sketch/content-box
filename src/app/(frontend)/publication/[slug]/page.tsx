@@ -263,6 +263,19 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           {pub.title}
         </h1>
 
+        {pub.author && typeof pub.author === 'object' && (
+          <div style={{ marginTop: -8, marginBottom: 8, color: 'var(--brand-muted)' }}>
+            Автор:{' '}
+            {pub.author.handle && !pub.author.profilePrivate && !pub.author.isBlocked ? (
+              <Link href={`/u/${pub.author.handle}`} style={{ color: 'var(--brand-primary)' }}>
+                {pub.author.displayName || `@${pub.author.handle}`}
+              </Link>
+            ) : (
+              <span>{pub.author.displayName || 'Участник'}</span>
+            )}
+          </div>
+        )}
+
         {/* Контент: мета + тело публикации (без журнального наезда). */}
         <div className="relative">
           {/* Мета: категория-чип + дата. Характер «тех-кампания»:
@@ -338,6 +351,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
         {/* Реакции + комментарии. Видны всегда (для гостя — тизер с приглашением). */}
         <PublicationEngagement
           isAuthed={engagement.isAuthed}
+          canModerate={engagement.canModerate}
           publicationId={pub.id}
           publicationSlug={slug}
           currentUser={engagement.currentUser}

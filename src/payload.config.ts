@@ -28,6 +28,8 @@ import { GalleryImages } from './collections/GalleryImages'
 import { GalleryFolders } from './collections/GalleryFolders'
 import { Comments } from './collections/Comments'
 import { Reactions } from './collections/Reactions'
+import { ActivityEvents } from './collections/ActivityEvents'
+import { Submissions } from './collections/Submissions'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -145,6 +147,8 @@ export default buildConfig({
     GalleryFolders,
     Comments,
     Reactions,
+    ActivityEvents,
+    Submissions,
   ],
   editor: lexicalEditor(),
   // Почта через RuSender API (Bearer-токен + ID ключа). Подключается ТОЛЬКО при
@@ -219,7 +223,9 @@ export default buildConfig({
         'gallery-folders': { useTenantAccess: false },
         comments: { useTenantAccess: false },
         reactions: { useTenantAccess: false },
-      },
+        'activity-events': { useTenantAccess: false },
+        submissions: { useTenantAccess: false },
+      } as any,
     }),
 
     // Поиск на Meilisearch: вешает хуки синхронизации на publications/categories/

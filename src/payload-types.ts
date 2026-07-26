@@ -84,6 +84,8 @@ export interface Config {
     'gallery-folders': GalleryFolder;
     comments: Comment;
     reactions: Reaction;
+    'activity-events': ActivityEvent;
+    submissions: Submission;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -107,6 +109,8 @@ export interface Config {
     'gallery-folders': GalleryFoldersSelect<false> | GalleryFoldersSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
     reactions: ReactionsSelect<false> | ReactionsSelect<true>;
+    'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
+    submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -521,6 +525,14 @@ export interface Publication {
   publishedAt?: string | null;
   category?: (number | null) | Category;
   /**
+   * Публикации сообщества (UGC). Пусто = материал редакции.
+   */
+  author?: (number | null) | Subscriber;
+  /**
+   * Сообщество — материалы участников; в главной ленте не показываются.
+   */
+  section?: ('feed' | 'community') | null;
+  /**
    * Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.
    */
   minTier?: (number | null) | SubscriptionTier;
@@ -574,6 +586,64 @@ export interface Publication {
   };
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Все зарегистрированные зрители, включая бесплатных.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers".
+ */
+export interface Subscriber {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  displayName?: string | null;
+  avatar?: (number | null) | Media;
+  /**
+   * Короткое описание в профиле. Без ссылок.
+   */
+  bio?: string | null;
+  /**
+   * 3–30 символов: латиница, цифры, дефис. Уникален в рамках сайта.
+   */
+  handle?: string | null;
+  /**
+   * Публичный по умолчанию. Если включено — профиль не виден и не индексируется.
+   */
+  profilePrivate?: boolean | null;
+  points?: number | null;
+  level?: number | null;
+  /**
+   * Пусто = бесплатный аккаунт без подписки.
+   */
+  activeTier?: (number | null) | SubscriptionTier;
+  /**
+   * Дата окончания текущей оплаченной подписки.
+   */
+  subscriptionUntil?: string | null;
+  isBlocked?: boolean | null;
+  emailVerified?: boolean | null;
+  emailVerifyToken?: string | null;
+  emailVerifyExpiry?: string | null;
+  notifyDigest?: boolean | null;
+  unsubscribeToken?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'subscribers';
 }
 /**
  * Уровни подписки и их настройки.
@@ -842,49 +912,6 @@ export interface MenuItem {
   createdAt: string;
 }
 /**
- * Все зарегистрированные зрители, включая бесплатных.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "subscribers".
- */
-export interface Subscriber {
-  id: number;
-  tenant?: (number | null) | Tenant;
-  displayName?: string | null;
-  /**
-   * Пусто = бесплатный аккаунт без подписки.
-   */
-  activeTier?: (number | null) | SubscriptionTier;
-  /**
-   * Дата окончания текущей оплаченной подписки.
-   */
-  subscriptionUntil?: string | null;
-  isBlocked?: boolean | null;
-  emailVerified?: boolean | null;
-  emailVerifyToken?: string | null;
-  emailVerifyExpiry?: string | null;
-  notifyDigest?: boolean | null;
-  unsubscribeToken?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'subscribers';
-}
-/**
  * Комментарии зрителей. Постмодерация: скрывайте нарушающие через статус.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -930,6 +957,58 @@ export interface Reaction {
   comment?: (number | null) | Comment;
   subscriber: number | Subscriber;
   emoji: 'like' | 'love' | 'fire' | 'cry';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Журнал начислений очков (служебное, только чтение).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "activity-events".
+ */
+export interface ActivityEvent {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  subscriber: number | Subscriber;
+  type: 'comment' | 'reaction_received';
+  points: number;
+  refType?: string | null;
+  refId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Публикации от участников на модерации.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "submissions".
+ */
+export interface Submission {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  author: number | Subscriber;
+  title: string;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  category?: (number | null) | Category;
+  status: 'pending' | 'approved' | 'rejected';
+  section?: ('feed' | 'community') | null;
+  rejectReason?: string | null;
+  reviewedBy?: (number | null) | User;
+  publication?: (number | null) | Publication;
   updatedAt: string;
   createdAt: string;
 }
@@ -1020,6 +1099,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'reactions';
         value: number | Reaction;
+      } | null)
+    | ({
+        relationTo: 'activity-events';
+        value: number | ActivityEvent;
+      } | null)
+    | ({
+        relationTo: 'submissions';
+        value: number | Submission;
       } | null);
   globalSlug?: string | null;
   user:
@@ -1266,6 +1353,8 @@ export interface PublicationsSelect<T extends boolean = true> {
   cover?: T;
   publishedAt?: T;
   category?: T;
+  author?: T;
+  section?: T;
   minTier?: T;
   relatedVideos?: T;
   gallery?:
@@ -1419,6 +1508,12 @@ export interface SubscriptionTiersSelect<T extends boolean = true> {
 export interface SubscribersSelect<T extends boolean = true> {
   tenant?: T;
   displayName?: T;
+  avatar?: T;
+  bio?: T;
+  handle?: T;
+  profilePrivate?: T;
+  points?: T;
+  level?: T;
   activeTier?: T;
   subscriptionUntil?: T;
   isBlocked?: T;
@@ -1574,6 +1669,38 @@ export interface ReactionsSelect<T extends boolean = true> {
   comment?: T;
   subscriber?: T;
   emoji?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "activity-events_select".
+ */
+export interface ActivityEventsSelect<T extends boolean = true> {
+  tenant?: T;
+  subscriber?: T;
+  type?: T;
+  points?: T;
+  refType?: T;
+  refId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "submissions_select".
+ */
+export interface SubmissionsSelect<T extends boolean = true> {
+  tenant?: T;
+  author?: T;
+  title?: T;
+  body?: T;
+  category?: T;
+  status?: T;
+  section?: T;
+  rejectReason?: T;
+  reviewedBy?: T;
+  publication?: T;
   updatedAt?: T;
   createdAt?: T;
 }

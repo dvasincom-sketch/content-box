@@ -82,6 +82,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   })
   const pubs = pubsRes.docs as { slug?: string | null; updatedAt: string; category?: unknown }[]
 
+  // Публичные профили участников (Фаза 1 «Сообщество»): не приватные, не заблокированные, с handle.
+  const profilesRes = await payload.find({
+    collection: 'subscribers',
+    where: {
+      and: [
+        { tenant: { equals: tenantId } },
+        { handle: { exists: true } },
+        { profilePrivate: { not_equals: true } },
+        { isBlocked: { not_equals: true } },
+      ],
+    },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const profiles = profilesRes.docs as { handle?: string | null; updatedAt: string }[]
+
   const catsWithPubs = new Set<string>()
   for (const pub of pubs) {
     const cat = pub.category
@@ -110,6 +127,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(p.updatedAt),
         changeFrequency: 'monthly' as const,
         priority: 0.6,
+      })),
+    ...profiles
+      .filter((p) => p.handle)
+      .map((p) => ({
+        url: `${base}/u/${p.handle}`,
+        lastModified: new Date(p.updatedAt),
+        changeFrequency: 'weekly' as const,
+        priority: 0.5,
       })),
   ]
 

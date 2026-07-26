@@ -1,0 +1,90 @@
+'use client'
+
+import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
+import { RichEditor } from '@/app/(studio)/studio/(app)/posts/new/RichEditor'
+import { createSubmission } from './actions'
+
+/**
+ * Форма отправки публикации участником. Богатый редактор (тот же RichEditor,
+ * что в Студии) → HTML → сервер конвертирует в Lexical. Trusted (L4) публикует
+ * сразу; остальные — на модерацию.
+ */
+export function SubmitForm({ categories }: { categories: { id: number; title: string }[] }) {
+  const router = useRouter()
+  const [title, setTitle] = useState('')
+  const [bodyHtml, setBodyHtml] = useState('')
+  const [categoryId, setCategoryId] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+
+  async function submit() {
+    setError(null)
+    if (!title.trim()) {
+      setError('Укажите заголовок.')
+      return
+    }
+    setBusy(true)
+    try {
+      const res = await createSubmission({ title, bodyHtml, categoryId: categoryId || null })
+      if (!res.ok) {
+        setError(res.error)
+      } else if (res.status === 'published' && res.slug) {
+        router.push(`/publication/${res.slug}`)
+      } else {
+        setPending(true)
+      }
+    } catch {
+      setError('Ошибка соединения.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (pending) {
+    return (
+      <div className="c-card" style={{ padding: 28 }}>
+        <h1 style={{ fontSize: 24, color: 'var(--brand-text)', marginBottom: 8 }}>Отправлено на модерацию</h1>
+        <p style={{ color: 'var(--brand-muted)' }}>
+          Публикация появится после проверки редактором. Спасибо за вклад в сообщество!
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <h1 style={{ fontSize: 28, color: 'var(--brand-text)', marginBottom: 6 }}>Новая публикация</h1>
+      <p style={{ color: 'var(--brand-muted)', marginBottom: 20 }}>
+        Материал участника. После проверки редактором он выйдет с вашей подписью.
+      </p>
+
+      <div className="c-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <input
+          className="c-input"
+          placeholder="Заголовок"
+          value={title}
+          maxLength={160}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <RichEditor onChange={setBodyHtml} placeholder="Текст публикации…" />
+        {categories.length > 0 && (
+          <select className="c-input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            <option value="">Без категории</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
+        )}
+        {error && <div style={{ color: 'var(--danger)', fontSize: 14 }}>{error}</div>}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button className="c-btn c-btn--primary" onClick={submit} disabled={busy}>
+            {busy ? <Loader2 size={16} className="animate-spin" /> : null} Опубликовать
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}

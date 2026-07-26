@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { canModerate } from '@/lib/capabilities'
 import type { Reaction } from '@/payload-types'
 import type {
   PublicationReaction,
@@ -58,6 +59,7 @@ function relID(val: any): string | number | null {
 
 export type EngagementData = {
   isAuthed: boolean
+  canModerate: boolean
   currentUser: { name: string; color?: string | null } | null
   reactions: PublicationReaction[]
   comments: CommentNode[]
@@ -74,9 +76,11 @@ export async function getPublicationEngagement(
   const subscriber = (await getCurrentSubscriber().catch(() => null)) as SubscriberLite
   const meId = subscriber?.id ?? null
   const isAuthed = Boolean(meId)
+  const viewerCanModerate = Boolean(subscriber && !(subscriber as any).isBlocked && canModerate((subscriber as any).level))
 
   const empty: EngagementData = {
     isAuthed,
+    canModerate: viewerCanModerate,
     currentUser: isAuthed
       ? { name: subName(subscriber), color: avatarColor(meId as string | number) }
       : null,
@@ -185,6 +189,12 @@ export async function getPublicationEngagement(
       return {
         id: doc.id,
         authorName: subName(typeof authorSub === 'object' ? authorSub : null),
+        authorHandle:
+          typeof authorSub === 'object' && authorSub && !authorSub.profilePrivate && !authorSub.isBlocked && authorSub.handle
+            ? authorSub.handle
+            : null,
+        authorLevel: typeof authorSub === 'object' && authorSub ? Number(authorSub.level) || 0 : 0,
+        authorPaid: typeof authorSub === 'object' && authorSub ? Boolean(authorSub.activeTier) : false,
         authorColor: aid != null ? avatarColor(aid) : null,
         timeLabel: formatWhen(doc.createdAt),
         text: doc.text ?? '',
@@ -215,6 +225,7 @@ export async function getPublicationEngagement(
 
     return {
       isAuthed,
+      canModerate: viewerCanModerate,
       currentUser: empty.currentUser,
       reactions: pubReactions,
       comments: roots,

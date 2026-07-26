@@ -1,4 +1,5 @@
 import type { Access, CollectionConfig } from 'payload'
+import { awardActivity, reverseActivity } from '../lib/reputation'
 import { isSuperAdmin, getUserTenantID } from '../access'
 
 /**
@@ -119,6 +120,30 @@ export const Reactions: CollectionConfig = {
         if (data.targetType === 'publication') data.comment = null
         if (data.targetType === 'comment') data.publication = null
         return data
+      },
+    ],
+    // Репутация: очки автору коммента за ПОЛУЧЕННУЮ реакцию (не за самореакцию).
+    afterChange: [
+      async ({ doc, req }) => {
+        if (doc?.targetType !== 'comment') return
+        const commentId = doc?.comment && typeof doc.comment === 'object' ? doc.comment.id : doc?.comment
+        const reactorId = doc?.subscriber && typeof doc.subscriber === 'object' ? doc.subscriber.id : doc?.subscriber
+        if (!commentId) return
+        const comment = await req.payload
+          .findByID({ collection: 'comments', id: commentId, depth: 0, overrideAccess: true })
+          .catch(() => null)
+        const recipientId =
+          (comment as any)?.author && typeof (comment as any).author === 'object'
+            ? (comment as any).author.id
+            : (comment as any)?.author
+        if (!recipientId || Number(recipientId) === Number(reactorId)) return
+        await awardActivity(req.payload, { subscriberId: recipientId, type: 'reaction_received', refType: 'reaction', refId: doc.id })
+      },
+    ],
+    afterDelete: [
+      async ({ doc, req }) => {
+        if (doc?.targetType !== 'comment') return
+        await reverseActivity(req.payload, { type: 'reaction_received', refType: 'reaction', refId: doc.id })
       },
     ],
     beforeChange: [

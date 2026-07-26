@@ -33,6 +33,9 @@ import * as migration_20260724_171950_add_subscriber_email_verify from './202607
 import * as migration_20260724_172822_add_digest_notifications from './20260724_172822_add_digest_notifications';
 import * as migration_20260726_120000_add_search_section from './20260726_120000_add_search_section';
 import * as migration_20260726_130000_add_theme_preset from './20260726_130000_add_theme_preset';
+import * as migration_20260726_140000_add_subscriber_profile from './20260726_140000_add_subscriber_profile';
+import * as migration_20260726_150000_add_activity_events from './20260726_150000_add_activity_events';
+import * as migration_20260726_160000_add_submissions_ugc from './20260726_160000_add_submissions_ugc';
 
 export const migrations = [
   {
@@ -209,5 +212,20 @@ export const migrations = [
     up: migration_20260726_130000_add_theme_preset.up,
     down: migration_20260726_130000_add_theme_preset.down,
     name: '20260726_130000_add_theme_preset',
+  },
+  {
+    up: migration_20260726_140000_add_subscriber_profile.up,
+    down: migration_20260726_140000_add_subscriber_profile.down,
+    name: '20260726_140000_add_subscriber_profile',
+  },
+  {
+    up: migration_20260726_150000_add_activity_events.up,
+    down: migration_20260726_150000_add_activity_events.down,
+    name: '20260726_150000_add_activity_events',
+  },
+  {
+    up: migration_20260726_160000_add_submissions_ugc.up,
+    down: migration_20260726_160000_add_submissions_ugc.down,
+    name: '20260726_160000_add_submissions_ugc',
   },
 ];

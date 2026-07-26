@@ -170,3 +170,40 @@ export async function submitComment(input: {
     return { ok: false, error: msg }
   }
 }
+
+/* ── Скрыть комментарий (общинная модерация, Фаза 3) ─────────────────────────
+   Доступно участнику уровня «Знаток»+ (canModerate). Ставит status='hidden'
+   (коммент пропадает из публичной выборки; хук репутации откатит очки автору).
+   Только в рамках своего тенанта. Staff может вернуть через админку. */
+export async function hideComment(input: {
+  commentId: string | number
+  publicationSlug?: string | null
+}): Promise<ActionResult> {
+  const { payload, tenant, subscriber } = await ctx()
+  if (!tenant?.id) return { ok: false, error: 'Тенант не определён.' }
+  if (!subscriber?.id) return { ok: false, error: 'Войдите.' }
+  if (subscriber.isBlocked || (Number(subscriber.level) || 0) < 3) {
+    return { ok: false, error: 'Недостаточно прав.' }
+  }
+  const cid = toNum(input.commentId)
+  if (!cid) return { ok: false, error: 'Некорректный комментарий.' }
+  try {
+    const c = (await payload
+      .findByID({ collection: 'comments', id: cid, depth: 0, overrideAccess: true })
+      .catch(() => null)) as any
+    const cTenant = c && (typeof c.tenant === 'object' ? c.tenant?.id : c.tenant)
+    if (!c || Number(cTenant) !== Number(tenant.id)) {
+      return { ok: false, error: 'Комментарий не найден.' }
+    }
+    await payload.update({
+      collection: 'comments',
+      id: cid,
+      data: { status: 'hidden' } as any,
+      overrideAccess: true,
+    })
+    revalidatePublication(input.publicationSlug)
+    return { ok: true }
+  } catch (e: any) {
+    return { ok: false, error: e?.message || 'Не удалось скрыть.' }
+  }
+}
