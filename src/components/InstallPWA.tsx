@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Download, Share, X } from 'lucide-react'
 
 /**
@@ -98,7 +99,7 @@ export function InstallPWA() {
         Установить приложение
       </span>
 
-      {hint && (
+      {hint && typeof document !== 'undefined' && createPortal(
         <>
           <div
             onClick={() => setHint(false)}
@@ -146,7 +147,8 @@ export function InstallPWA() {
               браузера, затем выберите <b>«На экран „Домой“»</b>.
             </p>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </span>
   )

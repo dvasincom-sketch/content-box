@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { categoryHref } from '@/lib/categoryHref'
 
@@ -72,17 +73,12 @@ export function HeroTeamBlock({ members = [], caption, avatarSize }: HeroTeamBlo
             }
 
             const img = (
-              <img
+              <Image
                 src={url as string}
                 alt={member.name || 'Участник'}
-                title={member.name || undefined}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                  borderRadius: '9999px',
-                }}
+                fill
+                sizes={`${size}px`}
+                style={{ objectFit: 'cover', borderRadius: '9999px' }}
               />
             )
 
