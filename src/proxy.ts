@@ -167,6 +167,18 @@ export async function proxy(request: NextRequest) {
     return res
   }
 
+  // Канонический адрес: тенант открыт по бесплатному поддомену (*.contentbox.site),
+  // но у него подключён собственный домен — 301 на него. Единый канонический хост
+  // = без дублей контента для SEO. Для собственного домена subdomainFromHost
+  // вернёт null, поэтому редирект-петли не будет.
+  if (sub && tenant.domain && !tenant.domain.endsWith(`.${PLATFORM_ROOT}`)) {
+    const target = new URL(
+      request.nextUrl.pathname + request.nextUrl.search,
+      `https://${tenant.domain}`,
+    )
+    return NextResponse.redirect(target, 301)
+  }
+
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-tenant-id', String(tenant.id))
   requestHeaders.set('x-tenant-domain', host)
