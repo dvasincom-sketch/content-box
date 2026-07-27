@@ -7,6 +7,7 @@ import { Menu, X, Star, Search } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DesktopMenu } from '@/components/DesktopMenu'
 import { MobileMenu } from '@/components/MobileMenu'
+import { InstallPWA } from '@/components/InstallPWA'
 import type { MenuNode } from '@/lib/headerMenu'
 
 export type NavItem = { label: string; url: string }
@@ -98,6 +99,9 @@ export function SiteHeader({
               </Link>
               <span className="c-tooltip c-tooltip--below" role="tooltip">Поиск</span>
             </span>
+
+            {/* Установить как приложение — кнопка появляется только если установимо */}
+            <InstallPWA />
 
             {/* Авторизация (десктоп) — аватар с выпадающим меню */}
             {subscriber ? (
