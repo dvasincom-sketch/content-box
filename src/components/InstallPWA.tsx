@@ -114,38 +114,57 @@ export function InstallPWA() {
               left: '50%',
               bottom: 24,
               transform: 'translateX(-50%)',
-              width: 'min(360px, calc(100vw - 32px))',
+              width: 'min(380px, calc(100vw - 24px))',
               background: 'var(--brand-surface)',
               color: 'var(--brand-text)',
               border: `1px solid ${borderSoft}`,
-              borderRadius: 16,
-              padding: 18,
-              boxShadow: '0 12px 40px rgba(0,0,0,.28)',
+              borderRadius: 20,
+              padding: '18px 18px 20px',
+              boxShadow: '0 16px 48px rgba(0,0,0,.32)',
             }}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 10,
-              }}
+            <button
+              type="button"
+              aria-label="Закрыть"
+              onClick={() => setHint(false)}
+              className="c-btn c-btn--surface c-btn--icon c-btn--sm"
+              style={{ position: 'absolute', top: 12, right: 12 }}
             >
-              <strong style={{ fontFamily: 'var(--font-heading)' }}>Установить приложение</strong>
-              <button
-                type="button"
-                aria-label="Закрыть"
-                onClick={() => setHint(false)}
-                className="c-btn c-btn--surface c-btn--icon c-btn--sm"
+              <X size={16} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingInlineEnd: 30 }}>
+              <span
+                aria-hidden
+                style={{
+                  flexShrink: 0,
+                  width: 54,
+                  height: 54,
+                  borderRadius: 16,
+                  display: 'grid',
+                  placeItems: 'center',
+                  background: 'color-mix(in srgb, var(--brand-primary) 16%, transparent)',
+                  color: 'var(--brand-primary)',
+                }}
               >
-                <X size={16} />
-              </button>
+                <Share size={26} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <strong
+                  style={{
+                    fontFamily: 'var(--font-heading)',
+                    display: 'block',
+                    marginBottom: 4,
+                    fontSize: 16,
+                  }}
+                >
+                  Установить приложение
+                </strong>
+                <p style={{ margin: 0, lineHeight: 1.5, fontSize: 14, opacity: 0.82 }}>
+                  Нажмите «Поделиться» внизу браузера, затем выберите{' '}
+                  <b style={{ opacity: 1 }}>«На экран Домой»</b>.
+                </p>
+              </div>
             </div>
-            <p style={{ margin: 0, lineHeight: 1.6, fontSize: 14 }}>
-              Нажмите{' '}
-              <Share size={15} style={{ verticalAlign: 'text-bottom' }} /> «Поделиться» внизу
-              браузера, затем выберите <b>«На экран „Домой“»</b>.
-            </p>
           </div>
         </>,
         document.body,
