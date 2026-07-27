@@ -25,7 +25,8 @@ import { SpotlightController } from '@/components/SpotlightController'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { THEME_INIT } from '@/lib/themeInit'
-import { presetThemeCss } from '@/lib/themePresets'
+import { presetThemeCss, getPreset } from '@/lib/themePresets'
+import { PWARegister } from '@/components/PWARegister'
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
@@ -67,6 +68,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const logo = settings?.logo
   const logoUrl = logo && typeof logo === 'object' ? logo.url : null
   const logoAlt = logo && typeof logo === 'object' ? logo.alt : null
+  const themeColor = getPreset(settings?.themePreset).light.bg
 
   return (
     <html lang="ru" suppressHydrationWarning>
@@ -75,6 +77,15 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         {/* Цвета выбранного пресета: обе версии (.theme-dark/.theme-light),
             scoped by class. Тумблер темы флипает класс — применяется мгновенно. */}
         <style dangerouslySetInnerHTML={{ __html: presetThemeCss(settings?.themePreset) }} />
+        {/* PWA: динамический манифест на тенанта, иконки и мета для установки */}
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content={themeColor} />
+        <link rel="icon" type="image/png" href="/pwa-icon?size=192" />
+        <link rel="apple-touch-icon" href="/pwa-icon?size=180" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content={tenant?.name ?? 'Content Box'} />
       </head>
       <body
         style={{
@@ -89,6 +100,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         }}
       >
         <SpotlightController />
+        <PWARegister />
         {ctx && (
           <SiteHeader
             logoUrl={logoUrl}
