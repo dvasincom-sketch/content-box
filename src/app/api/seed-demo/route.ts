@@ -147,7 +147,8 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ error: 'unauthorized' }, { status: 401 })
   }
 
-  const payload = await getPayload({ config: await config })
+  try {
+    const payload = await getPayload({ config: await config })
 
   // 1) тенант
   const tRes = await payload.find({
@@ -268,4 +269,10 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   return Response.json({ ok: true, tenant: TENANT_NAME, categories: CATS.length, publications: pubs, tiers })
+  } catch (e: any) {
+    return Response.json(
+      { error: 'seed failed', message: e?.message || String(e), name: e?.name || null },
+      { status: 500 },
+    )
+  }
 }
