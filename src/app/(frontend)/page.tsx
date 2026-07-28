@@ -29,10 +29,10 @@ export const revalidate = 3600
  * фолбэк 3-простой: пусто → показываем эти значения, чтобы главная не осталась
  * без слогана). Единый источник дефолта.
  */
-const DEFAULT_HERO_TITLE_LINES = ['Полные выпуски BTS', 'с русской озвучкой']
+const DEFAULT_HERO_TITLE_LINES = ['Добро пожаловать']
 
 /** Дефолтные тексты баннера «ON AIR» — фолбэк, когда settings.banner пуст. */
-const DEFAULT_BANNER_TAGLINE = 'BTS TV'
+const DEFAULT_BANNER_TAGLINE = 'В эфире'
 const DEFAULT_BANNER_ONAIR = 'ON AIR'
 
 /** Непустая строка → она, иначе fallback (мягкий фолбэк 3-простой). */
@@ -41,13 +41,14 @@ function textOr(raw: unknown, fallback: string): string {
 }
 
 /** Строки заголовка из textarea (по \n), пустые отбрасываем; пусто → дефолт. */
-function resolveHeroTitleLines(raw: unknown): string[] {
-  if (typeof raw !== 'string') return DEFAULT_HERO_TITLE_LINES
+function resolveHeroTitleLines(raw: unknown, fallbackName?: string): string[] {
+  const fallback = fallbackName ? [fallbackName] : DEFAULT_HERO_TITLE_LINES
+  if (typeof raw !== 'string') return fallback
   const lines = raw
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.length > 0)
-  return lines.length > 0 ? lines : DEFAULT_HERO_TITLE_LINES
+  return lines.length > 0 ? lines : fallback
 }
 
 /**
@@ -105,7 +106,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const ctx = await getTenantFromHeaders()
   if (!ctx) {
-    return <div className="p-8">Тенант не определён. Открой сайт по адресу тенанта, напр. http://bts.localhost:3000/</div>
+    return <div className="p-8">Тенант не определён. Откройте сайт по адресу тенанта.</div>
   }
   const { tenant, settings } = ctx
 
@@ -149,7 +150,7 @@ export default async function HomePage() {
     hero: () => (
       <HeroBlock
         eyebrow={(settings as any)?.hero?.eyebrow || undefined}
-        titleLines={resolveHeroTitleLines((settings as any)?.hero?.titleLines)}
+        titleLines={resolveHeroTitleLines((settings as any)?.hero?.titleLines, tenant?.name)}
         slides={heroSlides}
       />
     ),
@@ -202,38 +203,12 @@ export default async function HomePage() {
     ),
     whyUs: () => (
       <WhyUsBlock
-        heading="Почему COCO JAMBO"
+        heading={`Почему ${tenant?.name ?? 'мы'}`}
         items={[
-          {
-            icon: 'mic',
-            title: 'Живая озвучка',
-            text: 'Профессиональная русская озвучка с сохранением эмоций, интонаций и атмосферы оригинала.',
-          },
-          {
-            icon: 'globe',
-            title: 'Достоверный перевод',
-            text: 'Перевод выполняет команда переводчиков с вниманием к смыслу, культурному контексту и деталям.',
-          },
-          {
-            icon: 'library',
-            title: 'Более 800 озвученных видео',
-            text: 'Одна из крупнейших русскоязычных библиотек BTS: концерты, шоу, Weverse Live, интервью и документальные фильмы.',
-          },
-          {
-            icon: 'zap',
-            title: 'Новые релизы — сразу в работе',
-            text: 'Все новые видео BTS оперативно берутся в перевод и озвучку, чтобы вы смотрели их на русском как можно раньше.',
-          },
-          {
-            icon: 'calendar',
-            title: 'BTS на русском — каждый день',
-            text: 'Мы почти ежедневно выпускаем новые переводы и озвучки, постоянно расширяя одну из крупнейших русскоязычных библиотек BTS-контента.',
-          },
-          {
-            icon: 'heart',
-            title: 'Проект от ARMY',
-            text: 'Создано фанатом BTS для русскоязычных ARMY с любовью к группе и уважением к каждому мемберу и зрителю.',
-          },
+          { icon: 'library', title: 'Эксклюзивный контент', text: 'Материалы, которых нет в открытом доступе — только для вашей аудитории.' },
+          { icon: 'zap', title: 'Регулярные обновления', text: 'Новые публикации и видео выходят стабильно, а подписчики узнают о них первыми.' },
+          { icon: 'globe', title: 'Доступ по подписке', text: 'Гибкие уровни доступа: часть материалов открыта всем, часть — для подписчиков.' },
+          { icon: 'heart', title: 'Живое сообщество', text: 'Комментарии, реакции и обсуждения объединяют читателей вокруг вашего проекта.' },
         ]}
       />
     ),

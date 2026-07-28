@@ -614,7 +614,7 @@ export function PublicationEngagement({
               <div className="cm-gate__icon">
                 <Lock size={20} />
               </div>
-              <div className="cm-gate__title">Здесь обсуждают ARMY</div>
+              <div className="cm-gate__title">Обсуждение материала</div>
               <div className="cm-gate__sub">
                 Войдите или зарегистрируйтесь, чтобы читать комментарии и оставлять свои.
               </div>

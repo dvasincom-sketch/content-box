@@ -36,11 +36,11 @@ export default function NotFound() {
           className="mt-4 text-2xl lg:text-3xl font-extrabold"
           style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)' }}
         >
-          Похоже, этот выпуск ещё не озвучили
+          Похоже, такой страницы нет
         </h1>
         <p className="mt-3 text-base" style={{ color: 'var(--brand-muted)' }}>
           Страница не найдена или её перенесли. Давайте вернёмся к контенту — на
-          главной вас ждут свежие переводы и озвучки BTS.
+          главной вас ждут свежие материалы проекта.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link href="/" className="c-btn c-btn--primary c-btn--pill">

@@ -11,6 +11,7 @@ import '@fontsource/pt-sans/400.css'
 import '@fontsource/pt-sans/700.css'
 import '@fontsource-variable/unbounded'
 import '@fontsource-variable/roboto'
+import '@fontsource/ibm-plex-mono/500.css'
 import './fonts.css'
 // PT Serif — вендорный серифный шрифт (для пресета velvet-resonance), @font-face вручную.
 import './pt-serif.css'
@@ -69,6 +70,19 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const logoUrl = logo && typeof logo === 'object' ? logo.url : null
   const logoAlt = logo && typeof logo === 'object' ? logo.alt : null
   const themeColor = getPreset(settings?.themePreset).light.bg
+  const legalName = tenant?.name ?? ''
+  const year = new Date().getFullYear()
+  const copyrightText = legalName
+    ? '© 2021–' +
+      year +
+      ' ' +
+      legalName +
+      '. Все права защищены. ' +
+      legalName +
+      ' — это коммерческое название компании. Все услуги предоставляются «как есть», и ' +
+      legalName +
+      ' не имеет никаких лицензий, так как деятельность не лицензируется.'
+    : '© 2021–' + year + '. Все права защищены.'
 
   return (
     <html lang="ru" suppressHydrationWarning>
@@ -105,7 +119,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
           <SiteHeader
             logoUrl={logoUrl}
             logoAlt={logoAlt}
-            brandName={tenant?.name ?? 'COCO JAMBO'}
+            brandName={tenant?.name ?? ''}
             nav={navItems}
             menu={menu}
             subscriber={subscriber}
@@ -115,7 +129,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         {ctx && (
           <SiteFooter
             brandName={tenant?.name ?? ''}
-            copyright={`© ${new Date().getFullYear()} ${tenant?.name ?? ''}. Все права защищены.`}
+            copyright={copyrightText}
             nav={footerNav}
             columns={footerColumns}
             support={[]}
