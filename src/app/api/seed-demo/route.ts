@@ -156,9 +156,22 @@ export async function POST(req: Request): Promise<Response> {
     limit: 1,
     overrideAccess: true,
   })
-  const tenant = tRes.docs[0] as any
+  let tenant = tRes.docs[0] as any
   if (!tenant) {
-    return Response.json({ error: `tenant "${SUBDOMAIN}" not found — create it first` }, { status: 404 })
+    // тенанта нет — создаём с нуля (без онбординга и учётной записи)
+    tenant = await payload.create({
+      collection: "tenants",
+      data: {
+        name: TENANT_NAME,
+        subdomain: SUBDOMAIN,
+        domain: `${SUBDOMAIN}.contentbox.site`,
+        status: "active",
+        domainVerified: true,
+        plan: "free",
+        onboardingComplete: true,
+      } as any,
+      overrideAccess: true,
+    })
   }
   const tenantId = tenant.id
 
