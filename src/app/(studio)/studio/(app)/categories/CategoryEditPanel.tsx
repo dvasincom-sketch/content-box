@@ -14,6 +14,7 @@ export type EditableCat = {
   coverId: number | null
   coverUrl: string | null
   posterLayout: boolean
+  videoSeries: boolean
 }
 
 /** Ответ роута загрузки обложки /studio/api/categories/cover. */
@@ -38,6 +39,7 @@ export function CategoryEditPanel({
   const [coverId, setCoverId] = useState<number | null>(cat.coverId)
   const [coverUrl, setCoverUrl] = useState<string | null>(cat.coverUrl)
   const [posterLayout, setPosterLayout] = useState<boolean>(cat.posterLayout ?? false)
+  const [videoSeries, setVideoSeries] = useState<boolean>(cat.videoSeries ?? false)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -184,6 +186,7 @@ export function CategoryEditPanel({
           description: descHtml,
           coverId: coverId ?? null,
           posterLayout,
+          videoSeries,
           parentId: parentSel === '__root__' ? null : Number(parentSel),
         }),
       })
@@ -240,21 +243,28 @@ export function CategoryEditPanel({
             <div className="catedit__poster-toggle">
               <button
                 type="button"
-                className={`catedit__poster-opt${!posterLayout ? ' is-on' : ''}`}
-                onClick={() => setPosterLayout(false)}
+                className={`catedit__poster-opt${!posterLayout && !videoSeries ? ' is-on' : ''}`}
+                onClick={() => { setPosterLayout(false); setVideoSeries(false) }}
               >
                 Обычный раздел
               </button>
               <button
                 type="button"
                 className={`catedit__poster-opt${posterLayout ? ' is-on' : ''}`}
-                onClick={() => setPosterLayout(true)}
+                onClick={() => { setPosterLayout(true); setVideoSeries(false) }}
               >
                 Контейнер афиш
               </button>
+              <button
+                type="button"
+                className={`catedit__poster-opt${videoSeries ? ' is-on' : ''}`}
+                onClick={() => { setVideoSeries(true); setPosterLayout(false) }}
+              >
+                Видео-плейлист
+              </button>
             </div>
             <div className="catedit__hint">
-              Контейнер афиш — дочерние категории этого раздела выводятся вертикальными постерами 2:3 (афишами): рядом на главной и сеткой на странице раздела. Клик по афише ведёт в дочерний раздел с эпизодами. Вертикальную обложку загружайте в КАЖДУЮ дочернюю категорию.
+              Контейнер афиш — дочерние категории этого раздела выводятся вертикальными постерами 2:3 (афишами): рядом на главной и сеткой на странице раздела. Клик по афише ведёт в дочерний раздел с эпизодами. Вертикальную обложку загружайте в КАЖДУЮ дочернюю категорию. Видео-плейлист — раздел выводится как плеер со списком серий по сезонам (YouTube-подобно); номер сезона и порядок эпизода задаются у каждого видео этой категории.
             </div>
           </div>
 

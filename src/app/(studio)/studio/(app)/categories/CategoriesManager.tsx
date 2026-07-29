@@ -15,6 +15,7 @@ type Cat = {
   coverId: number | null
   coverUrl: string | null
   posterLayout: boolean
+  videoSeries: boolean
 }
 type TreeNode = Cat & { children: TreeNode[] }
 
@@ -100,6 +101,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
       coverId: node.coverId,
       coverUrl: node.coverUrl,
       posterLayout: node.posterLayout,
+      videoSeries: node.videoSeries,
     })
   }
 

@@ -77,6 +77,16 @@ export const Categories: CollectionConfig = {
       admin: { description: 'Показывать в колонке футера (для подкатегорий 2-го уровня).' },
     },
     {
+      name: 'videoSeries',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Видео-плейлист (сезоны/эпизоды)',
+      admin: {
+        description:
+          'Категория выводится как видео-плейлист: плеер + список серий по сезонам (YouTube-подобно). Видео этой категории получают номер сезона и порядок эпизода.',
+      },
+    },
+    {
       name: 'posterLayout',
       type: 'checkbox',
       defaultValue: false,

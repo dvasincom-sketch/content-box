@@ -38,6 +38,7 @@ import * as migration_20260726_150000_add_activity_events from './20260726_15000
 import * as migration_20260726_160000_add_submissions_ugc from './20260726_160000_add_submissions_ugc';
 import * as migration_20260726_170000_add_social_phase5 from './20260726_170000_add_social_phase5';
 import * as migration_20260727_090000_bts_custom_domain from './20260727_090000_bts_custom_domain';
+import * as migration_20260729_100000_add_video_series from './20260729_100000_add_video_series';
 
 export const migrations = [
   {
@@ -239,5 +240,10 @@ export const migrations = [
     up: migration_20260727_090000_bts_custom_domain.up,
     down: migration_20260727_090000_bts_custom_domain.down,
     name: '20260727_090000_bts_custom_domain',
+  },
+  {
+    up: migration_20260729_100000_add_video_series.up,
+    down: migration_20260729_100000_add_video_series.down,
+    name: '20260729_100000_add_video_series',
   },
 ];

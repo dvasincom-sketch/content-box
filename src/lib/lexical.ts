@@ -1,8 +1,9 @@
 /**
  * Конвертация между упрощённым HTML (из редактора студии) и Lexical richText JSON.
  *
- * Поддерживаем: параграфы, жирный, курсив, подчёркнутый, зачёркнутый,
- * маркированные и нумерованные списки. Этого достаточно для «пиши как в соцсети».
+ * Поддерживаем: параграфы, заголовки (H2/H3), жирный, курсив, подчёркнутый,
+ * зачёркнутый, маркированные и нумерованные списки, изображения (upload-ноды
+ * коллекции media). Этого достаточно для полноценных публикаций/страниц.
  *
  * Формат-биты Lexical для текст-ноды (поле `format`):
  *   bold=1, italic=2, strikethrough=4, underline=8, code=16
@@ -10,9 +11,16 @@
  *
  * Редактор студии (contentEditable) выдаёт HTML вида:
  *   <p>Текст <strong>жирный</strong> и <em>курсив</em></p>
+ *   <h2>Заголовок</h2>
  *   <ul><li>пункт</li></ul>
+ *   <figure data-media-id="123"><img src="…"></figure>
  * Мы парсим его в Lexical на сервере (htmlToLexical) и разворачиваем обратно
  * в HTML для редактирования (lexicalToHtml).
+ *
+ * Публичный сайт рендерит контент официальным JSX-конвертером Payload
+ * (@payloadcms/richtext-lexical/react), который из коробки понимает heading- и
+ * upload-ноды (редактор глобально — lexicalEditor() со стандартным набором
+ * фич). Наши htmlToLexical/lexicalToHtml используются только внутри студии.
  *
  * ВАЖНО: парсинг HTML тут — простой и толерантный (регэкспы + мини-стейт),
  * без DOM. Он рассчитан на HTML, который генерит НАШ редактор, а не на
@@ -44,6 +52,25 @@ type LexicalParagraph = {
   children: LexicalTextNode[]
 }
 
+type LexicalHeading = {
+  type: 'heading'
+  tag: 'h2' | 'h3'
+  version: number
+  direction: 'ltr' | null
+  format: ''
+  indent: number
+  children: LexicalTextNode[]
+}
+
+type LexicalUpload = {
+  type: 'upload'
+  version: number
+  relationTo: 'media'
+  value: number
+  format: ''
+  fields: null
+}
+
 type LexicalListItem = {
   type: 'listitem'
   version: number
@@ -67,6 +94,12 @@ type LexicalList = {
   children: LexicalListItem[]
 }
 
+type LexicalBlock =
+  | LexicalParagraph
+  | LexicalHeading
+  | LexicalList
+  | LexicalUpload
+
 export type LexicalRoot = {
   root: {
     type: 'root'
@@ -74,7 +107,7 @@ export type LexicalRoot = {
     direction: 'ltr' | null
     format: ''
     indent: number
-    children: (LexicalParagraph | LexicalList)[]
+    children: LexicalBlock[]
   }
 }
 
@@ -97,6 +130,12 @@ function encodeEntities(s: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
+}
+
+/** Вытаскивает id медиа из фрагмента (data-media-id="123"). */
+function mediaIdOf(html: string): number | null {
+  const m = html.match(/data-media-id\s*=\s*["'](\d+)["']/i)
+  return m ? Number(m[1]) : null
 }
 
 function textNode(text: string, format = 0): LexicalTextNode {
@@ -182,6 +221,29 @@ function paragraph(children: LexicalTextNode[]): LexicalParagraph {
   }
 }
 
+function heading(tag: 'h2' | 'h3', children: LexicalTextNode[]): LexicalHeading {
+  return {
+    type: 'heading',
+    tag,
+    version: 1,
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    children: children.length ? children : [textNode('')],
+  }
+}
+
+function uploadNode(id: number): LexicalUpload {
+  return {
+    type: 'upload',
+    version: 3,
+    relationTo: 'media',
+    value: id,
+    format: '',
+    fields: null,
+  }
+}
+
 function listNode(tag: 'ul' | 'ol', items: LexicalTextNode[][]): LexicalList {
   return {
     type: 'list',
@@ -210,14 +272,36 @@ function listNode(tag: 'ul' | 'ol', items: LexicalTextNode[][]): LexicalList {
 
 export function htmlToLexical(html: string): LexicalRoot {
   const src = (html || '').trim()
-  const children: (LexicalParagraph | LexicalList)[] = []
+  const children: LexicalBlock[] = []
 
   if (!src) {
     return rootOf([paragraph([textNode('')])])
   }
 
-  // Разбиваем на блоки верхнего уровня: <p>…</p>, <ul>…</ul>, <ol>…</ol>
-  const blockRe = /<(p|ul|ol)\b[^>]*>([\s\S]*?)<\/\1>/gi
+  // Абзац может содержать <img> (браузер иногда оборачивает вставку в <p>) —
+  // тогда разрезаем его на текст + upload-ноды.
+  const pushParagraphOrImages = (inner: string) => {
+    if (!/<img\b/i.test(inner)) {
+      children.push(paragraph(parseInline(inner)))
+      return
+    }
+    const imgRe = /<img\b[^>]*>/gi
+    let last = 0
+    let im: RegExpExecArray | null
+    const hasText = (s: string) => s.replace(/<br\s*\/?>/gi, '').trim().length > 0
+    while ((im = imgRe.exec(inner)) !== null) {
+      const before = inner.slice(last, im.index)
+      if (hasText(before)) children.push(paragraph(parseInline(before)))
+      const id = mediaIdOf(im[0])
+      if (id != null) children.push(uploadNode(id))
+      last = imgRe.lastIndex
+    }
+    const after = inner.slice(last)
+    if (hasText(after)) children.push(paragraph(parseInline(after)))
+  }
+
+  // Разбиваем на блоки верхнего уровня: <p>, <h2>, <h3>, <ul>, <ol>, <figure>
+  const blockRe = /<(p|h2|h3|ul|ol|figure)\b[^>]*>([\s\S]*?)<\/\1>/gi
   let m: RegExpExecArray | null
   let matchedAny = false
 
@@ -227,7 +311,13 @@ export function htmlToLexical(html: string): LexicalRoot {
     const inner = m[2]
 
     if (tag === 'p') {
-      children.push(paragraph(parseInline(inner)))
+      pushParagraphOrImages(inner)
+    } else if (tag === 'h2' || tag === 'h3') {
+      children.push(heading(tag, parseInline(inner)))
+    } else if (tag === 'figure') {
+      // data-media-id живёт на самом <figure>, поэтому читаем из всего элемента
+      const id = mediaIdOf(m[0])
+      if (id != null) children.push(uploadNode(id))
     } else {
       // список: вытащить <li>…</li>
       const items: LexicalTextNode[][] = []
@@ -252,7 +342,7 @@ export function htmlToLexical(html: string): LexicalRoot {
   return rootOf(children.length ? children : [paragraph([textNode('')])])
 }
 
-function rootOf(children: (LexicalParagraph | LexicalList)[]): LexicalRoot {
+function rootOf(children: LexicalBlock[]): LexicalRoot {
   return {
     root: { type: 'root', version: 1, direction: 'ltr', format: '', indent: 0, children },
   }
@@ -285,6 +375,19 @@ export function lexicalToHtml(doc: any): string {
     for (const node of children) {
       if (node?.type === 'paragraph') {
         parts.push(`<p>${inlineToHtml(node.children) || ''}</p>`)
+      } else if (node?.type === 'heading') {
+        const tag = node.tag === 'h3' ? 'h3' : 'h2'
+        parts.push(`<${tag}>${inlineToHtml(node.children) || ''}</${tag}>`)
+      } else if (node?.type === 'upload') {
+        // value после чтения из Payload — populated-объект медиа (url, id)
+        const v = node.value
+        const url = v && typeof v === 'object' ? v.url : null
+        const id = v && typeof v === 'object' ? v.id : v
+        if (url && id != null) {
+          parts.push(
+            `<figure data-media-id="${id}" contenteditable="false"><img data-media-id="${id}" src="${url}" alt="" /></figure>`,
+          )
+        }
       } else if (node?.type === 'list') {
         const tag = node.tag === 'ol' ? 'ol' : 'ul'
         const items = (node.children || [])
@@ -317,7 +420,7 @@ export function lexicalToPlainText(doc: any): string {
     if (!Array.isArray(children)) return ''
     const blocks: string[] = []
     for (const node of children) {
-      if (node?.type === 'paragraph' && Array.isArray(node.children)) {
+      if ((node?.type === 'paragraph' || node?.type === 'heading') && Array.isArray(node.children)) {
         blocks.push(node.children.filter((c: any) => c?.type === 'text').map((c: any) => c.text).join(''))
       } else if (node?.type === 'list' && Array.isArray(node.children)) {
         for (const li of node.children) {

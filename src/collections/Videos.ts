@@ -120,6 +120,20 @@ export const Videos: CollectionConfig = {
       min: 0,
     },
     {
+      name: 'season',
+      type: 'number',
+      label: 'Сезон',
+      min: 0,
+      admin: { description: 'Номер сезона в видео-плейлисте. Пусто = вне сезона.' },
+    },
+    {
+      name: 'episode',
+      type: 'number',
+      label: 'Эпизод (порядок)',
+      min: 0,
+      admin: { description: 'Порядок серии внутри сезона/плейлиста (по возрастанию).' },
+    },
+    {
       name: 'publishedAt',
       type: 'date',
       label: 'Дата публикации',

@@ -50,14 +50,23 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     minTier = Number(data.minTierId)
   }
 
+  const numOrNull = (v: any): number | null => {
+    if (v == null || v === '') return null
+    const n = Number(v)
+    return Number.isFinite(n) ? n : null
+  }
+  const patch: any = { title, minTier }
+  if ('season' in data) patch.season = numOrNull(data.season)
+  if ('episode' in data) patch.episode = numOrNull(data.episode)
+
   try {
     await payload.update({
       collection: 'videos',
       id: videoId,
-      data: { title, minTier } as any,
+      data: patch as any,
       overrideAccess: true,
     })
-    return apiOk({ title, minTierId: minTier })
+    return apiOk({ title, minTierId: minTier, season: patch.season, episode: patch.episode })
   } catch (e: any) {
     return apiError(e?.message || 'Не удалось обновить видео')
   }

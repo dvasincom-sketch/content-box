@@ -58,6 +58,8 @@ export default async function VideosPage() {
     coverUrl: v.cover && typeof v.cover === 'object' ? v.cover.url : null,
     folderId: v.folder ? (typeof v.folder === 'object' ? v.folder.id : v.folder) : null,
     addedAt: v.publishedAt || v.createdAt || null,
+    season: v.season ?? null,
+    episode: v.episode ?? null,
     usedIn: usedInByVideo.get(String(v.id)) || [],
   }))
 

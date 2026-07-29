@@ -12,6 +12,8 @@ export type EditableVideo = {
   id: number | string
   title: string
   minTierId: string
+  season: number | null
+  episode: number | null
   usedIn: { id: number | string; title: string }[]
 }
 
@@ -37,6 +39,8 @@ export function VideoEditModal({
 }) {
   const [title, setTitle] = useState(video.title)
   const [minTierId, setMinTierId] = useState<string>(video.minTierId || '')
+  const [season, setSeason] = useState<string>(video.season != null ? String(video.season) : '')
+  const [episode, setEpisode] = useState<string>(video.episode != null ? String(video.episode) : '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -59,6 +63,8 @@ export function VideoEditModal({
           videoId: video.id,
           title: title.trim(),
           minTierId: minTierId || null,
+          season: season.trim() === '' ? null : Number(season),
+          episode: episode.trim() === '' ? null : Number(episode),
         }),
       })
       const json = await res.json()
@@ -109,6 +115,28 @@ export function VideoEditModal({
                 ]}
                 ariaLabel="Уровень доступа"
               />
+            </div>
+
+            <div className="studio-field">
+              <span className="studio-field__label">Сезон и эпизод (для видео-плейлиста)</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  className="studio-input"
+                  type="number"
+                  min={0}
+                  placeholder="Сезон"
+                  value={season}
+                  onChange={(e) => setSeason(e.target.value)}
+                />
+                <input
+                  className="studio-input"
+                  type="number"
+                  min={0}
+                  placeholder="Эпизод"
+                  value={episode}
+                  onChange={(e) => setEpisode(e.target.value)}
+                />
+              </div>
             </div>
 
             {error && <div className="studio-login__error">{error}</div>}

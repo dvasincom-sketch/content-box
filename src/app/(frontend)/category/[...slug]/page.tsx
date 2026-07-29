@@ -10,6 +10,7 @@ import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { RichText } from '@/components/RichText'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
+import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
 import { categoryHref } from '@/lib/categoryHref'
 import '../../styles.css'
 
@@ -87,12 +88,13 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
   // (постерами 2:3), а публикации ветки на этой странице не показываются —
   // эпизоды живут внутри дочерних разделов.
   const isPosterContainer = Boolean(category.posterLayout)
+  const isVideoSeries = Boolean(category.videoSeries)
 
   // Публикации всей ветки: категории, у которых текущая есть в цепочке предков.
   // Для контейнера не нужны (показываем афиши детей), поэтому не запрашиваем.
   let pubs: any[] = []
   let cardStats = new Map<string, { comments: number; reactions: number }>()
-  if (!isPosterContainer) {
+  if (!isPosterContainer && !isVideoSeries) {
     const branchRes = await payload.find({
       collection: 'categories',
       where: {
@@ -122,6 +124,36 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
       pubs.map((p) => p.id),
       tenant.id as number,
     )
+  }
+
+  // Видео-плейлист: эпизоды — видео, назначенные прямо этой категории.
+  // Группировку/сортировку по сезону и порядку делает блок (клиент).
+  let seriesEpisodes: SeriesEpisode[] = []
+  if (isVideoSeries) {
+    const vidsRes = await payload.find({
+      collection: 'videos',
+      where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: category.id } }] },
+      sort: 'episode',
+      depth: 1,
+      limit: 500,
+      overrideAccess: true,
+    })
+    seriesEpisodes = (vidsRes.docs as any[]).map((v) => {
+      const cover = v.cover && typeof v.cover === 'object' ? v.cover : null
+      const coverUrl = cover?.sizes?.thumb?.url || cover?.sizes?.card?.url || cover?.url || null
+      return {
+        id: v.id,
+        title: v.title || 'Без названия',
+        slug: v.slug || '',
+        coverUrl,
+        season: v.season ?? null,
+        episode: v.episode ?? null,
+        durationSec: v.durationSec ?? null,
+        isFree: Boolean(v.isPreview) || !v.minTier,
+        minTierName:
+          v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug || null : null,
+      }
+    })
   }
 
   // Прямые подкатегории. Для контейнера — это афиши; для обычной категории —
@@ -156,7 +188,9 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
           </div>
         ) : null}
 
-        {isPosterContainer ? (
+        {isVideoSeries ? (
+          <VideoSeriesBlock episodes={seriesEpisodes} />
+        ) : isPosterContainer ? (
           // Контейнер: сетка афиш — прямые дочерние категории вертикальными
           // постерами 2:3. Клик по афише → страница дочерней категории (эпизоды).
           children.length > 0 ? (
@@ -229,7 +263,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
 
         {/* Прямые подкатегории плитками — только для обычной категории.
             У контейнера дети уже показаны афишами выше, дублировать не нужно. */}
-        {!isPosterContainer && children.length > 0 && (
+        {!isPosterContainer && !isVideoSeries && children.length > 0 && (
           <div className="mt-14">
             <CategoriesGridBlock
               heading="Разделы"

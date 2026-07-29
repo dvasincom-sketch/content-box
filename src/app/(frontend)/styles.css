@@ -2215,3 +2215,173 @@ svg {
 .acct-menu__item { display: block; width: 100%; text-align: left; padding: 9px 12px; border-radius: var(--radius-md); color: var(--brand-text); font-size: 14px; background: none; border: none; cursor: pointer; }
 .acct-menu__item:hover { background: color-mix(in srgb, var(--brand-primary) 12%, transparent); }
 .acct-menu__item--danger { color: var(--brand-muted); }
+
+/* ============================================================================
+   Видео-плейлист (сезоны/эпизоды) — категория с флагом videoSeries.
+   Слева плеер, справа список серий с табами сезонов. На узких экранах — стопкой.
+   ============================================================================ */
+.vseries {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .vseries { grid-template-columns: 1fr; }
+}
+
+.vseries__main { min-width: 0; }
+.vseries__now-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--brand-text);
+  margin: 4px 0 8px;
+}
+.vseries__now-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.9rem;
+  color: var(--brand-muted);
+}
+.vseries__now-dur { display: inline-flex; align-items: center; gap: 4px; }
+.vseries__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--brand-text);
+  background: color-mix(in srgb, var(--brand-accent) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 40%, transparent);
+}
+
+.vseries__side {
+  border: 1px solid var(--brand-border);
+  border-radius: 16px;
+  background: var(--brand-surface);
+  overflow: hidden;
+  max-height: 640px;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 900px) {
+  .vseries__side { max-height: none; }
+}
+
+.vseries__seasons {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--brand-border);
+}
+.vseries__season-tab {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--brand-border);
+  background: transparent;
+  color: var(--brand-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.vseries__season-tab:hover { color: var(--brand-text); }
+.vseries__season-tab.is-on {
+  color: #fff;
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.vseries__episodes {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+}
+.vseries__ep {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+.vseries__ep:hover { background: color-mix(in srgb, var(--brand-text) 6%, transparent); }
+.vseries__ep.is-active { background: color-mix(in srgb, var(--brand-primary) 14%, transparent); }
+
+.vseries__ep-thumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 112px;
+  height: 63px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  display: grid;
+  place-items: center;
+}
+.vseries__ep-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.vseries__ep-num {
+  color: var(--brand-muted);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.vseries__ep-playing {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+}
+.vseries__ep-lock {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+}
+.vseries__ep-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
+}
+.vseries__ep-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--brand-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.vseries__ep-sub {
+  display: flex;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--brand-muted);
+}

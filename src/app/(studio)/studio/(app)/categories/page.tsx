@@ -42,6 +42,7 @@ export default async function CategoriesPage() {
       coverId: coverId != null ? Number(coverId) : null,
       coverUrl: coverUrl ?? null,
       posterLayout: Boolean(c.posterLayout),
+      videoSeries: Boolean(c.videoSeries),
     }
   })
 

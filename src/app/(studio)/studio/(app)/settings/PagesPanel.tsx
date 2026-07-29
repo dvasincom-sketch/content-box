@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
-import { Plus, Loader2, Pencil, FileText } from 'lucide-react'
+import { Plus, Loader2, Pencil, FileText, Trash2 } from 'lucide-react'
 import { PageEditPanel } from './PageEditPanel'
+import { ConfirmDialog } from '../_ui/ConfirmDialog'
 
 type PageRow = { id: number; title: string; slug: string }
 
@@ -19,6 +20,8 @@ export function PagesPanel() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editId, setEditId] = useState<number | string | null>(null)
+  const [confirmDel, setConfirmDel] = useState<PageRow | null>(null)
+  const [delBusy, setDelBusy] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -63,6 +66,27 @@ export function PagesPanel() {
       setError('Ошибка соединения')
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function doDelete(p: PageRow) {
+    setDelBusy(true)
+    setError(null)
+    try {
+      const r = await fetch('/studio/api/pages/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id: p.id }),
+      })
+      const j = await r.json()
+      if (!r.ok) setError(j.error || 'Не удалось удалить')
+      setConfirmDel(null)
+      await load()
+    } catch {
+      setError('Ошибка соединения')
+    } finally {
+      setDelBusy(false)
     }
   }
 
@@ -130,6 +154,13 @@ export function PagesPanel() {
               >
                 <Pencil size={16} />
               </button>
+              <button
+                className="catmgr__icon-btn catmgr__icon-btn--danger"
+                title="Удалить страницу"
+                onClick={() => setConfirmDel(p)}
+              >
+                <Trash2 size={16} />
+              </button>
             </li>
           ))}
         </ul>
@@ -143,6 +174,18 @@ export function PagesPanel() {
             setEditId(null)
             load()
           }}
+        />
+      )}
+
+      {confirmDel && (
+        <ConfirmDialog
+          title="Удалить страницу?"
+          message={'Страница «' + confirmDel.title + '» будет удалена без возможности восстановления. Пункты меню, ссылающиеся на неё, тоже удалятся.'}
+          confirmLabel={delBusy ? 'Удаление…' : 'Удалить'}
+          cancelLabel="Отмена"
+          danger
+          onConfirm={() => doDelete(confirmDel)}
+          onCancel={() => setConfirmDel(null)}
         />
       )}
     </div>

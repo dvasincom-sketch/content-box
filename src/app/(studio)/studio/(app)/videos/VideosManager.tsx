@@ -26,6 +26,8 @@ type Vid = {
   coverUrl: string | null
   folderId: number | string | null
   addedAt: string | null
+  season: number | null
+  episode: number | null
   usedIn: { id: number | string; title: string }[]
 }
 
@@ -191,7 +193,7 @@ export function VideosManager({
                   folderName={v.folderId != null ? folderNameById.get(String(v.folderId)) || null : null}
                   onFolderChange={applyFolderLocally}
                   onEdit={() =>
-                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, usedIn: v.usedIn })
+                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, season: v.season, episode: v.episode, usedIn: v.usedIn })
                   }
                 />
               ))}

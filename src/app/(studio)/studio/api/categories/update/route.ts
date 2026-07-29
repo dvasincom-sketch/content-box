@@ -54,6 +54,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     patch.posterLayout = Boolean(data.posterLayout)
   }
 
+  // Видео-плейлист (сезоны/эпизоды). Взаимоисключим с posterLayout.
+  if ('videoSeries' in data) {
+    patch.videoSeries = Boolean(data.videoSeries)
+  }
+
   // Флаги показа в меню/футере (используются опцией «добавить категорию в меню»).
   if ('showInHeader' in data) patch.showInHeader = Boolean(data.showInHeader)
   if ('showInFooter' in data) patch.showInFooter = Boolean(data.showInFooter)
