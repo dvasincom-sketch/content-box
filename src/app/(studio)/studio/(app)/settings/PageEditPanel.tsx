@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Loader2, Check } from 'lucide-react'
-import { RichEditor } from '../posts/new/RichEditor'
+import { TiptapEditor } from '../posts/new/TiptapEditor'
 
 /**
  * Выдвижная панель редактирования страницы (из конструктора меню).
@@ -126,7 +126,7 @@ export function PageEditPanel({
 
                 <div className="studio-field">
                   <span className="studio-field__label">Содержимое</span>
-                  <RichEditor
+                  <TiptapEditor
                     initialHtml={initialHtml}
                     onChange={setContentHtml}
                     placeholder="Текст страницы — например, «О проекте»."

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { X, ImagePlus, Loader2, Check, Trash2 } from 'lucide-react'
-import { RichEditor } from '../posts/new/RichEditor'
+import { TiptapEditor } from '../posts/new/TiptapEditor'
 import { slugify } from '@/lib/slugify'
 import { StudioSelect } from '../_ui/StudioSelect'
 
@@ -300,7 +300,7 @@ export function CategoryEditPanel({
 
           <div className="studio-field">
             <span className="studio-field__label">Описание</span>
-            <RichEditor
+            <TiptapEditor
               initialHtml={cat.descriptionHtml || ''}
               onChange={setDescHtml}
               placeholder="Описание категории — показывается на странице раздела."

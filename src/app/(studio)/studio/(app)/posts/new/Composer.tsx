@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, ImagePlus, X, Loader2, Trash2, Newspaper } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
-import { RichEditor } from './RichEditor'
+import { TiptapEditor } from './TiptapEditor'
 import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
 import { StudioSelect } from '../../_ui/StudioSelect'
@@ -330,7 +330,7 @@ export function Composer({
             style={{ display: 'none' }}
           />
 
-          <RichEditor
+          <TiptapEditor
             initialHtml={initial?.body || ''}
             onChange={setBody}
             placeholder="Текст публикации. Выделите текст и примените форматирование."

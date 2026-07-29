@@ -1857,6 +1857,16 @@ select.studio-input {
 .rte__error { padding: var(--st-space-2) var(--st-space-4); font-size: var(--st-text-sm); color: var(--st-danger); border-bottom: 1px solid var(--st-border); background: var(--st-surface); }
 .rte__btn:disabled { opacity: 0.5; cursor: default; }
 .rte__spin { animation: rte-spin 0.8s linear infinite; }
+/* Tiptap: плейсхолдер пустого редактора */
+.rte__editable .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--st-text-faint);
+}
+.rte__editable .ProseMirror-selectednode { outline: 2px solid var(--st-accent); border-radius: var(--st-radius); }
+.rte__editable:focus { outline: none; }
 @keyframes rte-spin { to { transform: rotate(360deg); } }
 
 
