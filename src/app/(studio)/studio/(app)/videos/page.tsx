@@ -60,6 +60,7 @@ export default async function VideosPage() {
     addedAt: v.publishedAt || v.createdAt || null,
     season: v.season ?? null,
     episode: v.episode ?? null,
+    categoryId: v.category ? String(typeof v.category === 'object' ? v.category.id : v.category) : '',
     usedIn: usedInByVideo.get(String(v.id)) || [],
   }))
 

@@ -14,6 +14,7 @@ export type EditableVideo = {
   minTierId: string
   season: number | null
   episode: number | null
+  categoryId: string
   usedIn: { id: number | string; title: string }[]
 }
 
@@ -41,11 +42,29 @@ export function VideoEditModal({
   const [minTierId, setMinTierId] = useState<string>(video.minTierId || '')
   const [season, setSeason] = useState<string>(video.season != null ? String(video.season) : '')
   const [episode, setEpisode] = useState<string>(video.episode != null ? String(video.episode) : '')
+  const [categoryId, setCategoryId] = useState<string>(video.categoryId || '')
+  const [categories, setCategories] = useState<{ id: number; title: string }[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  // Список категорий тенанта — чтобы привязать видео к разделу / видео-плейлисту.
+  useEffect(() => {
+    let stop = false
+    fetch('/studio/api/settings/categories-list', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (stop) return
+        const list = Array.isArray(j.categories) ? j.categories : []
+        setCategories(list.map((c: any) => ({ id: Number(c.id), title: String(c.title || '') })))
+      })
+      .catch(() => {})
+    return () => {
+      stop = true
+    }
+  }, [])
 
   async function save() {
     setError(null)
@@ -65,6 +84,7 @@ export function VideoEditModal({
           minTierId: minTierId || null,
           season: season.trim() === '' ? null : Number(season),
           episode: episode.trim() === '' ? null : Number(episode),
+          categoryId: categoryId || null,
         }),
       })
       const json = await res.json()
@@ -115,6 +135,22 @@ export function VideoEditModal({
                 ]}
                 ariaLabel="Уровень доступа"
               />
+            </div>
+
+            <div className="studio-field">
+              <span className="studio-field__label">Категория (раздел / видео-плейлист)</span>
+              <StudioSelect
+                value={categoryId}
+                onChange={setCategoryId}
+                options={[
+                  { value: '', label: '— без категории —' },
+                  ...categories.map((c) => ({ value: String(c.id), label: c.title })),
+                ]}
+                ariaLabel="Категория"
+              />
+              <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                Чтобы видео попало в плейлист, выберите категорию с типом «Видео-плейлист» и задайте сезон/эпизод ниже.
+              </div>
             </div>
 
             <div className="studio-field">

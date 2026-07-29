@@ -26,7 +26,7 @@ type AdminMenuNode = {
 }
 
 type PageOption = { id: number | string; title: string; slug: string }
-type CategoryOption = { id: number; title: string }
+type CategoryOption = { id: number; title: string; parentId: number | null }
 type MenuLocation = 'header' | 'footer'
 
 /** Активное перетаскивание: ключ узла и ключ его родителя (для проверки сиблингов). */
@@ -54,6 +54,7 @@ export function MenuBuilder() {
   const [savingOrder, setSavingOrder] = useState(false)
   const [adding, setAdding] = useState(false)
   const [moveFor, setMoveFor] = useState<AdminMenuNode | null>(null)
+  const [moveCatFor, setMoveCatFor] = useState<AdminMenuNode | null>(null)
   const [editPage, setEditPage] = useState<{ id: number | string } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<AdminMenuNode | null>(null)
 
@@ -94,7 +95,13 @@ export function MenuBuilder() {
       .then((j) => {
         if (stop) return
         const list = Array.isArray(j.categories) ? j.categories : []
-        setCategories(list.map((c: any) => ({ id: Number(c.id), title: String(c.title || '') })))
+        setCategories(
+          list.map((c: any) => ({
+            id: Number(c.id),
+            title: String(c.title || ''),
+            parentId: c.parentId == null ? null : Number(c.parentId),
+          })),
+        )
       })
       .catch(() => {})
     return () => {
@@ -310,6 +317,35 @@ export function MenuBuilder() {
     [location, load],
   )
 
+  // --- Смена родителя КАТЕГОРИИ (реальный перенос в дереве таксономии) --------
+  // Категории авто-строятся из дерева, поэтому «перенос» = смена parent самой
+  // категории. Меняем её в categories/update — и она переезжает везде (меню,
+  // хлебные крошки, разделы), после чего перечитываем меню.
+  const moveCategory = useCallback(
+    async (node: AdminMenuNode, newParentId: number | null) => {
+      if (node.categoryId == null) return
+      setBusyKey(node.key)
+      setError(null)
+      try {
+        const res = await fetch('/studio/api/categories/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ id: node.categoryId, parentId: newParentId }),
+        })
+        const json = await res.json()
+        if (!res.ok) setError(json.error || 'Не удалось переместить категорию')
+        else await load(location)
+      } catch {
+        setError('Ошибка соединения')
+      } finally {
+        setBusyKey(null)
+        setMoveCatFor(null)
+      }
+    },
+    [location, load],
+  )
+
   // --- Создание ручного пункта -----------------------------------------------
 
   const createItem = useCallback(
@@ -461,6 +497,7 @@ export function MenuBuilder() {
               onRename={rename}
               onRemove={remove}
               onMove={setMoveFor}
+              onMoveCategory={setMoveCatFor}
               onEditPage={(id) => setEditPage({ id })}
             />
           ))}
@@ -475,6 +512,15 @@ export function MenuBuilder() {
           )}
           onCancel={() => setMoveFor(null)}
           onMove={(parentKey) => moveToParent(moveFor, parentKey)}
+        />
+      )}
+
+      {moveCatFor && (
+        <CategoryMoveDialog
+          node={moveCatFor}
+          categories={categories}
+          onCancel={() => setMoveCatFor(null)}
+          onMove={(parentId) => moveCategory(moveCatFor, parentId)}
         />
       )}
 
@@ -519,6 +565,7 @@ function MenuRow({
   onRename,
   onRemove,
   onMove,
+  onMoveCategory,
   onEditPage,
 }: {
   node: AdminMenuNode
@@ -538,6 +585,7 @@ function MenuRow({
   onRename: (n: AdminMenuNode, label: string) => Promise<boolean>
   onRemove: (n: AdminMenuNode) => void
   onMove: (n: AdminMenuNode) => void
+  onMoveCategory: (n: AdminMenuNode) => void
   onEditPage: (id: number | string) => void
 }) {
   const [editing, setEditing] = useState(false)
@@ -655,6 +703,16 @@ function MenuRow({
                   <FolderInput size={14} />
                 </button>
               )}
+              {node.kind === 'category' && node.categoryId != null && (
+                <button
+                  className="catmgr__icon-btn"
+                  onClick={() => onMoveCategory(node)}
+                  disabled={busy}
+                  title="Переместить в другой раздел"
+                >
+                  <FolderInput size={14} />
+                </button>
+              )}
               {node.kind === 'page' && node.pageId != null && (
                 <button
                   className="catmgr__icon-btn"
@@ -707,6 +765,7 @@ function MenuRow({
               onRename={onRename}
               onRemove={onRemove}
               onMove={onMove}
+              onMoveCategory={onMoveCategory}
               onEditPage={onEditPage}
             />
           ))}
@@ -905,6 +964,86 @@ function MoveDialog({
           <button
             className="studio-btn studio-btn--primary"
             onClick={() => onMove(parentKey === '__root__' ? null : parentKey)}
+          >
+            <Check size={15} /> Переместить
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Диалог смены родителя КАТЕГОРИИ (реальный перенос в дереве таксономии). */
+function CategoryMoveDialog({
+  node,
+  categories,
+  onCancel,
+  onMove,
+}: {
+  node: AdminMenuNode
+  categories: CategoryOption[]
+  onCancel: () => void
+  onMove: (parentId: number | null) => void
+}) {
+  const [parentSel, setParentSel] = useState<string>('__root__')
+
+  // Исключаем саму категорию и её потомков (нельзя стать своим же ребёнком).
+  const options = useMemo(() => {
+    const selfId = node.categoryId
+    const childrenOf = new Map<number, number[]>()
+    for (const c of categories) {
+      if (c.parentId != null) {
+        if (!childrenOf.has(c.parentId)) childrenOf.set(c.parentId, [])
+        childrenOf.get(c.parentId)!.push(c.id)
+      }
+    }
+    const excluded = new Set<number>()
+    if (selfId != null) {
+      excluded.add(selfId)
+      const stack = [selfId]
+      while (stack.length) {
+        const cur = stack.pop() as number
+        for (const ch of childrenOf.get(cur) || []) {
+          if (!excluded.has(ch)) {
+            excluded.add(ch)
+            stack.push(ch)
+          }
+        }
+      }
+    }
+    return categories
+      .filter((c) => !excluded.has(c.id))
+      .map((c) => ({ value: String(c.id), label: c.title }))
+  }, [categories, node.categoryId])
+
+  return (
+    <div className="menubld__movedlg-overlay" onClick={onCancel}>
+      <div className="menubld__movedlg" onClick={(e) => e.stopPropagation()}>
+        <div className="menubld__movedlg-head">
+          <span>Переместить раздел «{node.label}»</span>
+          <button className="catmgr__icon-btn" onClick={onCancel} title="Закрыть">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="menubld__movedlg-body">
+          <span className="menubld__addform-label">В раздел:</span>
+          <StudioSelect
+            value={parentSel}
+            onChange={setParentSel}
+            options={[{ value: '__root__', label: 'Верхний уровень' }, ...options]}
+            ariaLabel="Новый родительский раздел"
+          />
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
+            Категория переедет под выбранный раздел везде: меню, хлебные крошки, разделы.
+          </div>
+        </div>
+        <div className="menubld__addform-actions">
+          <button className="studio-btn studio-btn--ghost" onClick={onCancel}>
+            Отмена
+          </button>
+          <button
+            className="studio-btn studio-btn--primary"
+            onClick={() => onMove(parentSel === '__root__' ? null : Number(parentSel))}
           >
             <Check size={15} /> Переместить
           </button>

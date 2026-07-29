@@ -59,6 +59,19 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   if ('season' in data) patch.season = numOrNull(data.season)
   if ('episode' in data) patch.episode = numOrNull(data.episode)
 
+  // Категория (раздел / видео-плейлист). Проверяем принадлежность тенанту.
+  if ('categoryId' in data) {
+    if (data.categoryId == null || data.categoryId === '') {
+      patch.category = null
+    } else {
+      const cat: any = await payload
+        .findByID({ collection: 'categories', id: data.categoryId, depth: 0, overrideAccess: true })
+        .catch(() => null)
+      const cTenant = cat && (typeof cat.tenant === 'object' ? cat.tenant.id : cat.tenant)
+      patch.category = cat && Number(cTenant) === Number(tenantId) ? Number(data.categoryId) : null
+    }
+  }
+
   try {
     await payload.update({
       collection: 'videos',
