@@ -26,6 +26,7 @@ type AdminMenuNode = {
 }
 
 type PageOption = { id: number | string; title: string; slug: string }
+type CategoryOption = { id: number; title: string }
 type MenuLocation = 'header' | 'footer'
 
 /** Активное перетаскивание: ключ узла и ключ его родителя (для проверки сиблингов). */
@@ -45,6 +46,7 @@ export function MenuBuilder() {
   const [location, setLocation] = useState<MenuLocation>('header')
   const [tree, setTree] = useState<AdminMenuNode[]>([])
   const [pages, setPages] = useState<PageOption[]>([])
+  const [categories, setCategories] = useState<CategoryOption[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
@@ -83,6 +85,22 @@ export function MenuBuilder() {
   useEffect(() => {
     load(location)
   }, [location, load])
+
+  // Категории тенанта — для опции «добавить категорию в меню» (грузим один раз).
+  useEffect(() => {
+    let stop = false
+    fetch('/studio/api/settings/categories-list', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (stop) return
+        const list = Array.isArray(j.categories) ? j.categories : []
+        setCategories(list.map((c: any) => ({ id: Number(c.id), title: String(c.title || '') })))
+      })
+      .catch(() => {})
+    return () => {
+      stop = true
+    }
+  }, [])
 
   // Плоский список узлов для выбора родителя (с отступами по глубине).
   // Исключаем узлы на MAX_DEPTH уровне — под них нельзя вкладывать.
@@ -335,6 +353,33 @@ export function MenuBuilder() {
     [location, load],
   )
 
+  const addCategory = useCallback(
+    async (categoryId?: number | string): Promise<boolean> => {
+      if (categoryId == null) return false
+      setError(null)
+      const field = location === 'footer' ? 'showInFooter' : 'showInHeader'
+      try {
+        const res = await fetch('/studio/api/categories/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ id: Number(categoryId), [field]: true }),
+        })
+        const json = await res.json()
+        if (!res.ok) {
+          setError(json.error || 'Не удалось добавить категорию')
+          return false
+        }
+        await load(location)
+        return true
+      } catch {
+        setError('Ошибка соединения')
+        return false
+      }
+    },
+    [location, load],
+  )
+
   // --- Рендер ----------------------------------------------------------------
 
   return (
@@ -371,10 +416,14 @@ export function MenuBuilder() {
       {adding && (
         <AddItemForm
           pages={pages}
+          categories={categories}
           parentOptions={parentOptions}
           onCancel={() => setAdding(false)}
           onCreate={async (payload) => {
-            const ok = await createItem(payload)
+            const ok =
+              payload.kind === 'category'
+                ? await addCategory(payload.categoryId)
+                : await createItem(payload as any)
             if (ok) setAdding(false)
           }}
         />
@@ -670,23 +719,27 @@ function MenuRow({
 /** Форма добавления ручного пункта (страница / внешний URL). */
 function AddItemForm({
   pages,
+  categories,
   parentOptions,
   onCancel,
   onCreate,
 }: {
   pages: PageOption[]
+  categories: CategoryOption[]
   parentOptions: FlatOption[]
   onCancel: () => void
   onCreate: (payload: {
-    kind: 'page' | 'url'
+    kind: 'page' | 'url' | 'category'
     pageId?: number | string
+    categoryId?: number | string
     url?: string
     labelOverride?: string
     parentKey: string | null
   }) => void
 }) {
-  const [kind, setKind] = useState<'page' | 'url'>('page')
+  const [kind, setKind] = useState<'page' | 'url' | 'category'>('page')
   const [pageId, setPageId] = useState<string>(pages[0] ? String(pages[0].id) : '')
+  const [categoryId, setCategoryId] = useState<string>(categories[0] ? String(categories[0].id) : '')
   const [url, setUrl] = useState('')
   const [label, setLabel] = useState('')
   const [parentKey, setParentKey] = useState<string>('__root__')
@@ -697,6 +750,7 @@ function AddItemForm({
     await onCreate({
       kind,
       pageId: kind === 'page' ? pageId : undefined,
+      categoryId: kind === 'category' ? categoryId : undefined,
       url: kind === 'url' ? url.trim() : undefined,
       labelOverride: label.trim() || undefined,
       parentKey: parentKey === '__root__' ? null : parentKey,
@@ -705,22 +759,34 @@ function AddItemForm({
   }
 
   const canSubmit =
-    kind === 'page' ? Boolean(pageId) : Boolean(url.trim()) && Boolean(label.trim())
+    kind === 'page'
+      ? Boolean(pageId)
+      : kind === 'category'
+        ? Boolean(categoryId)
+        : Boolean(url.trim()) && Boolean(label.trim())
 
   return (
     <div className="menubld__addform">
       <div className="menubld__addform-row">
         <StudioSelect
           value={kind}
-          onChange={(v) => setKind(v as 'page' | 'url')}
+          onChange={(v) => setKind(v as 'page' | 'url' | 'category')}
           options={[
+            { value: 'category', label: 'Категория' },
             { value: 'page', label: 'Страница' },
             { value: 'url', label: 'Внешняя ссылка' },
           ]}
           ariaLabel="Тип пункта"
         />
 
-        {kind === 'page' ? (
+        {kind === 'category' ? (
+          <StudioSelect
+            value={categoryId}
+            onChange={setCategoryId}
+            options={categories.map((c) => ({ value: String(c.id), label: c.title }))}
+            ariaLabel="Категория"
+          />
+        ) : kind === 'page' ? (
           <StudioSelect
             value={pageId}
             onChange={setPageId}
@@ -745,30 +811,36 @@ function AddItemForm({
         )}
       </div>
 
-      <div className="menubld__addform-row">
-        <span className="menubld__addform-label">Родитель:</span>
-        <StudioSelect
-          value={parentKey}
-          onChange={setParentKey}
-          options={[
-            { value: '__root__', label: 'Верхний уровень' },
-            ...parentOptions.map((o) => ({
-              value: o.key,
-              label: o.label,
-              depth: o.depth,
-            })),
-          ]}
-          ariaLabel="Родительский пункт"
-        />
-        {kind === 'page' && (
-          <input
-            className="studio-input"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="Название (по умолчанию — имя страницы)"
+      {kind === 'category' ? (
+        <div className="menubld__addform-hint" style={{ fontSize: 13, opacity: 0.7, padding: '2px 0 6px' }}>
+          Категория появится в меню на своём месте в дереве. Порядок и вложенность задаются деревом категорий.
+        </div>
+      ) : (
+        <div className="menubld__addform-row">
+          <span className="menubld__addform-label">Родитель:</span>
+          <StudioSelect
+            value={parentKey}
+            onChange={setParentKey}
+            options={[
+              { value: '__root__', label: 'Верхний уровень' },
+              ...parentOptions.map((o) => ({
+                value: o.key,
+                label: o.label,
+                depth: o.depth,
+              })),
+            ]}
+            ariaLabel="Родительский пункт"
           />
-        )}
-      </div>
+          {kind === 'page' && (
+            <input
+              className="studio-input"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Название (по умолчанию — имя страницы)"
+            />
+          )}
+        </div>
+      )}
 
       <div className="menubld__addform-actions">
         <button className="studio-btn studio-btn--ghost" onClick={onCancel} disabled={busy}>

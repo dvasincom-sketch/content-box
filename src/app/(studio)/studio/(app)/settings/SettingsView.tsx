@@ -6,6 +6,7 @@ import { ImagePlus, Loader2, Plus, Trash2, Check, Sun, Moon, ChevronDown, GripVe
 import { PerkIcon, PERK_TYPES, type PerkType } from '@/components/studio/PerkIcon'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { MenuBuilder } from './MenuBuilder'
+import { PagesPanel } from './PagesPanel'
 import { HomeBuilder } from './HomeBuilder'
 import { PresetPicker } from './PresetPicker'
 import type { HomeSectionConfig } from '@/lib/homeSections'
@@ -89,6 +90,7 @@ export function SettingsView({
         {tab === 'home' && <HomeBlock homeSections={homeSections} />}
         {tab === 'socials' && <SocialsBlock initial={initialSocials} />}
         {tab === 'menu' && <MenuBlock />}
+        {tab === 'menu' && <PagesBlock />}
         {tab === 'tiers' && <TiersBlock initial={initialTiers} />}
       </div>
     </>
@@ -122,6 +124,23 @@ function MenuBlock() {
       </div>
       <div className="menubld-section">
         <MenuBuilder />
+      </div>
+    </section>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Страницы проекта — список и создание                                        */
+/* -------------------------------------------------------------------------- */
+function PagesBlock() {
+  return (
+    <section className="settings__block">
+      <div className="settings__block-head">
+        <h2>Страницы</h2>
+        <p>Отдельные страницы проекта (например, «О проекте», FAQ, правила). Создайте страницу, наполните содержимым, а затем добавьте её в меню.</p>
+      </div>
+      <div className="menubld-section">
+        <PagesPanel />
       </div>
     </section>
   )

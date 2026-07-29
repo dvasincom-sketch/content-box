@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { X, ImagePlus, Loader2, Check, Trash2 } from 'lucide-react'
 import { RichEditor } from '../posts/new/RichEditor'
 import { slugify } from '@/lib/slugify'
+import { StudioSelect } from '../_ui/StudioSelect'
 
 export type EditableCat = {
   id: number | string
@@ -41,8 +42,58 @@ export function CategoryEditPanel({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+  const [allCats, setAllCats] = useState<{ id: number; title: string; parentId: number | null }[]>([])
+  const [parentSel, setParentSel] = useState<string>('__root__')
 
   const slugPreview = slugify(title)
+
+  // Список категорий тенанта — для выбора родителя. Текущий родитель ставим в селект.
+  useEffect(() => {
+    let stop = false
+    fetch('/studio/api/settings/categories-list', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (stop) return
+        const list = (Array.isArray(j.categories) ? j.categories : []).map((c: any) => ({
+          id: Number(c.id),
+          title: String(c.title || ''),
+          parentId: c.parentId == null ? null : Number(c.parentId),
+        }))
+        setAllCats(list)
+        const self = list.find((c: any) => c.id === Number(cat.id))
+        setParentSel(self && self.parentId != null ? String(self.parentId) : '__root__')
+      })
+      .catch(() => {})
+    return () => {
+      stop = true
+    }
+  }, [cat.id])
+
+  // Родителем нельзя сделать саму категорию или её потомка (иначе цикл).
+  const parentOptions = useMemo(() => {
+    const childrenBy = new Map<number | null, number[]>()
+    for (const c of allCats) {
+      const arr = childrenBy.get(c.parentId) ?? []
+      arr.push(c.id)
+      childrenBy.set(c.parentId, arr)
+    }
+    const banned = new Set<number>([Number(cat.id)])
+    const stack = [Number(cat.id)]
+    while (stack.length) {
+      const id = stack.pop() as number
+      for (const ch of childrenBy.get(id) ?? []) {
+        if (!banned.has(ch)) {
+          banned.add(ch)
+          stack.push(ch)
+        }
+      }
+    }
+    const opts: { value: string; label: string }[] = [
+      { value: '__root__', label: 'Верхний уровень' },
+    ]
+    for (const c of allCats) if (!banned.has(c.id)) opts.push({ value: String(c.id), label: c.title })
+    return opts
+  }, [allCats, cat.id])
 
   async function handleCover(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -133,6 +184,7 @@ export function CategoryEditPanel({
           description: descHtml,
           coverId: coverId ?? null,
           posterLayout,
+          parentId: parentSel === '__root__' ? null : Number(parentSel),
         }),
       })
       const json = await res.json()
@@ -168,6 +220,19 @@ export function CategoryEditPanel({
               autoFocus
             />
             {slugPreview && <div className="catedit__slug">/{slugPreview}</div>}
+          </div>
+
+          <div className="studio-field">
+            <span className="studio-field__label">Родительская категория</span>
+            <StudioSelect
+              value={parentSel}
+              onChange={setParentSel}
+              options={parentOptions}
+              ariaLabel="Родительская категория"
+            />
+            <div className="catedit__hint">
+              Перемещает категорию в дереве — она переедет под выбранную категорию везде (меню, хлебные крошки). «Верхний уровень» — сделать корневой.
+            </div>
           </div>
 
           <div className="studio-field">
