@@ -6,6 +6,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { publishedWhere } from '@/lib/published'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import { levelName } from '@/lib/reputation'
@@ -111,7 +112,9 @@ export default async function ProfilePage({ params }: Params) {
 
   const authoredRes = await payload.find({
     collection: 'publications',
-    where: { and: [{ tenant: { equals: tenant.id } }, { author: { equals: profile.id } }] },
+    // Снятый с публикации UGC не должен оставаться в списке: карточка
+    // отображалась бы, а ссылка вела на 404.
+    where: { and: [{ tenant: { equals: tenant.id } }, { author: { equals: profile.id } }, publishedWhere()] },
     sort: '-publishedAt',
     limit: 12,
     depth: 0,

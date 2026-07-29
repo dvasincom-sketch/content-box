@@ -1,10 +1,15 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import { resolveViewerTenantSSR } from '@/search/tenant'
 import { runSearch } from '@/search/query'
+import { rateLimit, clientIp } from '@/lib/rateLimit'
 import { SearchBox } from '@/components/search/SearchBox'
 import { highlight } from '@/components/search/highlight'
 import styles from '@/components/search/search.module.css'
+
+/** Верхняя граница длины запроса: длиннее — это уже не поиск, а нагрузка. */
+const MAX_QUERY_LEN = 200
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +33,11 @@ export default async function SearchPage({
   searchParams: Promise<SP>
 }) {
   const sp = await searchParams
-  const q = (str(sp.q) ?? '').trim()
+  // Обрезка длины: полный поиск идёт ЧЕРЕЗ ЭТУ СТРАНИЦУ, а не через /api/search
+  // (тот роут вызывается только извне — SearchBox дергает лишь /suggest).
+  // Значит и лимит, и ограничение длины запроса нужны здесь, иначе
+  // `?q=<50 КБ>` в цикле бьёт в Meilisearch без всякого учёта.
+  const q = (str(sp.q) ?? '').trim().slice(0, MAX_QUERY_LEN)
   const type = str(sp.type)
   const category = str(sp.category)
   const page = Math.max(1, Number(str(sp.page) ?? '1') || 1)
@@ -37,8 +46,12 @@ export default async function SearchPage({
   // Reads x-tenant-id injected by proxy.ts for this frontend request.
   const tenant = await resolveViewerTenantSSR()
 
+  // Лимит проверяем только когда запрос непустой — открытие пустой страницы
+  // поиска в Meilisearch не ходит и расходовать попытку не должно.
+  const throttled = q ? !rateLimit(`search-page:${clientIp(await headers())}`, 60, 60_000).ok : false
+
   const result =
-    tenant && q
+    tenant && q && !throttled
       ? await runSearch({
           tenantId: tenant.id,
           viewerTier: tenant.viewerTier,
@@ -83,6 +96,10 @@ export default async function SearchPage({
       )}
 
       {q && !tenant && <p className={styles.hint}>Сайт не найден.</p>}
+
+      {q && tenant && throttled && (
+        <p className={styles.hint}>Слишком много запросов подряд. Подождите минуту и попробуйте снова.</p>
+      )}
 
       {q && result && (
         <>

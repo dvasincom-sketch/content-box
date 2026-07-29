@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getPayload, type Payload, type CollectionSlug } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { isSameOrigin, isMutating } from '@/lib/sameOrigin'
 
 /**
  * Общая обвязка серверных роутов студии (`(studio)/studio/api/**`).
@@ -39,11 +40,18 @@ export function apiOk(extra?: Record<string, unknown>): NextResponse {
  * Обёртка роута студии: требует автора (иначе 401 «Не авторизован»), поднимает
  * Payload и передаёт хендлеру `{ req, author, payload, tenantId }`. Без брошенных
  * исключений — ошибки хендлер возвращает сам через `apiError()`.
+ *
+ * Здесь же единая CSRF-проверка на мутирующие методы: это самое узкое место —
+ * multipart-роуты (upload-cover, settings/logo, gallery-images/upload) отправляются
+ * кросс-доменной формой без preflight'а, а сессию хендлеры читают из куки.
  */
 export function withAuthor(
   handler: (ctx: AuthorContext) => Promise<Response> | Response,
 ): (req: NextRequest) => Promise<Response> {
   return async (req: NextRequest): Promise<Response> => {
+    if (isMutating(req.method) && !isSameOrigin(req)) {
+      return apiError('Запрос с постороннего origin', 403)
+    }
     const author = await getCurrentAuthor()
     if (!author) return apiError('Не авторизован', 401)
     const payload = await getPayload({ config: await config })

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { isSameOrigin, isMutating } from '@/lib/sameOrigin'
 import type { Subscriber } from '@/payload-types'
 
 /**
@@ -41,6 +42,11 @@ export function withSubscriber(
   handler: (ctx: SubscriberContext) => Promise<Response> | Response,
 ): (req: NextRequest) => Promise<Response> {
   return async (req: NextRequest): Promise<Response> => {
+    // CSRF: /account/api/avatar принимает multipart, то есть отправляется
+    // кросс-доменной формой без preflight'а, а сессия читается из куки.
+    if (isMutating(req.method) && !isSameOrigin(req)) {
+      return apiError('Запрос с постороннего origin', 403)
+    }
     const subscriber = await getCurrentSubscriber().catch(() => null)
     if (!subscriber) return apiError('Войдите в аккаунт', 401)
     if ((subscriber as any).isBlocked) return apiError('Аккаунт заблокирован', 403)

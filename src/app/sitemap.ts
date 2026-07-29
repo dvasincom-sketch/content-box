@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { headers as getHeaders } from 'next/headers.js'
 import { getPayload } from 'payload'
+import { publishedWhere } from '@/lib/published'
 import config from '@/payload.config'
 import { categoryHref } from '@/lib/categoryHref'
 
@@ -75,7 +76,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Один запрос: тянем category-ссылки всех публикаций тенанта.
   const pubsRes = await payload.find({
     collection: 'publications',
-    where: { tenant: { equals: tenantId } },
+    // Только опубликованные: иначе sitemap анонсирует URL черновиков, которые
+    // отдают 404 (и заодно раскрывает краулеру их slug'и, а значит заголовки).
+    where: { and: [{ tenant: { equals: tenantId } }, publishedWhere()] },
     limit: 0,
     depth: 0,
     overrideAccess: true,

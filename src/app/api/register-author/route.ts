@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import { randomBytes } from 'crypto'
 import config from '@/payload.config'
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
 import {
   RESERVED_SUBDOMAINS,
   isValidSubdomain,
@@ -65,6 +66,17 @@ async function findFreeSubdomain(payload: Payload, base: string): Promise<string
 }
 
 export async function POST(req: NextRequest) {
+  // Регистрация автора создаёт тенант + пользователя + site-settings и сразу
+  // выдаёт рабочий поддомен. Без лимита это анонимное создание тенантов пачками.
+  const ip = clientIp(req.headers)
+  // 10, а не 3: за одним корпоративным или мобильным NAT (CGNAT у российских
+  // операторов — норма) может оказаться несколько живых людей. Скриптовое
+  // создание тенантов пачками это всё равно останавливает.
+  const rl = rateLimit(`register-author:${ip}`, 10, 60 * 60 * 1000)
+  if (!rl.ok) {
+    return tooManyRequests(rl.retryAfter, 'Слишком много регистраций с этого адреса. Попробуйте позже.')
+  }
+
   let body: { email?: string; name?: string }
   try {
     body = await req.json()

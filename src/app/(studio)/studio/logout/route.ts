@@ -13,6 +13,14 @@ import config from '@/payload.config'
  */
 export async function GET(req: NextRequest) {
   const origin = resolvePublicOrigin(req)
+
+  // GET-разлогин тривиально вызывается с чужого сайта (<img src=…>), поэтому
+  // отсекаем кросс-сайтовые запросы. Sec-Fetch-Site подделать из JS нельзя, а
+  // при обычном переходе по ссылке из навигации он равен `same-origin`.
+  if (req.headers.get('sec-fetch-site') === 'cross-site') {
+    return NextResponse.redirect(`${origin}/studio`)
+  }
+
   const res = NextResponse.redirect(`${origin}/studio/login`)
 
   try {

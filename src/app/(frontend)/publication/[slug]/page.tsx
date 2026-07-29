@@ -9,6 +9,7 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { isPublished, publishedWhere } from '@/lib/published'
 import { BookmarkButton } from '@/components/social/BookmarkButton'
 import { ViewTracker } from '@/components/social/ViewTracker'
 import { buildMetadata } from '@/lib/seo'
@@ -45,7 +46,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   })
 
   const pub = res.docs[0] as any
-  if (!pub) return {}
+  if (!pub || !isPublished(pub)) return {}
 
   const category = pub.category && typeof pub.category === 'object' ? pub.category : null
 
@@ -86,7 +87,7 @@ async function findNeighbor(
     where: {
       and: [
         { tenant: { equals: tenantId } },
-        { publishedAt: { exists: true } },
+        publishedWhere(),
         direction === 'prev'
           ? { publishedAt: { less_than: currentPublishedAt } }
           : { publishedAt: { greater_than: currentPublishedAt } },
@@ -109,7 +110,7 @@ async function findRandom(
   const where = {
     and: [
       { tenant: { equals: tenantId } },
-      { publishedAt: { exists: true } },
+      publishedWhere(),
       { id: { not_equals: excludeId } },
     ],
   }
@@ -151,6 +152,10 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   })
   const pub = res.docs[0] as any
   if (!pub) notFound()
+  // Черновик по прямой ссылке публично не открываем: страница не фильтровала
+  // publishedAt вовсе, поэтому неопубликованный материал читался целиком, если
+  // угадать slug (а он предсказуем — генерируется из заголовка).
+  if (!isPublished(pub)) notFound()
 
   const viewer = await getCurrentSubscriber().catch(() => null)
   let bookmarked = false

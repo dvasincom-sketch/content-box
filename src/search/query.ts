@@ -16,6 +16,22 @@ export function filterLiteral(value: string | number): string {
   return `"${String(value).replace(/[\\"]/g, (c) => `\\${c}`)}"`
 }
 
+/**
+ * Отсечка отложенных материалов: в индексе `date` — unix-секунды даты публикации.
+ *
+ * Почему на стороне запроса, а не индексации: индекс обновляется только по
+ * событию записи документа, и в момент наступления даты публикации ничто не
+ * срабатывает. Если бы отложенный материал не индексировался, он пропал бы из
+ * поиска НАВСЕГДА, хотя на сайте появился бы вовремя. Поэтому индекс хранит
+ * данные, а время отсекает запрос — так граница пересчитывается на каждый поиск.
+ *
+ * Материалы без даты получают `date: 0` и условие проходят: у категорий и
+ * страниц дата — это updatedAt, отложенной публикации у них не бывает.
+ */
+export function notScheduledFilter(nowMs?: number): string {
+  return `date <= ${Math.floor((nowMs ?? Date.now()) / 1000)}`
+}
+
 export type SearchHit = {
   id: string
   type: string
@@ -69,7 +85,7 @@ export async function runSearch(args: SearchArgs): Promise<SearchResult> {
   const hitsPerPage = safeInt(args.limit, 20, 1, 50)
   const includeLocked = args.includeLocked ?? true
 
-  const filter = [`tenant = ${filterLiteral(args.tenantId)}`]
+  const filter = [`tenant = ${filterLiteral(args.tenantId)}`, notScheduledFilter()]
   if (args.type) filter.push(`type = ${filterLiteral(args.type)}`)
   if (args.category) filter.push(`categoryId = ${filterLiteral(args.category)}`)
   if (!includeLocked) filter.push(`minTierWeight <= ${safeInt(args.viewerTier, 0, 0, 1_000_000)}`)
@@ -126,7 +142,7 @@ export async function runSuggest(args: SuggestArgs): Promise<SearchHit[]> {
 
   const includeLocked = args.includeLocked ?? true
 
-  const filter = [`tenant = ${filterLiteral(args.tenantId)}`]
+  const filter = [`tenant = ${filterLiteral(args.tenantId)}`, notScheduledFilter()]
   if (!includeLocked) filter.push(`minTierWeight <= ${safeInt(args.viewerTier, 0, 0, 1_000_000)}`)
 
   const res = await contentIndex().search(args.q, {

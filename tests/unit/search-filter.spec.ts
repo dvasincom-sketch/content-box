@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { filterLiteral } from '@/search/query'
+import { filterLiteral, notScheduledFilter } from '@/search/query'
 
 /**
  * Фильтр Meilisearch — единственное, что изолирует тенантов в общем индексе
@@ -36,5 +36,21 @@ describe('filterLiteral', () => {
 
     expect(expr.split(' AND ')).toHaveLength(2)
     expect(expr).not.toContain('OR tenant = "7"')
+  })
+})
+
+describe('notScheduledFilter', () => {
+  it('отсекает материалы с датой в будущем на стороне запроса', () => {
+    // Отложенная публикация ОСТАЁТСЯ в индексе (иначе пропала бы навсегда —
+    // в момент наступления даты индекс никто не пересобирает), а границу
+    // ставит запрос, и она пересчитывается на каждый поиск.
+    expect(notScheduledFilter(1_700_000_000_000)).toBe('date <= 1700000000')
+  })
+
+  it('без аргумента берёт текущий момент в секундах', () => {
+    const m = /^date <= (\d+)$/.exec(notScheduledFilter())
+    expect(m).not.toBeNull()
+    const secs = Number(m![1])
+    expect(Math.abs(Math.floor(Date.now() / 1000) - secs)).toBeLessThan(5)
   })
 })

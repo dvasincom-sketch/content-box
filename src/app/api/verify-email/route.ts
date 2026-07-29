@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
 
 /**
  * Подтверждение email подписчика по токену из письма.
@@ -12,6 +13,11 @@ import config from '@/payload.config'
  * отметку о подтверждении адреса.
  */
 export async function POST(req: NextRequest) {
+  // Перебор токенов. Энтропия 256 бит делает угадывание нереальным, но лимит
+  // убирает саму возможность гонять роут в цикле.
+  const rl = rateLimit(`verify-email:${clientIp(req.headers)}`, 10, 10 * 60 * 1000)
+  if (!rl.ok) return tooManyRequests(rl.retryAfter)
+
   let body: { token?: string }
   try {
     body = await req.json()

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { publishedWhere } from '@/lib/published'
 import { getTenantFromHeaders } from '@/lib/tenant'
 
 /** Лента подписок: свежие публикации авторов, на которых подписан (Фаза 5). */
@@ -34,7 +35,7 @@ export default async function FeedPage() {
   if (ids.length > 0) {
     const res = await payload.find({
       collection: 'publications',
-      where: { and: [{ tenant: { equals: tid } }, { author: { in: ids } }] },
+      where: { and: [{ tenant: { equals: tid } }, { author: { in: ids } }, publishedWhere()] },
       sort: '-publishedAt', limit: 40, depth: 1, overrideAccess: true,
     })
     pubs = res.docs as any[]

@@ -15,6 +15,7 @@ import { SocialLinksBlock } from '@/blocks/SocialLinksBlock'
 import { BroadcastBannerBlock } from '@/blocks/BroadcastBannerBlock'
 import { buildMetadata } from '@/lib/seo'
 import { categoryHref } from '@/lib/categoryHref'
+import { publishedWhere } from '@/lib/published'
 import { normalizeHomeSections, type HomeSectionType } from '@/lib/homeSections'
 import type { Metadata } from 'next'
 import { Fragment, type ReactNode } from 'react'
@@ -70,16 +71,20 @@ async function getHeroSlides(payload: any, tenantId: number): Promise<HeroSlide[
       badge: 'Новинка',
     })
   }
+  // Черновик (publishedAt = null) в слайдер попадать не должен — и тем более
+  // не должен стоять первым, а именно это давал NULLS FIRST при '-publishedAt'.
+  const published = publishedWhere()
+
   const feat = await payload.find({
     collection: 'publications',
-    where: { and: [{ tenant: { equals: tenantId } }, { featured: { equals: true } }] },
+    where: { and: [{ tenant: { equals: tenantId } }, { featured: { equals: true } }, published] },
     sort: '-publishedAt', depth: 1, limit: N, overrideAccess: true,
   })
   ;(feat.docs as any[]).forEach(push)
   if (out.length < N) {
     const latest = await payload.find({
       collection: 'publications',
-      where: { tenant: { equals: tenantId } },
+      where: { and: [{ tenant: { equals: tenantId } }, published] },
       sort: '-publishedAt', depth: 1, limit: N, overrideAccess: true,
     })
     ;(latest.docs as any[]).forEach(push)

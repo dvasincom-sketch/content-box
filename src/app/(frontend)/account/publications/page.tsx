@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { isPublished } from '@/lib/published'
 import { getTenantFromHeaders } from '@/lib/tenant'
 
 /** Мои публикации: опубликованные + заявки (на проверке / отклонённые), одним списком. */
@@ -17,7 +18,7 @@ function ts(iso?: string | null): number {
   return Number.isFinite(n) ? n : 0
 }
 
-type Status = 'published' | 'pending' | 'rejected'
+type Status = 'published' | 'unpublished' | 'pending' | 'rejected'
 type Row = { key: string; title: string; status: Status; href?: string; date: string; sort: number; section?: string | null; reason?: string | null }
 
 export default async function AccountPublicationsPage() {
@@ -36,7 +37,19 @@ export default async function AccountPublicationsPage() {
 
   const rows: Row[] = []
   for (const p of pubs.docs as any[]) {
-    rows.push({ key: `p${p.id}`, title: p.title, status: 'published', href: `/publication/${p.slug}`, date: fmt(p.publishedAt || p.createdAt), sort: ts(p.publishedAt || p.createdAt), section: p.section })
+    // Статус выводим из данных, а не хардкодим. Материал, снятый с публикации
+    // модератором (publishedAt → null) или отложенный, раньше показывался как
+    // «Опубликовано» со ссылкой, которая теперь отдаёт 404.
+    const live = isPublished(p)
+    rows.push({
+      key: `p${p.id}`,
+      title: p.title,
+      status: live ? 'published' : 'unpublished',
+      href: live ? `/publication/${p.slug}` : undefined,
+      date: fmt(p.publishedAt || p.createdAt),
+      sort: ts(p.publishedAt || p.createdAt),
+      section: p.section,
+    })
   }
   for (const s of subs.docs as any[]) {
     rows.push({ key: `s${s.id}`, title: s.title, status: s.status === 'rejected' ? 'rejected' : 'pending', date: fmt(s.createdAt), sort: ts(s.createdAt), reason: s.rejectReason })
@@ -46,6 +59,7 @@ export default async function AccountPublicationsPage() {
   const badge = (st: Status) => {
     const map = {
       published: { t: 'Опубликовано', c: 'var(--success)' },
+      unpublished: { t: 'Снято с публикации', c: 'var(--brand-muted)' },
       pending: { t: 'На проверке', c: 'var(--warn)' },
       rejected: { t: 'Отклонено', c: 'var(--danger)' },
     }[st]

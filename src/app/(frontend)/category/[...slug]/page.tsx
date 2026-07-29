@@ -12,6 +12,7 @@ import { RichText } from '@/components/RichText'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
 import { categoryHref } from '@/lib/categoryHref'
+import { publishedWhere } from '@/lib/published'
 import '../../styles.css'
 
 type Params = { slug: string[] }
@@ -110,7 +111,13 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
     const pubsRes = await payload.find({
       collection: 'publications',
       where: {
-        and: [{ tenant: { equals: tenant.id } }, { category: { in: branchIDs } }],
+        and: [
+          { tenant: { equals: tenant.id } },
+          { category: { in: branchIDs } },
+          // Без этого черновики ветки попадали в листинг категории, а из-за
+          // NULLS FIRST при '-publishedAt' — сразу наверх.
+          publishedWhere(),
+        ],
       },
       sort: '-publishedAt',
       depth: 1,

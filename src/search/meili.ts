@@ -68,7 +68,10 @@ export async function ensureSearchIndex(): Promise<void> {
   await meili.index(SEARCH_INDEX).updateSettings({
     // title first => higher weight than body
     searchableAttributes: ['title', 'body'],
-    filterableAttributes: ['tenant', 'type', 'categoryId', 'minTierWeight'],
+    // `date` фильтруемый, а не только сортируемый: отсечка отложенных
+    // публикаций делается запросом (`date <= now`), потому что в момент
+    // наступления даты индекс никто не пересобирает. См. search/map.ts.
+    filterableAttributes: ['tenant', 'type', 'categoryId', 'minTierWeight', 'date'],
     sortableAttributes: ['date'],
     displayedAttributes: [
       'id', 'tenant', 'type', 'categoryId', 'minTierWeight',

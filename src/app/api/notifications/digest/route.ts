@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { publishedWhere } from '@/lib/published'
 import { emailBrandForTenant, digestEmail, type DigestItem } from '@/emails'
 
 /**
@@ -90,9 +91,17 @@ export async function POST(req: NextRequest) {
     const pubsRes = await payload.find({
       collection: 'publications',
       where: {
-        and: [{ tenant: { equals: tenantId } }, { createdAt: { greater_than: since.toISOString() } }],
+        and: [
+          { tenant: { equals: tenantId } },
+          { publishedAt: { greater_than: since.toISOString() } },
+          // Черновик, созданный внутри окна, попадал в письмо — и ссылка вела
+          // на 404. Хуже: lastDigestAt уходил дальше, и после публикации
+          // материал в дайджест уже не попадал никогда. Поэтому и окно теперь
+          // считаем по publishedAt, а не по createdAt.
+          publishedWhere(),
+        ],
       },
-      sort: '-createdAt',
+      sort: '-publishedAt',
       limit: MAX_ITEMS,
       depth: 1,
       overrideAccess: true,

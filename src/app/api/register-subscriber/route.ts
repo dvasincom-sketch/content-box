@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
 import { stripPort } from '@/lib/subdomain'
 import {
   subscriberWelcomeEmail,
@@ -22,6 +23,16 @@ import {
  */
 
 export async function POST(req: NextRequest) {
+  // Без лимита роут даёт (а) перечисление адресов — 409 «уже существует» против
+  // 200, (б) рассылку welcome/verify-писем на чужие ящики. Считаем по IP.
+  const ip = clientIp(req.headers)
+  // 20 за 15 минут: под мобильным NAT во время запуска или промо за одним
+  // адресом легко окажется десяток регистраций подряд.
+  const rl = rateLimit(`register-subscriber:${ip}`, 20, 15 * 60 * 1000)
+  if (!rl.ok) {
+    return tooManyRequests(rl.retryAfter, 'Слишком много попыток регистрации. Попробуйте позже.')
+  }
+
   const host = stripPort(
     req.headers.get('x-forwarded-host') ?? req.headers.get('host'),
   )

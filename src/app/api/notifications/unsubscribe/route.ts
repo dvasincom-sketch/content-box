@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
 
 /**
  * Отписка от дайджеста по токену из письма. Тело: { token }.
@@ -10,6 +11,9 @@ import config from '@/payload.config'
  * рабочей (повторная отписка идемпотентна).
  */
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(`unsubscribe:${clientIp(req.headers)}`, 10, 10 * 60 * 1000)
+  if (!rl.ok) return tooManyRequests(rl.retryAfter)
+
   let body: { token?: string }
   try {
     body = await req.json()

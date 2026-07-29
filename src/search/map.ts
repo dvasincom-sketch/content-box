@@ -120,6 +120,19 @@ export async function mapDoc(
 
   switch (type) {
     case 'publication': {
+      // Черновик (publishedAt пуст) в индекс не попадает. Возврат null работает
+      // в обе стороны: afterChange-хук по нему УДАЛЯЕТ документ из индекса
+      // (см. search/hooks.ts), а полный реиндекс его пропускает. Поэтому снятие
+      // с публикации автоматически убирает материал из поиска.
+      //
+      // ОТЛОЖЕННЫЕ публикации (дата в будущем) здесь НЕ отбрасываются намеренно.
+      // Индекс обновляется только по событию записи, и ничто не срабатывает в
+      // момент наступления даты — материал пропал бы из поиска навсегда, хотя на
+      // сайте появился бы вовремя (там `now` пересчитывается на каждый запрос).
+      // Поэтому время фильтруется на стороне ЗАПРОСА: `date <= now` в
+      // search/query.ts. Индекс хранит данные, отсечку по времени делает поиск.
+      if (!doc?.publishedAt) return null
+
       // Fold gallery captions into the body so photos are findable via their publication.
       const captions = Array.isArray(doc.gallery)
         ? doc.gallery.map((g: any) => g?.caption).filter(Boolean).join(' ')
