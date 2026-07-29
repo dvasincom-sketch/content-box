@@ -4,7 +4,6 @@ import React, { useRef, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
-import { Placeholder } from '@tiptap/extensions'
 import {
   Bold,
   Italic,
@@ -78,6 +77,7 @@ export function TiptapEditor({
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [imgError, setImgError] = useState<string | null>(null)
+  const [isEmpty, setIsEmpty] = useState<boolean>(!initialHtml)
 
   const editor = useEditor({
     immediatelyRender: false, // Next SSR — без гидрационных рассинхронов
@@ -91,7 +91,6 @@ export function TiptapEditor({
         link: false,
       }),
       MediaImage.configure({ inline: false, allowBase64: false }),
-      Placeholder.configure({ placeholder: placeholder || '' }),
     ],
     content: initialHtml || '',
     editorProps: {
@@ -99,7 +98,11 @@ export function TiptapEditor({
         class: 'rte__editable',
       },
     },
+    onCreate: ({ editor }) => {
+      setIsEmpty(editor.isEmpty)
+    },
     onUpdate: ({ editor }) => {
+      setIsEmpty(editor.isEmpty)
       onChangeRef.current?.(wrapImages(editor.getHTML()))
     },
   })
@@ -237,6 +240,7 @@ export function TiptapEditor({
       {imgError && <div className="rte__error">{imgError}</div>}
 
       <div className="rte__wrap">
+        {isEmpty && placeholder && <div className="rte__placeholder">{placeholder}</div>}
         <EditorContent editor={editor} />
       </div>
     </div>

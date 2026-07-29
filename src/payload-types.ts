@@ -480,6 +480,10 @@ export interface Category {
    */
   showInFooter?: boolean | null;
   /**
+   * Категория выводится как видео-плейлист: плеер + список серий по сезонам (YouTube-подобно). Видео этой категории получают номер сезона и порядок эпизода.
+   */
+  videoSeries?: boolean | null;
+  /**
    * Эта категория — контейнер: её дочерние категории выводятся вертикальными постерами-афишами 2:3 (как афиши фильмов/сериалов) — рядом на главной и сеткой на странице раздела. Клик по афише ведёт в дочерний раздел с публикациями-эпизодами. Загружайте вертикальную обложку в КАЖДУЮ дочернюю категорию.
    */
   posterLayout?: boolean | null;
@@ -730,6 +734,14 @@ export interface Video {
    */
   videoRef?: string | null;
   durationSec?: number | null;
+  /**
+   * Номер сезона в видео-плейлисте. Пусто = вне сезона.
+   */
+  season?: number | null;
+  /**
+   * Порядок серии внутри сезона/плейлиста (по возрастанию).
+   */
+  episode?: number | null;
   publishedAt?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1382,6 +1394,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   order?: T;
   showInHeader?: T;
   showInFooter?: T;
+  videoSeries?: T;
   posterLayout?: T;
   seo?:
     | T
@@ -1623,6 +1636,8 @@ export interface VideosSelect<T extends boolean = true> {
   provider?: T;
   videoRef?: T;
   durationSec?: T;
+  season?: T;
+  episode?: T;
   publishedAt?: T;
   updatedAt?: T;
   createdAt?: T;
