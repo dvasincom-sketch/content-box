@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { publicReadTenantWrite, getUserTenantID } from '../access'
+import { tenantScopedCollection, getUserTenantID } from '../access'
 
 /**
  * GalleryFolders — древовидные папки для группировки изображений галерей.
@@ -20,7 +20,7 @@ export const GalleryFolders: CollectionConfig = {
     group: 'Контент',
     description: 'Папки для группировки изображений (дерево).',
   },
-  access: publicReadTenantWrite,
+  access: tenantScopedCollection,
   fields: [
     { name: 'title', type: 'text', required: true, label: 'Название' },
     {

@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { publicReadTenantWrite } from '../access'
+import { tenantScopedCollection } from '../access'
 
 /**
  * Pages (ТЗ §3.6) — редактируемые клиентом текстовые страницы.
@@ -15,7 +15,7 @@ export const Pages: CollectionConfig = {
     defaultColumns: ['title', 'slug', 'showInMenu', 'showInFooter', 'menuOrder'],
     description: 'Текстовые страницы сайта — редактируются клиентом.',
   },
-  access: publicReadTenantWrite,
+  access: tenantScopedCollection,
   fields: [
     // `tenant` добавляется плагином multi-tenant.
     {

@@ -1,7 +1,5 @@
 import { headers as nextHeaders } from 'next/headers'
-import { getPayload, type Where } from 'payload'
-import config from '@payload-config'
-import { stripPort, subdomainFromHost } from '@/lib/subdomain'
+import { tenantIdByHost, tenantIdFromRequestHeaders } from '@/lib/tenantByHost'
 
 export type ViewerTenant = {
   id: string
@@ -10,53 +8,38 @@ export type ViewerTenant = {
 }
 
 /**
- * Resolve an ACTIVE + domainVerified tenant by host, mirroring proxy.ts
- * (subdomain first, then custom domain). Used by the /api/search routes, which
- * proxy.ts bypasses (so they don't get x-tenant-id and must resolve themselves).
- */
-async function tenantIdByHost(host: string): Promise<string | null> {
-  const h = stripPort(host)
-  if (!h) return null
-  const sub = subdomainFromHost(h)
-  const payload = await getPayload({ config })
-
-  // Typed as Where[] so each condition literal is checked individually
-  // (avoids TS widening the ternary branches into an incompatible union).
-  const and: Where[] = [
-    sub ? { subdomain: { equals: sub } } : { domain: { equals: h } },
-    { status: { equals: 'active' } },
-    { domainVerified: { equals: true } },
-  ]
-  const where: Where = { and }
-
-  const res = await payload.find({
-    collection: 'tenants',
-    where,
-    limit: 1,
-    depth: 0,
-    overrideAccess: true,
-  })
-  return res.docs[0] ? String(res.docs[0].id) : null
-}
-
-/**
- * Resolve the current tenant + viewer tier.
- *  - Frontend (SSR) requests carry `x-tenant-id` from proxy.ts -> use it directly.
- *  - API routes don't (proxy bypasses /api) -> resolve by Host header.
+ * Тенант для SSR-страницы поиска.
  *
- * TODO: viewerTier is 0 (anonymous) for now. Wire the logged-in subscriber's
- * active tier weight here to unlock gated content for paying viewers.
+ * Здесь `x-tenant-id` доверенный: путь `/search` прокси обрабатывает, а сам
+ * прокси срезает одноимённый заголовок клиента до любой другой логики
+ * (см. proxy.ts) и ставит свой только после успешного резолвинга по хосту.
+ *
+ * TODO: viewerTier пока 0 (аноним). Сюда нужно подставить вес активного тарифа
+ * залогиненного подписчика, чтобы оплаченный контент не помечался закрытым.
  */
-export async function resolveViewerTenant(
-  reqHeaders?: Headers,
-): Promise<ViewerTenant | null> {
-  const hdrs = reqHeaders ?? (await nextHeaders())
-
+export async function resolveViewerTenantSSR(): Promise<ViewerTenant | null> {
+  const hdrs = await nextHeaders()
   const fromProxy = hdrs.get('x-tenant-id')
   if (fromProxy) return { id: fromProxy, viewerTier: 0 }
 
-  const host =
-    hdrs.get('x-forwarded-host') ?? hdrs.get('host') ?? ''
+  // Фолбэк на случай, если страницу отрисовали вне обычного прокси-пути.
+  const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host') ?? ''
   const id = await tenantIdByHost(host)
+  return id ? { id, viewerTier: 0 } : null
+}
+
+/**
+ * Тенант для роутов под `/api/*`.
+ *
+ * Раньше эта ветка тоже начиналась с `hdrs.get('x-tenant-id')` — и это была
+ * дыра: `/api` входит в BYPASS_PREFIXES прокси, поэтому заголовок приходил
+ * напрямую от клиента. `curl -H 'x-tenant-id: 7' …/api/search?q=a` отдавал
+ * контент чужого тенанта, включая неактивных и неверифицированных. Резолвим
+ * только по Host.
+ */
+export async function resolveViewerTenantFromRequest(
+  reqHeaders: Headers,
+): Promise<ViewerTenant | null> {
+  const id = await tenantIdFromRequestHeaders(reqHeaders)
   return id ? { id, viewerTier: 0 } : null
 }

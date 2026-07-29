@@ -21,17 +21,30 @@ import type { Access, FieldAccess, Where} from 'payload'
 type MaybeUser =
   | {
       id: string | number
+      /** Auth-коллекция, из которой пришёл пользователь: 'users' | 'subscribers'. */
+      collection?: string
       platformRole?: string | null
       tenant?: string | number | { id: string | number } | null
     }
   | null
   | undefined
 
+/**
+ * Персонал платформы/тенанта — пользователь из auth-коллекции `users`.
+ *
+ * ВАЖНО: плагин мультитенантности инжектит поле `tenant` И в `subscribers`
+ * (зрители сайта), поэтому одного наличия `tenant` недостаточно — без этой
+ * проверки залогиненный ЗРИТЕЛЬ проходил бы все tenant-scoped правила как
+ * редактор и мог читать/править контент через публичный REST.
+ */
+export const isStaff = (user: MaybeUser): boolean =>
+  Boolean(user && user.collection === 'users')
+
 export const isSuperAdmin = (user: MaybeUser): boolean =>
-  Boolean(user && user.platformRole === 'superadmin')
+  Boolean(user && isStaff(user) && user.platformRole === 'superadmin')
 
 export const getUserTenantID = (user: MaybeUser): string | number | undefined => {
-  if (!user || !user.tenant) return undefined
+  if (!user || !isStaff(user) || !user.tenant) return undefined
   return typeof user.tenant === 'object' ? user.tenant.id : user.tenant
 }
 
@@ -50,12 +63,21 @@ export const tenantScoped: Access = ({ req: { user } }) => {
 }
 
 /**
- * Public read (front-end renders unauthenticated) + tenant-scoped writes.
- * PUBLIC-site tenant isolation is enforced by the domain-resolving layer
- * (middleware queries with the resolved tenant), not by user access here.
+ * Контентные коллекции: чтение и запись только в пределах своего тенанта.
+ *
+ * Раньше здесь стояло `read: () => true` с расчётом на то, что изоляцию даёт
+ * доменный слой (proxy.ts). Расчёт неверен: Payload REST смонтирован на
+ * `/api/[...slug]`, а `/api` — в BYPASS_PREFIXES прокси, то есть доменный слой
+ * на этих путях не работает вовсе. В результате `GET /api/publications`
+ * анонимно отдавал материалы ВСЕХ тенантов, включая платные (полное поле
+ * `description`) и черновики (`publishedAt: null`).
+ *
+ * Публичному сайту открытый REST не нужен: весь SSR ходит через Local API
+ * (`payload.find`), где `overrideAccess` по умолчанию true, а файлы раздаются
+ * из R2 мимо Payload (`disablePayloadAccessControl: true`).
  */
-export const publicReadTenantWrite = {
-  read: (() => true) as Access,
+export const tenantScopedCollection = {
+  read: tenantScoped,
   create: tenantScoped,
   update: tenantScoped,
   delete: tenantScoped,

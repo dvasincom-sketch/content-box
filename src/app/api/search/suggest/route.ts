@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runSuggest } from '@/search/query'
-import { resolveViewerTenant } from '@/search/tenant'
+import { resolveViewerTenantFromRequest } from '@/search/tenant'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const q = (sp.get('q') ?? '').trim()
   if (!q) return NextResponse.json({ hits: [] })
 
-  const tenant = await resolveViewerTenant(req.headers)
+  const tenant = await resolveViewerTenantFromRequest(req.headers)
   if (!tenant) return NextResponse.json({ hits: [] })
 
   const hits = await runSuggest({

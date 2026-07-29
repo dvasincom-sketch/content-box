@@ -1,5 +1,5 @@
 import type { Access, CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID } from '../access'
+import { isSuperAdmin, getUserTenantID, superAdminFieldAccess } from '../access'
 import { subscriberResetSubject, subscriberResetHTML } from '../emails/authEmails'
 
 /**
@@ -22,6 +22,40 @@ const subscribersScoped: Access = ({ req: { user } }) => {
   return { tenant: { equals: tenantID } }
 }
 
+/**
+ * Логин строго в пределах своего тенанта.
+ *
+ * `subscribers.email` уникален ГЛОБАЛЬНО, а `POST /api/subscribers/login` —
+ * встроенный роут Payload на байпас-пути, без привязки к домену. Поэтому
+ * подписчик тенанта B успешно логинился на сайте тенанта A и получал валидную
+ * куку. Раньше это давало кросс-тенантный доступ; после привязки подписчика к
+ * тенанту в getCurrentSubscriber кука стала просто игнорироваться — вход
+ * «проходил», но пользователь оставался гостем и бесконечно возвращался на
+ * форму логина без единого сообщения. Отклоняем такой вход явно.
+ *
+ * Если тенанта по хосту определить не удалось, вход НЕ блокируем: сайт в таком
+ * состоянии всё равно не обслуживается (proxy отдаёт /domain-not-found), а
+ * доступ к данным по-прежнему закрыт проверкой в getCurrentSubscriber. Так
+ * ошибка резолвинга не превращается в полную недоступность логина.
+ */
+const beforeLoginTenantGuard: NonNullable<CollectionConfig['hooks']>['beforeLogin'] = [
+  async ({ req, user }) => {
+    const host = req.headers?.get('x-forwarded-host') ?? req.headers?.get('host') ?? ''
+    if (!host) return user
+
+    const { tenantIdByHost } = await import('../lib/tenantByHost')
+    const currentTenant = await tenantIdByHost(host).catch(() => null)
+    if (!currentTenant) return user
+
+    const own = (user as any)?.tenant
+    const ownId = own == null ? null : String(typeof own === 'object' ? own.id : own)
+    if (ownId && ownId !== currentTenant) {
+      throw new Error('Аккаунт с таким email зарегистрирован на другом сайте.')
+    }
+    return user
+  },
+]
+
 export const Subscribers: CollectionConfig = {
   slug: 'subscribers',
   auth: {
@@ -31,6 +65,7 @@ export const Subscribers: CollectionConfig = {
       generateEmailHTML: (args) => subscriberResetHTML(args),
     },
   },
+  hooks: { beforeLogin: beforeLoginTenantGuard },
   labels: { singular: 'Подписчик', plural: 'Пользователи' },
   admin: {
     useAsTitle: 'email',
@@ -99,23 +134,32 @@ export const Subscribers: CollectionConfig = {
       access: { create: () => false, update: () => false },
       admin: { readOnly: true },
     },
+    // Уровень подписки и её срок — это и есть платный доступ. `readOnly` в
+    // admin прячет поля только из UI: без field-access их можно было выставить
+    // себе через REST (`PATCH /api/subscribers/<id>`) и получить платный
+    // контент бесплатно — редактору тенанта или самому подписчику.
+    //
+    // Оставляем запись суперадмину (пока оплата не подключена, выдача подписки
+    // ручная) и серверу через overrideAccess — там позже сядет вебхук шлюза.
+    // Payload при отказе field-access не бросает ошибку, а молча выбрасывает
+    // поле из payload'а, поэтому запрет должен быть точным, а не сплошным.
     {
       name: 'activeTier',
       type: 'relationship',
       relationTo: 'subscription-tiers',
       label: 'Активный уровень',
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
       admin: {
-        description: 'Пусто = бесплатный аккаунт без подписки.',
-        readOnly: true,
+        description: 'Пусто = бесплатный аккаунт без подписки. Меняет только суперадмин.',
       },
     },
     {
       name: 'subscriptionUntil',
       type: 'date',
       label: 'Подписка активна до',
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
       admin: {
-        description: 'Дата окончания текущей оплаченной подписки.',
-        readOnly: true,
+        description: 'Дата окончания текущей оплаченной подписки. Меняет только суперадмин.',
       },
     },
     {

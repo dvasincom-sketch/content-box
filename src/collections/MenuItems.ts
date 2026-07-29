@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { publicReadTenantWrite } from '../access'
+import { tenantScopedCollection } from '../access'
 
 /**
  * MenuItems — слой ручных оверрайдов поверх автогенерации меню из категорий.
@@ -22,7 +22,7 @@ export const MenuItems: CollectionConfig = {
     defaultColumns: ['labelOverride', 'location', 'kind', 'order', 'hidden'],
     description: 'Ручные правки меню поверх автогенерации из категорий.',
   },
-  access: publicReadTenantWrite,
+  access: tenantScopedCollection,
   fields: [
     // `tenant` добавляется плагином multi-tenant.
     {

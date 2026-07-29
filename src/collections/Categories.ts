@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { OverviewField, PreviewField } from '@payloadcms/plugin-seo/fields'
-import { publicReadTenantWrite, getUserTenantID } from '../access'
+import { tenantScopedCollection, getUserTenantID } from '../access'
 import { extractLexicalText, truncateAtWord } from '../utils/lexicalText'
 
 /**
@@ -26,7 +26,7 @@ export const Categories: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['fullTitle', 'slug', 'showInHeader', 'order'],
   },
-  access: publicReadTenantWrite,
+  access: tenantScopedCollection,
   fields: [
     { name: 'title', type: 'text', required: true, label: 'Название' },
     {

@@ -112,8 +112,19 @@ async function resolveDevTenant(host: string, port: string) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // Заголовки тенанта — ДОВЕРЕННЫЕ: их ставит только этот прокси, и только
+  // после успешного резолвинга по хосту. Всё, что пришло с ними от клиента,
+  // срезаем до любой другой логики. Иначе на байпас-путях (/api, /admin,
+  // /studio), на платформенном домене и на нерезолвнутом хосте клиентский
+  // `x-tenant-id` доезжал бы до серверного кода как настоящий.
+  const safeHeaders = new Headers(request.headers)
+  safeHeaders.delete('x-tenant-id')
+  safeHeaders.delete('x-tenant-domain')
+  const passthrough = () => NextResponse.next({ request: { headers: safeHeaders } })
+
   if (BYPASS_PREFIXES.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next()
+    return passthrough()
   }
 
   const host = stripPort(
@@ -128,13 +139,9 @@ export async function proxy(request: NextRequest) {
   if (process.env.NODE_ENV !== 'production' && isLocalHost(host)) {
     const tenant = await resolveDevTenant(host, request.nextUrl.port)
     if (tenant) {
-      const requestHeaders = new Headers(request.headers)
-      requestHeaders.set('x-tenant-id', String(tenant.id))
-      requestHeaders.set('x-tenant-domain', host)
-      const res = NextResponse.next({ request: { headers: requestHeaders } })
-      res.headers.set('x-tenant-id', String(tenant.id))
-      res.headers.set('x-tenant-domain', host)
-      return res
+      safeHeaders.set('x-tenant-id', String(tenant.id))
+      safeHeaders.set('x-tenant-domain', host)
+      return NextResponse.next({ request: { headers: safeHeaders } })
     }
     // Тенантов нет вовсе → падаем в обычную ветку (покажет /domain-not-found).
   }
@@ -144,10 +151,12 @@ export async function proxy(request: NextRequest) {
     if (pathname === '/') {
       const url = request.nextUrl.clone()
       url.pathname = '/landing.html' // статика из public/
-      return NextResponse.rewrite(url)
+      // Заголовки очищенные и здесь: если лендинг когда-нибудь переедет из
+      // public/ в роутер, rewrite не должен донести клиентский x-tenant-id.
+      return NextResponse.rewrite(url, { request: { headers: safeHeaders } })
     }
     // Прочие пути (кроме уже пропущенных /studio, /admin, /api) — как есть.
-    return NextResponse.next()
+    return passthrough()
   }
 
   // Тенантный хост → резолвинг: поддомен по `subdomain`, иначе по `domain`.
@@ -160,9 +169,11 @@ export async function proxy(request: NextRequest) {
 
   if (!tenant) {
     // Неизвестный / неверифицированный / приостановленный хост.
+    // Заголовки идут очищенными: иначе клиент подделал бы тенант на хосте,
+    // который вообще не резолвится.
     const url = request.nextUrl.clone()
     url.pathname = '/domain-not-found'
-    const res = NextResponse.rewrite(url)
+    const res = NextResponse.rewrite(url, { request: { headers: safeHeaders } })
     res.headers.set('x-tenant-status', 'unresolved')
     return res
   }
@@ -179,14 +190,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(target, 301)
   }
 
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-tenant-id', String(tenant.id))
-  requestHeaders.set('x-tenant-domain', host)
+  safeHeaders.set('x-tenant-id', String(tenant.id))
+  safeHeaders.set('x-tenant-domain', host)
 
-  const res = NextResponse.next({ request: { headers: requestHeaders } })
-  res.headers.set('x-tenant-id', String(tenant.id))
-  res.headers.set('x-tenant-domain', host)
-  res.headers.set('Vary', 'x-tenant-domain')
+  const res = NextResponse.next({ request: { headers: safeHeaders } })
+  // Внутренний id тенанта в ОТВЕТ не отдаём — это была утечка «карты» платформы,
+  // а клиентского потребителя у этих заголовков нет.
+  // Ключ кэширования — хост, а не заголовок, который клиент не присылает:
+  // прежний `Vary: x-tenant-domain` не защищал от отдачи HTML тенанта A на
+  // домене B промежуточным кэшем.
+  res.headers.set('Vary', 'Host, X-Forwarded-Host')
   return res
 }
 

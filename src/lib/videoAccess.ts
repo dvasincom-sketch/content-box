@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { tierWeight } from '@/lib/tierWeight'
 
 /**
  * Проверка доступа подписчика к видео по правилу гейтинга.
@@ -32,26 +33,36 @@ export type VideoAccessResult =
 export async function checkVideoAccess(videoIdOrSlug: {
   id?: string | number
   slug?: string
-  tenantId?: number | string
+  /**
+   * Тенант ОБЯЗАТЕЛЕН. Раньше он был необязательным, и `/api/video-token`
+   * его не передавал: поиск по id шёл `findByID` глобально, так что перебор
+   * `?id=1..N` с любого тенантного домена выдавал embedId/CF-токен чужих
+   * видео. Теперь видео другого тенанта неотличимо от несуществующего.
+   */
+  tenantId: number | string
 }): Promise<VideoAccessResult> {
   const payload = await getPayload({ config: await config })
+  const tenantId = String(videoIdOrSlug.tenantId)
+  if (!tenantId) return { allowed: false, reason: 'not-found' }
 
-  // 1) находим видео по id или slug
+  // 1) находим видео по id или slug — всегда в пределах тенанта
   let video: any = null
   try {
     if (videoIdOrSlug.id != null) {
-      video = await payload.findByID({
+      const found = await payload.findByID({
         collection: 'videos',
         id: videoIdOrSlug.id,
         depth: 1,
         overrideAccess: true,
       })
+      // findByID не умеет where — сверяем тенант после выборки.
+      video = relId(found?.tenant) === tenantId ? found : null
     } else if (videoIdOrSlug.slug) {
-      const where: any = { slug: { equals: videoIdOrSlug.slug } }
-      if (videoIdOrSlug.tenantId != null) where.tenant = { equals: videoIdOrSlug.tenantId }
       const res = await payload.find({
         collection: 'videos',
-        where,
+        where: {
+          and: [{ slug: { equals: videoIdOrSlug.slug } }, { tenant: { equals: videoIdOrSlug.tenantId } }],
+        },
         limit: 1,
         depth: 1,
         overrideAccess: true,
@@ -68,12 +79,12 @@ export async function checkVideoAccess(videoIdOrSlug: {
   const minTier = video.minTier
   const minTierId = minTier ? (typeof minTier === 'object' ? minTier.id : minTier) : null
   if (video.isPreview || !minTierId) {
-    const subscriber = await getCurrentSubscriber()
+    const subscriber = await getCurrentSubscriber(tenantId)
     return { allowed: true, video, subscriber }
   }
 
-  // 3) нужна подписка — проверяем подписчика
-  const subscriber = await getCurrentSubscriber()
+  // 3) нужна подписка — проверяем подписчика ЭТОГО ЖЕ тенанта
+  const subscriber = await getCurrentSubscriber(tenantId)
   const requiredTierName =
     minTier && typeof minTier === 'object' ? minTier.name || minTier.slug : null
 
@@ -97,10 +108,10 @@ export async function checkVideoAccess(videoIdOrSlug: {
     return { allowed: false, reason: 'need-subscription', video, requiredTierName }
   }
 
-  // Подход Б: дочитываем веса обоих уровней из БД
+  // Подход Б: дочитываем веса обоих уровней из БД, оба — в пределах тенанта
   const [minWeight, activeWeight] = await Promise.all([
-    tierWeight(payload, minTierId),
-    tierWeight(payload, activeTierId),
+    tierWeight(payload, minTierId, tenantId),
+    tierWeight(payload, activeTierId, tenantId),
   ])
 
   if (activeWeight == null || minWeight == null) {
@@ -114,17 +125,12 @@ export async function checkVideoAccess(videoIdOrSlug: {
   return { allowed: false, reason: 'need-subscription', video, requiredTierName }
 }
 
-/** Вес уровня по id (или null, если не найден). */
-async function tierWeight(payload: any, tierId: string | number): Promise<number | null> {
-  try {
-    const t = await payload.findByID({
-      collection: 'subscription-tiers',
-      id: tierId,
-      depth: 0,
-      overrideAccess: true,
-    })
-    return typeof t?.weight === 'number' ? t.weight : null
-  } catch {
-    return null
+/** id связи, независимо от depth. */
+function relId(v: unknown): string | null {
+  if (v == null) return null
+  if (typeof v === 'object') {
+    const id = (v as { id?: string | number }).id
+    return id == null ? null : String(id)
   }
+  return String(v)
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { resolveViewerTenant } from '@/search/tenant'
+import { resolveViewerTenantSSR } from '@/search/tenant'
 import { runSearch } from '@/search/query'
 import { SearchBox } from '@/components/search/SearchBox'
 import { highlight } from '@/components/search/highlight'
@@ -35,7 +35,7 @@ export default async function SearchPage({
   const includeLocked = (str(sp.locked) ?? '1') !== '0'
 
   // Reads x-tenant-id injected by proxy.ts for this frontend request.
-  const tenant = await resolveViewerTenant()
+  const tenant = await resolveViewerTenantSSR()
 
   const result =
     tenant && q

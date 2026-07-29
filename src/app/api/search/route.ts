@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runSearch } from '@/search/query'
-import { resolveViewerTenant } from '@/search/tenant'
+import { resolveViewerTenantFromRequest } from '@/search/tenant'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   const sp = new URL(req.url).searchParams
 
-  const tenant = await resolveViewerTenant(req.headers)
+  const tenant = await resolveViewerTenantFromRequest(req.headers)
   if (!tenant) return NextResponse.json({ error: 'unknown tenant' }, { status: 404 })
 
   const result = await runSearch({

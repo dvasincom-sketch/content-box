@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { tierWeight } from '@/lib/tierWeight'
 
 /**
  * Проверка доступа подписчика к ПУБЛИКАЦИИ по её minTier.
@@ -32,7 +33,12 @@ export async function checkPublicationAccess(pub: any): Promise<PubAccess> {
   const requiredTierName =
     minTier && typeof minTier === 'object' ? minTier.name || minTier.slug : null
 
-  const subscriber = await getCurrentSubscriber()
+  // Тенант берём из самой публикации — так подписчик обязан принадлежать тому
+  // же автору, чей материал открывает. Без этого подписка была кросс-тенантной.
+  const tenantId = relId(pub?.tenant)
+  if (!tenantId) return { allowed: false, reason: 'need-subscription', requiredTierName }
+
+  const subscriber = await getCurrentSubscriber(tenantId)
   if (!subscriber) return { allowed: false, reason: 'need-login', requiredTierName }
   if (subscriber.isBlocked) return { allowed: false, reason: 'blocked', requiredTierName }
 
@@ -47,8 +53,8 @@ export async function checkPublicationAccess(pub: any): Promise<PubAccess> {
 
   const payload = await getPayload({ config: await config })
   const [minWeight, activeWeight] = await Promise.all([
-    tierWeight(payload, minTierId),
-    tierWeight(payload, activeTierId),
+    tierWeight(payload, minTierId, tenantId),
+    tierWeight(payload, activeTierId, tenantId),
   ])
 
   if (activeWeight == null || minWeight == null) {
@@ -58,16 +64,12 @@ export async function checkPublicationAccess(pub: any): Promise<PubAccess> {
   return { allowed: false, reason: 'need-subscription', requiredTierName }
 }
 
-async function tierWeight(payload: any, tierId: string | number): Promise<number | null> {
-  try {
-    const t = await payload.findByID({
-      collection: 'subscription-tiers',
-      id: tierId,
-      depth: 0,
-      overrideAccess: true,
-    })
-    return typeof t?.weight === 'number' ? t.weight : null
-  } catch {
-    return null
+/** id связи, независимо от depth. */
+function relId(v: unknown): string | null {
+  if (v == null) return null
+  if (typeof v === 'object') {
+    const id = (v as { id?: string | number }).id
+    return id == null ? null : String(id)
   }
+  return String(v)
 }

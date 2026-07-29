@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { streamSignToken } from '@/lib/cfStream'
+import { tenantIdFromRequestHeaders } from '@/lib/tenantByHost'
 
 /**
  * Публичный роут выдачи данных для плеера подписчику. Доступ выдаётся ТОЛЬКО
@@ -26,7 +27,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Не указан id или slug' }, { status: 400 })
   }
 
-  const access = await checkVideoAccess({ id, slug })
+  // Тенант резолвим ПО ХОСТУ запроса: proxy.ts не обрабатывает `/api/*`, так
+  // что заголовку x-tenant-id тут доверять нельзя — он пришёл бы от клиента.
+  const tenantId = await tenantIdFromRequestHeaders(req.headers)
+  if (!tenantId) {
+    return NextResponse.json({ error: 'Неизвестный домен' }, { status: 404 })
+  }
+
+  const access = await checkVideoAccess({ id, slug, tenantId })
 
   if (!access.allowed) {
     const status = access.reason === 'not-found' ? 404 : 403

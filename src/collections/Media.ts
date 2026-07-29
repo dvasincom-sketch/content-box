@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { publicReadTenantWrite } from '../access'
+import { tenantScopedCollection } from '../access'
 
 /**
  * Media (ТЗ §3.7) — tenant-scoped uploads. Logos and covers in Stage 1;
@@ -37,7 +37,7 @@ export const Media: CollectionConfig = {
       },
     ],
   },
-  access: publicReadTenantWrite,
+  access: tenantScopedCollection,
   fields: [
     // `tenant` added by the multi-tenant plugin.
     { name: 'alt', type: 'text', label: 'Alt-текст' },

@@ -4,6 +4,18 @@ import { contentIndex, isMeiliConfigured } from './meili'
 export const HL_PRE = '[[hl]]'
 export const HL_POST = '[[/hl]]'
 
+/**
+ * Литерал для фильтра Meilisearch с экранированием.
+ *
+ * Раньше значения подставлялись в строку фильтра как есть, а `type` и
+ * `category` приходили сырыми из query-строки. Значение вида `x" OR tenant = "7`
+ * разрывало выражение: `AND` связывает сильнее `OR`, поэтому условие по своему
+ * тенанту переставало действовать и выдача уходила в чужой индекс.
+ */
+export function filterLiteral(value: string | number): string {
+  return `"${String(value).replace(/[\\"]/g, (c) => `\\${c}`)}"`
+}
+
 export type SearchHit = {
   id: string
   type: string
@@ -52,14 +64,15 @@ export async function runSearch(args: SearchArgs): Promise<SearchResult> {
     }
   }
 
-  const page = Math.max(1, args.page ?? 1)
-  const hitsPerPage = Math.min(50, Math.max(1, args.limit ?? 20))
+  // Number(...) на входе может дать NaN — он бы прошёл сквозь Math.max.
+  const page = safeInt(args.page, 1, 1, 10_000)
+  const hitsPerPage = safeInt(args.limit, 20, 1, 50)
   const includeLocked = args.includeLocked ?? true
 
-  const filter = [`tenant = "${args.tenantId}"`]
-  if (args.type) filter.push(`type = "${args.type}"`)
-  if (args.category) filter.push(`categoryId = "${args.category}"`)
-  if (!includeLocked) filter.push(`minTierWeight <= ${args.viewerTier}`)
+  const filter = [`tenant = ${filterLiteral(args.tenantId)}`]
+  if (args.type) filter.push(`type = ${filterLiteral(args.type)}`)
+  if (args.category) filter.push(`categoryId = ${filterLiteral(args.category)}`)
+  if (!includeLocked) filter.push(`minTierWeight <= ${safeInt(args.viewerTier, 0, 0, 1_000_000)}`)
 
   const res = await contentIndex().search(args.q, {
     filter: filter.join(' AND '),
@@ -113,12 +126,12 @@ export async function runSuggest(args: SuggestArgs): Promise<SearchHit[]> {
 
   const includeLocked = args.includeLocked ?? true
 
-  const filter = [`tenant = "${args.tenantId}"`]
-  if (!includeLocked) filter.push(`minTierWeight <= ${args.viewerTier}`)
+  const filter = [`tenant = ${filterLiteral(args.tenantId)}`]
+  if (!includeLocked) filter.push(`minTierWeight <= ${safeInt(args.viewerTier, 0, 0, 1_000_000)}`)
 
   const res = await contentIndex().search(args.q, {
     filter: filter.join(' AND '),
-    limit: Math.min(12, Math.max(1, args.limit ?? 8)),
+    limit: safeInt(args.limit, 8, 1, 12),
     attributesToRetrieve: ['id', 'type', 'title', 'url', 'thumb', 'minTierWeight'],
     attributesToHighlight: ['title'],
     highlightPreTag: HL_PRE,
@@ -135,4 +148,11 @@ export async function runSuggest(args: SuggestArgs): Promise<SearchHit[]> {
     title: h._formatted?.title ?? h.title ?? '',
     excerpt: null,
   }))
+}
+
+/** Целое в заданных границах; NaN/Infinity/мусор → fallback. */
+function safeInt(v: unknown, fallback: number, min: number, max: number): number {
+  const n = Math.trunc(Number(v))
+  if (!Number.isFinite(n)) return fallback
+  return Math.min(max, Math.max(min, n))
 }

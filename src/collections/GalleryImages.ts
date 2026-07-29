@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { publicReadTenantWrite } from '../access'
+import { tenantScopedCollection } from '../access'
 
 /**
  * GalleryImages — изображения для галерей публикаций (задача «Галерея»).
@@ -45,7 +45,7 @@ export const GalleryImages: CollectionConfig = {
     group: 'Контент',
     description: 'Фото для галерей публикаций.',
   },
-  access: publicReadTenantWrite,
+  access: tenantScopedCollection,
   fields: [
     // `tenant` инжектит multi-tenant плагин.
     { name: 'alt', type: 'text', label: 'Alt / подпись по умолчанию' },

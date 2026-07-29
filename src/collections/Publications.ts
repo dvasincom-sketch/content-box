@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { publicReadTenantWrite, getUserTenantID } from '../access'
+import { tenantScopedCollection, getUserTenantID } from '../access'
 
 /**
  * Publications (ТЗ §3.5) — core content type. Tenant-scoped, public read.
@@ -17,7 +17,7 @@ export const Publications: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'category', 'publishedAt', 'featured', 'isNews'],
   },
-  access: publicReadTenantWrite,
+  access: tenantScopedCollection,
   fields: [
     // `tenant` added by the multi-tenant plugin.
     { name: 'title', type: 'text', required: true },

@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { publicReadTenantWrite, getUserTenantID } from '../access'
+import { tenantScopedCollection, getUserTenantID } from '../access'
 
 /**
  * VideoFolders — древовидные папки для группировки видео (задача 5.4).
@@ -20,7 +20,7 @@ export const VideoFolders: CollectionConfig = {
     group: 'Контент',
     description: 'Папки для группировки видео (дерево).',
   },
-  access: publicReadTenantWrite,
+  access: tenantScopedCollection,
   fields: [
     { name: 'title', type: 'text', required: true, label: 'Название' },
     {

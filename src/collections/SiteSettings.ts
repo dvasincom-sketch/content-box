@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID } from '../access'
+import { isSuperAdmin, getUserTenantID, tenantScoped } from '../access'
 import { HOME_SECTION_OPTIONS } from '../lib/homeSections'
 import { PRESET_SELECT_OPTIONS, DEFAULT_PRESET_ID } from '../lib/themePresets'
 
@@ -7,20 +7,27 @@ import { PRESET_SELECT_OPTIONS, DEFAULT_PRESET_ID } from '../lib/themePresets'
  * SiteSettings (ТЗ §3.3) — one record per tenant (branding, theme, SEO
  * defaults, nav, footer, socials). Runs as isGlobal via the multi-tenant
  * plugin so exactly one document exists per tenant. `tenant` field injected
- * by the plugin. Public read (front-end renders the branded shell).
+ * by the plugin. Доступ — строго в пределах своего тенанта; публичный сайт
+ * читает настройки через Local API (overrideAccess), не через REST.
  */
 export const SiteSettings: CollectionConfig = {
   slug: 'site-settings',
   labels: { singular: 'Настройки сайта', plural: 'Настройки сайта' },
   admin: { useAsTitle: 'id' },
   access: {
-    read: () => true,
+    // Раньше здесь стояло `read: () => true` и `Boolean(...)` на записи.
+    // В Payload булево `true` в access означает «ВСЕ документы», а не «свои»,
+    // поэтому редактор тенанта A мог через `PATCH /api/site-settings/<id тенанта B>`
+    // переписать чужой брендинг, тему и SEO-дефолты. Where-запрос из tenantScoped
+    // сужает выборку до своего тенанта. Публичный сайт настройки читает через
+    // Local API (overrideAccess), открытый REST ему не нужен.
+    read: tenantScoped,
+    // На create Where неприменим — тенант проставляет плагин мультитенантности;
+    // достаточно требовать, чтобы это был персонал со своим тенантом.
     create: ({ req: { user } }) =>
       isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
-    update: ({ req: { user } }) =>
-      isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
-    delete: ({ req: { user } }) =>
-      isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
+    update: tenantScoped,
+    delete: tenantScoped,
   },
   fields: [
     // `tenant` added by the multi-tenant plugin.

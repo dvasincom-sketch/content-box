@@ -177,7 +177,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     ? await Promise.all(
         relatedRaw.map(async (v: any) => {
           const id = v && typeof v === 'object' ? v.id : v
-          const access = await checkVideoAccess({ id })
+          const access = await checkVideoAccess({ id, tenantId: tenant.id })
           return { video: access.video || v, allowed: access.allowed, access }
         }),
       )
