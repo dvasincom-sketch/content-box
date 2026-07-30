@@ -319,12 +319,22 @@ export function htmlToLexical(html: string): LexicalRoot {
       const id = mediaIdOf(m[0])
       if (id != null) children.push(uploadNode(id))
     } else {
-      // список: вытащить <li>…</li>
+      // список: вытащить <li>…</li>.
+      // Tiptap/ProseMirror оборачивает содержимое пункта в абзац:
+      // <li><p>текст</p></li>. Снимаем этот блок-тег ДО parseInline — иначе
+      // parseInline (он знает только inline-теги strong/em/…) примет <p> за
+      // обычный текст, и тег попадёт в контент буквально. На каждом
+      // роунд-трипе редактирования это ещё и удваивалось: <p><p>…</p></p>.
       const items: LexicalTextNode[][] = []
       const liRe = /<li\b[^>]*>([\s\S]*?)<\/li>/gi
       let li: RegExpExecArray | null
       while ((li = liRe.exec(inner)) !== null) {
-        items.push(parseInline(li[1]))
+        const liInner = li[1]
+          // граница между абзацами внутри пункта → мягкий перенос
+          .replace(/<\/p>\s*<p\b[^>]*>/gi, '<br>')
+          // снять внешние обёртки <p>…</p>
+          .replace(/<\/?p\b[^>]*>/gi, '')
+        items.push(parseInline(liInner))
       }
       if (items.length) children.push(listNode(tag as 'ul' | 'ol', items))
     }
