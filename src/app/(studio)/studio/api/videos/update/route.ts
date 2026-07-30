@@ -73,6 +73,16 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     }
   }
 
+  // Свободные теги: если ключ передан — заменяем набор (пустой = очистить).
+  // slug и дедуп посчитает хук normalizeTags коллекции.
+  if ('tags' in data) {
+    patch.tags = Array.isArray(data.tags)
+      ? (data.tags as unknown[])
+          .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+          .map((t) => ({ label: t.trim() }))
+      : []
+  }
+
   try {
     await payload.update({
       collection: 'videos',

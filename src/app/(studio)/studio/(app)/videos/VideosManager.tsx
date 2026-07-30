@@ -30,6 +30,7 @@ type Vid = {
   season: number | null
   episode: number | null
   categoryId: string
+  tags: string[]
   usedIn: { id: number | string; title: string }[]
 }
 
@@ -224,7 +225,7 @@ export function VideosManager({
                   video={v}
                   categoryPath={v.categoryId ? catPathById.get(String(v.categoryId)) || null : null}
                   onEdit={() =>
-                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, season: v.season, episode: v.episode, categoryId: v.categoryId, usedIn: v.usedIn })
+                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, season: v.season, episode: v.episode, categoryId: v.categoryId, tags: v.tags, usedIn: v.usedIn })
                   }
                 />
               ))}

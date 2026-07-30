@@ -76,6 +76,16 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     patch.isNews = Boolean(data.isNews)
   }
 
+  // Свободные теги: если ключ передан — заменяем набор (пустой = очистить).
+  // slug и дедуп посчитает хук normalizeTags коллекции.
+  if ('tags' in data) {
+    patch.tags = Array.isArray(data.tags)
+      ? (data.tags as unknown[])
+          .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+          .map((t) => ({ label: t.trim() }))
+      : []
+  }
+
   // Статус
   if (data.publish === true) {
     // публикуем: ставим дату, если её не было

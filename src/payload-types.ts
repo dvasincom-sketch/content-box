@@ -593,6 +593,19 @@ export interface Publication {
    * Отметьте, если это новость о событиях во вселенной BTS. Такие материалы попадают в секцию «Новости» на главной.
    */
   isNews?: boolean | null;
+  /**
+   * Свободные теги — связывают материалы из разных категорий. Slug считается автоматически.
+   */
+  tags?:
+    | {
+        label: string;
+        /**
+         * Автоматически из тега.
+         */
+        slug?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   seo?: {
     title?: string | null;
     description?: string | null;
@@ -759,6 +772,19 @@ export interface Video {
    */
   episode?: number | null;
   publishedAt?: string | null;
+  /**
+   * Свободные теги — связывают материалы из разных категорий. Slug считается автоматически.
+   */
+  tags?:
+    | {
+        label: string;
+        /**
+         * Автоматически из тега.
+         */
+        slug?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1472,6 +1498,13 @@ export interface PublicationsSelect<T extends boolean = true> {
       };
   featured?: T;
   isNews?: T;
+  tags?:
+    | T
+    | {
+        label?: T;
+        slug?: T;
+        id?: T;
+      };
   seo?:
     | T
     | {
@@ -1659,6 +1692,13 @@ export interface VideosSelect<T extends boolean = true> {
   season?: T;
   episode?: T;
   publishedAt?: T;
+  tags?:
+    | T
+    | {
+        label?: T;
+        slug?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

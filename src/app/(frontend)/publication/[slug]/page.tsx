@@ -19,6 +19,9 @@ import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
 import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
 import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
 import { CrossLinkCard, breadcrumbLabelPath } from '@/components/CrossLinkCard'
+import { TagChips } from '@/components/TagChips'
+import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
+import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { PublicationEngagement } from './PublicationEngagement'
 import { getPublicationEngagement } from '@/lib/publicationEngagement'
 import { Lock } from 'lucide-react'
@@ -245,6 +248,35 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   // текущий подписчик и агрегация внутри хелпера. Пусто-устойчиво.
   const engagement = await getPublicationEngagement(pub.id, tenant.id)
 
+  // Теги публикации + подборка «похожие по тегам» (любой общий тег).
+  const tagList = (Array.isArray(pub.tags) ? pub.tags : [])
+    .filter((t: any) => t?.slug && t?.label)
+    .map((t: any) => ({ label: String(t.label), slug: String(t.slug) }))
+  let relatedByTags: any[] = []
+  let relatedStats = new Map<string, { comments: number; reactions: number }>()
+  if (tagList.length) {
+    const rt = await payload.find({
+      collection: 'publications',
+      where: {
+        and: [
+          { tenant: { equals: tenant.id } },
+          { 'tags.slug': { in: tagList.map((t: any) => t.slug) } },
+          { id: { not_equals: pub.id } },
+          publishedWhere(),
+        ],
+      },
+      sort: '-publishedAt',
+      limit: 6,
+      depth: 1,
+      overrideAccess: true,
+    })
+    relatedByTags = rt.docs as any[]
+    relatedStats = await getPublicationCardStats(
+      relatedByTags.map((p) => p.id),
+      tenant.id as number,
+    )
+  }
+
 
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
@@ -387,6 +419,38 @@ export default async function PublicationPage({ params }: { params: Promise<Para
           </>
         ) : (
           <PublicationLock reason={pubAccess.reason} requiredTierName={pubAccess.requiredTierName} />
+        )}
+
+        {tagList.length > 0 && (
+          <div className="mt-8">
+            <TagChips tags={tagList} />
+          </div>
+        )}
+
+        {relatedByTags.length > 0 && (
+          <div className="mt-12">
+            <LatestPublicationsBlock
+              heading="Похожие по тегам"
+              items={relatedByTags.map((p) => {
+                const s = relatedStats.get(String(p.id))
+                return {
+                  id: p.id,
+                  slug: p.slug,
+                  title: p.title,
+                  publishedAt: p.publishedAt,
+                  minTierName:
+                    p.minTier && typeof p.minTier === 'object'
+                      ? p.minTier.name || p.minTier.slug || null
+                      : null,
+                  cover: p.cover,
+                  commentCount: s?.comments ?? 0,
+                  reactionCount: s?.reactions ?? 0,
+                  hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
+                  hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
+                }
+              })}
+            />
+          </div>
         )}
 
         {/* Реакции + комментарии. Видны всегда (для гостя — тизер с приглашением). */}

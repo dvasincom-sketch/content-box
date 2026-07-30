@@ -64,6 +64,9 @@ export default async function VideosPage() {
     season: v.season ?? null,
     episode: v.episode ?? null,
     categoryId: v.category ? String(typeof v.category === 'object' ? v.category.id : v.category) : '',
+    tags: Array.isArray(v.tags)
+      ? (v.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0)
+      : [],
     usedIn: usedInByVideo.get(String(v.id)) || [],
   }))
 

@@ -73,6 +73,13 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
         ...(relatedVideos.length ? { relatedVideos } : {}),
         ...(gallery.length ? { gallery } : {}),
         ...(data.isNews ? { isNews: true } : {}),
+        ...(Array.isArray(data.tags) && data.tags.length
+          ? {
+              tags: (data.tags as unknown[])
+                .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+                .map((t) => ({ label: t.trim() })),
+            }
+          : {}),
         ...(publish ? { publishedAt: new Date().toISOString() } : {}),
       } as any,
       overrideAccess: true,

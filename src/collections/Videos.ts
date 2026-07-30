@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID } from '../access'
+import { tagsField, normalizeTags } from '../fields/tags'
 
 /**
  * Videos — видеоконтент (лайвы, концерты, шоу) с доступом по уровню подписки.
@@ -200,7 +201,12 @@ export const Videos: CollectionConfig = {
       type: 'date',
       label: 'Дата публикации',
     },
+    tagsField,
     // `tenant` инжектит multi-tenant плагин.
   ],
+  hooks: {
+    // Свободные теги: тримим label и считаем slug (slugify), убираем дубли.
+    beforeChange: [({ data }) => normalizeTags(data)],
+  },
   timestamps: true,
 }

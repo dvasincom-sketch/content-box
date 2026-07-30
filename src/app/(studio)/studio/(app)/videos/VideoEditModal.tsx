@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { X, Loader2, Check, FileText, ArrowUpRight } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
+import { TagInput } from '../_ui/TagInput'
 
 type Tier = { id: number | string; name: string }
 
@@ -15,6 +16,7 @@ export type EditableVideo = {
   season: number | null
   episode: number | null
   categoryId: string
+  tags: string[]
   usedIn: { id: number | string; title: string }[]
 }
 
@@ -43,6 +45,7 @@ export function VideoEditModal({
   const [season, setSeason] = useState<string>(video.season != null ? String(video.season) : '')
   const [episode, setEpisode] = useState<string>(video.episode != null ? String(video.episode) : '')
   const [categoryId, setCategoryId] = useState<string>(video.categoryId || '')
+  const [tags, setTags] = useState<string[]>(video.tags || [])
   const [categories, setCategories] = useState<{ id: number; title: string }[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +88,7 @@ export function VideoEditModal({
           season: season.trim() === '' ? null : Number(season),
           episode: episode.trim() === '' ? null : Number(episode),
           categoryId: categoryId || null,
+          tags,
         }),
       })
       const json = await res.json()
@@ -173,6 +177,11 @@ export function VideoEditModal({
                   onChange={(e) => setEpisode(e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="studio-field">
+              <span className="studio-field__label">Теги</span>
+              <TagInput value={tags} onChange={setTags} placeholder="Тег и Enter" />
             </div>
 
             {error && <div className="studio-login__error">{error}</div>}

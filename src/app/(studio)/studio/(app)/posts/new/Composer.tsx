@@ -10,6 +10,7 @@ import { TiptapEditor } from './TiptapEditor'
 import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
 import { StudioSelect } from '../../_ui/StudioSelect'
+import { TagInput } from '../../_ui/TagInput'
 
 type Category = CatItem
 type GalleryFolder = { id: number | string; title: string; parentId: number | string | null }
@@ -28,6 +29,7 @@ export type PostInitial = {
   isNews?: boolean
   relatedVideoIds: (number | string)[]
   gallery: GalleryItem[]
+  tags?: string[]
 }
 
 export function Composer({
@@ -60,6 +62,7 @@ export function Composer({
     initial?.relatedVideoIds ?? [],
   )
   const [gallery, setGallery] = useState<GalleryItem[]>(initial?.gallery ?? [])
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
 
   const [saving, setSaving] = useState<false | 'draft' | 'publish' | 'save' | 'unpublish'>(false)
   const [deleting, setDeleting] = useState(false)
@@ -139,6 +142,9 @@ export function Composer({
       // признак «Новость»: в edit шлём всегда (чтобы снятие сохранялось),
       // в create — только если включён
       isNews: isEdit ? isNews : (isNews || undefined),
+      // свободные теги (лейблы): в edit шлём всегда (пустой = очистить),
+      // в create — только если есть
+      tags: isEdit ? tags : (tags.length ? tags : undefined),
     }
     if (isEdit) payload.id = initial!.id
     if (publish !== undefined) payload.publish = publish
@@ -369,6 +375,14 @@ export function Composer({
           <div className="composer__field">
             <div className="composer__field-label">Категория</div>
             <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+          </div>
+
+          <div className="composer__field">
+            <div className="composer__field-label">Теги</div>
+            <TagInput value={tags} onChange={setTags} placeholder="Тег и Enter" />
+            <div className="composer__hint">
+              Связывают материалы из разных категорий. Клик по тегу на сайте ведёт на страницу со всеми материалами тега.
+            </div>
           </div>
 
           <div className="composer__field">

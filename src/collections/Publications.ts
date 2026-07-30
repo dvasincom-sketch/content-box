@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { tenantScopedCollection, getUserTenantID } from '../access'
 import { revalidateHomeFeed } from '../lib/revalidateHome'
+import { tagsField, normalizeTags } from '../fields/tags'
 
 /**
  * Publications (ТЗ §3.5) — core content type. Tenant-scoped, public read.
@@ -174,6 +175,7 @@ export const Publications: CollectionConfig = {
         description: 'Отметьте, если это новость о событиях во вселенной BTS. Такие материалы попадают в секцию «Новости» на главной.',
       },
     },
+    tagsField,
     {
       name: 'seo',
       type: 'group',
@@ -247,6 +249,8 @@ export const Publications: CollectionConfig = {
         return data
       },
     ],
+    // Свободные теги: тримим label и считаем slug (slugify), убираем дубли.
+    beforeChange: [({ data }) => normalizeTags(data)],
     // Состав секций главной зависит от публикаций — сбрасываем кэш ленты
     // тенанта. Тег точечный, соседние сайты не затрагиваются.
     afterChange: [async ({ doc, req }) => { await revalidateHomeFeed(doc?.tenant ?? getUserTenantID(req.user as any)) }],
