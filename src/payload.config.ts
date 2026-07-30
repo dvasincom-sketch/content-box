@@ -185,24 +185,33 @@ export default buildConfig({
     s3Storage({
       collections: {
         media: {
-          // Файлы отдаются напрямую с публичного R2-домена (CDN Cloudflare),
-          // минуя Render. Для публичных картинок access control не нужен.
+          // Файлы отдаются напрямую с публичного домена хранилища, минуя
+          // приложение. Для публичных картинок access control не нужен.
           disablePayloadAccessControl: true,
-          generateFileURL: ({ filename }) => `${process.env.R2_PUBLIC_URL}/${filename}`,
+          generateFileURL: ({ filename }) =>
+            `${process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL}/${filename}`,
         },
         'gallery-images': {
-          // Фото галерей — та же схема отдачи, что и media (публичный R2-домен).
+          // Фото галерей — та же схема отдачи, что и media.
           disablePayloadAccessControl: true,
-          generateFileURL: ({ filename }) => `${process.env.R2_PUBLIC_URL}/${filename}`,
+          generateFileURL: ({ filename }) =>
+            `${process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL}/${filename}`,
         },
       },
-      bucket: process.env.R2_BUCKET || '',
+      // Объектное хранилище S3. Переезд с Cloudflare R2 на Timeweb Cloud S3:
+      // endpoint https://s3.twcstorage.ru, регион ru-1, адреса path-style
+      // (https://s3.twcstorage.ru/<бакет>/<файл>) — отсюда forcePathStyle.
+      // Старые R2_* оставлены фолбэком, чтобы прод не упал в момент перехода;
+      // основными в compose/.env идут S3_*.
+      bucket: process.env.S3_BUCKET || process.env.R2_BUCKET || '',
       config: {
-        endpoint: process.env.R2_ENDPOINT || '',
-        region: 'auto', // для R2 всегда 'auto', не location бакета
+        endpoint: process.env.S3_ENDPOINT || process.env.R2_ENDPOINT || '',
+        region: process.env.S3_REGION || 'ru-1',
+        forcePathStyle: true,
         credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+          accessKeyId: process.env.S3_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID || '',
+          secretAccessKey:
+            process.env.S3_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY || '',
         },
       },
     }),

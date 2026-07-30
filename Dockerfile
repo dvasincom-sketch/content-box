@@ -39,10 +39,13 @@ RUN npm install --no-audit --no-fund
 # 2) Исходники.
 COPY --chown=node:node . .
 
-# 3) next.config подставляет R2_PUBLIC_URL в images.remotePatterns НА ЭТАПЕ
-#    СБОРКИ — иначе next/image не пропустит картинки с R2. Это публичный URL
-#    (не секрет), передаём build-аргументом. В Timeweb задать в разделе
-#    Build Arguments приложения: R2_PUBLIC_URL=https://pub-xxxx.r2.dev
+# 3) next.config подставляет публичный URL хранилища в images.remotePatterns НА
+#    ЭТАПЕ СБОРКИ — иначе next/image не пропустит картинки. Это публичный URL
+#    (не секрет), передаём build-аргументом. Основной — S3_PUBLIC_URL (Timeweb
+#    S3), R2_PUBLIC_URL оставлен фолбэком. В Timeweb задать в разделе
+#    Build Arguments: S3_PUBLIC_URL=https://s3.twcstorage.ru/<бакет>
+ARG S3_PUBLIC_URL
+ENV S3_PUBLIC_URL=$S3_PUBLIC_URL
 ARG R2_PUBLIC_URL
 ENV R2_PUBLIC_URL=$R2_PUBLIC_URL
 

@@ -6,10 +6,10 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
-// Хост публичного R2-домена для next/image (напр. pub-xxxx.r2.dev).
-const r2Host = process.env.R2_PUBLIC_URL
-  ? new URL(process.env.R2_PUBLIC_URL).hostname
-  : undefined
+// Хост публичного домена хранилища для next/image (Timeweb S3: s3.twcstorage.ru).
+// R2_PUBLIC_URL остаётся фолбэком на время перехода с Cloudflare R2.
+const mediaPublicUrl = process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL
+const mediaHost = mediaPublicUrl ? new URL(mediaPublicUrl).hostname : undefined
 
 const nextConfig: NextConfig = {
   images: {
@@ -18,11 +18,11 @@ const nextConfig: NextConfig = {
         pathname: '/api/media/file/**',
       },
     ],
-    remotePatterns: r2Host
+    remotePatterns: mediaHost
       ? [
           {
             protocol: 'https',
-            hostname: r2Host,
+            hostname: mediaHost,
             pathname: '/**',
           },
         ]
