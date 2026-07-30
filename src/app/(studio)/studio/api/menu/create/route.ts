@@ -34,12 +34,15 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     return apiError('Некорректный тип пункта')
   }
 
+  // Явный order из тела — если задан. Иначе посчитаем «в конец уровня» ПОСЛЕ
+  // резолва родителя (порядок зависит от того, на каком уровне окажется пункт).
+  const explicitOrder = 'order' in data && data.order != null ? Number(data.order) : null
+
   const newData: any = {
     tenant: tenantId,
     location,
     kind,
     hidden: false,
-    order: 'order' in data && data.order != null ? Number(data.order) : 0,
   }
 
   // --- Источник пункта -------------------------------------------------------
@@ -100,6 +103,13 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     newData.parent = parentItemId
   }
 
+  // По умолчанию — в конец своего уровня (не в середину). При равных порядках
+  // стабильная сортировка роняла новый пункт вверх; теперь берём max+1.
+  newData.order =
+    explicitOrder != null
+      ? explicitOrder
+      : await nextOrderForLevel(payload, tenantId, location, parentItemId)
+
   try {
     const created = await payload.create({
       collection: 'menu-items',
@@ -135,6 +145,12 @@ async function materializeCategory(
   })
   const found = existing.docs[0] as any
   if (found) return found.id
+  // Порядок оверрайда = текущий порядок самой категории, иначе материализация
+  // родителя (при добавлении под него дочернего пункта) сбрасывала бы позицию
+  // категории в 0 и утаскивала её в начало своего уровня.
+  const cat = await payload
+    .findByID({ collection: 'categories', id: categoryId, depth: 0, overrideAccess: true })
+    .catch(() => null)
   const created = await payload.create({
     collection: 'menu-items',
     data: {
@@ -143,12 +159,82 @@ async function materializeCategory(
       kind: 'category',
       category: categoryId,
       hidden: false,
-      order: 0,
+      order: typeof (cat as any)?.order === 'number' ? (cat as any).order : 0,
       labelOverride: null,
     },
     overrideAccess: true,
   })
   return (created as any).id
+}
+
+/**
+ * Порядок нового пункта — В КОНЕЦ своего уровня (max соседей + 1).
+ * Соседи уровня — это и menu-items (ручные пункты + материализованные
+ * оверрайды категорий) с тем же parent, и авто-категории уровня (их порядок
+ * живёт в Category.order). Берём максимум по всем, чтобы новый пункт встал
+ * гарантированно после последнего, а не в середину.
+ */
+async function nextOrderForLevel(
+  payload: Payload,
+  tenantId: number,
+  location: MenuLocation,
+  parentItemId: number | null,
+): Promise<number> {
+  const orders: number[] = []
+
+  const items = await payload.find({
+    collection: 'menu-items',
+    where: {
+      and: [
+        { tenant: { equals: tenantId } },
+        { location: { equals: location } },
+        parentItemId == null
+          ? { parent: { exists: false } }
+          : { parent: { equals: parentItemId } },
+      ],
+    },
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  for (const it of items.docs as any[]) {
+    if (typeof it.order === 'number') orders.push(it.order)
+  }
+
+  if (parentItemId == null) {
+    // Корневой уровень: авто-категории с флагом шапки/футера.
+    const rootFlag = location === 'header' ? 'showInHeader' : 'showInFooter'
+    const cats = await payload.find({
+      collection: 'categories',
+      where: { and: [{ tenant: { equals: tenantId } }, { [rootFlag]: { equals: true } }] },
+      limit: 1000,
+      depth: 0,
+      overrideAccess: true,
+    })
+    for (const c of cats.docs as any[]) orders.push(typeof c.order === 'number' ? c.order : 0)
+  } else {
+    // Под оверрайдом категории соседи — её дочерние категории. Под ручным
+    // пунктом (page/url) авто-категорий не бывает.
+    const parentItem = await getMenuItem(payload, parentItemId, tenantId)
+    const parentCatId =
+      parentItem?.kind === 'category'
+        ? parentItem.category && typeof parentItem.category === 'object'
+          ? parentItem.category.id
+          : parentItem?.category
+        : null
+    if (parentCatId != null) {
+      const cats = await payload.find({
+        collection: 'categories',
+        where: { and: [{ tenant: { equals: tenantId } }, { parent: { equals: parentCatId } }] },
+        limit: 1000,
+        depth: 0,
+        overrideAccess: true,
+      })
+      for (const c of cats.docs as any[]) orders.push(typeof c.order === 'number' ? c.order : 0)
+    }
+  }
+
+  return orders.length ? Math.max(...orders) + 1 : 0
 }
 
 /** Глубина узла menu-items: 1 = корень. Идём вверх по parent. */
