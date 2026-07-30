@@ -34,7 +34,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   let section: 'feed' | 'community' = data.section === 'community' ? 'community' : 'feed'
 
   const sub = (await payload
-    .findByID({ collection: 'submissions' as any, id, depth: 1, overrideAccess: true })
+    .findByID({ collection: 'submissions', id, depth: 1, overrideAccess: true })
     .catch(() => null)) as any
   const sTenant = sub && (typeof sub.tenant === 'object' ? sub.tenant?.id : sub.tenant)
   if (!sub || Number(sTenant) !== Number(tenantId)) return apiError('Заявка не найдена', 404)
@@ -65,7 +65,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       overrideAccess: true,
     })
     await payload.update({
-      collection: 'submissions' as any,
+      collection: 'submissions',
       id,
       data: { status: 'approved', section, publication: pub.id, reviewedBy: (author as any).id } as any,
       overrideAccess: true,

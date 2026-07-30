@@ -22,7 +22,7 @@ export default async function HistoryPage() {
   let res: { docs: any[] } = { docs: [] }
   if (tid) {
     try {
-      res = await payload.find({ collection: 'views' as any, where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }] }, sort: '-viewedAt', limit: 100, depth: 1, overrideAccess: true }) as any
+      res = await payload.find({ collection: 'views', where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }] }, sort: '-viewedAt', limit: 100, depth: 1, overrideAccess: true }) as any
     } catch {
       res = { docs: [] }
     }

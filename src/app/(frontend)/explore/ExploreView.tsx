@@ -195,9 +195,17 @@ export function ExploreView({ featured }: { featured: FeaturedData | null }) {
           </Link>
           <nav className="ex__nav-links">
             <Link href="/explore">Проекты</Link>
+            {/*
+              Здесь ОСОЗНАННО обычные <a>, а не <Link>. Якоря ведут на лендинг
+              платформы, а он — статический public/landing.html, который отдаётся
+              переписыванием в proxy.ts, а не роутом Next. Клиентский роутер про
+              этот rewrite не знает, и переход через <Link> сломается.
+            */}
+            {/* eslint-disable @next/next/no-html-link-for-pages */}
             <a href="/#studio-shots">Студия</a>
             <a href="/#pricing">Цена</a>
             <a href="/#fears">Вопросы</a>
+            {/* eslint-enable @next/next/no-html-link-for-pages */}
           </nav>
           <div className="ex__nav-right">
             <button
@@ -218,9 +226,12 @@ export function ExploreView({ featured }: { featured: FeaturedData | null }) {
         </div>
         <div className={`ex__mmenu ${menuOpen ? 'is-open' : ''}`}>
           <Link href="/explore" onClick={() => setMenuOpen(false)}>Проекты</Link>
+          {/* Тот же случай, что в десктопной навигации выше: лендинг — статика. */}
+          {/* eslint-disable @next/next/no-html-link-for-pages */}
           <a href="/#studio-shots" onClick={() => setMenuOpen(false)}>Студия</a>
           <a href="/#pricing" onClick={() => setMenuOpen(false)}>Цена</a>
           <a href="/#fears" onClick={() => setMenuOpen(false)}>Вопросы</a>
+          {/* eslint-enable @next/next/no-html-link-for-pages */}
           <button className="ex__theme-wide" type="button" onClick={toggleTheme}>
             <ThemeIcon /> Сменить тему
           </button>

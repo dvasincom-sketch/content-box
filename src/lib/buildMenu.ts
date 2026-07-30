@@ -4,8 +4,8 @@ import { categoryHref } from '@/lib/categoryHref'
 import type { Category, MenuItem } from '@/payload-types'
 
 /**
- * Узел меню — форма совместима с прежним lib/headerMenu, чтобы SiteHeader /
- * DesktopMenu / MobileMenu работали без правок.
+ * Узел меню. Единственный тип дерева меню в проекте: его же импортируют
+ * SiteHeader / DesktopMenu / MobileMenu.
  */
 export type MenuNode = {
   id: number

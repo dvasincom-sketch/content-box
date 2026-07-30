@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import React from 'react'
 import Image from 'next/image'
 import { Lock, MessageCircle, Heart, Video, Images } from 'lucide-react'
@@ -81,7 +82,9 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
                   </div>
                 )}
                 <h3 className="font-semibold leading-snug" style={{ color: 'var(--brand-text)' }}>
-                  <a href={`/publication/${p.slug}`} className="transition-opacity hover:opacity-70">{p.title}</a>
+                  {/* prefetch={false}: секций четыре по 8 карточек, автопрефетч дал бы
+                      до 32 RSC-запросов с каждой главной. */}
+                  <Link href={`/publication/${p.slug}`} prefetch={false} className="transition-opacity hover:opacity-70">{p.title}</Link>
                 </h3>
 
                 {/* Мета: слева счётчики (комменты, реакции), справа — наличие видео/галереи */}

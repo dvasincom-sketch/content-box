@@ -1,6 +1,7 @@
 import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID } from '../access'
 import { awardActivity, reverseActivity } from '../lib/reputation'
+import { revalidateHomeFeed } from '../lib/revalidateHome'
 
 /**
  * Comments — комментарии зрителей под публикациями.
@@ -133,11 +134,15 @@ export const Comments: CollectionConfig = {
         } else {
           await reverseActivity(req.payload, { type: 'comment', refType: 'comment', refId: doc.id })
         }
+        // Комментарии влияют на счётчики карточек и секции «популярное»
+        // и «обсуждаемое» — лента тенанта устарела.
+        await revalidateHomeFeed(doc?.tenant)
       },
     ],
     afterDelete: [
       async ({ doc, req }) => {
         await reverseActivity(req.payload, { type: 'comment', refType: 'comment', refId: doc.id })
+        await revalidateHomeFeed(doc?.tenant)
       },
     ],
   },

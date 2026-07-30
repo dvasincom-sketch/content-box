@@ -3,12 +3,13 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { RichEditor } from '@/app/(studio)/studio/(app)/posts/new/RichEditor'
+import { TiptapEditor } from '@/app/(studio)/studio/(app)/posts/new/TiptapEditor'
 import { createSubmission } from './actions'
 
 /**
- * Форма отправки публикации участником. Богатый редактор (тот же RichEditor,
- * что в Студии) → HTML → сервер конвертирует в Lexical. Trusted (L4) публикует
+ * Форма отправки публикации участником. Тот же редактор, что в Студии
+ * (Tiptap) → HTML → сервер конвертирует в Lexical. Картинки выключены: их
+ * загрузка идёт в роут студии и требует сессии автора. Trusted (L4) публикует
  * сразу; остальные — на модерацию.
  */
 export function SubmitForm({ categories }: { categories: { id: number; title: string }[] }) {
@@ -69,7 +70,7 @@ export function SubmitForm({ categories }: { categories: { id: number; title: st
           maxLength={160}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <RichEditor onChange={setBodyHtml} placeholder="Текст публикации…" />
+        <TiptapEditor onChange={setBodyHtml} placeholder="Текст публикации…" allowImages={false} />
         {categories.length > 0 && (
           <select className="c-input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="">Без категории</option>

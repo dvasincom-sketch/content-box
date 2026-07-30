@@ -1,0 +1,61 @@
+name: CI
+
+# До этого в проекте не было ни одного автоматического прогона: ни линта, ни
+# типов, ни тестов. Регрессии в слое доступа и гейтинга при этом не видны
+# глазом в ревью — именно поэтому они и жили в коде месяцами.
+#
+# Здесь только то, что не требует ни базы, ни секретов: типы, линт, юнит-тесты
+# и сборка. Интеграционные и e2e не запускаются — им нужен живой Postgres,
+# это отдельный шаг, когда он появится в CI.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# Новый пуш в ту же ветку отменяет предыдущий прогон — не жжём минуты на
+# промежуточные коммиты.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Та же мажорная версия, что в Dockerfile, — чтобы CI ловил то же,
+          # что сломается в проде, а не «работает у меня».
+          node-version: '20'
+          cache: npm
+
+      # npm install, а не npm ci: lock сгенерирован на macOS/Node 22, и на
+      # Linux/Node 20 npm ci считает его out of sync. Та же причина, что
+      # подробно расписана в Dockerfile.
+      - name: Установка зависимостей
+        run: npm install --no-audit --no-fund
+
+      - name: Типы
+        run: npx tsc --noEmit
+
+      - name: Линт
+        run: npm run lint
+
+      - name: Юнит-тесты
+        run: npm run test:unit
+
+      # Сборка ловит то, что не видят ни типы, ни тесты: ошибки уровня Next
+      # (границы клиент/сервер, неверные экспорты роутов и страниц).
+      # R2_PUBLIC_URL нужен на этапе сборки для images.remotePatterns; это
+      # публичный URL, не секрет, поэтому здесь просто заглушка.
+      - name: Сборка
+        run: npm run build
+        env:
+          R2_PUBLIC_URL: https://example.invalid
+          PAYLOAD_SECRET: ci-build-only-not-a-real-secret
+          DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci

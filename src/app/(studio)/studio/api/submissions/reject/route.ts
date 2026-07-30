@@ -8,14 +8,14 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (!id) return apiError('Не указана заявка')
 
   const sub = (await payload
-    .findByID({ collection: 'submissions' as any, id, depth: 0, overrideAccess: true })
+    .findByID({ collection: 'submissions', id, depth: 0, overrideAccess: true })
     .catch(() => null)) as any
   const sTenant = sub && (typeof sub.tenant === 'object' ? sub.tenant?.id : sub.tenant)
   if (!sub || Number(sTenant) !== Number(tenantId)) return apiError('Заявка не найдена', 404)
 
   try {
     await payload.update({
-      collection: 'submissions' as any,
+      collection: 'submissions',
       id,
       data: { status: 'rejected', rejectReason: String(data.reason || '').slice(0, 500), reviewedBy: (author as any).id } as any,
       overrideAccess: true,

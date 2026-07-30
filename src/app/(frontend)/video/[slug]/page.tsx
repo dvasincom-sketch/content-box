@@ -48,7 +48,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
   if (viewer && tenant?.id) {
     const payload = await getPayload({ config: await config })
     const bm = await payload.find({
-      collection: 'bookmarks' as any,
+      collection: 'bookmarks',
       where: { and: [{ subscriber: { equals: viewer.id } }, { tenant: { equals: tenant.id } }, { video: { equals: video.id } }] },
       limit: 1, depth: 0, overrideAccess: true,
     })

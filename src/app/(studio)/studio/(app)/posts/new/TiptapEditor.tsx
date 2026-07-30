@@ -21,7 +21,7 @@ import {
 /**
  * Редактор публикаций/страниц/категорий на Tiptap (ProseMirror).
  *
- * Тот же контракт, что у старого RichEditor: наружу отдаёт HTML (onChange),
+ * Наружу отдаёт HTML (onChange),
  * который сервер конвертирует в Lexical (htmlToLexical); начальное значение —
  * HTML из lexicalToHtml. Поддержка: заголовки H2/H3, жирный, курсив,
  * подчёркнутый, зачёркнутый, списки, изображения (media/R2).
@@ -43,6 +43,13 @@ type Props = {
   onChange: (html: string) => void
   placeholder?: string
   uploadEndpoint?: string
+  /**
+   * Показывать кнопку вставки картинки. Выключается там, где загрузка всё
+   * равно невозможна: `uploadEndpoint` по умолчанию ведёт в студию и требует
+   * сессии АВТОРА, а публичную форму UGC заполняет подписчик — он получил бы
+   * только 401. Лучше не показывать кнопку, чем показывать нерабочую.
+   */
+  allowImages?: boolean
 }
 
 // Расширяем Image, чтобы нода несла data-media-id (ключ медиа в R2).
@@ -70,6 +77,7 @@ export function TiptapEditor({
   onChange,
   placeholder,
   uploadEndpoint = '/studio/api/upload-cover',
+  allowImages = true,
 }: Props) {
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
@@ -221,20 +229,24 @@ export function TiptapEditor({
           <ListOrdered size={16} />,
           'Нумерованный список',
         )}
-        <span className="rte__divider" />
-        <button
-          type="button"
-          className="rte__btn"
-          disabled={uploading || !editor}
-          onMouseDown={(e) => {
-            e.preventDefault()
-            if (!uploading && editor) fileRef.current?.click()
-          }}
-          title="Вставить изображение"
-        >
-          {uploading ? <Loader2 size={16} className="rte__spin" /> : <ImagePlus size={16} />}
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
+        {allowImages && (
+          <>
+            <span className="rte__divider" />
+            <button
+              type="button"
+              className="rte__btn"
+              disabled={uploading || !editor}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                if (!uploading && editor) fileRef.current?.click()
+              }}
+              title="Вставить изображение"
+            >
+              {uploading ? <Loader2 size={16} className="rte__spin" /> : <ImagePlus size={16} />}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
+          </>
+        )}
       </div>
 
       {imgError && <div className="rte__error">{imgError}</div>}

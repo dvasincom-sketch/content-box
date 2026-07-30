@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { notFound } from 'next/navigation'
@@ -67,10 +68,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   }
 
   return buildMetadata({
-    defaults: (settings as any)?.seoDefaults,
+    defaults: settings?.seoDefaults,
     levels: [page.seo],
     fallbackTitle: page.title,
-    brandName: (tenant as any)?.name,
+    brandName: tenant.name,
   })
 }
 
@@ -98,7 +99,7 @@ export default async function ContentPage({ params }: { params: Promise<Params> 
     return (
       <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-10">
-          <a href="/" className="text-sm inline-block mb-6 c-navlink">← На главную</a>
+          <Link href="/" className="text-sm inline-block mb-6 c-navlink">← На главную</Link>
           <h1
             className="text-3xl lg:text-5xl font-extrabold mb-6"
             style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' }}
@@ -134,7 +135,7 @@ export default async function ContentPage({ params }: { params: Promise<Params> 
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-10">
         {/* Крошки и заголовок — во всю ширину, как на странице категории. */}
-        <a href="/" className="text-sm inline-block mb-6 c-navlink">← На главную</a>
+        <Link href="/" className="text-sm inline-block mb-6 c-navlink">← На главную</Link>
         <h1
           className="text-3xl lg:text-5xl font-extrabold mb-8"
           style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' }}

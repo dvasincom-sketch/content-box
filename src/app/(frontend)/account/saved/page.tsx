@@ -14,7 +14,7 @@ export default async function SavedPage() {
   const tid = ((await getTenantFromHeaders()) as any)?.tenant?.id
   const payload = await getPayload({ config: await config })
   const res = tid
-    ? await payload.find({ collection: 'bookmarks' as any, where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }] }, sort: '-createdAt', limit: 100, depth: 1, overrideAccess: true })
+    ? await payload.find({ collection: 'bookmarks', where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }] }, sort: '-createdAt', limit: 100, depth: 1, overrideAccess: true })
     : { docs: [] as any[] }
 
   const rows = (res.docs as any[])

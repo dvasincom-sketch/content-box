@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
-import type { MenuNode } from '@/lib/headerMenu'
+import type { MenuNode } from '@/lib/buildMenu'
 
 /**
  * Мобильное меню: аккордеон. Тап по стрелке раскрывает вложенность,

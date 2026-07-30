@@ -293,14 +293,14 @@ export function UIShowcaseExtra() {
                     <thead><tr><th>Пример</th><th>Класс</th><th>Статус</th></tr></thead>
                     <tbody>
                       {([
-                        [<span className="c-badge c-badge--primary">Primary</span>, '--primary', { used: true, count: 4 }],
-                        [<span className="c-badge c-badge--accent">Accent</span>, '--accent', { used: true, count: 1 }],
-                        [<span className="c-badge c-badge--soft">Мягкий</span>, '--soft', { used: false }],
-                        [<span className="c-badge c-badge--neutral">Нейтраль</span>, '--neutral', { used: false }],
-                        [<span className="c-badge c-badge--success">{I.check(12)} Успех</span>, '--success', { used: false }],
-                        [<span className="c-badge c-badge--danger">Отменён</span>, '--danger', { used: false }],
-                        [<span className="c-badge c-badge--warn">Истекает</span>, '--warn', { used: false }],
-                        [<span className="c-badge c-badge--info">Инфо</span>, '--info', { used: false }],
+                        [<span key="primary" className="c-badge c-badge--primary">Primary</span>, '--primary', { used: true, count: 4 }],
+                        [<span key="accent" className="c-badge c-badge--accent">Accent</span>, '--accent', { used: true, count: 1 }],
+                        [<span key="soft" className="c-badge c-badge--soft">Мягкий</span>, '--soft', { used: false }],
+                        [<span key="neutral" className="c-badge c-badge--neutral">Нейтраль</span>, '--neutral', { used: false }],
+                        [<span key="success" className="c-badge c-badge--success">{I.check(12)} Успех</span>, '--success', { used: false }],
+                        [<span key="danger" className="c-badge c-badge--danger">Отменён</span>, '--danger', { used: false }],
+                        [<span key="warn" className="c-badge c-badge--warn">Истекает</span>, '--warn', { used: false }],
+                        [<span key="info" className="c-badge c-badge--info">Инфо</span>, '--info', { used: false }],
                       ] as Array<[React.ReactNode, string, Status]>).map(([badge, cls, st], i) => (
                         <tr key={i}>
                           <td>{badge}</td>

@@ -7,7 +7,7 @@ import { TiptapEditor } from '../posts/new/TiptapEditor'
 
 /**
  * Выдвижная панель редактирования страницы (из конструктора меню).
- * Заголовок + содержимое (RichEditor → HTML → Lexical на сервере).
+ * Заголовок + содержимое (редактор → HTML → Lexical на сервере).
  * Контент подгружается при открытии через /studio/api/pages/get
  * (Lexical → HTML), сохраняется через /studio/api/pages/update.
  *

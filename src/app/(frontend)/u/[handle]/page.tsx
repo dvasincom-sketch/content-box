@@ -75,14 +75,14 @@ export default async function ProfilePage({ params }: Params) {
   if (profile.isBlocked || (profile.profilePrivate && !isOwner)) notFound()
 
   const followerCount = await payload
-    .count({ collection: 'follows' as any, where: { and: [{ tenant: { equals: tenant.id } }, { following: { equals: profile.id } }] }, overrideAccess: true })
+    .count({ collection: 'follows', where: { and: [{ tenant: { equals: tenant.id } }, { following: { equals: profile.id } }] }, overrideAccess: true })
     .then((r: any) => r.totalDocs).catch(() => 0)
   const followingCount = await payload
-    .count({ collection: 'follows' as any, where: { and: [{ tenant: { equals: tenant.id } }, { follower: { equals: profile.id } }] }, overrideAccess: true })
+    .count({ collection: 'follows', where: { and: [{ tenant: { equals: tenant.id } }, { follower: { equals: profile.id } }] }, overrideAccess: true })
     .then((r: any) => r.totalDocs).catch(() => 0)
   let isFollowing = false
   if (viewer && !isOwner) {
-    const f = await payload.find({ collection: 'follows' as any, where: { and: [{ tenant: { equals: tenant.id } }, { follower: { equals: viewer.id } }, { following: { equals: profile.id } }] }, limit: 1, depth: 0, overrideAccess: true })
+    const f = await payload.find({ collection: 'follows', where: { and: [{ tenant: { equals: tenant.id } }, { follower: { equals: viewer.id } }, { following: { equals: profile.id } }] }, limit: 1, depth: 0, overrideAccess: true })
     isFollowing = f.docs.length > 0
   }
 
@@ -103,7 +103,7 @@ export default async function ProfilePage({ params }: Params) {
   const commentCount = commentsRes.totalDocs
   const reactionCount = await payload
     .count({
-      collection: 'activity-events' as any,
+      collection: 'activity-events',
       where: { and: [{ tenant: { equals: tenant.id } }, { subscriber: { equals: profile.id } }, { type: { equals: 'reaction_received' } }] },
       overrideAccess: true,
     })

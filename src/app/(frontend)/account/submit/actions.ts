@@ -73,7 +73,7 @@ export async function createSubmission(input: {
   // Rate-limit: не больше MAX_PER_DAY за сутки + кулдаун.
   const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
   const recent = await payload.find({
-    collection: 'submissions' as any,
+    collection: 'submissions',
     where: {
       and: [
         { author: { equals: subscriber.id } },
@@ -131,7 +131,7 @@ export async function createSubmission(input: {
         overrideAccess: true,
       })
       await payload.create({
-        collection: 'submissions' as any,
+        collection: 'submissions',
         data: {
           tenant: tenant.id,
           author: subscriber.id,
@@ -149,7 +149,7 @@ export async function createSubmission(input: {
     }
 
     await payload.create({
-      collection: 'submissions' as any,
+      collection: 'submissions',
       data: {
         tenant: tenant.id,
         author: subscriber.id,

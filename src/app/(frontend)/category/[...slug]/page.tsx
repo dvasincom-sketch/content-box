@@ -66,10 +66,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!category) return {}
 
   return buildMetadata({
-    defaults: (settings as any)?.seoDefaults,
+    defaults: settings?.seoDefaults,
     levels: [category.seo],
     fallbackTitle: category.title,
-    brandName: (tenant as any)?.name,
+    brandName: tenant.name,
   })
 }
 

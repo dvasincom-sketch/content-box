@@ -623,11 +623,11 @@ export interface Subscriber {
   points?: number | null;
   level?: number | null;
   /**
-   * Пусто = бесплатный аккаунт без подписки.
+   * Пусто = бесплатный аккаунт без подписки. Меняет только суперадмин.
    */
   activeTier?: (number | null) | SubscriptionTier;
   /**
-   * Дата окончания текущей оплаченной подписки.
+   * Дата окончания текущей оплаченной подписки. Меняет только суперадмин.
    */
   subscriptionUntil?: string | null;
   isBlocked?: boolean | null;

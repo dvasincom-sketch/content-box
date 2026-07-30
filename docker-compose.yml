@@ -32,7 +32,16 @@ services:
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
       CRON_SECRET: ${CRON_SECRET}
     depends_on:
-      - meilisearch
+      # service_started, а НЕ service_healthy — сознательно.
+      #
+      # Поиск в этом проекте опциональная подсистема: при недоступном
+      # Meilisearch приложение работает, просто /search и подсказки пусты
+      # (isMeiliConfigured в src/search/plugin.ts именно для этого написан).
+      # С condition: service_healthy короткий MEILI_MASTER_KEY, битый том или
+      # OOM у Meili клали бы ВЕСЬ САЙТ — опциональная зависимость становится
+      # блокирующей. Healthcheck ниже всё равно полезен для наблюдаемости.
+      meilisearch:
+        condition: service_started
     restart: unless-stopped
 
   meilisearch:
@@ -41,4 +50,21 @@ services:
       MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
       MEILI_ENV: production
       MEILI_NO_ANALYTICS: 'true'
+    # Порт 7700 наружу НЕ публикуем: приложение ходит по внутренней сети.
+    volumes:
+      # Без тома индекс эфемерный и теряется на каждом рестарте и редеплое.
+      # Компенсировалось полным реиндексом из Postgres на старте
+      # (src/search/plugin.ts), но с ростом базы это дорогая операция на каждый
+      # подъём контейнера. Том был в docker-compose.meili.yml, а в боевой файл
+      # не доехал — эти два файла разошлись.
+      - meili_data:/meili_data
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:7700/health']
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
     restart: unless-stopped
+
+volumes:
+  meili_data:

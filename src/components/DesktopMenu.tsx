@@ -2,7 +2,7 @@
 import React, { useState, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import type { MenuNode } from '@/lib/headerMenu'
+import type { MenuNode } from '@/lib/buildMenu'
 
 /** Вложенный список 2-го уровня и глубже. Раскрывается вправо по наведению.
  *  Панель — стеклянный .c-popover, пункты — .c-popover__item (hover/фокус в CSS). */

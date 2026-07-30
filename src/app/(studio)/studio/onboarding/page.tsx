@@ -24,7 +24,7 @@ export default async function OnboardingPage() {
     .findByID({ collection: 'tenants', id: author.tenantId, depth: 0, overrideAccess: true })
     .catch(() => null)
   if (!tenant) redirect('/studio/login')
-  if ((tenant as any).onboardingComplete) redirect('/studio')
+  if (tenant.onboardingComplete) redirect('/studio')
 
   const settingsRes = await payload.find({
     collection: 'site-settings',

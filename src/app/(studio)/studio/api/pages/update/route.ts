@@ -3,10 +3,10 @@ import { htmlToLexical } from '@/lib/lexical'
 
 /**
  * Обновление страницы из конструктора меню (панель редактирования).
- * Фокусная правка: заголовок + содержимое (HTML из RichEditor → Lexical).
+ * Фокусная правка: заголовок + содержимое (HTML из редактора → Lexical).
  * slug/seo здесь не меняются (смена slug ломает ссылки — отдельный сценарий).
  *
- * Body: { id, title?, content? }  (content — HTML-строка из RichEditor)
+ * Body: { id, title?, content? }  (content — HTML-строка из редактора)
  */
 export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   const data = await readJson(req)

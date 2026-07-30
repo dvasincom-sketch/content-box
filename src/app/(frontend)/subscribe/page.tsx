@@ -14,9 +14,9 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!ctx) return {}
   const { tenant, settings } = ctx
   return buildMetadata({
-    defaults: (settings as any)?.seoDefaults,
+    defaults: settings?.seoDefaults,
     fallbackTitle: 'Подписка',
-    brandName: (tenant as any)?.name,
+    brandName: tenant.name,
   })
 }
 

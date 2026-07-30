@@ -36,13 +36,13 @@ export default async function AccountOverviewPage() {
     .count({ collection: 'comments', where: { and: [{ author: { equals: sub.id } }, { status: { equals: 'published' } }] }, overrideAccess: true })
     .then((r: any) => r.totalDocs).catch(() => 0)
   const reactionsReceived = await payload
-    .count({ collection: 'activity-events' as any, where: { and: [{ subscriber: { equals: sub.id } }, { type: { equals: 'reaction_received' } }] }, overrideAccess: true })
+    .count({ collection: 'activity-events', where: { and: [{ subscriber: { equals: sub.id } }, { type: { equals: 'reaction_received' } }] }, overrideAccess: true })
     .then((r: any) => r.totalDocs).catch(() => 0)
   const followerCount = await payload
-    .count({ collection: 'follows' as any, where: { following: { equals: sub.id } }, overrideAccess: true })
+    .count({ collection: 'follows', where: { following: { equals: sub.id } }, overrideAccess: true })
     .then((r: any) => r.totalDocs).catch(() => 0)
   const followingCount = await payload
-    .count({ collection: 'follows' as any, where: { follower: { equals: sub.id } }, overrideAccess: true })
+    .count({ collection: 'follows', where: { follower: { equals: sub.id } }, overrideAccess: true })
     .then((r: any) => r.totalDocs).catch(() => 0)
   const badges = earnedBadges({ commentCount, reactionsReceived, level: Number(full?.level) || 0, hasPaidTier: hasPaid })
 

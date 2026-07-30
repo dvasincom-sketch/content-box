@@ -21,9 +21,15 @@ import type { Metadata } from 'next'
 import { Fragment, type ReactNode } from 'react'
 import './styles.css'
 
-// Главная кэшируется и ревалидируется раз в час: «Сейчас популярно» (за 3 дня)
-// и «Обсуждаемое» обновляются, без персонализации страница остаётся статикой.
-export const revalidate = 3600
+// Страница ДИНАМИЧЕСКАЯ и иначе быть не может: и layout, и сама страница
+// резолвят тенанта через headers(), а один и тот же HTML нельзя отдавать на
+// разных доменах. Прежний `export const revalidate = 3600` тут не работал —
+// присутствие headers() всё равно переводило рендер в динамический режим, так
+// что комментарий описывал намерение, а не поведение.
+//
+// Кэшируется не страница, а ДАННЫЕ: getHomeFeed завёрнут в unstable_cache с
+// ключом по тенанту, TTL час и тегом `home:<tenantId>` — публикация материала
+// или новый комментарий сбрасывают ленту своего тенанта (см. lib/homeFeed.ts).
 
 /**
  * Дефолтные тексты Hero — фолбэк, когда settings.hero не заполнен (мягкий
@@ -97,13 +103,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const ctx = await getTenantFromHeaders()
   if (!ctx) return {}
   const { tenant, settings } = ctx
-  const defaults = (settings as any)?.seoDefaults
+  const defaults = settings?.seoDefaults
 
   // На главной шаблон "%s — Бренд" не применяем, иначе выйдет "Бренд — Бренд".
   return buildMetadata({
     defaults: { ...defaults, titleTemplate: null },
-    fallbackTitle: (tenant as any)?.name,
-    brandName: (tenant as any)?.name,
+    fallbackTitle: tenant.name,
+    brandName: tenant.name,
   })
 }
 
@@ -117,7 +123,7 @@ export default async function HomePage() {
 
   // Конфиг секций главной: порядок + видимость. Пусто/мусор → дефолт (все 7
   // в текущем порядке) — обратная совместимость. Рендерим только enabled.
-  const sections = normalizeHomeSections((settings as any)?.homeSections)
+  const sections = normalizeHomeSections(settings?.homeSections)
   const activeTypes = new Set<HomeSectionType>(
     sections.filter((s) => s.enabled).map((s) => s.type),
   )
@@ -139,7 +145,7 @@ export default async function HomePage() {
   const heroSlides = needsFeatured ? await getHeroSlides(payload, tenant.id as number) : []
 
   // Ручные категории (для секции categories) — их id исключаем из «Популярных разделов».
-  const manualCategoryIds = (((settings as any)?.homeCategories ?? []) as any[])
+  const manualCategoryIds = ((settings?.homeCategories ?? []) as any[])
     .map((c) => (c && typeof c === 'object' ? c.id : c))
     .filter((id) => id != null)
 
@@ -154,16 +160,16 @@ export default async function HomePage() {
   const renderers: Record<HomeSectionType, () => ReactNode> = {
     hero: () => (
       <HeroBlock
-        eyebrow={(settings as any)?.hero?.eyebrow || undefined}
-        titleLines={resolveHeroTitleLines((settings as any)?.hero?.titleLines, tenant?.name)}
+        eyebrow={settings?.hero?.eyebrow || undefined}
+        titleLines={resolveHeroTitleLines(settings?.hero?.titleLines, tenant?.name)}
         slides={heroSlides}
       />
     ),
     heroTeam: () => (
       <HeroTeamBlock
-        members={((settings as any)?.heroTeam?.members ?? []) as any[]}
-        caption={(settings as any)?.heroTeam?.caption}
-        avatarSize={(settings as any)?.heroTeam?.avatarSize}
+        members={(settings?.heroTeam?.members ?? []) as any[]}
+        caption={settings?.heroTeam?.caption}
+        avatarSize={settings?.heroTeam?.avatarSize}
       />
     ),
     news: () => <LatestPublicationsBlock heading="Новости" items={feed.news} />,
@@ -174,7 +180,7 @@ export default async function HomePage() {
       const popular = feed.popularCategories
         .slice(0, 6)
         .map((c) => ({ title: c.title, href: c.href }))
-      const heroChipList = (((settings as any)?.heroChips ?? []) as any[])
+      const heroChipList = ((settings?.heroChips ?? []) as any[])
         .filter((c) => c && typeof c === 'object' && c.slug)
         .map((c) => ({ title: c.title, href: categoryHref(c) }))
       return <SearchBlock chips={popular.length ? popular : heroChipList} />
@@ -201,7 +207,7 @@ export default async function HomePage() {
     ),
     categories: () => (
       <CategoriesGridBlock
-        items={(((settings as any)?.homeCategories ?? []) as any[])
+        items={((settings?.homeCategories ?? []) as any[])
           .filter((c) => c && typeof c === 'object' && c.slug)
           .map((c) => ({ id: c.id, title: c.title, href: categoryHref(c), cover: c.cover }))}
       />
@@ -220,8 +226,8 @@ export default async function HomePage() {
     socials: () => <SocialLinksBlock items={(settings?.socials ?? []) as any[]} />,
     broadcast: () => (
       <BroadcastBannerBlock
-        tagline={textOr((settings as any)?.banner?.tagline, DEFAULT_BANNER_TAGLINE)}
-        onAirText={textOr((settings as any)?.banner?.onAirText, DEFAULT_BANNER_ONAIR)}
+        tagline={textOr(settings?.banner?.tagline, DEFAULT_BANNER_TAGLINE)}
+        onAirText={textOr(settings?.banner?.onAirText, DEFAULT_BANNER_ONAIR)}
       />
     ),
   }

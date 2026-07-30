@@ -2162,7 +2162,7 @@ svg {
 .c-chip--active { color: var(--brand-text); }
 .c-popover__item { color: var(--brand-text); }
 
-/* ── Rich-редактор участника (UGC, Фаза 4). Классы совпадают с RichEditor;
+/* ── Rich-редактор участника (UGC, Фаза 4). Классы общие с редактором студии;
    на фронте — брендовые токены (в студии те же классы на --st-* токенах). ── */
 .rte { border: 1px solid var(--brand-border); border-radius: var(--radius-lg); background: var(--brand-surface); overflow: hidden; }
 .rte__toolbar { display: flex; align-items: center; gap: 2px; padding: 8px; border-bottom: 1px solid var(--brand-border); background: color-mix(in srgb, var(--brand-surface) 90%, transparent); }

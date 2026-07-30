@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 import { awardActivity, reverseActivity } from '../lib/reputation'
+import { revalidateHomeFeed } from '../lib/revalidateHome'
 import { isSuperAdmin, getUserTenantID } from '../access'
 
 /**
@@ -126,6 +127,8 @@ export const Reactions: CollectionConfig = {
     // Репутация: очки автору коммента за ПОЛУЧЕННУЮ реакцию (не за самореакцию).
     afterChange: [
       async ({ doc, req }) => {
+        // Реакции на публикации меняют счётчики карточек и «популярное».
+        await revalidateHomeFeed(doc?.tenant)
         if (doc?.targetType !== 'comment') return
         const commentId = doc?.comment && typeof doc.comment === 'object' ? doc.comment.id : doc?.comment
         const reactorId = doc?.subscriber && typeof doc.subscriber === 'object' ? doc.subscriber.id : doc?.subscriber
@@ -143,6 +146,7 @@ export const Reactions: CollectionConfig = {
     ],
     afterDelete: [
       async ({ doc, req }) => {
+        await revalidateHomeFeed(doc?.tenant)
         if (doc?.targetType !== 'comment') return
         await reverseActivity(req.payload, { type: 'reaction_received', refType: 'reaction', refId: doc.id })
       },

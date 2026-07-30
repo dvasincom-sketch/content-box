@@ -1,6 +1,7 @@
 import { headers as getHeaders } from 'next/headers.js'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import type { Tenant, SiteSetting } from '@/payload-types'
 
 /**
  * Reads x-tenant-id injected by proxy.ts and loads the tenant + its
@@ -8,7 +9,18 @@ import config from '@/payload.config'
  * overrideAccess:true — isolation is guaranteed by filtering on the
  * proxy-resolved tenant id, not by user access here.
  */
-export async function getTenantFromHeaders() {
+export type TenantContext = {
+  tenant: Tenant
+  settings: SiteSetting | null
+}
+
+/**
+ * Возвращаемый тип объявлен явно. Раньше он выводился из `findByID`, приезжал
+ * нетипизированным, и каждое обращение к настройкам писалось как
+ * `(settings as any)?.hero` — только в page.tsx таких кастов было 17. С этим
+ * типом они не нужны, а поля настроек начинает проверять компилятор.
+ */
+export async function getTenantFromHeaders(): Promise<TenantContext | null> {
   const headers = await getHeaders()
   const tenantId = headers.get('x-tenant-id')
   if (!tenantId) return null

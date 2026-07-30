@@ -22,7 +22,7 @@ type CoverResponse = { error?: string; id?: number; url?: string | null }
 
 /**
  * Выдвижная панель редактирования категории. Название, slug (авто-превью),
- * описание (RichEditor → HTML → Lexical на сервере), обложка (R2).
+ * описание (редактор → HTML → Lexical на сервере), обложка (R2).
  * Сохранение одним запросом на /studio/api/categories/update.
  */
 export function CategoryEditPanel({

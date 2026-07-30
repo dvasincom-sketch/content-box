@@ -4,14 +4,22 @@
 # (в standalone-образе их нет). Медиа — во внешних R2/Kinescope, в образ не едет.
 
 FROM node:20-bookworm-slim
-WORKDIR /app
 
 # ca-certificates/openssl — для TLS к Postgres/R2/Kinescope.
+# curl — для HEALTHCHECK ниже.
 # libvips для sharp идёт prebuilt в самом пакете sharp (доп. системных либ на
-# Debian не требуется).
+# Debian не требуется). apt-get требует root, поэтому ставим ДО смены пользователя.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates openssl \
+  && apt-get install -y --no-install-recommends ca-certificates openssl curl \
   && rm -rf /var/lib/apt/lists/*
+
+# Дальше всё от непривилегированного `node`, а COPY идут с --chown.
+# Отдельный `RUN chown -R /app` не годится: слой overlayfs копирует затронутые
+# файлы целиком, и образ вырастает примерно вдвое (node_modules и .next весят
+# почти всё).
+RUN mkdir -p /app && chown node:node /app
+WORKDIR /app
+USER node
 
 # 1) Зависимости отдельным слоем (кэш). Ставим ВСЕ (включая dev) — нужны и для
 #    сборки, и для `payload migrate` (загрузка TS-конфига).
@@ -25,11 +33,11 @@ RUN apt-get update \
 #    «out of sync» и падает (апгрейд npm это НЕ лечит). npm install толерантен:
 #    примиряет lock с package.json и ставит зависимости — ровно так это и
 #    работало на Render.
-COPY package.json package-lock.json ./
+COPY --chown=node:node package.json package-lock.json ./
 RUN npm install --no-audit --no-fund
 
 # 2) Исходники.
-COPY . .
+COPY --chown=node:node . .
 
 # 3) next.config подставляет R2_PUBLIC_URL в images.remotePatterns НА ЭТАПЕ
 #    СБОРКИ — иначе next/image не пропустит картинки с R2. Это публичный URL
@@ -38,8 +46,8 @@ COPY . .
 ARG R2_PUBLIC_URL
 ENV R2_PUBLIC_URL=$R2_PUBLIC_URL
 
-# 4) Сборка (next build). Тянет next/font/google по сети — build-окружение
-#    должно иметь интернет. Для надёжности лучше перевести шрифты на локальные.
+# 4) Сборка (next build). Шрифты локальные (@fontsource-* в зависимостях), в
+#    Google Fonts сборка не ходит — это важно для сборки из РФ-сети.
 RUN npm run build
 
 # Рантайм
@@ -48,7 +56,21 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 EXPOSE 3000
 
-# Миграции + старт (точь-в-точь как Start Command на Render). next start слушает
-# $PORT на 0.0.0.0. Все секреты (DATABASE_URI, PAYLOAD_SECRET, R2_*, KINESCOPE_*)
-# передаются РАНТАЙМ-переменными окружения контейнера, НЕ в образ.
+# Оркестратор должен уметь отличить «контейнер поднялся» от «процесс жив, но
+# приложение не отвечает» — иначе битый деплой выглядит здоровым.
+#
+# start-period с большим запасом: сервер начинает слушать только ПОСЛЕ
+# `payload migrate` (см. CMD ниже). На большой базе миграция идёт минуты, и с
+# коротким периодом контейнер помечался бы unhealthy, а оркестратор мог убить
+# его прямо посреди миграции — и так по кругу.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=3 \
+  CMD curl -fsS "http://127.0.0.1:${PORT}/api/health" || exit 1
+
+# Миграции + старт. next start слушает $PORT на 0.0.0.0. Все секреты
+# (DATABASE_URL, PAYLOAD_SECRET, R2_*, KINESCOPE_*, MEILI_*) передаются
+# РАНТАЙМ-переменными окружения контейнера, НЕ в образ.
+#
+# ВНИМАНИЕ при масштабировании: миграции гоняются на старте КАЖДОГО контейнера.
+# С одной репликой это нормально; с несколькими нужен отдельный шаг миграции
+# до раскатки, иначе реплики стартуют наперегонки.
 CMD ["sh", "-c", "npm run migrate && npm run start"]

@@ -41,7 +41,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const menu = tenant ? await buildMenu(tenant.id as number, 'header') : []
   const footerTree = tenant ? await buildMenu(tenant.id as number, 'footer') : []
   const { nav: footerNav, columns: footerColumns } = footerFromTree(footerTree)
-  let navItems: { label: string; url: string }[] = []
+  const navItems: { label: string; url: string }[] = []
 
   if (tenant?.id) {
     const payloadConfig = await config

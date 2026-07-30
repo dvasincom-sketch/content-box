@@ -51,10 +51,10 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const category = pub.category && typeof pub.category === 'object' ? pub.category : null
 
   return buildMetadata({
-    defaults: (settings as any)?.seoDefaults,
+    defaults: settings?.seoDefaults,
     levels: [category?.seo, pub.seo],
     fallbackTitle: pub.title,
-    brandName: (tenant as any)?.name,
+    brandName: tenant.name,
   })
 }
 
@@ -161,7 +161,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   let bookmarked = false
   if (viewer && tenant?.id) {
     const bm = await payload.find({
-      collection: 'bookmarks' as any,
+      collection: 'bookmarks',
       where: { and: [{ subscriber: { equals: viewer.id } }, { tenant: { equals: tenant.id } }, { publication: { equals: pub.id } }] },
       limit: 1, depth: 0, overrideAccess: true,
     })

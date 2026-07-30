@@ -8,7 +8,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { DesktopMenu } from '@/components/DesktopMenu'
 import { MobileMenu } from '@/components/MobileMenu'
 import { InstallPWA } from '@/components/InstallPWA'
-import type { MenuNode } from '@/lib/headerMenu'
+import type { MenuNode } from '@/lib/buildMenu'
 
 export type NavItem = { label: string; url: string }
 export type HeaderSubscriber = { email?: string | null; displayName?: string | null } | null

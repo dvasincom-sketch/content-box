@@ -28,8 +28,8 @@ export default async function StudioAppLayout({ children }: { children: React.Re
       depth: 0,
       overrideAccess: true,
     })
-    brandName = (tenant as any)?.name || brandName
-    onboardingComplete = Boolean((tenant as any)?.onboardingComplete)
+    brandName = tenant.name || brandName
+    onboardingComplete = Boolean(tenant.onboardingComplete)
   } catch {
     /* дефолт при ошибке */
   }

@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { OverviewField, PreviewField } from '@payloadcms/plugin-seo/fields'
 import { tenantScopedCollection, getUserTenantID } from '../access'
+import { revalidateHomeFeed } from '../lib/revalidateHome'
 import { extractLexicalText, truncateAtWord } from '../utils/lexicalText'
 
 /**
@@ -208,6 +209,11 @@ export const Categories: CollectionConfig = {
         return data
       },
     ],
+    // Секции «Киноряды» и «Популярные разделы» строятся из категорий:
+    // обложка, posterLayout, название, порядок. Без сброса тега правка
+    // категории проявлялась бы на главной только по истечении TTL.
+    afterChange: [async ({ doc, req }) => { await revalidateHomeFeed(doc?.tenant ?? getUserTenantID(req.user as any)) }],
+    afterDelete: [async ({ doc }) => { await revalidateHomeFeed(doc?.tenant) }],
   },
   timestamps: true,
 }

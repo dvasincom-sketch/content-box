@@ -6,7 +6,7 @@ import { lexicalToHtml } from '@/lib/lexical'
  * Загрузка страницы для панели редактирования.
  * GET /studio/api/pages/get?id=123
  * Возвращает { id, title, contentHtml } — content разворачивается из Lexical
- * в HTML для RichEditor.
+ * в HTML для редактора.
  */
 export const GET = withAuthor(async ({ req, payload, tenantId }) => {
   const url = new URL(req.url)

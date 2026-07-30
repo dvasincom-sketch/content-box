@@ -32,7 +32,7 @@ export default async function AccountPublicationsPage() {
     ? await payload.find({ collection: 'publications', where: { and: [{ tenant: { equals: tid } }, { author: { equals: sub.id } }] }, sort: '-publishedAt', limit: 100, depth: 0, overrideAccess: true })
     : { docs: [] as any[] }
   const subs = tid
-    ? await payload.find({ collection: 'submissions' as any, where: { and: [{ tenant: { equals: tid } }, { author: { equals: sub.id } }, { status: { not_equals: 'approved' } }] }, sort: '-createdAt', limit: 100, depth: 0, overrideAccess: true })
+    ? await payload.find({ collection: 'submissions', where: { and: [{ tenant: { equals: tid } }, { author: { equals: sub.id } }, { status: { not_equals: 'approved' } }] }, sort: '-createdAt', limit: 100, depth: 0, overrideAccess: true })
     : { docs: [] as any[] }
 
   const rows: Row[] = []

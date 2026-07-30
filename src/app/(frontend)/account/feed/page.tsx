@@ -27,7 +27,7 @@ export default async function FeedPage() {
   const payload = await getPayload({ config: await config })
 
   const follows = tid
-    ? await payload.find({ collection: 'follows' as any, where: { and: [{ tenant: { equals: tid } }, { follower: { equals: sub.id } }] }, limit: 500, depth: 0, overrideAccess: true })
+    ? await payload.find({ collection: 'follows', where: { and: [{ tenant: { equals: tid } }, { follower: { equals: sub.id } }] }, limit: 500, depth: 0, overrideAccess: true })
     : { docs: [] as any[] }
   const ids = (follows.docs as any[]).map((f) => relId(f.following)).filter((x): x is number => x != null)
 

@@ -29,7 +29,7 @@ export default async function ProfilePage() {
       depth: 0,
       overrideAccess: true,
     })
-    tenantName = (tenant as any)?.name || ''
+    tenantName = tenant.name || ''
   } catch {
     /* noop */
   }

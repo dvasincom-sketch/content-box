@@ -25,15 +25,15 @@ export async function toggleBookmark(input: { targetType: 'publication' | 'video
   if (!tid) return { ok: false, error: 'Некорректный объект.' }
   try {
     const existing = await payload.find({
-      collection: 'bookmarks' as any,
+      collection: 'bookmarks',
       where: { and: [{ subscriber: { equals: subscriber.id } }, { tenant: { equals: tenantId } }, { [field]: { equals: tid } }] },
       limit: 1, depth: 0, overrideAccess: true,
     })
     if (existing.docs.length > 0) {
-      await payload.delete({ collection: 'bookmarks' as any, id: (existing.docs[0] as any).id, overrideAccess: true })
+      await payload.delete({ collection: 'bookmarks', id: (existing.docs[0] as any).id, overrideAccess: true })
       return { ok: true, saved: false }
     }
-    await payload.create({ collection: 'bookmarks' as any, data: { tenant: tenantId, subscriber: subscriber.id, targetType: input.targetType, [field]: tid } as any, overrideAccess: true })
+    await payload.create({ collection: 'bookmarks', data: { tenant: tenantId, subscriber: subscriber.id, targetType: input.targetType, [field]: tid } as any, overrideAccess: true })
     return { ok: true, saved: true }
   } catch (e: any) {
     return { ok: false, error: e?.message || 'Ошибка' }
@@ -53,15 +53,15 @@ export async function toggleFollow(input: { handle?: string; targetId?: string |
   if (Number(targetId) === Number(subscriber.id)) return { ok: false, error: 'Нельзя подписаться на себя.' }
   try {
     const existing = await payload.find({
-      collection: 'follows' as any,
+      collection: 'follows',
       where: { and: [{ follower: { equals: subscriber.id } }, { following: { equals: targetId } }, { tenant: { equals: tenantId } }] },
       limit: 1, depth: 0, overrideAccess: true,
     })
     if (existing.docs.length > 0) {
-      await payload.delete({ collection: 'follows' as any, id: (existing.docs[0] as any).id, overrideAccess: true })
+      await payload.delete({ collection: 'follows', id: (existing.docs[0] as any).id, overrideAccess: true })
       return { ok: true, following: false }
     }
-    await payload.create({ collection: 'follows' as any, data: { tenant: tenantId, follower: subscriber.id, following: targetId } as any, overrideAccess: true })
+    await payload.create({ collection: 'follows', data: { tenant: tenantId, follower: subscriber.id, following: targetId } as any, overrideAccess: true })
     return { ok: true, following: true }
   } catch (e: any) {
     return { ok: false, error: e?.message || 'Ошибка' }
@@ -77,14 +77,14 @@ export async function recordView(input: { targetType: 'publication' | 'video'; t
   const now = new Date().toISOString()
   try {
     const existing = await payload.find({
-      collection: 'views' as any,
+      collection: 'views',
       where: { and: [{ subscriber: { equals: subscriber.id } }, { tenant: { equals: tenantId } }, { [field]: { equals: tid } }] },
       limit: 1, depth: 0, overrideAccess: true,
     })
     if (existing.docs.length > 0) {
-      await payload.update({ collection: 'views' as any, id: (existing.docs[0] as any).id, data: { viewedAt: now } as any, overrideAccess: true })
+      await payload.update({ collection: 'views', id: (existing.docs[0] as any).id, data: { viewedAt: now } as any, overrideAccess: true })
     } else {
-      await payload.create({ collection: 'views' as any, data: { tenant: tenantId, subscriber: subscriber.id, targetType: input.targetType, [field]: tid, viewedAt: now } as any, overrideAccess: true })
+      await payload.create({ collection: 'views', data: { tenant: tenantId, subscriber: subscriber.id, targetType: input.targetType, [field]: tid, viewedAt: now } as any, overrideAccess: true })
     }
     return { ok: true }
   } catch {
@@ -96,7 +96,7 @@ export async function clearHistory(): Promise<{ ok: boolean; error?: string }> {
   const { payload, tenantId, subscriber } = await ctx()
   if (!tenantId || !subscriber?.id) return { ok: false, error: 'Недоступно.' }
   try {
-    await payload.delete({ collection: 'views' as any, where: { and: [{ subscriber: { equals: subscriber.id } }, { tenant: { equals: tenantId } }] }, overrideAccess: true })
+    await payload.delete({ collection: 'views', where: { and: [{ subscriber: { equals: subscriber.id } }, { tenant: { equals: tenantId } }] }, overrideAccess: true })
     return { ok: true }
   } catch (e: any) {
     return { ok: false, error: e?.message || 'Ошибка' }

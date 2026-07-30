@@ -12,7 +12,7 @@ export default async function ModerationPage() {
   const payload = await getPayload({ config: await config })
 
   const res = await payload.find({
-    collection: 'submissions' as any,
+    collection: 'submissions',
     where: { and: [{ tenant: { equals: author!.tenantId } }, { status: { equals: 'pending' } }] },
     sort: '-createdAt',
     limit: 100,
