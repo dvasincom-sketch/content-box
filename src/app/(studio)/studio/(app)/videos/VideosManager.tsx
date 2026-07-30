@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import * as tus from 'tus-js-client'
 import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
-  Upload, X, Play, Folder, FolderPlus, Pencil, Trash2, ChevronRight, ChevronDown,
+  Upload, X, Play, Folder, Pencil, ChevronRight, ChevronDown,
   ChevronLeft, Search, MapPin, Globe,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
@@ -26,7 +26,6 @@ type Vid = {
   minTierId: string
   durationSec: number | null
   coverUrl: string | null
-  folderId: number | string | null
   addedAt: string | null
   season: number | null
   episode: number | null
@@ -85,43 +84,58 @@ function flattenFolders(
 export function VideosManager({
   initialVideos,
   tiers,
-  folders: initialFolders,
+  categories: initialCategories,
 }: {
   initialVideos: Vid[]
   tiers: Tier[]
-  folders: FolderItem[]
+  categories: FolderItem[]
 }) {
   const router = useRouter()
   const [videos, setVideos] = useState<Vid[]>(initialVideos)
-  const [folders, setFolders] = useState<FolderItem[]>(initialFolders)
+  const [categories, setCategories] = useState<FolderItem[]>(initialCategories)
 
   // после router.refresh() приходят свежие данные — синхронизируем
   useEffect(() => setVideos(initialVideos), [initialVideos])
-  useEffect(() => setFolders(initialFolders), [initialFolders])
+  useEffect(() => setCategories(initialCategories), [initialCategories])
 
   const [adding, setAdding] = useState(false)
-  const [filter, setFilter] = useState<string>(FILTER_ALL) // FILTER_ALL | FILTER_NONE | folderId
+  const [filter, setFilter] = useState<string>(FILTER_ALL) // FILTER_ALL | FILTER_NONE | categoryId
   const [editingVideo, setEditingVideo] = useState<EditableVideo | null>(null)
 
-  const flatFolders = useMemo(() => flattenFolders(folders), [folders])
-  const folderNameById = useMemo(() => {
+  const flatCategories = useMemo(() => flattenFolders(categories), [categories])
+  // id категории → полный путь: «Смотреть › Шоу и проекты › In the SOOP».
+  const catPathById = useMemo(() => {
+    const byId = new Map<string, FolderItem>()
+    for (const c of categories) byId.set(String(c.id), c)
     const m = new Map<string, string>()
-    for (const f of folders) m.set(String(f.id), f.title)
+    for (const c of categories) {
+      const parts: string[] = []
+      let cur: FolderItem | undefined = c
+      let guard = 0
+      while (cur && guard < 20) {
+        parts.unshift(cur.title)
+        cur = cur.parentId == null ? undefined : byId.get(String(cur.parentId))
+        guard += 1
+      }
+      m.set(String(c.id), parts.join(' › '))
+    }
     return m
-  }, [folders])
+  }, [categories])
+
+  const noSectionCount = useMemo(() => videos.filter((v) => !v.categoryId).length, [videos])
 
   const visibleVideos = useMemo(() => {
     if (filter === FILTER_ALL) return videos
-    if (filter === FILTER_NONE) return videos.filter((v) => v.folderId == null)
-    return videos.filter((v) => String(v.folderId) === filter)
+    if (filter === FILTER_NONE) return videos.filter((v) => !v.categoryId)
+    return videos.filter((v) => String(v.categoryId) === filter)
   }, [videos, filter])
 
-  // Оптимистично меняем папку видео локально (без полного refresh)
-  function applyFolderLocally(videoId: number | string, folderId: number | string | null) {
-    setVideos((prev) =>
-      prev.map((v) => (String(v.id) === String(videoId) ? { ...v, folderId } : v)),
-    )
-  }
+  const sectionFilterLabel = useMemo(() => {
+    if (filter === FILTER_ALL) return `Все видео (${videos.length})`
+    if (filter === FILTER_NONE) return `Без раздела (${noSectionCount})`
+    const c = flatCategories.find((x) => String(x.id) === filter)
+    return c ? c.title : 'Все видео'
+  }, [filter, flatCategories, videos.length, noSectionCount])
 
   return (
     <>
@@ -147,17 +161,33 @@ export function VideosManager({
         />
       )}
 
-      <FolderBar
-        folders={folders}
-        flatFolders={flatFolders}
-        filter={filter}
-        onFilter={setFilter}
-        counts={{
-          all: videos.length,
-          none: videos.filter((v) => v.folderId == null).length,
-        }}
-        onChanged={() => router.refresh()}
-      />
+      {/* Фильтр по разделу «Смотреть» (заменил фильтр по папкам). */}
+      <div className="folderbar">
+        <div className="folderbar__filter">
+          <span className="folderbar__label">Раздел:</span>
+          <FolderDropdown
+            triggerClass="folderbar__select-btn"
+            triggerContent={
+              <>
+                <Folder size={14} />
+                <span className="folderbar__select-label">{sectionFilterLabel}</span>
+                <ChevronDown size={15} className="folderbar__select-caret" />
+              </>
+            }
+            items={[
+              { value: FILTER_ALL, label: `Все видео (${videos.length})`, depth: 0, active: filter === FILTER_ALL },
+              { value: FILTER_NONE, label: `Без раздела (${noSectionCount})`, depth: 0, active: filter === FILTER_NONE },
+              ...flatCategories.map((c) => ({
+                value: String(c.id),
+                label: c.title,
+                depth: c.depth,
+                active: filter === String(c.id),
+              })),
+            ]}
+            onSelect={setFilter}
+          />
+        </div>
+      </div>
 
       {videos.length === 0 ? (
         <div className="studio-empty">
@@ -168,8 +198,8 @@ export function VideosManager({
       ) : visibleVideos.length === 0 ? (
         <div className="studio-empty">
           <div className="studio-empty__icon"><Folder size={28} /></div>
-          <div className="studio-empty__title">В этой папке пусто</div>
-          <div className="studio-empty__text">Назначьте видео эту папку через столбец «Папка».</div>
+          <div className="studio-empty__title">В этом разделе пусто</div>
+          <div className="studio-empty__text">Задайте видео раздел «Смотреть» в карандаше (там же сезон и эпизод).</div>
         </div>
       ) : (
         <div className="vidtable__wrap">
@@ -182,7 +212,7 @@ export function VideosManager({
                 <th className="vidtable__th-tier">Уровень</th>
                 <th className="vidtable__th-status">Статус</th>
                 <th className="vidtable__th-pubs">Публикации</th>
-                <th className="vidtable__th-folder">Папка</th>
+                <th className="vidtable__th-folder">Раздел</th>
                 <th className="vidtable__th-date">Добавлено</th>
                 <th className="vidtable__th-actions"></th>
               </tr>
@@ -192,9 +222,7 @@ export function VideosManager({
                 <VideoRow
                   key={v.id}
                   video={v}
-                  flatFolders={flatFolders}
-                  folderName={v.folderId != null ? folderNameById.get(String(v.folderId)) || null : null}
-                  onFolderChange={applyFolderLocally}
+                  categoryPath={v.categoryId ? catPathById.get(String(v.categoryId)) || null : null}
                   onEdit={() =>
                     setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, season: v.season, episode: v.episode, categoryId: v.categoryId, usedIn: v.usedIn })
                   }
@@ -319,15 +347,11 @@ function FolderDropdown({
    ============================================================================ */
 function VideoRow({
   video,
-  flatFolders,
-  folderName,
-  onFolderChange,
+  categoryPath,
   onEdit,
 }: {
   video: Vid
-  flatFolders: { id: number | string; title: string; depth: number }[]
-  folderName: string | null
-  onFolderChange: (videoId: number | string, folderId: number | string | null) => void
+  categoryPath: string | null
   onEdit: () => void
 }) {
   const [ready, setReady] = useState<boolean | null>(null)
@@ -372,23 +396,6 @@ function VideoRow({
       if (timer.current) clearTimeout(timer.current)
     }
   }, [video.id, video.videoRef, isEmbed])
-
-  async function assignFolder(folderId: number | string | null) {
-    // оптимистично
-    const prev = video.folderId
-    onFolderChange(video.id, folderId)
-    try {
-      const res = await fetch('/studio/api/videos/set-folder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ videoId: video.id, folderId: folderId ?? null }),
-      })
-      if (!res.ok) onFolderChange(video.id, prev) // откат
-    } catch {
-      onFolderChange(video.id, prev)
-    }
-  }
 
   return (
     <tr className="vidtable__row">
@@ -467,29 +474,20 @@ function VideoRow({
         )}
       </td>
 
-      {/* Папка */}
+      {/* Раздел «Смотреть» — задаётся в модалке вместе с сезоном/эпизодом */}
       <td className="vidtable__folder-cell">
-        <FolderDropdown
-          triggerClass={`vidtable__folder-btn${folderName ? '' : ' is-empty'}`}
-          triggerContent={
-            folderName ? (
-              <><Folder size={13} /> <span className="vidtable__folder-name">{folderName}</span></>
-            ) : (
-              <span className="vidtable__folder-empty">— выбрать —</span>
-            )
-          }
-          emptyText="Папок пока нет"
-          items={[
-            { value: '', label: 'Без папки', depth: 0, active: video.folderId == null },
-            ...flatFolders.map((f) => ({
-              value: String(f.id),
-              label: f.title,
-              depth: f.depth,
-              active: String(video.folderId) === String(f.id),
-            })),
-          ]}
-          onSelect={(val) => assignFolder(val === '' ? null : val)}
-        />
+        <button
+          type="button"
+          className={`vidtable__folder-btn${categoryPath ? '' : ' is-empty'}`}
+          onClick={onEdit}
+          title="Изменить раздел, сезон и эпизод"
+        >
+          {categoryPath ? (
+            <><Folder size={13} /> <span className="vidtable__folder-name">{categoryPath}</span></>
+          ) : (
+            <span className="vidtable__folder-empty">— выбрать —</span>
+          )}
+        </button>
       </td>
 
       {/* Дата */}
@@ -514,257 +512,6 @@ function VideoRow({
         />
       )}
     </tr>
-  )
-}
-
-/* ============================================================================
-   ПАНЕЛЬ ПАПОК: фильтр + управление (создать / переименовать / удалить)
-   ============================================================================ */
-function FolderBar({
-  folders,
-  flatFolders,
-  filter,
-  onFilter,
-  counts,
-  onChanged,
-}: {
-  folders: FolderItem[]
-  flatFolders: { id: number | string; title: string; depth: number }[]
-  filter: string
-  onFilter: (v: string) => void
-  counts: { all: number; none: number }
-  onChanged: () => void
-}) {
-  const [managing, setManaging] = useState(false)
-
-  const filterLabel = useMemo(() => {
-    if (filter === FILTER_ALL) return `Все видео (${counts.all})`
-    if (filter === FILTER_NONE) return `Без папки (${counts.none})`
-    const f = flatFolders.find((x) => String(x.id) === filter)
-    return f ? f.title : 'Все видео'
-  }, [filter, flatFolders, counts])
-
-  return (
-    <div className="folderbar">
-      <div className="folderbar__filter">
-        <span className="folderbar__label">Папка:</span>
-        <FolderDropdown
-          triggerClass="folderbar__select-btn"
-          triggerContent={
-            <>
-              <Folder size={14} />
-              <span className="folderbar__select-label">{filterLabel}</span>
-              <ChevronDown size={15} className="folderbar__select-caret" />
-            </>
-          }
-          items={[
-            { value: FILTER_ALL, label: `Все видео (${counts.all})`, depth: 0, active: filter === FILTER_ALL },
-            { value: FILTER_NONE, label: `Без папки (${counts.none})`, depth: 0, active: filter === FILTER_NONE },
-            ...flatFolders.map((f) => ({
-              value: String(f.id),
-              label: f.title,
-              depth: f.depth,
-              active: filter === String(f.id),
-            })),
-          ]}
-          onSelect={onFilter}
-        />
-      </div>
-      <button
-        className="studio-btn studio-btn--ghost folderbar__manage"
-        onClick={() => setManaging((v) => !v)}
-      >
-        <Folder size={15} />
-        Управление папками
-        <ChevronRight size={14} className={managing ? 'folderbar__chev is-open' : 'folderbar__chev'} />
-      </button>
-
-      {managing && (
-        <FolderManager
-          folders={folders}
-          flatFolders={flatFolders}
-          onChanged={onChanged}
-        />
-      )}
-    </div>
-  )
-}
-
-/* Управление папками: список + создание + переименование + удаление */
-function FolderManager({
-  folders: _folders,
-  flatFolders,
-  onChanged,
-}: {
-  folders: FolderItem[]
-  flatFolders: { id: number | string; title: string; depth: number }[]
-  onChanged: () => void
-}) {
-  const [newTitle, setNewTitle] = useState('')
-  const [newParent, setNewParent] = useState<string>('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<number | string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
-
-  async function createFolder() {
-    setError(null)
-    if (!newTitle.trim()) return setError('Укажите название папки')
-    setBusy(true)
-    try {
-      const res = await fetch('/studio/api/video-folders/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ title: newTitle.trim(), parentId: newParent || null }),
-      })
-      const json = await res.json()
-      if (!res.ok) setError(json.error || 'Не удалось создать папку')
-      else {
-        setNewTitle('')
-        setNewParent('')
-        onChanged()
-      }
-    } catch {
-      setError('Ошибка соединения')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function renameFolder(id: number | string) {
-    setError(null)
-    if (!editTitle.trim()) return setError('Укажите название папки')
-    setBusy(true)
-    try {
-      const res = await fetch('/studio/api/video-folders/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ id, title: editTitle.trim() }),
-      })
-      const json = await res.json()
-      if (!res.ok) setError(json.error || 'Не удалось переименовать')
-      else {
-        setEditingId(null)
-        setEditTitle('')
-        onChanged()
-      }
-    } catch {
-      setError('Ошибка соединения')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function deleteFolder(id: number | string, title: string) {
-    if (!window.confirm(`Удалить папку «${title}»? Видео из неё не удалятся, а станут «без папки».`)) return
-    setError(null)
-    setBusy(true)
-    try {
-      const res = await fetch('/studio/api/video-folders/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ id }),
-      })
-      const json = await res.json()
-      if (!res.ok) setError(json.error || 'Не удалось удалить папку')
-      else onChanged()
-    } catch {
-      setError('Ошибка соединения')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <div className="foldermgr">
-      {/* Создание */}
-      <div className="foldermgr__create">
-        <input
-          className="studio-input"
-          placeholder="Название новой папки"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && createFolder()}
-        />
-        <StudioSelect
-          className="foldermgr__parent"
-          value={newParent}
-          onChange={setNewParent}
-          options={[
-            { value: '', label: 'Корень (без родителя)' },
-            ...flatFolders.map((f) => ({
-              value: String(f.id),
-              label: f.title,
-              depth: f.depth,
-            })),
-          ]}
-          ariaLabel="Родительская папка"
-        />
-        <button className="studio-btn studio-btn--primary" onClick={createFolder} disabled={busy}>
-          {busy ? <Loader2 size={15} className="spin" /> : <FolderPlus size={15} />}
-          Создать
-        </button>
-      </div>
-
-      {error && <div className="studio-login__error foldermgr__error">{error}</div>}
-
-      {/* Список папок */}
-      {flatFolders.length === 0 ? (
-        <div className="foldermgr__empty">Папок пока нет. Создайте первую выше.</div>
-      ) : (
-        <ul className="foldermgr__list">
-          {flatFolders.map((f) => (
-            <li key={f.id} className="foldermgr__item" style={{ paddingLeft: `calc(var(--st-space-2) + ${f.depth * 16}px)` }}>
-              <Folder size={14} className="foldermgr__item-icon" />
-              {editingId === f.id ? (
-                <>
-                  <input
-                    className="studio-input foldermgr__edit-input"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') renameFolder(f.id)
-                      if (e.key === 'Escape') setEditingId(null)
-                    }}
-                    autoFocus
-                  />
-                  <button className="catmgr__icon-btn" onClick={() => renameFolder(f.id)} title="Сохранить" disabled={busy}>
-                    <Check size={15} />
-                  </button>
-                  <button className="catmgr__icon-btn" onClick={() => setEditingId(null)} title="Отмена">
-                    <X size={15} />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="foldermgr__item-title">{f.title}</span>
-                  <div className="foldermgr__item-actions">
-                    <button
-                      className="catmgr__icon-btn"
-                      onClick={() => { setEditingId(f.id); setEditTitle(f.title); setError(null) }}
-                      title="Переименовать"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      className="catmgr__icon-btn foldermgr__del"
-                      onClick={() => deleteFolder(f.id, f.title)}
-                      title="Удалить"
-                      disabled={busy}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   )
 }
 

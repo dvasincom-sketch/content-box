@@ -60,7 +60,6 @@ export default async function VideosPage() {
       : '',
     durationSec: v.durationSec || null,
     coverUrl: v.cover && typeof v.cover === 'object' ? v.cover.url : null,
-    folderId: v.folder ? (typeof v.folder === 'object' ? v.folder.id : v.folder) : null,
     addedAt: v.publishedAt || v.createdAt || null,
     season: v.season ?? null,
     episode: v.episode ?? null,
@@ -82,25 +81,26 @@ export default async function VideosPage() {
     name: t.name || t.slug || `Уровень ${t.id}`,
   }))
 
-  // Папки (дерево). parent придёт как id при depth:0 — строим дерево на клиенте.
-  const foldersRes = await payload.find({
-    collection: 'video-folders',
+  // Категории тенанта (id, title, parentId) — для колонки «Раздел» и фильтра
+  // по разделам «Смотреть». Дерево строим на клиенте по parentId.
+  const catsRes = await payload.find({
+    collection: 'categories',
     where: { tenant: { equals: author!.tenantId } },
     sort: 'title',
     limit: 1000,
     depth: 0,
     overrideAccess: true,
   })
-  const folders = (foldersRes.docs as any[]).map((f) => {
-    const rawParent = f.parent
+  const categories = (catsRes.docs as any[]).map((c) => {
+    const rawParent = c.parent
     const parentId =
       rawParent && typeof rawParent === 'object' ? rawParent.id : (rawParent ?? null)
     return {
-      id: f.id,
-      title: f.title || 'Без названия',
+      id: c.id,
+      title: c.title || 'Без названия',
       parentId: parentId ?? null,
     }
   })
 
-  return <VideosManager initialVideos={videos} tiers={tiers} folders={folders} />
+  return <VideosManager initialVideos={videos} tiers={tiers} categories={categories} />
 }
