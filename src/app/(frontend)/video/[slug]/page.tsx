@@ -94,7 +94,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
 
         {/* Плеер (если доступ) или замок (если нет) */}
         {access.allowed ? (
-          <VideoPlayer videoId={video.id} />
+          <VideoPlayer videoId={video.id} initialAspect={video.embedAspect === '9:16' ? '9:16' : '16:9'} />
         ) : (
           <VideoLock reason={access.reason} requiredTierName={access.requiredTierName} cover={video.cover} settings={settings} />
         )}

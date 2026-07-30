@@ -98,10 +98,20 @@ export const Videos: CollectionConfig = {
       options: [
         { label: 'Cloudflare Stream (зарубежный)', value: 'stream' },
         { label: 'Kinescope (российский)', value: 'kinescope' },
+        { label: 'Внешняя ссылка (VK, Дзен)', value: 'embed' },
       ],
+      // Выбрать 'embed' руками нельзя: адрес плеера заполняет сервер после
+      // разбора ссылки, и запись без него будет неиграбельной. Такие видео
+      // создаются в студии кнопкой «Не хранить».
+      validate: (value: unknown, { data }: { data?: { embedSrc?: unknown } }) => {
+        if (value === 'embed' && !data?.embedSrc) {
+          return 'Видео по внешней ссылке добавляется в студии — там разбирается ссылка и проверяется площадка.'
+        }
+        return true
+      },
       admin: {
         description:
-          'Где хранится видео. Stream — для зарубежной аудитории; Kinescope — для РФ (не блокируется провайдерами).',
+          'Где хранится видео. Stream — для зарубежной аудитории; Kinescope — для РФ (не блокируется провайдерами); внешняя ссылка — видео лежит на чужой площадке и НЕ защищается подпиской.',
       },
     },
     {
@@ -110,7 +120,59 @@ export const Videos: CollectionConfig = {
       label: 'Ссылка/ключ видео',
       admin: {
         description:
-          'Идентификатор видео в хранилище: CF Stream uid или Kinescope video_id (по provider).',
+          'Идентификатор видео в хранилище: CF Stream uid или Kinescope video_id (по provider). Для внешней ссылки не используется — см. поля ниже.',
+      },
+    },
+    // ── Внешняя вставка (provider = 'embed') ────────────────────────────────
+    // Хранится РАЗОБРАННЫМ, а не куском HTML: сырой код вставки от автора в
+    // разметке страницы — это XSS. Разбор и проверку хоста по белому списку
+    // делает src/lib/videoEmbed.ts, iframe собираем сами.
+    // ВАЖНО: embedProvider и embedSrc пишет ТОЛЬКО сервер (overrideAccess) после
+    // разбора ссылки. `readOnly` в admin прячет поле лишь из интерфейса — без
+    // field-access любой пользователь тенанта мог бы через
+    // `PATCH /api/videos/<id>` подставить произвольный адрес и получить на своём
+    // же домене iframe чужого сайта: фишинг под брендом площадки. Ровно эта
+    // ошибка уже была с activeTier у подписчиков, см. Subscribers.ts.
+    {
+      name: 'embedProvider',
+      type: 'select',
+      label: 'Площадка',
+      options: [
+        { label: 'VK Видео', value: 'vk' },
+        { label: 'VK Клип', value: 'vk-clip' },
+        { label: 'Дзен', value: 'dzen' },
+      ],
+      access: { create: () => false, update: () => false },
+      admin: {
+        condition: (data) => data?.provider === 'embed',
+        readOnly: true,
+        description: 'Определяется автоматически по вставленной ссылке.',
+      },
+    },
+    {
+      name: 'embedSrc',
+      type: 'text',
+      label: 'Адрес плеера',
+      access: { create: () => false, update: () => false },
+      admin: {
+        condition: (data) => data?.provider === 'embed',
+        readOnly: true,
+        description:
+          'Нормализованный src для iframe. Заполняется сервером после разбора ссылки: белый список хостов проверяется там, поэтому руками поле не редактируется.',
+      },
+    },
+    {
+      name: 'embedAspect',
+      type: 'select',
+      defaultValue: '16:9',
+      label: 'Пропорции',
+      options: [
+        { label: 'Горизонтальное 16:9', value: '16:9' },
+        { label: 'Вертикальное 9:16 (клип)', value: '9:16' },
+      ],
+      admin: {
+        condition: (data) => data?.provider === 'embed',
+        description: 'Подставляется по типу ссылки; можно поправить вручную.',
       },
     },
     {

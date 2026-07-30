@@ -45,6 +45,27 @@ export async function GET(req: NextRequest) {
     )
   }
 
+  // Внешняя вставка (VK, Дзен). Проверка доступа выше уже прошла, но защитой
+  // она здесь не является: адрес плеера ведёт на чужой домен, значит виден в
+  // исходнике страницы и пересылается как обычная ссылка. Для такого видео
+  // minTier — мягкий барьер, о чём студия предупреждает при сохранении.
+  //
+  // Отдаём src, который лежит в базе: он туда попал уже разобранным и с
+  // проверенным хостом (src/lib/videoEmbed.ts). Здесь ничего не собираем и не
+  // доверяем полю вслепую — на всякий случай сверяем схему ещё раз.
+  if (access.video.provider === 'embed') {
+    const src = String(access.video.embedSrc || '')
+    if (!src.startsWith('https://')) {
+      return NextResponse.json({ error: 'У видео нет корректной ссылки' }, { status: 400 })
+    }
+    return NextResponse.json({
+      ok: true,
+      provider: 'embed',
+      src,
+      aspect: access.video.embedAspect === '9:16' ? '9:16' : '16:9',
+    })
+  }
+
   const ref = access.video.videoRef
   if (!ref) {
     return NextResponse.json({ error: 'У видео нет привязки к хранилищу' }, { status: 400 })

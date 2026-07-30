@@ -48,6 +48,10 @@ export default async function VideosPage() {
     id: v.id,
     title: v.title || 'Без названия',
     videoRef: v.videoRef || null,
+    // Нужен клиенту: у внешней вставки нет файла в хранилище, поэтому опрос
+    // готовности кодирования к ней неприменим — иначе видео вечно висит в
+    // статусе «нет файла» и превью недоступно.
+    provider: (v.provider as string) || 'stream',
     isPreview: Boolean(v.isPreview),
     minTierName:
       v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug : null,

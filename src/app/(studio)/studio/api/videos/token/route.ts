@@ -33,6 +33,13 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
     return apiError('Нет доступа', 403)
   }
 
+  // Внешняя вставка: файла в хранилище нет, играем по сохранённому адресу.
+  if (doc.provider === 'embed') {
+    const src = String(doc.embedSrc || '')
+    if (!src.startsWith('https://')) return apiError('У видео нет корректной ссылки')
+    return apiOk({ provider: 'embed', src, aspect: doc.embedAspect === '9:16' ? '9:16' : '16:9' })
+  }
+
   const ref = doc.videoRef
   if (!ref) return apiError('У видео нет привязки к хранилищу')
 

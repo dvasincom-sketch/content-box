@@ -726,13 +726,25 @@ export interface Video {
    */
   isPreview?: boolean | null;
   /**
-   * Где хранится видео. Stream — для зарубежной аудитории; Kinescope — для РФ (не блокируется провайдерами).
+   * Где хранится видео. Stream — для зарубежной аудитории; Kinescope — для РФ (не блокируется провайдерами); внешняя ссылка — видео лежит на чужой площадке и НЕ защищается подпиской.
    */
-  provider: 'stream' | 'kinescope';
+  provider: 'stream' | 'kinescope' | 'embed';
   /**
-   * Идентификатор видео в хранилище: CF Stream uid или Kinescope video_id (по provider).
+   * Идентификатор видео в хранилище: CF Stream uid или Kinescope video_id (по provider). Для внешней ссылки не используется — см. поля ниже.
    */
   videoRef?: string | null;
+  /**
+   * Определяется автоматически по вставленной ссылке.
+   */
+  embedProvider?: ('vk' | 'vk-clip' | 'dzen') | null;
+  /**
+   * Нормализованный src для iframe. Заполняется сервером после разбора ссылки: белый список хостов проверяется там, поэтому руками поле не редактируется.
+   */
+  embedSrc?: string | null;
+  /**
+   * Подставляется по типу ссылки; можно поправить вручную.
+   */
+  embedAspect?: ('16:9' | '9:16') | null;
   durationSec?: number | null;
   /**
    * Номер сезона в видео-плейлисте. Пусто = вне сезона.
@@ -1635,6 +1647,9 @@ export interface VideosSelect<T extends boolean = true> {
   isPreview?: T;
   provider?: T;
   videoRef?: T;
+  embedProvider?: T;
+  embedSrc?: T;
+  embedAspect?: T;
   durationSec?: T;
   season?: T;
   episode?: T;

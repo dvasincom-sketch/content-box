@@ -19,6 +19,8 @@ type Vid = {
   id: number | string
   title: string
   videoRef: string | null
+  /** 'stream' | 'kinescope' | 'embed'. У embed файла в хранилище нет. */
+  provider?: string
   isPreview: boolean
   minTierName: string | null
   minTierId: string
@@ -333,7 +335,16 @@ function VideoRow({
   const [playing, setPlaying] = useState(false)
   const timer = useRef<any>(null)
 
+  // Внешняя вставка не кодируется — она играбельна сразу. Без этой ветки
+  // опрос статуса пропускался (videoRef пуст), ready навсегда оставался null,
+  // и каждое добавленное видео выглядело сломанным: «Нет файла» и
+  // заблокированное превью.
+  const isEmbed = video.provider === 'embed'
   useEffect(() => {
+    if (isEmbed) {
+      setReady(true)
+      return
+    }
     if (!video.videoRef) return
     let stopped = false
     async function poll() {
@@ -360,7 +371,7 @@ function VideoRow({
       stopped = true
       if (timer.current) clearTimeout(timer.current)
     }
-  }, [video.id, video.videoRef])
+  }, [video.id, video.videoRef, isEmbed])
 
   async function assignFolder(folderId: number | string | null) {
     // оптимистично
@@ -436,7 +447,7 @@ function VideoRow({
         {ready === null && video.videoRef && (
           <span className="vid__status"><Clock size={13} /> Проверка…</span>
         )}
-        {ready === null && !video.videoRef && (
+        {ready === null && !video.videoRef && !isEmbed && (
           <span className="vid__status vid__status--wait"><Clock size={13} /> Нет файла</span>
         )}
       </td>
@@ -770,7 +781,7 @@ function AddPanel({
   onCancel: () => void
 }) {
   const [mode, setMode] = useState<'upload' | 'url' | 'library'>('upload')
-  const [provider, setProvider] = useState<'stream' | 'kinescope'>('kinescope')
+  const [provider, setProvider] = useState<'stream' | 'kinescope' | 'embed'>('kinescope')
   // Вкладка «Библиотека» есть только у Kinescope. При переключении на Cloudflare
   // возвращаемся к загрузке, чтобы не остаться на скрытой вкладке.
   useEffect(() => {
@@ -801,9 +812,20 @@ function AddPanel({
             </span>
             <span className="vid__provider-hint">Для зарубежной аудитории. В РФ нужен VPN.</span>
           </button>
+          <button
+            type="button"
+            className={`vid__provider-opt${provider === 'embed' ? ' is-active' : ''}`}
+            onClick={() => setProvider('embed')}
+          >
+            <span className="vid__provider-title">
+              <LinkIcon size={15} className="vid__provider-icon" /> Не хранить
+            </span>
+            <span className="vid__provider-hint">Видео остаётся на VK или Дзене. Бесплатно, но подписка его не закроет.</span>
+          </button>
         </div>
       </div>
 
+      {provider === 'embed' ? null : (
       <div className="vid__tabs">
         <button
           className={`vid__tab${mode === 'upload' ? ' is-active' : ''}`}
@@ -826,8 +848,11 @@ function AddPanel({
           </button>
         )}
       </div>
+      )}
 
-      {mode === 'upload' ? (
+      {provider === 'embed' ? (
+        <EmbedFields tiers={tiers} onDone={onDone} onCancel={onCancel} />
+      ) : mode === 'upload' ? (
         <UploadFileForm provider={provider} tiers={tiers} onDone={onDone} onCancel={onCancel} />
       ) : mode === 'url' ? (
         <UrlFields provider={provider} tiers={tiers} onDone={onDone} onCancel={onCancel} />
@@ -1540,6 +1565,130 @@ function UrlFields({
           Бесплатное превью
         </label>
       </div>
+      {error && <div className="studio-login__error">{error}</div>}
+      <div className="vid__form-actions">
+        <button className="studio-btn studio-btn--ghost" onClick={onCancel}>Отмена</button>
+        <button className="studio-btn studio-btn--primary" onClick={submit} disabled={busy}>
+          {busy ? <Loader2 size={16} className="spin" /> : <Plus size={16} />}
+          Добавить
+        </button>
+      </div>
+    </>
+  )
+}
+
+/* ============================================================================
+   ВИДЕО ПО ВНЕШНЕЙ ССЫЛКЕ (VK Видео, VK Клипы, Дзен)
+   ============================================================================
+   Ничего никуда не заливается: файл остаётся на площадке. Автор вставляет
+   ссылку ИЛИ готовый код <iframe>, сервер разбирает, проверяет хост по белому
+   списку и сохраняет нормализованный адрес — сырой HTML не хранится.
+
+   Про уровень доступа предупреждаем ЗАРАНЕЕ, а не после сохранения: закрыть
+   внешнюю вставку подпиской технически невозможно, и автор должен понимать это
+   до того, как выложит платный материал.
+*/
+function EmbedFields({
+  tiers,
+  onDone,
+  onCancel,
+}: {
+  tiers: Tier[]
+  onDone: () => void
+  onCancel: () => void
+}) {
+  const [title, setTitle] = useState('')
+  const [url, setUrl] = useState('')
+  const [minTierId, setMinTierId] = useState('')
+  const [isPreview, setIsPreview] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const gated = Boolean(minTierId) && !isPreview
+
+  async function submit() {
+    setError(null)
+    if (!url.trim()) return setError('Вставьте ссылку или код вставки')
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/videos/embed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: title.trim(),
+          url: url.trim(),
+          minTierId: minTierId || null,
+          isPreview,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) setError(json.error || 'Не удалось добавить видео')
+      else onDone()
+    } catch {
+      setError('Ошибка соединения')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <p className="vid__form-hint">
+        Вставьте ссылку на видео или код из кнопки «Поделиться → Встроить».
+        Поддерживаются VK Видео, VK Клипы и Дзен. Для закрытого видео на VK
+        нужен именно код вставки — в обычной ссылке нет ключа доступа.
+      </p>
+      <label className="studio-field">
+        <span className="studio-field__label">Ссылка или код вставки</span>
+        <textarea
+          className="studio-input"
+          rows={3}
+          placeholder={'https://vkvideo.ru/video-217576166_456247784\nили <iframe src="https://vk.ru/video_ext.php?oid=...&id=...&hash=..."></iframe>'}
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          autoFocus
+        />
+      </label>
+      <label className="studio-field">
+        <span className="studio-field__label">Название</span>
+        <input
+          className="studio-input"
+          placeholder="Можно оставить пустым — подставим по площадке"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </label>
+      <div className="vid__form-row">
+        <label className="studio-field" style={{ flex: 1 }}>
+          <span className="studio-field__label">Уровень доступа</span>
+          <StudioSelect
+            value={minTierId}
+            onChange={setMinTierId}
+            options={[
+              { value: '', label: 'Все подписчики / бесплатно' },
+              ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
+            ]}
+            disabled={isPreview}
+            ariaLabel="Уровень доступа"
+          />
+        </label>
+        <label className="vid__preview-check">
+          <input type="checkbox" checked={isPreview} onChange={(e) => setIsPreview(e.target.checked)} />
+          Бесплатное превью
+        </label>
+      </div>
+
+      {gated && (
+        <div className="vid__form-hint" style={{ color: 'var(--st-warning)' }}>
+          Подписка это видео не закроет. Браузер загружает плеер с чужого домена,
+          поэтому адрес виден в исходнике страницы и пересылается как обычная
+          ссылка — включая ключ доступа к закрытому видео на VK. Замок на
+          странице останется, но он остановит только случайного посетителя.
+          Для действительно платного материала загружайте видео в хранилище.
+        </div>
+      )}
+
       {error && <div className="studio-login__error">{error}</div>}
       <div className="vid__form-actions">
         <button className="studio-btn studio-btn--ghost" onClick={onCancel}>Отмена</button>
