@@ -7,7 +7,7 @@ import { publishedWhere } from '@/lib/published'
 import { sqlRows } from '@/lib/sql'
 import { homeFeedTag } from '@/lib/cacheTags'
 import type { PublicationCard } from '@/blocks/LatestPublicationsBlock'
-import type { Publication, Category } from '@/payload-types'
+import type { Publication } from '@/payload-types'
 
 /**
  * Данные секций главной. Все наборы публикаций — с исключением дублей

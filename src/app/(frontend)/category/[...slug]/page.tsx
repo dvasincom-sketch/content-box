@@ -17,11 +17,6 @@ import '../../styles.css'
 
 type Params = { slug: string[] }
 
-/** Полный путь из сегментов: ['discography','chapter-1'] → '/discography/chapter-1' */
-function toPath(segments: string[]): string {
-  return '/' + segments.join('/')
-}
-
 /**
  * Категория по полному пути: спускаемся по сегментам от корня.
  * По одному запросу на сегмент (индекс slug + parent_id), точное совпадение.

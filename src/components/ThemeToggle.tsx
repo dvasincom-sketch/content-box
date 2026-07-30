@@ -19,7 +19,7 @@ export function ThemeToggle() {
     root.classList.remove('theme-dark', 'theme-light')
     root.classList.add('theme-' + next)
     root.style.colorScheme = next
-    try { localStorage.setItem('theme', next) } catch (e) {}
+    try { localStorage.setItem('theme', next) } catch { /* приватный режим — тема не запомнится */ }
     setTheme(next)
   }
 

@@ -95,7 +95,6 @@ export async function streamDeleteVideo(uid: string): Promise<void> {
   })
   if (!res.ok) {
     // не критично — логируем, но не валим удаление записи
-    // eslint-disable-next-line no-console
     console.warn(`Stream delete ${uid}: HTTP ${res.status}`)
   }
 }

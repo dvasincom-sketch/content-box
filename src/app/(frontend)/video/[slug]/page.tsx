@@ -115,7 +115,7 @@ function VideoLock({
   reason,
   requiredTierName,
   cover,
-  settings,
+  settings: _settings,
 }: {
   reason: 'not-found' | 'need-login' | 'need-subscription' | 'expired' | 'blocked'
   requiredTierName?: string | null

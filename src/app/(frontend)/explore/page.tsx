@@ -1,4 +1,12 @@
 import React from 'react'
+// Локальные шрифты вместо запроса в Google Fonts: те же IBM Plex, но без
+// внешней сети — как и во всём остальном проекте (см. (frontend)/fonts.css).
+import '@fontsource/ibm-plex-sans/400.css'
+import '@fontsource/ibm-plex-sans/500.css'
+import '@fontsource/ibm-plex-sans/600.css'
+import '@fontsource/ibm-plex-sans/700.css'
+import '@fontsource/ibm-plex-mono/400.css'
+import '@fontsource/ibm-plex-mono/500.css'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { relativeDayLabel } from '@/lib/relativeDate'

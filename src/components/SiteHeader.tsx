@@ -66,6 +66,11 @@ export function SiteHeader({
         <div className="flex items-center justify-between h-16 lg:h-20 gap-4">
           <Link href="/" className="flex items-center gap-2 shrink-0" onClick={() => setOpen(false)}>
             {logoUrl ? (
+              // Логотип тенанта: пропорции произвольные, высота фиксирована, а
+              // ширина авто — next/image требует явных width/height либо
+              // fill с контейнером, и то и другое здесь ломает вёрстку.
+              // Файл и так отдаётся с CDN Cloudflare и весит килобайты.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={logoUrl}
                 alt={logoAlt || brandName}

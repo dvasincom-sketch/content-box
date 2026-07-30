@@ -1,6 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
-import { slugify } from '@/lib/slugify'
 
 /**
  * Обновление публикации. Проверяем, что пост принадлежит тенанту автора.

@@ -581,7 +581,7 @@ function FolderBar({
 
 /* Управление папками: список + создание + переименование + удаление */
 function FolderManager({
-  folders,
+  folders: _folders,
   flatFolders,
   onChanged,
 }: {

@@ -115,6 +115,11 @@ async function isDescendant(
       overrideAccess: true,
     }).catch(() => null)
     if (!doc) break
+    // Аргумент tenantId принимался, но не использовался: обход поднимался по
+    // дереву, не проверяя тенанта предков. Парная реализация для папок
+    // (studio/api/_folderRoutes.ts) это проверяет — приводим к одному поведению.
+    const owner = doc.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc.tenant
+    if (Number(owner) !== Number(tenantId)) break
     const p = doc.parent && typeof doc.parent === 'object' ? doc.parent.id : doc.parent
     currentId = p != null ? Number(p) : null
     guard += 1

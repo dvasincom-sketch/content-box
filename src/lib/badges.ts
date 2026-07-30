@@ -25,5 +25,6 @@ const DEFS: BadgeDef[] = [
 ]
 
 export function earnedBadges(s: BadgeStats): Badge[] {
-  return DEFS.filter((d) => d.has(s)).map(({ has, ...b }) => b)
+  // `has` — предикат из определения значка, наружу он не отдаётся.
+  return DEFS.filter((d) => d.has(s)).map(({ has: _has, ...b }) => b)
 }

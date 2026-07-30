@@ -28,7 +28,6 @@ async function uniqueSlug(payload: Payload, tenantId: number, base: string): Pro
   let slug = base || 'post'
   let n = 1
   // до 50 попыток, затем суффикс времени
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const ex = await payload.find({
       collection: 'publications',

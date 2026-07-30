@@ -183,7 +183,6 @@ export function ExploreView({ featured }: { featured: FeaturedData | null }) {
 
   return (
     <div className="explore">
-      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <style>{EXPLORE_CSS}</style>
 
       {/* Шапка — сквозная, как на лендинге (на мобиле: только знак + бургер) */}

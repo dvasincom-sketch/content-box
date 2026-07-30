@@ -21,8 +21,9 @@ export default defineConfig({
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    // baseURL: 'http://localhost:3000',
+    /* Базовый адрес: тесты ходят по относительным путям (`page.goto('/')`).
+       Раньше был закомментирован, и адрес хардкодился в каждом тесте. */
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -34,8 +35,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm dev',
+    // npm, а не pnpm: проект живёт на npm (package-lock.json, .npmrc), и с
+    // `pnpm dev` e2e не запускались вовсе, если pnpm не установлен.
+    command: 'npm run dev',
     reuseExistingServer: true,
     url: 'http://localhost:3000',
+    // Первый `next dev` собирает проект — минуты. Дефолтных 60 с не хватает.
+    timeout: 180_000,
   },
 })

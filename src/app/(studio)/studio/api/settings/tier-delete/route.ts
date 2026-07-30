@@ -26,7 +26,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   try {
     await payload.delete({ collection: 'subscription-tiers', id, overrideAccess: true })
     return apiOk()
-  } catch (e: any) {
+  } catch {
     return apiError('Не удалось удалить — возможно, на уровень ссылаются видео или подписчики')
   }
 })

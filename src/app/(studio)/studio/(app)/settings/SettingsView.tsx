@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ImagePlus, Loader2, Plus, Trash2, Check, Sun, Moon, ChevronDown, GripVertical } from 'lucide-react'
+import { ImagePlus, Loader2, Plus, Trash2, Check, Sun, Moon, ChevronDown } from 'lucide-react'
 import { PerkIcon, PERK_TYPES, type PerkType } from '@/components/studio/PerkIcon'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { MenuBuilder } from './MenuBuilder'
@@ -391,7 +391,9 @@ function SocialsBlock({ initial }: { initial: Social[] }) {
 /* -------------------------------------------------------------------------- */
 function TiersBlock({ initial }: { initial: Tier[] }) {
   const router = useRouter()
-  const [tiers, setTiers] = useState<Tier[]>(initial)
+  // Список тарифов не редактируется на месте: после изменения роут студии
+  // отдаёт свежие данные, и страница перечитывается через router.refresh().
+  const [tiers] = useState<Tier[]>(initial)
   const [openId, setOpenId] = useState<string | number | null>(null)
   const [creating, setCreating] = useState(false)
 

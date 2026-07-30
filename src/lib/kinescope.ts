@@ -337,11 +337,9 @@ export async function kinescopeDeleteVideo(id: string): Promise<void> {
       headers: { Authorization: `Bearer ${apiToken()}` },
     })
     if (!res.ok) {
-      // eslint-disable-next-line no-console
       console.warn(`Kinescope delete ${id}: HTTP ${res.status}`)
     }
   } catch (e: any) {
-    // eslint-disable-next-line no-console
     console.warn(`Kinescope delete ${id}: ${e?.message || 'error'}`)
   }
 }
@@ -361,7 +359,6 @@ export function kinescopeEmbedUrl(videoId: string): string {
  * видео может содержать кириллицу. Kinescope принимает percent-encoding.
  */
 function encodeHeader(value: string): string {
-  // eslint-disable-next-line no-control-regex
   if (/^[\x00-\x7F]*$/.test(value)) return value // чистый ASCII — как есть
   return encodeURIComponent(value)
 }

@@ -53,7 +53,6 @@ async function main() {
   let scanned = 0
 
   // Идём страницами по 100.
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const res = await payload.find({
       collection: 'categories',

@@ -10,7 +10,6 @@ import type { Payload } from 'payload'
 async function uniqueSlug(payload: Payload, tenantId: number, base: string): Promise<string> {
   let slug = base || 'post'
   let n = 1
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const ex = await payload.find({
       collection: 'publications',
