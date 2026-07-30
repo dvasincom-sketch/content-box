@@ -535,6 +535,10 @@ export interface Publication {
   publishedAt?: string | null;
   category?: (number | null) | Category;
   /**
+   * Категория из блока «Смотреть» с видео по теме этой статьи. Связь 1:1 — категорию нельзя привязать к двум статьям.
+   */
+  watchCategory?: (number | null) | Category;
+  /**
    * Публикации сообщества (UGC). Пусто = материал редакции.
    */
   author?: (number | null) | Subscriber;
@@ -1444,6 +1448,7 @@ export interface PublicationsSelect<T extends boolean = true> {
   cover?: T;
   publishedAt?: T;
   category?: T;
+  watchCategory?: T;
   author?: T;
   section?: T;
   minTier?: T;

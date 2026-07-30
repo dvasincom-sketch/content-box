@@ -18,6 +18,7 @@ import { checkVideoAccess } from '@/lib/videoAccess'
 import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
 import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
 import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
+import { CrossLinkCard, breadcrumbLabelPath } from '@/components/CrossLinkCard'
 import { PublicationEngagement } from './PublicationEngagement'
 import { getPublicationEngagement } from '@/lib/publicationEngagement'
 import { Lock } from 'lucide-react'
@@ -170,6 +171,9 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   }
 
   const category = pub.category && typeof pub.category === 'object' ? pub.category : null
+  // Связка со «Смотреть» (depth:2 populate'ит объект с breadcrumbs для ссылки).
+  const watchCat =
+    pub.watchCategory && typeof pub.watchCategory === 'object' ? pub.watchCategory : null
   const dateStr = pub.publishedAt
     ? new Date(pub.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
@@ -315,6 +319,18 @@ export default async function PublicationPage({ params }: { params: Promise<Para
             {viewer && <BookmarkButton targetType="publication" targetId={pub.id} initialSaved={bookmarked} />}
           </div>
 
+          {/* Связка со «Смотреть»: увести читателя органики в видеораздел по теме.
+              Показываем всегда — даже если статья под замком, посмотреть можно. */}
+          {watchCat && (
+            <div className="mb-6">
+              <CrossLinkCard
+                href={categoryHref(watchCat)}
+                variant="watch"
+                title={watchCat.title}
+                path={breadcrumbLabelPath(watchCat.breadcrumbs)}
+              />
+            </div>
+          )}
 
         {pubAccess.allowed ? (
           <>

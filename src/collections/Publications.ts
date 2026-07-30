@@ -33,6 +33,23 @@ export const Publications: CollectionConfig = {
     { name: 'publishedAt', type: 'date', label: 'Дата публикации' },
     { name: 'category', type: 'relationship', relationTo: 'categories' },
     {
+      // Связка «Мир BTS» → «Смотреть». Статья-энциклопедия ссылается на
+      // категорию из блока «Смотреть» с видео по теме: читатель из органики
+      // сразу уходит смотреть. Связь 1:1 (одна категория — максимум одна
+      // статья) держится хуком ниже + уникальным индексом в БД
+      // (см. миграцию add_publication_watch_category).
+      // `category` выше — СВОЁ место статьи в дереве «Мира BTS»; это поле —
+      // ссылка НА ДРУГУЮ ветку, не путать.
+      name: 'watchCategory',
+      type: 'relationship',
+      relationTo: 'categories',
+      label: 'Связка со «Смотреть»',
+      admin: {
+        description:
+          'Категория из блока «Смотреть» с видео по теме этой статьи. Связь 1:1 — категорию нельзя привязать к двум статьям.',
+      },
+    },
+    {
       name: 'author',
       type: 'relationship',
       relationTo: 'subscribers',
@@ -191,6 +208,41 @@ export const Publications: CollectionConfig = {
         const clash = existing.docs.find((d: any) => d.id !== originalDoc?.id)
         if (clash) {
           throw new Error(`Публикация со slug "${data.slug}" уже существует в этом тенанте.`)
+        }
+        return data
+      },
+      // Связь «Смотреть» ↔ «Мир BTS» — строго 1:1. Дружелюбная ошибка ДО того,
+      // как сработает уникальный индекс в БД (тот даёт непонятное 23505).
+      async ({ data, req, originalDoc }) => {
+        const rel = data?.watchCategory
+        const watchCatID =
+          rel && (typeof rel === 'object' ? (rel as any).id : rel)
+        if (!watchCatID) return data
+        const tenantID =
+          (data?.tenant &&
+            (typeof data.tenant === 'object' ? data.tenant.id : data.tenant)) ||
+          originalDoc?.tenant ||
+          getUserTenantID(req.user as any)
+        if (!tenantID) return data
+
+        const existing = await req.payload.find({
+          collection: 'publications',
+          where: {
+            and: [
+              { tenant: { equals: tenantID } },
+              { watchCategory: { equals: watchCatID } },
+            ],
+          },
+          limit: 1,
+          overrideAccess: true,
+          depth: 0,
+        })
+        const clash = existing.docs.find((d: any) => d.id !== originalDoc?.id)
+        if (clash) {
+          throw new Error(
+            'Эта категория «Смотреть» уже связана с другой публикацией (связь 1:1). ' +
+              'Снимите связку у той статьи или выберите другую категорию.',
+          )
         }
         return data
       },

@@ -12,6 +12,7 @@ import { RichText } from '@/components/RichText'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
 import { categoryHref } from '@/lib/categoryHref'
+import { CrossLinkCard } from '@/components/CrossLinkCard'
 import { publishedWhere } from '@/lib/published'
 import '../../styles.css'
 import type { Payload } from 'payload'
@@ -80,6 +81,24 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
 
   const category = await findCategory(payload, tenant.id as number, slug)
   if (!category) notFound()
+
+  // Обратная связка: статья «Мира BTS», привязанная к этой категории «Смотреть»
+  // (publications.watchCategory = текущая категория). Запрос по уникальному
+  // индексу, limit 1. Пусто на большинстве категорий — блок не рисуется.
+  const linkedRes = await payload.find({
+    collection: 'publications',
+    where: {
+      and: [
+        { tenant: { equals: tenant.id } },
+        { watchCategory: { equals: category.id } },
+        publishedWhere(),
+      ],
+    },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const linkedArticle = (linkedRes.docs as any[])[0] || null
 
   // Категория-контейнер (posterLayout): её дочерние категории выводятся афишами
   // (постерами 2:3), а публикации ветки на этой странице не показываются —
@@ -190,6 +209,17 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
             <RichText data={category.description} />
           </div>
         ) : null}
+
+        {/* Обратная связка → статья-энциклопедия в «Мире BTS» по этой теме. */}
+        {linkedArticle && (
+          <div className="mb-10" style={{ maxWidth: 640 }}>
+            <CrossLinkCard
+              href={`/publication/${linkedArticle.slug}`}
+              variant="read"
+              title={linkedArticle.title}
+            />
+          </div>
+        )}
 
         {isVideoSeries ? (
           <VideoSeriesBlock episodes={seriesEpisodes} />

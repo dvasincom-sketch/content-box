@@ -40,6 +40,7 @@ import * as migration_20260726_170000_add_social_phase5 from './20260726_170000_
 import * as migration_20260727_090000_bts_custom_domain from './20260727_090000_bts_custom_domain';
 import * as migration_20260729_100000_add_video_series from './20260729_100000_add_video_series';
 import * as migration_20260730_120000_add_video_embed from './20260730_120000_add_video_embed';
+import * as migration_20260730_140000_add_publication_watch_category from './20260730_140000_add_publication_watch_category';
 
 export const migrations = [
   {
@@ -251,5 +252,10 @@ export const migrations = [
     up: migration_20260730_120000_add_video_embed.up,
     down: migration_20260730_120000_add_video_embed.down,
     name: '20260730_120000_add_video_embed',
+  },
+  {
+    up: migration_20260730_140000_add_publication_watch_category.up,
+    down: migration_20260730_140000_add_publication_watch_category.down,
+    name: '20260730_140000_add_publication_watch_category',
   },
 ];

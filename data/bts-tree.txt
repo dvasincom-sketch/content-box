@@ -1,0 +1,247 @@
+# ─────────────────────────────────────────────────────────────────────────
+# BTS-RUSSIA.RU (Coco Jambo) — новое дерево категорий из двух макетов.
+# Черновик на сверку. НИЧЕГО не удаляется и не создаётся до твоего ОК.
+#
+# Формат строки:  путь | Название | флаги(через запятую, необязательно)
+#   header   — showInHeader (корень блока / попадает в шапку)
+#   playlist — videoSeries: категория рендерится плеером + список серий по сезонам
+#   posters  — posterLayout: дочерние категории выводятся вертикальными афишами 2:3
+#   feed     — АВТОЛЕНТА (динамика): содержимое не создаётся руками, нужен код
+#   footer   — показывать в футере
+#
+# Порядок строк = порядок в меню (новый seed проставит order по позиции).
+# Slug уникален В ПРЕДЕЛАХ РОДИТЕЛЯ — поэтому watch/members/rm и world/members
+# сосуществуют без конфликта. Слуги черновые, меняются свободно.
+#
+# КАТЕГОРИИ — это скелет (навигация + меню). Отдельные альбомы, статьи, шоу,
+# книги, игры — это ПУБЛИКАЦИИ, которые крепятся к листовой категории и
+# создаются позже в студии. Строки «# → публикации: …» показывают, ГДЕ они
+# лягут и служат границей категория/публикация — правь эту границу свободно.
+# ═════════════════════════════════════════════════════════════════════════
+
+
+# ═══════════════════════ БЛОК 1 — СМОТРЕТЬ ═══════════════════════
+# Библиотека видео и аудиопроектов с русской озвучкой.
+# Листовые категории здесь — плейлисты/разделы, к которым крепятся ВИДЕО.
+
+watch | Смотреть | header
+
+# Автолента: последние добавленные видео. Категория-заглушка под динамику.
+watch/new | Новинки | feed
+
+watch/shows | Шоу и проекты | posters
+watch/shows/run-bts | Run BTS | playlist
+watch/shows/bon-voyage | Bon Voyage | playlist
+watch/shows/in-the-soop | In the SOOP | playlist
+watch/shows/are-you-sure | Are You Sure?! | playlist
+watch/shows/american-hustle-life | American Hustle Life | playlist
+watch/shows/rookie-king | Rookie King | playlist
+watch/shows/run-jin | Run Jin | playlist
+watch/shows/suchwita | Suchwita | playlist
+watch/shows/begins-youth | Begins ≠ Youth | playlist
+
+watch/vlogs | Влоги и дневники
+watch/vlogs/bangtan-log | BANGTAN LOG | playlist
+watch/vlogs/members | Влоги участников
+watch/vlogs/normal-log | NORMAL LOG | playlist
+watch/vlogs/album-diaries | Дневники альбомов
+watch/vlogs/tour-diaries | Дневники туров
+
+watch/interviews | Интервью и гостевые шоу
+watch/interviews/bts | Интервью BTS
+watch/interviews/members | Интервью участников
+watch/interviews/guest-shows | Гостевые шоу
+watch/interviews/international | Международные программы
+watch/interviews/korean | Корейские программы
+watch/interviews/japanese | Японские программы
+
+watch/members | По участникам | posters
+watch/members/bts | BTS
+watch/members/rm | RM
+watch/members/jin | Jin
+watch/members/suga | SUGA
+watch/members/j-hope | j-hope
+watch/members/jimin | Jimin
+watch/members/v | V
+watch/members/jung-kook | Jung Kook
+
+watch/concerts | Концерты
+watch/concerts/bts | Концерты BTS
+watch/concerts/solo | Сольные концерты
+watch/concerts/fancams | Фанкамы и сборки
+
+watch/docs | Документальные проекты
+watch/docs/films | Документальные фильмы
+watch/docs/series | Документальные сериалы
+watch/docs/original | ORIGINAL
+watch/docs/unofficial | Неофициальные проекты
+# → публикации/видео: Rise of Bangtan, Story of BTS
+
+# Автолента: прямые эфиры / записи Weverse Live.
+watch/weverse-live | Weverse Live | feed
+
+watch/backstage | Закулисье
+watch/backstage/bangtan-bomb | Bangtan Bomb | playlist
+watch/backstage/bts-episode | BTS Episode | playlist
+watch/backstage/mv-making | Съёмки клипов
+watch/backstage/album-recording | Запись альбомов
+watch/backstage/rehearsals | Репетиции
+watch/backstage/concert-backstage | За кулисами концертов
+
+watch/special-editions | Специальные издания
+watch/special-editions/packages | Memories / Summer / Winter / Season's Greetings
+watch/special-editions/ptd-on-stage-us | DVD «BTS Permission to Dance On Stage In The US»
+watch/special-editions/bts-now | BTS Now — Таиланд, Европа и США
+watch/special-editions/ly-speak-yourself-final | DVD «LOVE YOURSELF: SPEAK YOURSELF [THE FINAL]»
+watch/special-editions/ly-in-seoul-2019 | DVD «LOVE YOURSELF in SEOUL 2019»
+watch/special-editions/best-of-bts-japan | The Best of BTS — Japan Edition
+
+# Аудио, не видео — вероятно отдельный тип контента (аудиоплеер). На заметку.
+watch/audiobooks | Аудиокниги
+watch/audiobooks/beyond-the-story | Beyond The Story
+watch/audiobooks/jk-role-triumph | РОЛЬ ЧОНГУКА: Триумф BTS
+
+
+# ═══════════════════════ БЛОК 2 — МИР BTS ═══════════════════════
+# Энциклопедия: история, музыка, видеография, вселенные, культура.
+# Листовые категории здесь — разделы, к которым крепятся ПУБЛИКАЦИИ
+# (длинные материалы, галереи). Многие имеют пару в «Смотреть» — связь 1:1
+# через новое поле watchCategory (см. примечания к разделам-двойникам).
+
+world | Мир BTS | header
+
+# ── Путь BTS ──
+world/path | Путь BTS
+# → публикации: История BTS (коротко), До дебюта и формирование, 2013–2014 Дебют,
+#   2015–2016 Прорыв/HYYH, 2017–2019 Мировая сцена, 2020–2022 Феномен,
+#   2022–2025 Сольная глава и служба, 2025–2026 Воссоединение, Хронология,
+#   Как BTS изменили индустрию
+world/path/creators | Кто и как создавал BTS
+# → публикации: История Big Hit, Бан Шихёк и замысел, Рэп и звучание,
+#   Продюсеры и авторы, Хореографы, Визуальная команда, Путь Big Hit → HYBE
+
+# ── Участники ──
+world/members | Участники
+# → публикации: BTS (о группе), RM, Jin, SUGA / Agust D, j-hope, Jimin, V, Jung Kook
+
+# ── Дискография ──
+world/discography | Дискография
+world/discography/bts | BTS
+world/discography/bts/school-trilogy | 2013–2014 — Школьная трилогия
+# → публикации-альбомы: 2 COOL 4 SKOOL, O!RUL8,2?, SKOOL LUV AFFAIR
+world/discography/bts/dark-and-wild | 2014 — DARK & WILD
+# → публикация-альбом: DARK & WILD
+world/discography/bts/hyyh | 2015–2016 — Эра юности (HYYH)
+# → публикации-альбомы: HYYH Pt.1, HYYH Pt.2, Young Forever
+world/discography/bts/wings | 2016–2017 — WINGS
+# → публикации-альбомы: WINGS, YOU NEVER WALK ALONE
+world/discography/bts/love-yourself | 2017–2018 — LOVE YOURSELF
+# → публикации-альбомы: 'Her', 'Tear', 'Answer'
+world/discography/bts/map-of-the-soul | 2019–2020 — MAP OF THE SOUL
+# → публикации-альбомы: PERSONA, 7
+world/discography/bts/be-era | 2020–2021 — BE и англоязычные синглы
+# → публикации: Dynamite, BE, Butter, Permission to Dance
+world/discography/bts/proof | 2022 — PROOF
+world/discography/bts/arirang | 2026 — ARIRANG
+# ПРИМЕЧАНИЕ: «страница каждой песни с текстом и переводом» — если нужны
+# отдельные страницы песен, они станут публикациями внутри альбома (или
+# альбом придётся сделать категорией — это 5-й уровень, ниже видимости меню).
+world/discography/japanese | Японская дискография
+world/discography/japanese/studio | Японские студийные альбомы
+# → публикации: Wake Up, Youth, Face Yourself, Map of the Soul: 7 ~ The Journey
+world/discography/japanese/compilations | Японские сборники
+# → публикации: BTS, THE BEST
+world/discography/japanese/originals | Оригинальные японские песни
+world/discography/japanese/kr-versions | Японские версии корейских песен
+world/discography/japanese/singles | Японские синглы
+world/discography/rm | Сольная дискография · RM
+# → публикации: RM, mono., Indigo, Right Place Wrong Person, синглы, коллаборации, саундтреки
+world/discography/suga | Сольная дискография · SUGA / Agust D
+# → публикации: Agust D, D-2, D-DAY, синглы, коллаборации, продюсерские работы
+world/discography/j-hope | Сольная дискография · j-hope
+# → публикации: Hope World, Jack In The Box, HOPE ON THE STREET Vol.1, синглы, коллаборации, саундтреки
+world/discography/jin | Сольная дискография · Jin
+# → публикации: Happy, Echo, синглы, коллаборации, саундтреки
+world/discography/jimin | Сольная дискография · Jimin
+# → публикации: FACE, MUSE, синглы, коллаборации, саундтреки
+world/discography/v | Сольная дискография · V
+# → публикации: Layover, синглы, коллаборации, саундтреки
+world/discography/jung-kook | Сольная дискография · Jung Kook
+# → публикации: GOLDEN, синглы, коллаборации, саундтреки
+world/discography/ost | OST и саундтреки
+# → публикации: BTS World OST, саундтреки BTS/сольные, к дорамам/фильмам/играм/анимации
+world/discography/archive | Архивные и неофициальные песни
+# → публикации: релизы SoundCloud, неизданные, демо, каверы, предебютные, редкие/концертные версии
+world/discography/singles | Синглы и отдельные релизы
+# → публикации: синглы вне альбомов, сольные синглы, песни FESTA, цифровые релизы, ремиксы, альт-версии
+world/discography/collabs | Коллаборации
+# → публикации: коллаборации BTS/участников, приглашённые артисты, участие в чужих песнях, продюсирование
+
+# ── Видеография (текстовый каталог-двойник блока «Смотреть») ──
+# Каждый раздел здесь имеет пару в watch/* — связь 1:1 через watchCategory.
+world/videography | Видеография
+world/videography/films | Фильмы
+world/videography/vlogs | Влоги и дневники
+world/videography/special-editions | Специальные видеоиздания
+world/videography/tv | Интервью, телевидение и эфиры
+world/videography/art-projects | Художественные и анимационные проекты
+world/videography/shows | Шоу и проекты
+world/videography/concerts | Концерты и выступления
+world/videography/docuseries | Документальные сериалы
+world/videography/music-videos | Музыкальные видео
+world/videography/web-backstage | Веб-рубрики и закулисье
+
+# ── Концерты и события ──
+world/concerts | Концерты и события
+world/concerts/solo-tours | Сольные туры и концерты
+# → публикации: RM, Jin, SUGA/Agust D, j-hope, Jimin, V, Jung Kook
+world/concerts/festa | BTS FESTA
+world/concerts/fanmeetings | Фан-встречи и события для ARMY
+world/concerts/festivals | Фестивали и специальные выступления
+world/concerts/bts-tours | Туры и концерты BTS
+world/concerts/exhibitions | Выставки и поп-ап-пространства
+world/concerts/timeline | Хронология событий
+
+# ── Эры и художественные вселенные ──
+world/eras | Эры и художественные вселенные
+world/eras/musical | Музыкальные эры
+# → публикации: Школьная трилогия, DARK & WILD, HYYH, WINGS, LOVE YOURSELF,
+#   MAP OF THE SOUL, BE, PROOF, ARIRANG (по шаблону страницы эры)
+world/eras/bts-universe | BTS Universe
+# → публикации: что такое, персонажи, хронология, сюжет, Highlight Reels, The Notes, SAVE ME, ...
+world/eras/7fates-chakho | 7FATES: CHAKHO
+# → публикации: мир и мифология, персонажи, сюжет, вебтун, веб-роман, Stay Alive OST, издания
+
+# ── Проекты за пределами музыки ──
+world/projects | Проекты за пределами музыки
+world/projects/brands | BTS и бренды
+# → публикации: партнёрства BTS и партнёрства каждого участника
+world/projects/franchises | Персонажи и франшизы
+# → публикации: BT21, TinyTAN, Hip Hop Monster
+world/projects/books | Книги и печатные издания
+# → публикации: книги о BTS, концепт-буки, фотобуки (групповые/сольные), образовательные, журналы, веб-романы, вебтуны
+world/projects/games | Игры
+# → публикации: BTS World, BTS Universe Story, BTS Island: In the SEOM, Rhythm Hive, SuperStar BTS, Игра BT21
+world/projects/merch | Официальный мерч
+
+# ── ARMY ──
+world/army | ARMY
+# → публикации: Кто такие ARMY, История фандома, Название/логотип/символика,
+#   Фиолетовый цвет и Borahae, Официальный фан-клуб, ARMY Membership, Традиции,
+#   Фанпроекты, Благотворительность, ARMY в разных странах, Российский ARMY, Календарь
+world/army/army-bomb | ARMY Bomb
+# → публикации: Все версии, Использование на концертах
+
+# ── Справочник BTS ──
+world/reference | Справочник BTS
+# → публикации: Термины и сокращения, Корейские слова, Имена и прозвища, Фазы BTS,
+#   Логотипы/цвета/символы, Студии участников, Важные места, Микрофоны и образы,
+#   Домашние животные, Официальные сайты и платформы
+world/reference/roles | Состав и роли
+# → публикации: Мембер, Лидер, Макнэ, Хён, Позиции участников
+world/reference/lines | Линии
+# → публикации: Рэп-лайн, Вокал-лайн, Дэнс-лайн, Хён-лайн, Макнэ-лайн
+world/reference/units | Юниты и сочетания участников
+# → публикации: 3J, SOPE, MiniMoni, Namjin, другие
+world/reference/memes | Мемы и внутренние шутки
+# → публикации: Личчимоли, Worldwide Handsome, другие знаковые мемы
