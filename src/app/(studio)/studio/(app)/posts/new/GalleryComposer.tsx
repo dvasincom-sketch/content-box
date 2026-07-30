@@ -7,6 +7,7 @@ import {
   Folder, FolderPlus, Pencil, Trash2, FolderInput,
 } from 'lucide-react'
 import { StudioSelect } from '../../_ui/StudioSelect'
+import { errorMessage } from '@/lib/errorMessage'
 
 export type GalleryItem = {
   imageId: number | string
@@ -135,10 +136,10 @@ export function GalleryComposer({
             setTasks((prev) =>
               prev.map((t) => (t.key === taskKey ? { ...t, status: 'done' } : t)),
             )
-          } catch (e: any) {
+          } catch (e: unknown) {
             setTasks((prev) =>
               prev.map((t) =>
-                t.key === taskKey ? { ...t, status: 'error', error: e?.message } : t,
+                t.key === taskKey ? { ...t, status: 'error', error: errorMessage(e) } : t,
               ),
             )
           }

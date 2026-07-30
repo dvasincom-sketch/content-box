@@ -1,6 +1,7 @@
 import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { kinescopeUploadFile } from '@/lib/kinescope'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Загрузка видео файлом на Kinescope (аналог CF create-from-upload, но иначе:
@@ -61,8 +62,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     })
     videoId = video.id
     if (!videoId) throw new Error('Kinescope не вернул id видео')
-  } catch (e: any) {
-    return apiError(`Kinescope: ${e?.message || 'не удалось загрузить файл'}`, 502)
+  } catch (e: unknown) {
+    return apiError(`Kinescope: ${errorMessage(e, 'не удалось загрузить файл')}`, 502)
   }
 
   // 2) Создаём запись Videos
@@ -82,8 +83,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ id: doc.id, videoId })
-  } catch (e: any) {
-    return apiError(e?.message || 'Видео ушло в Kinescope, но запись создать не удалось', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Видео ушло в Kinescope, но запись создать не удалось'), 500)
   }
 })
 

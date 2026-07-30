@@ -13,8 +13,8 @@ import { isSuperAdmin, getUserTenantID } from '../access'
  */
 
 const tiersScoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const tenantID = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const tenantID = getUserTenantID(user)
   if (!tenantID) return false
   return { tenant: { equals: tenantID } }
 }
@@ -31,7 +31,7 @@ export const SubscriptionTiers: CollectionConfig = {
   access: {
     read: tiersScoped,
     create: ({ req: { user } }) =>
-      isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
+      isSuperAdmin(user) || Boolean(getUserTenantID(user)),
     update: tiersScoped,
     delete: tiersScoped,
   },

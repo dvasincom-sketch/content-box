@@ -4,6 +4,7 @@ import config from '../payload.config'
 import { convertMarkdownToLexical, editorConfigFactory } from '@payloadcms/richtext-lexical'
 import fs from 'fs'
 import path from 'path'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Импорт описаний категорий из markdown-файлов в поле description (Lexical).
@@ -146,8 +147,8 @@ async function main() {
       })
       console.log(`  ✓ ${catPath} → "${category.title}"`)
       updated++
-    } catch (e: any) {
-      console.log(`  ✗ ${catPath}: ${e.message}`)
+    } catch (e: unknown) {
+      console.log(`  ✗ ${catPath}: ${errorMessage(e)}`)
       failed++
     }
   }

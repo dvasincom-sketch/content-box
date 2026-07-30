@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Upsert оверрайда авто-категории (ленивая материализация).
@@ -76,7 +77,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ id: (created as any).id, created: true })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить'))
   }
 })

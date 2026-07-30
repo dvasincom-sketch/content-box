@@ -1,3 +1,4 @@
+import { errorMessage } from '@/lib/errorMessage'
 /**
  * Тонкая обёртка над Cloudflare Stream API. Вся работа с CF в одном месте,
  * чтобы роуты не дублировали URL и заголовки.
@@ -295,10 +296,10 @@ async function importPkcs8(pem: string): Promise<CryptoKey> {
       false,
       ['sign'],
     )
-  } catch (e: any) {
+  } catch (e: unknown) {
     // диагностика без утечки ключа: только метаданные
     throw new Error(
-      `importKey failed (${e?.message || 'unknown'}); ` +
+      `importKey failed (${errorMessage(e, 'unknown')}); ` +
         `format=${isPkcs1 ? 'PKCS1' : 'PKCS8'}, derBytes=${finalDer.length}`,
     )
   }

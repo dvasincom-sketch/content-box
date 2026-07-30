@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Обновление РУЧНОГО пункта меню (kind='page' | 'url').
@@ -69,7 +70,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить'))
   }
 })

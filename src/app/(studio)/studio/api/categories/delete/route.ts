@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Удаление категории. БЕЗОПАСНЫЙ режим: удаляем только «пустую» категорию.
@@ -53,7 +54,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   try {
     await payload.delete({ collection: 'categories', id, overrideAccess: true })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось удалить категорию')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось удалить категорию'))
   }
 })

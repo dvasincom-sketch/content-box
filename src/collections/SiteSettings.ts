@@ -25,7 +25,7 @@ export const SiteSettings: CollectionConfig = {
     // На create Where неприменим — тенант проставляет плагин мультитенантности;
     // достаточно требовать, чтобы это был персонал со своим тенантом.
     create: ({ req: { user } }) =>
-      isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
+      isSuperAdmin(user) || Boolean(getUserTenantID(user)),
     update: tenantScoped,
     delete: tenantScoped,
   },

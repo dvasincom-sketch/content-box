@@ -13,8 +13,8 @@ import { authorResetSubject, authorResetHTML } from '../emails/authEmails'
  */
 
 const usersScoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const tenantID = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const tenantID = getUserTenantID(user)
   if (!tenantID) return false
   return { tenant: { equals: tenantID } }
 }
@@ -40,8 +40,8 @@ export const Users: CollectionConfig = {
   access: {
     read: usersScoped,
     create: ({ req: { user } }) => {
-      if (isSuperAdmin(user as any)) return true
-      return Boolean(getUserTenantID(user as any))
+      if (isSuperAdmin(user)) return true
+      return Boolean(getUserTenantID(user))
     },
     update: usersScoped,
     delete: usersScoped,

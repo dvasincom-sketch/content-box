@@ -18,8 +18,8 @@ import { isSuperAdmin, getUserTenantID } from '../access'
  */
 
 const videosScoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const tenantID = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const tenantID = getUserTenantID(user)
   if (!tenantID) return false
   return { tenant: { equals: tenantID } }
 }
@@ -36,7 +36,7 @@ export const Videos: CollectionConfig = {
   access: {
     read: videosScoped,
     create: ({ req: { user } }) =>
-      isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
+      isSuperAdmin(user) || Boolean(getUserTenantID(user)),
     update: videosScoped,
     delete: videosScoped,
   },

@@ -6,6 +6,7 @@ import {
   findTenantSettings,
 } from '@/app/(studio)/studio/api/_lib'
 import { PRESET_IDS } from '@/lib/themePresets'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Сохранение выбранного пресета оформления. SiteSettings — одна запись на тенант.
@@ -34,7 +35,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить'))
   }
 })

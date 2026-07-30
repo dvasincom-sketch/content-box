@@ -14,6 +14,7 @@ import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
 import { categoryHref } from '@/lib/categoryHref'
 import { publishedWhere } from '@/lib/published'
 import '../../styles.css'
+import type { Payload } from 'payload'
 
 type Params = { slug: string[] }
 
@@ -22,7 +23,7 @@ type Params = { slug: string[] }
  * По одному запросу на сегмент (индекс slug + parent_id), точное совпадение.
  * Фильтр по breadcrumbs не годится: крошка `/videography` есть у всех потомков.
  */
-async function findCategory(payload: any, tenantID: number, segments: string[]) {
+async function findCategory(payload: Payload, tenantID: number, segments: string[]) {
   let parentID: number | null = null
   let current: any = null
 

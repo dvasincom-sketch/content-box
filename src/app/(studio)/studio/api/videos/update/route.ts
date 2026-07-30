@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Обновить название и уровень доступа видео.
@@ -80,7 +81,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ title, minTierId: minTier, season: patch.season, episode: patch.episode })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось обновить видео')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось обновить видео'))
   }
 })

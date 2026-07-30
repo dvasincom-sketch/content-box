@@ -1,5 +1,6 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { streamCreateTusUpload, buildUploadMetadata } from '@/lib/cfStream'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Выдаёт браузеру одноразовый TUS upload-URL для прямой загрузки видео в
@@ -34,7 +35,7 @@ export const POST = withAuthor(async ({ req }) => {
       uploadMetadata: metadata,
     })
     return apiOk({ uploadURL, uid })
-  } catch (e: any) {
-    return apiError(`Cloudflare Stream: ${e?.message || 'не удалось начать загрузку'}`, 502)
+  } catch (e: unknown) {
+    return apiError(`Cloudflare Stream: ${errorMessage(e, 'не удалось начать загрузку')}`, 502)
   }
 })

@@ -1,6 +1,8 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { slugify } from '@/lib/slugify'
+import { errorMessage } from '@/lib/errorMessage'
+import type { Payload } from 'payload'
 
 /**
  * Создание новой страницы проекта.
@@ -32,12 +34,12 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ id: (doc as any).id, slug })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось создать страницу')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось создать страницу'))
   }
 })
 
-async function ensureUniqueSlug(payload: any, tenantId: number, base: string): Promise<string> {
+async function ensureUniqueSlug(payload: Payload, tenantId: number, base: string): Promise<string> {
   let candidate = base
   let n = 2
   for (let i = 0; i < 60; i++) {

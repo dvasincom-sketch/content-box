@@ -1,10 +1,10 @@
 import type { Access, CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID } from '../access'
+import { isSuperAdmin, getUserTenantID, isSubscriber } from '../access'
 
 /** Follows — подписки участников друг на друга (Фаза 5). follower → following. */
 const scoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const t = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const t = getUserTenantID(user)
   return t ? { tenant: { equals: t } } : false
 }
 
@@ -14,7 +14,7 @@ export const Follows: CollectionConfig = {
   admin: { useAsTitle: 'id', group: 'Сообщество', defaultColumns: ['follower', 'following', 'createdAt'], description: 'Кто на кого подписан.' },
   access: {
     read: scoped,
-    create: ({ req: { user } }) => isSuperAdmin(user as any) || (user as any)?.collection === 'subscribers' || Boolean(getUserTenantID(user as any)),
+    create: ({ req: { user } }) => isSuperAdmin(user) || isSubscriber(user) || Boolean(getUserTenantID(user)),
     update: scoped,
     delete: scoped,
   },

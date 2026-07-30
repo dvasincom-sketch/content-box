@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Смена собственного email (= логина). Чувствительно: подтверждаем текущим
@@ -56,7 +57,7 @@ export const POST = withAuthor(async ({ req, payload, author }) => {
       overrideAccess: true,
     })
     return apiOk({ email: newEmail })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сменить email')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сменить email'))
   }
 })

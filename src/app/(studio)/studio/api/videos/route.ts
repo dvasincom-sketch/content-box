@@ -1,6 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { streamCopyFromUrl } from '@/lib/cfStream'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Создание видео из внешней ссылки (Яндекс Object Storage и т.п.).
@@ -35,8 +36,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       requireSignedURLs: true, // защищаем сразу — публично по uid не открыть
     })
     uid = video.uid
-  } catch (e: any) {
-    return apiError(`Cloudflare Stream: ${e?.message || 'не удалось начать загрузку'}`, 502)
+  } catch (e: unknown) {
+    return apiError(`Cloudflare Stream: ${errorMessage(e, 'не удалось начать загрузку')}`, 502)
   }
 
   // 2) Создаём запись Videos с uid в videoRef
@@ -55,8 +56,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ id: doc.id, uid })
-  } catch (e: any) {
-    return apiError(e?.message || 'Видео ушло в Stream, но запись создать не удалось', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Видео ушло в Stream, но запись создать не удалось'), 500)
   }
 })
 

@@ -1,4 +1,9 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
+import type { Payload } from 'payload'
+
+/** Где живёт пункт меню. Совпадает с enum поля `location` в коллекции. */
+type MenuLocation = 'header' | 'footer'
 
 const MAX_DEPTH = 4
 
@@ -102,16 +107,16 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ id: (created as any).id })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось создать пункт')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось создать пункт'))
   }
 })
 
 /** Материализует оверрайд авто-категории (или возвращает id существующего). */
 async function materializeCategory(
-  payload: any,
+  payload: Payload,
   tenantId: number,
-  location: string,
+  location: MenuLocation,
   categoryId: number,
 ): Promise<number> {
   const existing = await payload.find({
@@ -148,7 +153,7 @@ async function materializeCategory(
 
 /** Глубина узла menu-items: 1 = корень. Идём вверх по parent. */
 async function depthOf(
-  payload: any,
+  payload: Payload,
   id: number,
   tenantId: number,
 ): Promise<number> {
@@ -169,7 +174,7 @@ async function depthOf(
 
 /** menu-item по id с проверкой принадлежности тенанту. */
 async function getMenuItem(
-  payload: any,
+  payload: Payload,
   id: string | number,
   tenantId: number,
 ): Promise<any | null> {

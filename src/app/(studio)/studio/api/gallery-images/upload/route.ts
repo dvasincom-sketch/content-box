@@ -1,4 +1,5 @@
 import { withAuthor, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Загрузка одного изображения в коллекцию gallery-images. Файл идёт в R2
@@ -77,7 +78,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       height: d.height || null,
       alt: d.alt || '',
     })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось загрузить изображение', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось загрузить изображение'), 500)
   }
 })

@@ -1,5 +1,6 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Обновление страницы из конструктора меню (панель редактирования).
@@ -44,7 +45,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить'))
   }
 })

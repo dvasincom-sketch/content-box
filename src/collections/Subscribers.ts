@@ -1,5 +1,5 @@
 import type { Access, CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID, superAdminFieldAccess } from '../access'
+import { isSuperAdmin, getUserTenantID, superAdminFieldAccess, isSubscriber } from '../access'
 import { subscriberResetSubject, subscriberResetHTML } from '../emails/authEmails'
 
 /**
@@ -16,8 +16,8 @@ import { subscriberResetSubject, subscriberResetHTML } from '../emails/authEmail
  */
 
 const subscribersScoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const tenantID = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const tenantID = getUserTenantID(user)
   if (!tenantID) return false
   return { tenant: { equals: tenantID } }
 }
@@ -77,14 +77,14 @@ export const Subscribers: CollectionConfig = {
     // Чтение/управление — только staff своего тенанта.
     read: subscribersScoped,
     create: ({ req: { user } }) =>
-      isSuperAdmin(user as any) || Boolean(getUserTenantID(user as any)),
+      isSuperAdmin(user) || Boolean(getUserTenantID(user)),
     update: subscribersScoped,
     delete: subscribersScoped,
     // КРИТИЧНО: подписчики НЕ входят в админ-панель Payload.
     // admin возвращает true только для staff (CMS-users), не для subscribers.
     admin: ({ req: { user } }) => {
       // user из коллекции subscribers не должен видеть админку вообще.
-      if ((user as any)?.collection === 'subscribers') return false
+      if (isSubscriber(user)) return false
       return Boolean(user)
     },
   },

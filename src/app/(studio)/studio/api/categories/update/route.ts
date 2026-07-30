@@ -1,6 +1,8 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { htmlToLexical } from '@/lib/lexical'
+import { errorMessage } from '@/lib/errorMessage'
+import type { Payload } from 'payload'
 
 /**
  * Редактирование категории: title, slug, parent, description, cover.
@@ -92,14 +94,14 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить изменения')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить изменения'))
   }
 })
 
 /** Является ли candidate потомком ancestor (идём вверх по parent от candidate). */
 async function isDescendant(
-  payload: any,
+  payload: Payload,
   candidateId: number,
   ancestorId: number,
   tenantId: number,

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withAuthor, apiError } from '@/app/(studio)/studio/api/_lib'
 import { lexicalToHtml } from '@/lib/lexical'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Загрузка страницы для панели редактирования.
@@ -28,7 +29,7 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
       title: page.title,
       contentHtml: lexicalToHtml(page.content),
     })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось загрузить страницу', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось загрузить страницу'), 500)
   }
 })

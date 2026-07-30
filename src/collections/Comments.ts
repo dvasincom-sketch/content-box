@@ -1,5 +1,5 @@
 import type { Access, CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID } from '../access'
+import { isSuperAdmin, getUserTenantID, isSubscriber } from '../access'
 import { awardActivity, reverseActivity } from '../lib/reputation'
 import { revalidateHomeFeed } from '../lib/revalidateHome'
 
@@ -25,8 +25,8 @@ import { revalidateHomeFeed } from '../lib/revalidateHome'
  */
 
 const commentsScoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const tenantID = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const tenantID = getUserTenantID(user)
   if (!tenantID) return false
   return { tenant: { equals: tenantID } }
 }
@@ -46,9 +46,9 @@ export const Comments: CollectionConfig = {
     read: commentsScoped,
     // Создание: staff тенанта ИЛИ залогиненный подписчик (через серверный экшен).
     create: ({ req: { user } }) => {
-      if (isSuperAdmin(user as any)) return true
-      if ((user as any)?.collection === 'subscribers') return true
-      return Boolean(getUserTenantID(user as any))
+      if (isSuperAdmin(user)) return true
+      if (isSubscriber(user)) return true
+      return Boolean(getUserTenantID(user))
     },
     // Правка/удаление — staff (модерация). Подписчик не редактирует через CMS.
     update: commentsScoped,

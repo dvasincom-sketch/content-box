@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Удаление записи menu-items с каскадом по ручным потомкам.
@@ -125,7 +126,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       deleted += 1
     }
     return apiOk({ deleted })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось удалить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось удалить'))
   }
 })

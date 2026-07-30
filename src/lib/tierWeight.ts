@@ -1,3 +1,4 @@
+import type { Payload } from 'payload'
 /**
  * Вес уровня подписки по id — общий хелпер для гейтинга публикаций и видео
  * (раньше дословно дублировался в publicationAccess.ts и videoAccess.ts).
@@ -10,7 +11,7 @@
  * Тариф не своего тенанта трактуется как несуществующий (null).
  */
 export async function tierWeight(
-  payload: any,
+  payload: Payload,
   tierId: string | number,
   tenantId: string | number,
 ): Promise<number | null> {

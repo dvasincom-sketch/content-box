@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withAuthor, apiError } from '@/app/(studio)/studio/api/_lib'
 import { streamGetVideo } from '@/lib/cfStream'
 import { kinescopeGetVideo } from '@/lib/kinescope'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Статус кодирования видео. По id записи Videos берём videoRef и спрашиваем
@@ -74,7 +75,7 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
       pct: v.status?.pctComplete || null,
       duration: v.duration || null,
     })
-  } catch (e: any) {
-    return apiError(e?.message || `Ошибка ${provider === 'kinescope' ? 'Kinescope' : 'Stream'}`, 502)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, `Ошибка ${provider === 'kinescope' ? 'Kinescope' : 'Stream'}`), 502)
   }
 })

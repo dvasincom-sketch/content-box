@@ -1,5 +1,6 @@
 import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { streamSignToken } from '@/lib/cfStream'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Данные для просмотра видео АВТОРОМ в студии (превью). Автор всегда имеет
@@ -51,7 +52,7 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
       uid: ref,
       customerCode: process.env.CF_STREAM_CUSTOMER_CODE || null,
     })
-  } catch (e: any) {
-    return apiError(`Не удалось подписать токен: ${e?.message || 'ошибка'}`, 500)
+  } catch (e: unknown) {
+    return apiError(`Не удалось подписать токен: ${errorMessage(e, 'ошибка')}`, 500)
   }
 })

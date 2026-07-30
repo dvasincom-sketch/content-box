@@ -1,6 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import type { Payload } from 'payload'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Одобрить заявку UGC (Фаза 4): создаётся publication (с подписью автора и
@@ -70,7 +71,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       overrideAccess: true,
     })
     return apiOk({ publicationId: pub.id, slug })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось одобрить', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось одобрить'), 500)
   }
 })

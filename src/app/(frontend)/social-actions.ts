@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { getTenantFromHeaders } from '@/lib/tenant'
+import { errorMessage } from '@/lib/errorMessage'
 
 /* Соцфункции (Фаза 5): закладки, подписки на аккаунты, история просмотров.
    Все мутации — под текущим подписчиком, tenant из заголовков. */
@@ -35,8 +36,8 @@ export async function toggleBookmark(input: { targetType: 'publication' | 'video
     }
     await payload.create({ collection: 'bookmarks', data: { tenant: tenantId, subscriber: subscriber.id, targetType: input.targetType, [field]: tid } as any, overrideAccess: true })
     return { ok: true, saved: true }
-  } catch (e: any) {
-    return { ok: false, error: e?.message || 'Ошибка' }
+  } catch (e: unknown) {
+    return { ok: false, error: errorMessage(e, 'Ошибка') }
   }
 }
 
@@ -63,8 +64,8 @@ export async function toggleFollow(input: { handle?: string; targetId?: string |
     }
     await payload.create({ collection: 'follows', data: { tenant: tenantId, follower: subscriber.id, following: targetId } as any, overrideAccess: true })
     return { ok: true, following: true }
-  } catch (e: any) {
-    return { ok: false, error: e?.message || 'Ошибка' }
+  } catch (e: unknown) {
+    return { ok: false, error: errorMessage(e, 'Ошибка') }
   }
 }
 
@@ -98,8 +99,8 @@ export async function clearHistory(): Promise<{ ok: boolean; error?: string }> {
   try {
     await payload.delete({ collection: 'views', where: { and: [{ subscriber: { equals: subscriber.id } }, { tenant: { equals: tenantId } }] }, overrideAccess: true })
     return { ok: true }
-  } catch (e: any) {
-    return { ok: false, error: e?.message || 'Ошибка' }
+  } catch (e: unknown) {
+    return { ok: false, error: errorMessage(e, 'Ошибка') }
   }
 }
 

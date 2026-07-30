@@ -1,4 +1,5 @@
 import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Список изображений библиотеки тенанта — для модалки «выбрать из библиотеки»
@@ -50,7 +51,7 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
       totalPages: res.totalPages || 1,
       total: res.totalDocs || images.length,
     })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось загрузить библиотеку', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось загрузить библиотеку'), 500)
   }
 })

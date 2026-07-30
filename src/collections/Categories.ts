@@ -48,8 +48,8 @@ export const Categories: CollectionConfig = {
       hooks: {
         beforeChange: [
           ({ data }) => {
-            const crumbs = (data as any)?.breadcrumbs
-            if (!Array.isArray(crumbs) || crumbs.length === 0) return (data as any)?.title
+            const crumbs = data?.breadcrumbs
+            if (!Array.isArray(crumbs) || crumbs.length === 0) return data?.title
             return crumbs.map((c: any) => c.label).join(' > ')
           },
         ],
@@ -188,10 +188,10 @@ export const Categories: CollectionConfig = {
     beforeChange: [
       ({ data }) => {
         if (!data) return data
-        const seo = (data as any).seo || ((data as any).seo = {})
+        const seo = data.seo || (data.seo = {})
 
         if (!seo.title) {
-          const base = (data as any).fullTitle || (data as any).title
+          const base = data.fullTitle || data.title
           if (base) {
             const suffix = ' | ' + SITE_NAME
             const room = SEO_TITLE_MAX - suffix.length
@@ -200,7 +200,7 @@ export const Categories: CollectionConfig = {
         }
 
         if (!seo.description) {
-          const text = extractLexicalText((data as any).description)
+          const text = extractLexicalText(data.description)
           if (text) {
             seo.description = truncateAtWord(text, SEO_DESC_MAX)
           }

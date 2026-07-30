@@ -1,6 +1,8 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { slugify } from '@/lib/slugify'
+import { errorMessage } from '@/lib/errorMessage'
+import type { Payload } from 'payload'
 
 /**
  * Создание публикации. Паттерн как у register-subscriber: серверный роут +
@@ -77,8 +79,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     })
 
     return apiOk({ id: doc.id, slug })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить публикацию', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить публикацию'), 500)
   }
 })
 
@@ -87,7 +89,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
  * порядке, без дублей. Возвращает массив number, готовый для relatedVideos.
  */
 async function filterTenantVideos(
-  payload: any,
+  payload: Payload,
   ids: any,
   tenantId: number,
 ): Promise<number[]> {
@@ -112,7 +114,7 @@ async function filterTenantVideos(
  * (одно фото может встречаться дважды намеренно — но обычно нет; не режем).
  */
 async function buildGallery(
-  payload: any,
+  payload: Payload,
   rows: any,
   tenantId: number,
 ): Promise<{ image: number; caption?: string }[]> {
@@ -142,7 +144,7 @@ async function buildGallery(
 
 /** Делает slug уникальным в пределах тенанта: post, post-2, post-3... */
 async function ensureUniqueSlug(
-  payload: any,
+  payload: Payload,
   tenantId: number,
   base: string,
 ): Promise<string> {

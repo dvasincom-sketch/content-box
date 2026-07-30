@@ -1,3 +1,4 @@
+import { errorMessage } from '@/lib/errorMessage'
 /**
  * Тонкая обёртка над Kinescope API (российский видеохостинг). Аналог cfStream.ts:
  * вся работа с Kinescope в одном месте, чтобы роуты не дублировали URL/заголовки.
@@ -339,8 +340,8 @@ export async function kinescopeDeleteVideo(id: string): Promise<void> {
     if (!res.ok) {
       console.warn(`Kinescope delete ${id}: HTTP ${res.status}`)
     }
-  } catch (e: any) {
-    console.warn(`Kinescope delete ${id}: ${e?.message || 'error'}`)
+  } catch (e: unknown) {
+    console.warn(`Kinescope delete ${id}: ${errorMessage(e, 'error')}`)
   }
 }
 

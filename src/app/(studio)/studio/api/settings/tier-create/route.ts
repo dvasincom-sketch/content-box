@@ -1,5 +1,6 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Создание уровня подписки. Все поля + плюшки.
@@ -40,8 +41,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ id: doc.id })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось создать уровень')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось создать уровень'))
   }
 })
 

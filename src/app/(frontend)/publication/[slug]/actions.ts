@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { getTenantFromHeaders } from '@/lib/tenant'
+import { errorMessage } from '@/lib/errorMessage'
 
 /* ============================================================================
    Server Actions — запись реакций и комментариев от посетителей.
@@ -203,7 +204,7 @@ export async function hideComment(input: {
     })
     revalidatePublication(input.publicationSlug)
     return { ok: true }
-  } catch (e: any) {
-    return { ok: false, error: e?.message || 'Не удалось скрыть.' }
+  } catch (e: unknown) {
+    return { ok: false, error: errorMessage(e, 'Не удалось скрыть.') }
   }
 }

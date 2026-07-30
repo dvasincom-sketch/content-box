@@ -40,6 +40,16 @@ type MaybeUser =
 export const isStaff = (user: MaybeUser): boolean =>
   Boolean(user && user.collection === 'users')
 
+/**
+ * Зритель сайта — пользователь из auth-коллекции `subscribers`.
+ *
+ * Парная к isStaff. Раньше эта проверка была россыпью `(user as any)?.collection
+ * === 'subscribers'` по семи коллекциям: каст скрывал от компилятора ровно тот
+ * дискриминант, на котором держится разделение прав.
+ */
+export const isSubscriber = (user: MaybeUser): boolean =>
+  Boolean(user && user.collection === 'subscribers')
+
 export const isSuperAdmin = (user: MaybeUser): boolean =>
   Boolean(user && isStaff(user) && user.platformRole === 'superadmin')
 

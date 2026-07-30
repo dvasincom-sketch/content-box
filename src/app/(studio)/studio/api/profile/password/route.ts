@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Смена собственного пароля. Меняем ТОЛЬКО аккаунт из сессии — id берём из
@@ -47,7 +48,7 @@ export const POST = withAuthor(async ({ req, payload, author }) => {
       overrideAccess: true,
     })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сменить пароль')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сменить пароль'))
   }
 })

@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Сохранение категорий-плиток (homeCategories) секции «Категории» главной.
@@ -57,7 +58,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить'))
   }
 })

@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Удаление публикации. Проверяем принадлежность тенанту автора.
@@ -23,7 +24,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   try {
     await payload.delete({ collection: 'publications', id, overrideAccess: true })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось удалить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось удалить'))
   }
 })

@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Назначить / снять папку у видео.
@@ -48,7 +49,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ folderId: folder })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось изменить папку видео')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось изменить папку видео'))
   }
 })

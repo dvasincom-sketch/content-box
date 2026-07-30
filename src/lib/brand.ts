@@ -14,13 +14,20 @@ import { getPreset, FONT_STACK } from './themePresets'
  * Размер/вес текста — фиксированные дефолты: отдельной тонкой настройки у автора
  * больше нет (пресеты кураторские).
  */
-export function brandVars(settings?: { themePreset?: string | null } | null): React.CSSProperties {
+/**
+ * CSS-переменные в inline-стилях: React.CSSProperties их не описывает, и вместо
+ * типа тут стояло `['--x' as any]`. Индексная сигнатура по `--*` решает это без
+ * каста — и заодно запрещает опечатку вроде `-font-heading`.
+ */
+type CSSVars = React.CSSProperties & Record<`--${string}`, string>
+
+export function brandVars(settings?: { themePreset?: string | null } | null): CSSVars {
   const preset = getPreset(settings?.themePreset)
   return {
-    ['--font-heading' as any]: FONT_STACK[preset.fonts.heading],
-    ['--font-body' as any]: FONT_STACK[preset.fonts.body],
-    ['--text-size' as any]: '18px',
-    ['--text-weight' as any]: '400',
-    ['--heading-weight' as any]: '700',
+    ['--font-heading']: FONT_STACK[preset.fonts.heading],
+    ['--font-body']: FONT_STACK[preset.fonts.body],
+    ['--text-size']: '18px',
+    ['--text-weight']: '400',
+    ['--heading-weight']: '700',
   }
 }

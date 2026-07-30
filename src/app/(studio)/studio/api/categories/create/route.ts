@@ -1,5 +1,6 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Создание категории. Серверный роут + Local API, тенант из сессии автора.
@@ -40,8 +41,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ id: doc.id })
-  } catch (e: any) {
+  } catch (e: unknown) {
     // Коллизия slug в пределах родителя (из beforeValidate) — читаемое сообщение
-    return apiError(e?.message || 'Не удалось создать категорию')
+    return apiError(errorMessage(e, 'Не удалось создать категорию'))
   }
 })

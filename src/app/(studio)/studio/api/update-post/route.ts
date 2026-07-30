@@ -1,5 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
+import { errorMessage } from '@/lib/errorMessage'
+import type { Payload, CollectionSlug } from 'payload'
 
 /**
  * Обновление публикации. Проверяем, что пост принадлежит тенанту автора.
@@ -91,8 +93,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить'))
   }
 })
 
@@ -101,15 +103,17 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
  * прочее → null.
  */
 async function resolveRel(
-  payload: any,
-  collection: string,
-  value: any,
+  payload: Payload,
+  collection: CollectionSlug,
+  value: unknown,
   tenantId: number,
 ): Promise<number | null> {
   if (value == null) return null
   try {
-    const doc = await payload.findByID({ collection, id: value, depth: 0, overrideAccess: true })
-    const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
+    const doc = await payload.findByID({ collection, id: value as number, depth: 0, overrideAccess: true })
+    // `tenant` есть не у всех коллекций объединения, поэтому читаем структурно.
+    const rel = (doc as { tenant?: unknown })?.tenant
+    const t = rel && typeof rel === 'object' ? (rel as { id?: unknown }).id : rel
     return Number(t) === Number(tenantId) ? Number(value) : null
   } catch {
     return null
@@ -121,7 +125,7 @@ async function resolveRel(
  * порядке, без дублей. Возвращает массив number для relatedVideos.
  */
 async function filterTenantVideos(
-  payload: any,
+  payload: Payload,
   ids: any,
   tenantId: number,
 ): Promise<number[]> {
@@ -155,7 +159,7 @@ async function filterTenantVideos(
  * оставляя только изображения тенанта, в исходном порядке.
  */
 async function buildGallery(
-  payload: any,
+  payload: Payload,
   rows: any,
   tenantId: number,
 ): Promise<{ image: number; caption?: string }[]> {

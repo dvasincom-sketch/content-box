@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 const MAX_DEPTH = 4
 
@@ -198,8 +199,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       }
     }
     return apiOk({ count: plans.length })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить порядок')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить порядок'))
   }
 })
 

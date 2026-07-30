@@ -1,6 +1,7 @@
 import type { CollectionSlug, Payload } from 'payload'
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant, tenantIdOf } from './_lib'
 import { slugify } from '@/lib/slugify'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Общие роуты древовидных папок (nestedDocs, tenant-scoped).
@@ -62,8 +63,8 @@ export function makeFolderCreateRoute(cfg: FolderRoutesConfig) {
         overrideAccess: true,
       })
       return apiOk({ id: doc.id, title, slug })
-    } catch (e: any) {
-      return apiError(e?.message || 'Не удалось создать папку', 500)
+    } catch (e: unknown) {
+      return apiError(errorMessage(e, 'Не удалось создать папку'), 500)
     }
   })
 }
@@ -111,8 +112,8 @@ export function makeFolderUpdateRoute(cfg: FolderRoutesConfig) {
     try {
       await payload.update({ collection: cfg.folders, id, data: patch, overrideAccess: true })
       return apiOk()
-    } catch (e: any) {
-      return apiError(e?.message || 'Не удалось сохранить папку')
+    } catch (e: unknown) {
+      return apiError(errorMessage(e, 'Не удалось сохранить папку'))
     }
   })
 }
@@ -161,16 +162,16 @@ export function makeFolderDeleteRoute(cfg: FolderRoutesConfig) {
         }
         if (batch.docs.length < BATCH) break
       }
-    } catch (e: any) {
-      return apiError(e?.message || `Не удалось открепить ${cfg.itemsGenitive} из папки`, 500)
+    } catch (e: unknown) {
+      return apiError(errorMessage(e, `Не удалось открепить ${cfg.itemsGenitive} из папки`), 500)
     }
 
     // 3) Удаляем саму папку
     try {
       await payload.delete({ collection: cfg.folders, id, overrideAccess: true })
       return apiOk()
-    } catch (e: any) {
-      return apiError(e?.message || 'Не удалось удалить папку', 500)
+    } catch (e: unknown) {
+      return apiError(errorMessage(e, 'Не удалось удалить папку'), 500)
     }
   })
 }

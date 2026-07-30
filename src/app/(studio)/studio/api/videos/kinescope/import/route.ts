@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { kinescopeGetVideo } from '@/lib/kinescope'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Импорт уже загруженного в Kinescope видео в студию: создаём запись Videos с
@@ -47,8 +48,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   let meta
   try {
     meta = await kinescopeGetVideo(videoId)
-  } catch (e: any) {
-    return apiError(`Kinescope: ${e?.message || 'видео не найдено'}`, 502)
+  } catch (e: unknown) {
+    return apiError(`Kinescope: ${errorMessage(e, 'видео не найдено')}`, 502)
   }
 
   // 3) Создаём запись Videos
@@ -73,8 +74,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ id: doc.id, videoId, ready: meta.ready })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось создать запись видео', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось создать запись видео'), 500)
   }
 })
 

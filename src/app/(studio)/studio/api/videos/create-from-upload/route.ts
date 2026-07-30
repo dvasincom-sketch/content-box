@@ -1,6 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { streamGetVideo } from '@/lib/cfStream'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Создаёт запись Videos после успешной TUS-загрузки. Браузер уже залил файл в
@@ -43,8 +44,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk({ id: doc.id, uid })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось создать запись видео', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось создать запись видео'), 500)
   }
 })
 

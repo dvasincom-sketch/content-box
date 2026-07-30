@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Удаление страницы. Body: { id }.
@@ -23,7 +24,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     })
     await payload.delete({ collection: 'pages', id, overrideAccess: true })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось удалить страницу')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось удалить страницу'))
   }
 })

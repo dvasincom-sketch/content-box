@@ -1,4 +1,5 @@
 import { withAuthor, apiError, apiOk, findTenantSettings } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Загрузка логотипа: файл → media (R2), затем site-settings.logo = media.id.
@@ -57,7 +58,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     }
 
     return apiOk({ id: media.id, url: (media as any).url || null })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось загрузить логотип', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось загрузить логотип'), 500)
   }
 })

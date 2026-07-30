@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withAuthor, apiError } from '@/app/(studio)/studio/api/_lib'
 import { kinescopeListVideos } from '@/lib/kinescope'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Список видео из аккаунта Kinescope — для импорта в студию уже загруженных
@@ -26,7 +27,7 @@ export const GET = withAuthor(async ({ req }) => {
       { ok: true, ...res },
       { headers: { 'Cache-Control': 'no-store' } },
     )
-  } catch (e: any) {
-    return apiError(`Kinescope: ${e?.message || 'не удалось получить список видео'}`, 502)
+  } catch (e: unknown) {
+    return apiError(`Kinescope: ${errorMessage(e, 'не удалось получить список видео')}`, 502)
   }
 })

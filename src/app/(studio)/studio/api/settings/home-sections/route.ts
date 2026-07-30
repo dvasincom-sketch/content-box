@@ -1,5 +1,6 @@
 import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '@/app/(studio)/studio/api/_lib'
 import { isHomeSectionType, type HomeSectionType } from '@/lib/homeSections'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Сохранение конфигурации секций главной. SiteSettings — одна запись на тенант
@@ -45,7 +46,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       overrideAccess: true,
     })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить'))
   }
 })

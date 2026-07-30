@@ -8,6 +8,7 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { htmlToLexical, lexicalToPlainText } from '@/lib/lexical'
 import { isTrusted } from '@/lib/capabilities'
 import { slugify } from '@/lib/slugify'
+import { errorMessage } from '@/lib/errorMessage'
 
 /* Приём публикаций от участников (UGC, Фаза 4). Заявка идёт в submissions
    (pending). Trusted (L4) — авто-одобрение: сразу создаётся publication.
@@ -160,7 +161,7 @@ export async function createSubmission(input: {
       overrideAccess: true,
     })
     return { ok: true, status: 'pending' }
-  } catch (e: any) {
-    return { ok: false, error: e?.message || 'Не удалось отправить.' }
+  } catch (e: unknown) {
+    return { ok: false, error: errorMessage(e, 'Не удалось отправить.') }
   }
 }

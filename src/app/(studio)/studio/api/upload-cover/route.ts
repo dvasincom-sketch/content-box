@@ -1,4 +1,5 @@
 import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Загрузка обложки в коллекцию media. Файл идёт в R2 (s3Storage настроен в
@@ -52,7 +53,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
 
     const url = (doc as any)?.url || null
     return apiOk({ id: doc.id, url })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось загрузить файл', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось загрузить файл'), 500)
   }
 })

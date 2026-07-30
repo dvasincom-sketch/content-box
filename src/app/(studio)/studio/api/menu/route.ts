@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { withAuthor, apiError } from '@/app/(studio)/studio/api/_lib'
 import { buildMenuAdmin } from '@/lib/buildMenuAdmin'
 import type { MenuLocation } from '@/lib/buildMenu'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Дерево меню для конструктора студии.
@@ -38,7 +39,7 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
     }))
 
     return NextResponse.json({ location, tree, pages })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось загрузить меню', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось загрузить меню'), 500)
   }
 })

@@ -1,10 +1,10 @@
 import type { Access, CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID } from '../access'
+import { isSuperAdmin, getUserTenantID, isSubscriber } from '../access'
 
 /** ViewHistory — история просмотров участника (Фаза 5). Апсерт: одна строка на объект. */
 const scoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const t = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const t = getUserTenantID(user)
   return t ? { tenant: { equals: t } } : false
 }
 
@@ -14,7 +14,7 @@ export const ViewHistory: CollectionConfig = {
   admin: { useAsTitle: 'id', group: 'Сообщество', defaultColumns: ['subscriber', 'targetType', 'viewedAt'], description: 'История просмотров участников (приватная).' },
   access: {
     read: scoped,
-    create: ({ req: { user } }) => isSuperAdmin(user as any) || (user as any)?.collection === 'subscribers' || Boolean(getUserTenantID(user as any)),
+    create: ({ req: { user } }) => isSuperAdmin(user) || isSubscriber(user) || Boolean(getUserTenantID(user)),
     update: scoped,
     delete: scoped,
   },

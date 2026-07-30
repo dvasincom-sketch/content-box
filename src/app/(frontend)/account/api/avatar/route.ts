@@ -1,4 +1,5 @@
 import { withSubscriber, apiError, apiOk } from '../_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Загрузка аватара участника: файл → media (R2), затем subscribers.avatar = media.id.
@@ -42,7 +43,7 @@ export const POST = withSubscriber(async ({ req, payload, subscriber, tenantId }
       overrideAccess: true,
     })
     return apiOk({ id: media.id, url: (media as any).url || null })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось загрузить аватар', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось загрузить аватар'), 500)
   }
 })

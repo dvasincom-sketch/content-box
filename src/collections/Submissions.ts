@@ -1,5 +1,5 @@
 import type { Access, CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID } from '../access'
+import { isSuperAdmin, getUserTenantID, isSubscriber } from '../access'
 
 /**
  * Submissions — присланные участниками публикации на модерацию (Фаза 4 UGC).
@@ -8,8 +8,8 @@ import { isSuperAdmin, getUserTenantID } from '../access'
  * Создавать может залогиненный подписчик (через серверный экшен) и staff.
  */
 const scoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const t = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const t = getUserTenantID(user)
   return t ? { tenant: { equals: t } } : false
 }
 
@@ -25,9 +25,9 @@ export const Submissions: CollectionConfig = {
   access: {
     read: scoped,
     create: ({ req: { user } }) => {
-      if (isSuperAdmin(user as any)) return true
-      if ((user as any)?.collection === 'subscribers') return true
-      return Boolean(getUserTenantID(user as any))
+      if (isSuperAdmin(user)) return true
+      if (isSubscriber(user)) return true
+      return Boolean(getUserTenantID(user))
     },
     update: scoped,
     delete: scoped,

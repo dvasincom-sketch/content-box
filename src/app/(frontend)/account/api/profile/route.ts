@@ -1,5 +1,6 @@
 import { withSubscriber, readJson, apiError, apiOk } from '../_lib'
 import { normalizeHandle, handleError } from '@/lib/handle'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Сохранение профиля участника: bio, handle, profilePrivate.
@@ -67,7 +68,7 @@ export const POST = withSubscriber(async ({ payload, subscriber, tenantId, req }
       overrideAccess: true,
     })
     return apiOk({ handle: patch.handle ?? subscriber.handle ?? null })
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось сохранить')
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось сохранить'))
   }
 })

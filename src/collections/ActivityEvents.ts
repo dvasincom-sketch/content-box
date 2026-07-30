@@ -7,8 +7,8 @@ import { isSuperAdmin, getUserTenantID } from '../access'
  * (overrideAccess) из хуков comments/reactions и бэкофилла. Читается staff.
  */
 const scoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const t = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const t = getUserTenantID(user)
   return t ? { tenant: { equals: t } } : false
 }
 
@@ -25,7 +25,7 @@ export const ActivityEvents: CollectionConfig = {
     read: scoped,
     create: () => false, // только сервер через overrideAccess
     update: () => false,
-    delete: ({ req: { user } }) => isSuperAdmin(user as any),
+    delete: ({ req: { user } }) => isSuperAdmin(user),
   },
   fields: [
     { name: 'subscriber', type: 'relationship', relationTo: 'subscribers', required: true, index: true, label: 'Участник' },

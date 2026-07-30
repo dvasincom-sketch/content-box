@@ -1,7 +1,7 @@
 import type { Access, CollectionConfig } from 'payload'
 import { awardActivity, reverseActivity } from '../lib/reputation'
 import { revalidateHomeFeed } from '../lib/revalidateHome'
-import { isSuperAdmin, getUserTenantID } from '../access'
+import { isSuperAdmin, getUserTenantID, isSubscriber } from '../access'
 
 /**
  * Reactions — эмодзи-реакции зрителей. Одна коллекция для двух типов целей:
@@ -26,8 +26,8 @@ import { isSuperAdmin, getUserTenantID } from '../access'
 export const REACTION_VALUES = ['like', 'love', 'fire', 'cry'] as const
 
 const reactionsScoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user as any)) return true
-  const tenantID = getUserTenantID(user as any)
+  if (isSuperAdmin(user)) return true
+  const tenantID = getUserTenantID(user)
   if (!tenantID) return false
   return { tenant: { equals: tenantID } }
 }
@@ -44,17 +44,17 @@ export const Reactions: CollectionConfig = {
   access: {
     read: reactionsScoped,
     create: ({ req: { user } }) => {
-      if (isSuperAdmin(user as any)) return true
-      if ((user as any)?.collection === 'subscribers') return true
-      return Boolean(getUserTenantID(user as any))
+      if (isSuperAdmin(user)) return true
+      if (isSubscriber(user)) return true
+      return Boolean(getUserTenantID(user))
     },
     // Реакции не редактируются — только создаются/удаляются. update оставляем staff.
     update: reactionsScoped,
     delete: ({ req: { user } }) => {
-      if (isSuperAdmin(user as any)) return true
+      if (isSuperAdmin(user)) return true
       // Подписчик может снять свою реакцию (серверный экшен фильтрует по автору).
-      if ((user as any)?.collection === 'subscribers') return true
-      return Boolean(getUserTenantID(user as any))
+      if (isSubscriber(user)) return true
+      return Boolean(getUserTenantID(user))
     },
   },
   fields: [
@@ -180,7 +180,7 @@ export const Reactions: CollectionConfig = {
         for (const doc of (existing as any)?.docs ?? []) {
           await req.payload.delete({
             collection: 'reactions',
-            id: (doc as any).id,
+            id: doc.id,
             overrideAccess: true,
           })
         }

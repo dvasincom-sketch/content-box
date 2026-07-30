@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { streamSignToken } from '@/lib/cfStream'
 import { tenantIdFromRequestHeaders } from '@/lib/tenantByHost'
+import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Публичный роут выдачи данных для плеера подписчику. Доступ выдаётся ТОЛЬКО
@@ -66,7 +67,7 @@ export async function GET(req: NextRequest) {
       uid: ref,
       customerCode: process.env.CF_STREAM_CUSTOMER_CODE || null,
     })
-  } catch (e: any) {
-    return NextResponse.json({ error: `Токен: ${e?.message || 'ошибка'}` }, { status: 500 })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: `Токен: ${errorMessage(e, 'ошибка')}` }, { status: 500 })
   }
 }

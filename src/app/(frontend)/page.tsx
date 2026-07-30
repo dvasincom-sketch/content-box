@@ -20,6 +20,7 @@ import { normalizeHomeSections, type HomeSectionType } from '@/lib/homeSections'
 import type { Metadata } from 'next'
 import { Fragment, type ReactNode } from 'react'
 import './styles.css'
+import type { Payload } from 'payload'
 
 // Страница ДИНАМИЧЕСКАЯ и иначе быть не может: и layout, и сама страница
 // резолвят тенанта через headers(), а один и тот же HTML нельзя отдавать на
@@ -62,7 +63,7 @@ function resolveHeroTitleLines(raw: unknown, fallbackName?: string): string[] {
  * Слайды новинок для карусели hero: сначала featured-публикации, если их
  * меньше 6 — добираем последними по дате (дедуп по id). До 6 слайдов.
  */
-async function getHeroSlides(payload: any, tenantId: number): Promise<HeroSlide[]> {
+async function getHeroSlides(payload: Payload, tenantId: number): Promise<HeroSlide[]> {
   const N = 6
   const seen = new Set<string | number>()
   const out: HeroSlide[] = []

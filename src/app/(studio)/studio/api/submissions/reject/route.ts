@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { errorMessage } from '@/lib/errorMessage'
 
 /** Отклонить заявку UGC (Фаза 4): status=rejected + причина. */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
@@ -21,7 +22,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       overrideAccess: true,
     })
     return apiOk()
-  } catch (e: any) {
-    return apiError(e?.message || 'Не удалось отклонить', 500)
+  } catch (e: unknown) {
+    return apiError(errorMessage(e, 'Не удалось отклонить'), 500)
   }
 })

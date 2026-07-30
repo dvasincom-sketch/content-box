@@ -23,6 +23,7 @@ import { getPublicationEngagement } from '@/lib/publicationEngagement'
 import { Lock } from 'lucide-react'
 import type { Metadata } from 'next'
 import '../../styles.css'
+import type { Payload } from 'payload'
 
 type Params = { slug: string }
 
@@ -77,7 +78,7 @@ function toNavItem(doc: any, kind: PostNavItem['kind']): PostNavItem {
  * 'next' — более поздний (publishedAt >). Учитываем только посты с датой.
  */
 async function findNeighbor(
-  payload: any,
+  payload: Payload,
   tenantId: number | string,
   currentPublishedAt: string,
   direction: 'prev' | 'next',
@@ -103,7 +104,7 @@ async function findNeighbor(
 
 /** Случайная публикация тенанта (исключая текущую) — фолбэк на краю ленты. */
 async function findRandom(
-  payload: any,
+  payload: Payload,
   tenantId: number | string,
   excludeId: number | string,
 ): Promise<any | null> {
