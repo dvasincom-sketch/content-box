@@ -6,8 +6,9 @@ name: Nightly
 #
 # Запуск ночью, когда активность минимальна, плюс кнопка «Run workflow» во
 # вкладке Actions (ручной запуск, как «Build Now» в Jenkins). При падении
-# GitHub присылает письмо владельцу репозитория — это и есть «утром вижу
-# ошибки и правлю». История прогонов во вкладке Actions — это дашборд.
+# заводится задача с меткой nightly-failure (баг-трекер), при зелёном прогоне
+# она автоматически закрывается. Настрой на Projects-борде Auto-add для issues
+# с этой меткой — и падения будут сами попадать на доску.
 #
 # e2e (Playwright) добавляются отдельным шагом позже: им нужен посеянный
 # активный тенант и суперадмин, это отдельный харнесс.
@@ -27,6 +28,12 @@ jobs:
   full:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+    # issues: write — чтобы падение ночного прогона могло завести/обновить
+    # задачу в баг-трекере встроенным GITHUB_TOKEN, без внешнего PAT.
+    permissions:
+      contents: read
+      issues: write
 
     # Настоящий Postgres как сервис-контейнер. GitHub ждёт health-check, прежде
     # чем начать шаги, поэтому миграции и int-тесты видят готовую базу.
@@ -85,3 +92,75 @@ jobs:
 
       - name: Сборка
         run: npm run build
+
+      # ── Баг-трекер ───────────────────────────────────────────────────────
+      # Падение → одна «катящаяся» задача с меткой nightly-failure: если открытая
+      # уже есть — добавляем комментарий (не плодим дубли), иначе создаём. Зелёный
+      # прогон закрывает её. На Projects-борде включи Auto-add по этой метке.
+      - name: Падение → задача в баг-трекер
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = 'nightly-failure'
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            const short = context.sha.slice(0, 7)
+
+            try {
+              await github.rest.issues.getLabel({ ...context.repo, name: label })
+            } catch {
+              await github.rest.issues.createLabel({
+                ...context.repo,
+                name: label,
+                color: 'B60205',
+                description: 'Падение ночного прогона (Nightly CI)',
+              })
+            }
+
+            const open = await github.rest.issues.listForRepo({
+              ...context.repo, state: 'open', labels: label, per_page: 1,
+            })
+
+            if (open.data.length) {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: open.data[0].number,
+                body: `Снова упало: ${runUrl} (коммит ${short}).`,
+              })
+            } else {
+              await github.rest.issues.create({
+                ...context.repo,
+                title: '🌙 Ночной прогон упал',
+                labels: [label],
+                body: [
+                  'Ночной прогон **Nightly** завершился с ошибкой.',
+                  '',
+                  `- Прогон: ${runUrl}`,
+                  `- Коммит: ${context.sha}`,
+                  '',
+                  'Открой прогон, чтобы увидеть упавший шаг (миграции / типы / линт / юниты / интеграционные / сборка).',
+                  'Задача закроется сама, когда ночной прогон снова станет зелёным.',
+                ].join('\n'),
+              })
+            }
+
+      - name: Зелёно → закрыть задачу о падении
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = 'nightly-failure'
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            const open = await github.rest.issues.listForRepo({
+              ...context.repo, state: 'open', labels: label, per_page: 20,
+            })
+            for (const iss of open.data) {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: iss.number,
+                body: `✅ Ночной прогон снова зелёный: ${runUrl}. Закрываю.`,
+              })
+              await github.rest.issues.update({
+                ...context.repo, issue_number: iss.number, state: 'closed',
+              })
+            }
