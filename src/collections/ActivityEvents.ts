@@ -37,6 +37,8 @@ export const ActivityEvents: CollectionConfig = {
       options: [
         { label: 'Комментарий', value: 'comment' },
         { label: 'Полученная реакция', value: 'reaction_received' },
+        { label: 'Баг-репорт (отправлен)', value: 'bug_submitted' },
+        { label: 'Баг-репорт (подтверждён)', value: 'bug_confirmed' },
       ],
     },
     { name: 'points', type: 'number', required: true, label: 'Очки' },

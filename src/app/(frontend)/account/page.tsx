@@ -44,7 +44,10 @@ export default async function AccountOverviewPage() {
   const followingCount = await payload
     .count({ collection: 'follows', where: { follower: { equals: sub.id } }, overrideAccess: true })
     .then((r: any) => r.totalDocs).catch(() => 0)
-  const badges = earnedBadges({ commentCount, reactionsReceived, level: Number(full?.level) || 0, hasPaidTier: hasPaid })
+  const confirmedBugs = await payload
+    .count({ collection: 'bug-reports', where: { and: [{ subscriber: { equals: sub.id } }, { status: { in: ['confirmed', 'fixed'] } }] }, overrideAccess: true })
+    .then((r: any) => r.totalDocs).catch(() => 0)
+  const badges = earnedBadges({ commentCount, reactionsReceived, level: Number(full?.level) || 0, hasPaidTier: hasPaid, confirmedBugs })
 
   return (
     <>

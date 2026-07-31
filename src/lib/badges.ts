@@ -8,6 +8,8 @@ export type BadgeStats = {
   reactionsReceived: number
   level: number
   hasPaidTier: boolean
+  /** Подтверждённых баг-репортов (баг-баунти). Необязательно — по умолчанию 0. */
+  confirmedBugs?: number
 }
 
 export type Badge = { id: string; name: string; desc: string; exclusive?: boolean }
@@ -21,6 +23,8 @@ const DEFS: BadgeDef[] = [
   { id: 'keeper', name: 'Хранитель', desc: 'Помогает модерировать сообщество', has: (s) => s.level >= 3 },
   { id: 'veteran', name: 'Ветеран', desc: 'Достиг уровня «Ветеран»', has: (s) => s.level >= 4 },
   { id: 'legend', name: 'Легенда', desc: 'Достиг уровня «Легенда»', has: (s) => s.level >= 5 },
+  { id: 'first-bug', name: 'Первый баг', desc: 'Нашёл подтверждённую ошибку', has: (s) => (s.confirmedBugs ?? 0) >= 1 },
+  { id: 'bug-hunter', name: 'Багхантер', desc: '5+ подтверждённых багов', has: (s) => (s.confirmedBugs ?? 0) >= 5 },
   { id: 'supporter', name: 'Подписчик', desc: 'Активная подписка', exclusive: true, has: (s) => s.hasPaidTier },
 ]
 

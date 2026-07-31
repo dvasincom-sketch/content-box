@@ -28,6 +28,7 @@ import config from '@/payload.config'
 import { THEME_INIT } from '@/lib/themeInit'
 import { presetThemeCss, getPreset } from '@/lib/themePresets'
 import { PWARegister } from '@/components/PWARegister'
+import { BugReportWidget } from '@/components/BugReportWidget'
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
@@ -142,6 +143,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             complianceNote={'Сайт соблюдает требования 54-ФЗ «О применении ККТ» и 152-ФЗ «О персональных данных». Приём платежей по банковским картам, чек об оплате направляется на e-mail.'}
           />
         )}
+        {/* Баг-баунти: плашка «Нашёл баг» только на реальном тенанте. */}
+        {ctx && <BugReportWidget authed={!!subscriber} source="site" loginHref="/account" />}
       </body>
     </html>
   )

@@ -127,11 +127,16 @@ export default async function ProfilePage({ params }: Params) {
   const initial = (name.trim()[0] || '?').toUpperCase()
   const tierName =
     profile.activeTier && typeof profile.activeTier === 'object' ? profile.activeTier.name : null
+  const confirmedBugs = await payload
+    .count({ collection: 'bug-reports', where: { and: [{ subscriber: { equals: profile.id } }, { status: { in: ['confirmed', 'fixed'] } }] }, overrideAccess: true })
+    .then((r: any) => r.totalDocs)
+    .catch(() => 0)
   const badges = earnedBadges({
     commentCount,
     reactionsReceived: reactionCount,
     level: Number(profile.level) || 0,
     hasPaidTier: Boolean(profile.activeTier),
+    confirmedBugs,
   })
 
   return (

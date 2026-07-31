@@ -86,6 +86,7 @@ export interface Config {
     reactions: Reaction;
     'activity-events': ActivityEvent;
     submissions: Submission;
+    'bug-reports': BugReport;
     bookmarks: Bookmark;
     follows: Follow;
     views: View;
@@ -114,6 +115,7 @@ export interface Config {
     reactions: ReactionsSelect<false> | ReactionsSelect<true>;
     'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
+    'bug-reports': BugReportsSelect<false> | BugReportsSelect<true>;
     bookmarks: BookmarksSelect<false> | BookmarksSelect<true>;
     follows: FollowsSelect<false> | FollowsSelect<true>;
     views: ViewsSelect<false> | ViewsSelect<true>;
@@ -1031,7 +1033,7 @@ export interface ActivityEvent {
   id: number;
   tenant?: (number | null) | Tenant;
   subscriber: number | Subscriber;
-  type: 'comment' | 'reaction_received';
+  type: 'comment' | 'reaction_received' | 'bug_submitted' | 'bug_confirmed';
   points: number;
   refType?: string | null;
   refId?: string | null;
@@ -1070,6 +1072,36 @@ export interface Submission {
   rejectReason?: string | null;
   reviewedBy?: (number | null) | User;
   publication?: (number | null) | Publication;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Сообщения об ошибках от пользователей. Статус «Подтверждён» начисляет автору очки.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bug-reports".
+ */
+export interface BugReport {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  description: string;
+  pageUrl: string;
+  pageTitle?: string | null;
+  /**
+   * Пусто — отчёт анонимный или из студии.
+   */
+  subscriber?: (number | null) | Subscriber;
+  /**
+   * Заполняется, если баг отправлен автором из студии.
+   */
+  reporterUser?: (number | null) | User;
+  anonymous?: boolean | null;
+  source?: ('site' | 'studio') | null;
+  status: 'new' | 'confirmed' | 'duplicate' | 'rejected' | 'fixed';
+  severity?: ('minor' | 'major' | 'critical') | null;
+  moderatorNote?: string | null;
+  userAgent?: string | null;
+  viewport?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1215,6 +1247,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'submissions';
         value: number | Submission;
+      } | null)
+    | ({
+        relationTo: 'bug-reports';
+        value: number | BugReport;
       } | null)
     | ({
         relationTo: 'bookmarks';
@@ -1843,6 +1879,27 @@ export interface SubmissionsSelect<T extends boolean = true> {
   rejectReason?: T;
   reviewedBy?: T;
   publication?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bug-reports_select".
+ */
+export interface BugReportsSelect<T extends boolean = true> {
+  tenant?: T;
+  description?: T;
+  pageUrl?: T;
+  pageTitle?: T;
+  subscriber?: T;
+  reporterUser?: T;
+  anonymous?: T;
+  source?: T;
+  status?: T;
+  severity?: T;
+  moderatorNote?: T;
+  userAgent?: T;
+  viewport?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -5,6 +5,7 @@ import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { StudioNav } from './StudioNav'
 import { SessionGuard } from './SessionGuard'
+import { BugReportWidget } from '@/components/BugReportWidget'
 
 /**
  * Layout приватной части студии. Guard: нет автора → на /studio/login.
@@ -46,6 +47,9 @@ export default async function StudioAppLayout({ children }: { children: React.Re
       {/* Клиентский сторож сессии: показывает экран «Сессия истекла» при
           протухании токена в фоне (напр. после сна устройства). */}
       <SessionGuard />
+      {/* Баг-баунти: автор студии всегда известен (attached как reporterUser),
+          очков авторам не начисляем — подача нейтральная (rewards=false). */}
+      <BugReportWidget authed source="studio" rewards={false} loginHref={null} />
     </div>
   )
 }

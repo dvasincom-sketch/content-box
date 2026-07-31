@@ -30,6 +30,7 @@ import { Comments } from './collections/Comments'
 import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
 import { Submissions } from './collections/Submissions'
+import { BugReports } from './collections/BugReports'
 import { Bookmarks } from './collections/Bookmarks'
 import { Follows } from './collections/Follows'
 import { ViewHistory } from './collections/ViewHistory'
@@ -152,6 +153,7 @@ export default buildConfig({
     Reactions,
     ActivityEvents,
     Submissions,
+    BugReports,
     Bookmarks,
     Follows,
     ViewHistory,
@@ -240,6 +242,7 @@ export default buildConfig({
         reactions: { useTenantAccess: false },
         'activity-events': { useTenantAccess: false },
         submissions: { useTenantAccess: false },
+        'bug-reports': { useTenantAccess: false },
         bookmarks: { useTenantAccess: false },
         follows: { useTenantAccess: false },
         views: { useTenantAccess: false },

@@ -14,12 +14,18 @@ import type { Payload } from 'payload'
  * ошибки очков не ломают основную операцию.
  */
 
-export type ActivityType = 'comment' | 'reaction_received'
+export type ActivityType =
+  | 'comment'
+  | 'reaction_received'
+  | 'bug_submitted' // отправлен баг-репорт (гибрид: +1 сразу авторизованному)
+  | 'bug_confirmed' // баг подтверждён модератором (основной бонус)
 
 /** Базовые очки за действие (до множителя платного бонуса). */
 export const POINT_WEIGHTS: Record<ActivityType, number> = {
   comment: 5,
   reaction_received: 2,
+  bug_submitted: 1,
+  bug_confirmed: 20,
 }
 
 /** Ускоренная прокачка для платных подписчиков. */
