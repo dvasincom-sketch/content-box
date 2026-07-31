@@ -59,6 +59,9 @@ const eslintConfig = [
   {
     ignores: [
       '.next/',
+      // Артефакты e2e (Playwright): минифицированные бандлы, не наш код.
+      'playwright-report/',
+      'test-results/',
       // ── Авто-генерируемое: править бессмысленно, при регенерации вернётся ──
       'src/payload-types.ts',
       'src/payload-generated-schema.ts',

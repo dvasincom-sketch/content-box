@@ -11,6 +11,9 @@ import 'dotenv/config'
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  // Разовый посев перед всеми тестами: активный тенант (иначе localhost уходит
+  // в /domain-not-found). Суперадмина для admin-тестов сеет seedTestUser.
+  globalSetup: './tests/e2e/global-setup.ts',
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
@@ -27,6 +30,12 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    /* Первый заход на маршрут в `next dev` компилирует его — тяжёлая админка
+       не укладывается в дефолтные 30 с. Даём запас, чтобы падения означали
+       реальные баги, а не таймаут первой компиляции. */
+    navigationTimeout: 120_000,
+    actionTimeout: 30_000,
   },
   projects: [
     {

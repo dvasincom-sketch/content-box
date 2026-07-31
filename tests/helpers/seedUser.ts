@@ -20,12 +20,16 @@ export async function seedTestUser(): Promise<void> {
         equals: testUser.email,
       },
     },
+    overrideAccess: true,
   })
 
-  // Create fresh test user
+  // Create fresh test user — платформенный СУПЕРАДМИН. Без platformRole схема
+  // отвергает пользователя (нужен либо platformRole, либо tenant+tenantRole),
+  // а поле под field-access — поэтому обязателен overrideAccess.
   await payload.create({
     collection: 'users',
-    data: testUser,
+    data: { ...testUser, platformRole: 'superadmin' },
+    overrideAccess: true,
   })
 }
 
@@ -42,5 +46,6 @@ export async function cleanupTestUser(): Promise<void> {
         equals: testUser.email,
       },
     },
+    overrideAccess: true,
   })
 }

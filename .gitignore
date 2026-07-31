@@ -12,3 +12,7 @@ dist
 data/
 content-box.dump
 data.ms/
+
+# e2e (Playwright) артефакты
+playwright-report/
+test-results/
