@@ -8,11 +8,12 @@
 
 services:
   app:
-    build:
-      context: .
-      args:
-        - S3_PUBLIC_URL=${S3_PUBLIC_URL}
-        - R2_PUBLIC_URL=${R2_PUBLIC_URL}
+    # Готовый образ из GHCR (собирается в GitHub Actions, см.
+    # .github/workflows/deploy-image.yml и docs/deploy-prebuilt-image.md).
+    # Так деплой не собирает образ на проде — окно 502 при выкате исчезает.
+    # Откат: вернуть блок build: (context/args) вместо image:.
+    image: ghcr.io/dvasincom-sketch/content-box:latest
+    pull_policy: always
     ports:
       - '3000:3000'
     environment:
