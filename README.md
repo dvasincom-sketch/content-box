@@ -1,5 +1,8 @@
 # Content Box
 
+[![CI](https://github.com/dvasincom-sketch/content-box/actions/workflows/ci.yml/badge.svg)](https://github.com/dvasincom-sketch/content-box/actions/workflows/ci.yml)
+[![Nightly](https://github.com/dvasincom-sketch/content-box/actions/workflows/nightly.yml/badge.svg)](https://github.com/dvasincom-sketch/content-box/actions/workflows/nightly.yml)
+
 White-label платформа подписок для авторов, контент-мейкеров и инфлюэнсеров.
 Каждый автор получает своё приложение на своём домене (или бесплатном поддомене
 `*.contentbox.site`), студию управления контентом и сайт с подпиской для аудитории.

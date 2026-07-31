@@ -1,0 +1,87 @@
+name: Nightly
+
+# Ночной полный прогон. Дополняет CI (тот на каждый push гоняет типы/линт/
+# юниты/сборку БЕЗ базы). Здесь поднимается настоящий Postgres, накатываются
+# миграции и запускаются ИНТЕГРАЦИОННЫЕ тесты — то, что в push-CI не гоняется.
+#
+# Запуск ночью, когда активность минимальна, плюс кнопка «Run workflow» во
+# вкладке Actions (ручной запуск, как «Build Now» в Jenkins). При падении
+# GitHub присылает письмо владельцу репозитория — это и есть «утром вижу
+# ошибки и правлю». История прогонов во вкладке Actions — это дашборд.
+#
+# e2e (Playwright) добавляются отдельным шагом позже: им нужен посеянный
+# активный тенант и суперадмин, это отдельный харнесс.
+
+on:
+  schedule:
+    # 00:00 UTC = 03:00 по Москве (UTC+3). Ночь, минимальная активность.
+    - cron: '0 0 * * *'
+  workflow_dispatch: {}
+
+# Один ночной прогон за раз; промежуточный запуск не отменяем.
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Настоящий Postgres как сервис-контейнер. GitHub ждёт health-check, прежде
+    # чем начать шаги, поэтому миграции и int-тесты видят готовую базу.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: contentbox
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d contentbox"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      DATABASE_URL: postgres://ci:ci@localhost:5432/contentbox
+      PAYLOAD_SECRET: ci-nightly-not-a-real-secret
+      # Публичный URL хранилища нужен сборке для images.remotePatterns (не секрет).
+      S3_PUBLIC_URL: https://s3.twcstorage.ru/ci
+      # Meili не поднимаем: поиск опционален и при пустых переменных отключается.
+      MEILI_HOST: ''
+      MEILI_MASTER_KEY: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      # npm install, а не npm ci: lock сгенерирован на macOS/Node 22, на
+      # Linux/Node 20 npm ci считает его out of sync (та же причина, что в CI и
+      # Dockerfile).
+      - name: Установка зависимостей
+        run: npm install --no-audit --no-fund
+
+      - name: Миграции (на сервисный Postgres)
+        run: npm run migrate
+
+      - name: Типы
+        run: npx tsc --noEmit
+
+      - name: Линт
+        run: npm run lint
+
+      - name: Юнит-тесты
+        run: npm run test:unit
+
+      - name: Интеграционные тесты
+        run: npm run test:int
+
+      - name: Сборка
+        run: npm run build
