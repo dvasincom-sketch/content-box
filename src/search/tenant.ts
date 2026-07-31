@@ -1,5 +1,6 @@
 import { headers as nextHeaders } from 'next/headers'
 import { tenantIdByHost, tenantIdFromRequestHeaders } from '@/lib/tenantByHost'
+import { getViewerTierWeight } from '@/lib/viewerTier'
 
 export type ViewerTenant = {
   id: string
@@ -14,18 +15,18 @@ export type ViewerTenant = {
  * прокси срезает одноимённый заголовок клиента до любой другой логики
  * (см. proxy.ts) и ставит свой только после успешного резолвинга по хосту.
  *
- * TODO: viewerTier пока 0 (аноним). Сюда нужно подставить вес активного тарифа
- * залогиненного подписчика, чтобы оплаченный контент не помечался закрытым.
+ * viewerTier — вес активного тарифа залогиненного подписчика (0 у гостя), чтобы
+ * оплаченный контент не помечался в выдаче закрытым. См. getViewerTierWeight.
  */
 export async function resolveViewerTenantSSR(): Promise<ViewerTenant | null> {
   const hdrs = await nextHeaders()
   const fromProxy = hdrs.get('x-tenant-id')
-  if (fromProxy) return { id: fromProxy, viewerTier: 0 }
+  if (fromProxy) return { id: fromProxy, viewerTier: await getViewerTierWeight(fromProxy) }
 
   // Фолбэк на случай, если страницу отрисовали вне обычного прокси-пути.
   const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host') ?? ''
   const id = await tenantIdByHost(host)
-  return id ? { id, viewerTier: 0 } : null
+  return id ? { id, viewerTier: await getViewerTierWeight(id) } : null
 }
 
 /**
@@ -41,5 +42,5 @@ export async function resolveViewerTenantFromRequest(
   reqHeaders: Headers,
 ): Promise<ViewerTenant | null> {
   const id = await tenantIdFromRequestHeaders(reqHeaders)
-  return id ? { id, viewerTier: 0 } : null
+  return id ? { id, viewerTier: await getViewerTierWeight(id) } : null
 }
