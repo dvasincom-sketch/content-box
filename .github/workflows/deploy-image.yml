@@ -1,33 +1,22 @@
 name: Build image
 
-# Сборка Docker-образа в CI, пуш в GHCR и АВТО-ПИН docker-compose на свежий SHA.
-#
-# Зачем автопин: Timeweb не перечитывает плавающий :latest (на деплое
-# переиспользует закешированный образ, если строка тега не изменилась). Поэтому
-# compose должен ссылаться на неизменяемый тег коммита. Раньше это делалось
-# руками отдельным коммитом — и ломалось: пуш пина отменял сборку кода
-# (cancel-in-progress), образ :<sha> не успевал собраться → деплой падал с
-# "not found". Теперь workflow сам, ПОСЛЕ успешной сборки образа, прописывает
-# этот же SHA в docker-compose.yml и коммитит — образ гарантированно уже в
-# реестре. Релиз снова = один push.
-
+# ОТКЛЮЧЕНО от авто-запуска. Timeweb снова собирает образ из исходников
+# (docker-compose.yml → build:), поэтому сборка образа в CI и автопин не нужны.
+# Оставлено только ручным запуском (workflow_dispatch) на случай возврата к
+# схеме с готовым образом из GHCR.
 on:
-  push:
-    branches: [main]
   workflow_dispatch: {}
 
 concurrency:
   group: build-image
-  # НЕ отменяем идущую сборку новым пушем: иначе тег :<sha> может не собраться,
-  # а compose уже будет на него ссылаться → деплой "not found".
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # нужен для авто-коммита пина docker-compose.yml
-      packages: write # пуш образа в ghcr.io
+      contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -53,23 +42,3 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/content-box:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # Образ :<sha> уже в реестре — теперь безопасно прописать его в compose.
-      # Пуш от github-actions[bot] НЕ триггерит этот же workflow повторно
-      # (защита GitHub от циклов), а Timeweb деплоит по git-push как обычно.
-      - name: Авто-пин docker-compose на свежий образ
-        env:
-          SHA: ${{ github.sha }}
-          OWNER: ${{ github.repository_owner }}
-        run: |
-          sed -i -E "s#^([[:space:]]*image: ghcr.io/[^:]+/content-box):.*#\1:${SHA}#" docker-compose.yml
-          if git diff --quiet -- docker-compose.yml; then
-            echo "compose уже указывает на ${SHA} — коммитить нечего"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docker-compose.yml
-          git commit -m "ops: авто-пин образа на ${SHA} [skip ci]"
-          git pull --rebase --autostash origin main || true
-          git push
