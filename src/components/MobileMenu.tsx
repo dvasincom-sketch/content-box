@@ -25,6 +25,7 @@ function AccordionNode({
       <div className="flex items-center" style={{ paddingLeft: `${(level - 1) * 14}px` }}>
         <Link
           href={node.href}
+          prefetch={false}
           onClick={onNavigate}
           className="flex-1 py-2.5 px-2 rounded-lg text-base c-navlink"
           style={{

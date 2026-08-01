@@ -23,7 +23,7 @@ function SubMenu({ nodes, level }: { nodes: MenuNode[]; level: number }) {
             onMouseEnter={() => setOpenID(node.id)}
             onMouseLeave={() => setOpenID(null)}
           >
-            <Link href={node.href} className="c-popover__item text-sm">
+            <Link href={node.href} prefetch={false} className="c-popover__item text-sm">
               <span>{node.title}</span>
               {hasChildren && <ChevronRight size={14} className="shrink-0" style={{ color: 'var(--brand-muted)' }} />}
             </Link>
@@ -68,6 +68,7 @@ export function DesktopMenu({ nodes }: { nodes: MenuNode[] }) {
           >
             <Link
               href={node.href}
+              prefetch={false}
               className="flex items-center gap-1 text-sm font-medium c-navlink py-2"
               aria-expanded={hasChildren ? openID === node.id : undefined}
               aria-haspopup={hasChildren || undefined}

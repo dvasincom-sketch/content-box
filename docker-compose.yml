@@ -59,6 +59,11 @@ services:
       # блокирующей. Healthcheck ниже всё равно полезен для наблюдаемости.
       meilisearch:
         condition: service_started
+    # Явный потолок памяти контейнера: делает поведение детерминированным и
+    # наблюдаемым (без него app мог упираться в память всей ноды под бёрстом
+    # рендеров и молча убиваться OOM-киллером → крэш-луп). 6g на 8g-ноде:
+    # оставляем ~1g под meili и ~1g под систему/Caddy.
+    mem_limit: 6g
     restart: unless-stopped
 
   meilisearch:
@@ -81,6 +86,7 @@ services:
       timeout: 3s
       retries: 12
       start_period: 20s
+    mem_limit: 1g
     restart: unless-stopped
 
 volumes:
