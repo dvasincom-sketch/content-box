@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 
 export type TagItem = { label: string; slug: string }
 

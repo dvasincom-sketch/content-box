@@ -1,5 +1,5 @@
 import React from 'react'
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 import { ContentBoxLogo } from '@/components/ContentBoxLogo'
 
 export type FooterItem = { label: string; href: string }

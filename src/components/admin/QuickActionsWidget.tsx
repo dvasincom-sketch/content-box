@@ -1,5 +1,5 @@
 import React from 'react'
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 import type { WidgetServerProps } from 'payload'
 import { isSuperAdmin } from '@/access'
 

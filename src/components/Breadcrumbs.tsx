@@ -1,5 +1,5 @@
 import React from 'react'
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 
 export type Crumb = { url?: string | null; label?: string | null }
 

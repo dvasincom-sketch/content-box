@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 import { useRouter } from 'next/navigation'
 import { Menu, X, Star, Search } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'

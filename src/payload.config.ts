@@ -209,7 +209,7 @@ export default buildConfig({
       // залипнуть на дохлом соединении.
       keepAlive: true,
       keepAliveInitialDelayMillis: 10_000,
-      max: 10,
+      max: 20,
       idleTimeoutMillis: 10_000,
       connectionTimeoutMillis: 10_000,
       maxUses: 7_500,

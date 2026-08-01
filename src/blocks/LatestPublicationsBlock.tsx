@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 import React from 'react'
 import Image from 'next/image'
 import { Lock, MessageCircle, Heart, Video, Images } from 'lucide-react'

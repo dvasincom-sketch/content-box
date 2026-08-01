@@ -1,5 +1,5 @@
 import React from 'react'
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 import { SearchBox } from '@/components/search/SearchBox'
 
 export type SearchChip = { title: string; href: string }

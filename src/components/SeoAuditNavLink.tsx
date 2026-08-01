@@ -1,7 +1,7 @@
 'use client'
 import React from 'react'
 import { usePathname } from 'next/navigation'
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 
 /**
  * Пункт бокового меню, ведущий на кастомную SEO-аудит view.

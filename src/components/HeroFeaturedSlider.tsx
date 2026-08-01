@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 
 export type HeroSlide = {
   id: string | number

@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/AppLink'
 import { ChevronDown } from 'lucide-react'
 import type { MenuNode } from '@/lib/buildMenu'
 
