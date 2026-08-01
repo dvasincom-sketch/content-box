@@ -4,7 +4,7 @@
  * API, студию, админку, видео и оптимизацию картинок — НИКОГДА не кэшируем.
  * SW скоупится по origin, поэтому кэш разных тенантов не смешивается.
  */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const STATIC_CACHE = `static-${VERSION}`;
 const OFFLINE_URL = '/offline';
 
@@ -31,13 +31,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Приватное/динамическое — всегда сеть, никакого кэша.
   const bypass = ['/api', '/studio', '/admin', '/account', '/video', '/_next/image', '/manifest.webmanifest', '/pwa-icon'];
   if (bypass.some((pfx) => url.pathname === pfx || url.pathname.startsWith(pfx + '/'))) {
     return;
   }
 
-  // Иммутабельная статика — cache-first.
   if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/fonts/')) {
     event.respondWith(
       caches.open(STATIC_CACHE).then(async (cache) => {
@@ -55,42 +53,61 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Навигации (HTML) — network-first с ретраями и мягкой офлайн-заглушкой.
   if (req.mode === 'navigate') {
     event.respondWith(handleNavigate(req));
   }
 });
 
 /*
- * ВАЖНО: fetch() НЕ реджектится на 5xx — 502/503 это валидные HTTP-ответы,
- * промис резолвится. Поэтому осечку апстрима ловим И по throw (сетевой сбой),
- * И по res.status >= 500. Один транзиентный 502 от прокси (короткое окно
- * недоступности апстрима при рестарте/подмене контейнера) НЕ должен становиться
- * жёсткой страницей «HTTP ERROR 502»: делаем несколько коротких ретраев —
- * блип обычно проглатывается и пользователь просто видит чуть более долгую
- * загрузку, — и лишь если всё глухо, отдаём офлайн-заглушку.
+ * Навигации. fetch() НЕ реджектится на 5xx (502/503 — валидные ответы), поэтому
+ * осечку апстрима ловим И по throw (нет сети), И по res.status >= 500.
+ * Короткий блип апстрима (подмена/рестарт контейнера) проглатываем ретраями.
+ * Если апстрим отдаёт 5xx дольше — НЕ врём «нет соединения» (ты онлайн!), а
+ * показываем самовосстанавливающийся экран: он опрашивает /api/health и сам
+ * перезагрузит страницу, когда сервер вернётся. Настоящий офлайн (fetch throw
+ * на всех попытках) — офлайн-заглушка.
  */
 async function handleNavigate(req) {
-  const delays = [0, 500, 1200]; // до 3 попыток, ~1.7с суммарной задержки только при осечке
-  let lastResp = null;
+  const delays = [0, 500, 1200];
+  let sawServerError = false;
   for (let i = 0; i < delays.length; i++) {
     if (delays[i]) await new Promise((r) => setTimeout(r, delays[i]));
     try {
       const res = await fetch(req);
-      if (res.status < 500) return res; // 2xx/3xx или честный 4xx (404 и т.п.) — отдаём как есть
-      lastResp = res; // 5xx — транзиентная осечка, пробуем ещё раз
+      if (res.status < 500) return res; // 2xx/3xx или честный 4xx — как есть
+      sawServerError = true; // 5xx — транзиентная осечка, ретраим
     } catch {
-      lastResp = null; // сетевой сбой — тоже ретрай
+      /* сетевой сбой — ретраим */
     }
   }
-  // Все попытки — 5xx/сеть: мягкая офлайн-заглушка вместо «HTTP ERROR 502».
+  if (sawServerError) return reconnecting();
   const offline = await caches.match(OFFLINE_URL);
-  return (
-    offline ||
-    lastResp ||
-    new Response('Сервис временно недоступен. Обновите страницу.', {
-      status: 503,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    })
-  );
+  return offline || reconnecting();
+}
+
+function reconnecting() {
+  const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Переподключаемся…</title><style>
+html,body{height:100%;margin:0}
+body{display:flex;align-items:center;justify-content:center;background:#0F0A1E;color:#EDE9FE;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.box{max-width:360px;text-align:center;padding:24px}
+.sp{width:34px;height:34px;margin:0 auto 18px;border:3px solid rgba(255,255,255,.15);border-top-color:#7C3AED;border-radius:50%;animation:s 1s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+h1{font-size:18px;margin:0 0 8px;font-weight:700}
+p{margin:0 0 18px;color:#B5A9D6;font-size:14px;line-height:1.5}
+button{background:#7C3AED;color:#fff;border:0;border-radius:10px;padding:10px 18px;font-size:14px;cursor:pointer}
+</style></head><body><div class="box">
+<div class="sp"></div>
+<h1>Переподключаемся к серверу</h1>
+<p>Секундочку — восстанавливаем соединение. Страница обновится сама, как только сервер ответит.</p>
+<button onclick="location.reload()">Обновить сейчас</button>
+</div><script>
+function ping(){fetch('/api/health?cb='+Math.random(),{cache:'no-store'}).then(function(r){if(r.ok){location.reload();}else{setTimeout(ping,2000);}}).catch(function(){setTimeout(ping,2000);});}
+setTimeout(ping,1500);
+</script></body></html>`;
+  return new Response(html, {
+    status: 503,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
 }
