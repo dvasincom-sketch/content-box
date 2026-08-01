@@ -66,7 +66,7 @@ EXPOSE 3000
 # `payload migrate` (см. CMD ниже). На большой базе миграция идёт минуты, и с
 # коротким периодом контейнер помечался бы unhealthy, а оркестратор мог убить
 # его прямо посреди миграции — и так по кругу.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=300s --retries=5 \
   CMD curl -fsS "http://127.0.0.1:${PORT}/api/health" || exit 1
 
 # Миграции + старт. next start слушает $PORT на 0.0.0.0. Все секреты
