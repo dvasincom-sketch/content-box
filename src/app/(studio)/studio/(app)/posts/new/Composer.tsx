@@ -3,9 +3,10 @@
 import React, { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ImagePlus, X, Loader2, Trash2, Newspaper } from 'lucide-react'
+import { ArrowLeft, ImagePlus, X, Loader2, Trash2, Newspaper, Sparkles } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
+import { CategoryMultiPicker } from '../../settings/CategoryMultiPicker'
 import { TiptapEditor } from './TiptapEditor'
 import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
@@ -22,11 +23,13 @@ export type PostInitial = {
   body: string
   slug: string
   categoryId: string
+  extraCategoryIds?: string[]
   minTierId: string
   coverId: number | null
   coverUrl: string | null
   isPublished: boolean
   isNews?: boolean
+  isNew?: boolean
   relatedVideoIds: (number | string)[]
   gallery: GalleryItem[]
   tags?: string[]
@@ -51,8 +54,10 @@ export function Composer({
   const [title, setTitle] = useState(initial?.title || '')
   const [body, setBody] = useState(initial?.body || '')
   const [categoryId, setCategoryId] = useState<string>(initial?.categoryId || '')
+  const [extraCategoryIds, setExtraCategoryIds] = useState<string[]>(initial?.extraCategoryIds ?? [])
   const [minTierId, setMinTierId] = useState<string>(initial?.minTierId || '')
   const [isNews, setIsNews] = useState<boolean>(initial?.isNews ?? false)
+  const [isNew, setIsNew] = useState<boolean>(initial?.isNew ?? false)
 
   const [coverId, setCoverId] = useState<number | null>(initial?.coverId ?? null)
   const [coverUrl, setCoverUrl] = useState<string | null>(initial?.coverUrl ?? null)
@@ -126,6 +131,9 @@ export function Composer({
       body,
       // в edit шлём явные значения (null очищает); в create — undefined опускает
       categoryId: isEdit ? (categoryId || null) : (categoryId || undefined),
+      // Дополнительные категории (мультивыбор). В edit всегда шлём массив
+      // (пустой = очистить), в create — только если есть.
+      extraCategoryIds: isEdit ? extraCategoryIds : (extraCategoryIds.length ? extraCategoryIds : undefined),
       minTierId: isEdit ? (minTierId || null) : (minTierId || undefined),
       coverId: isEdit ? (coverId ?? null) : (coverId || undefined),
       // в edit всегда шлём массив (пустой = открепить все); в create — только если есть
@@ -142,6 +150,8 @@ export function Composer({
       // признак «Новость»: в edit шлём всегда (чтобы снятие сохранялось),
       // в create — только если включён
       isNews: isEdit ? isNews : (isNews || undefined),
+      // признак «Новинка»: то же правило. Сервер по нему проставит окно 14 дней.
+      isNew: isEdit ? isNew : (isNew || undefined),
       // свободные теги (лейблы): в edit шлём всегда (пустой = очистить),
       // в create — только если есть
       tags: isEdit ? tags : (tags.length ? tags : undefined),
@@ -296,6 +306,16 @@ export function Composer({
               <Newspaper size={14} />
               Новость
             </button>
+            <button
+              type="button"
+              className={`composer__flag${isNew ? ' is-on' : ''}`}
+              onClick={() => setIsNew((v) => !v)}
+              aria-pressed={isNew}
+              title="Пометить как новинку — 14 дней публикация висит в разделе «Новинки», потом только в своей категории"
+            >
+              <Sparkles size={14} />
+              Новинка
+            </button>
           </div>
           <input
             className="composer__title"
@@ -373,8 +393,20 @@ export function Composer({
           </div>
 
           <div className="composer__field">
-            <div className="composer__field-label">Категория</div>
+            <div className="composer__field-label">Основная категория</div>
             <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+          </div>
+
+          <div className="composer__field">
+            <div className="composer__field-label">Дополнительные категории</div>
+            <CategoryMultiPicker
+              categories={categories}
+              value={extraCategoryIds}
+              onChange={setExtraCategoryIds}
+            />
+            <div className="composer__hint">
+              Публикация появится и в этих категориях. Основная — та, что выбрана выше.
+            </div>
           </div>
 
           <div className="composer__field">

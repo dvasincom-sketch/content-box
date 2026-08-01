@@ -96,6 +96,13 @@ export default async function EditPostPage({
   const category = post.category
   const categoryId = category ? String(typeof category === 'object' ? category.id : category) : ''
 
+  // Дополнительные категории (hasMany) → массив id-строк.
+  const extraCategoryIds: string[] = Array.isArray(post.extraCategories)
+    ? post.extraCategories
+        .map((c: any) => String(c && typeof c === 'object' ? c.id : c))
+        .filter((x: string) => x && x !== 'null' && x !== 'undefined')
+    : []
+
   const minTier = post.minTier
   const minTierId = minTier ? String(typeof minTier === 'object' ? minTier.id : minTier) : ''
 
@@ -135,10 +142,13 @@ export default async function EditPostPage({
     body: lexicalToHtml(post.description),
     slug: post.slug || '',
     categoryId,
+    extraCategoryIds,
     minTierId,
     coverId: coverId != null ? Number(coverId) : null,
     coverUrl,
     isPublished,
+    isNews: !!post.isNews,
+    isNew: !!post.isNew,
     relatedVideoIds,
     gallery,
     tags: Array.isArray(post.tags)

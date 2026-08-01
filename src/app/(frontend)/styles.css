@@ -2254,10 +2254,12 @@ svg {
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--brand-text);
-  background: color-mix(in srgb, var(--brand-accent) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--brand-accent) 40%, transparent);
+  font-weight: 700;
+  /* Плотная заливка акцентом + белый текст: читается одинаково в тёмной и
+     светлой теме (прежний 18%-микс на светлой теме почти сливался с фоном). */
+  color: #fff;
+  background: color-mix(in srgb, var(--brand-accent) 85%, #000);
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 60%, transparent);
 }
 
 .vseries__side {
@@ -2356,11 +2358,16 @@ svg {
   right: 4px;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 6px;
+  /* Замок сидит на обложке (тёмной или яркой), тема на неё не влияет: даём
+     плотный тёмный фон + белую обводку, чтобы иконка читалась на любом кадре
+     и в тёмной, и в светлой теме. */
   color: #fff;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(2px);
 }
 .vseries__ep-body {
   min-width: 0;

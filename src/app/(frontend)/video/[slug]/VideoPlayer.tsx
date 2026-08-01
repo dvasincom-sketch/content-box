@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Lock } from 'lucide-react'
 
 /**
  * Клиентский плеер для публичной страницы видео. Запрашивает данные с публичного
@@ -30,6 +32,9 @@ export function VideoPlayer({
   const [src, setSrc] = useState<string | null>(null)
   const [aspect, setAspect] = useState<'16:9' | '9:16'>(initialAspect)
   const [error, setError] = useState<string | null>(null)
+  // Гейт по подписке (403 от /api/video-token). Отдельно от error, чтобы
+  // показать «Видео доступно с уровня «…»» и точку продажи, а не сухую ошибку.
+  const [gate, setGate] = useState<{ tier: string | null; reason: string } | null>(null)
 
   useEffect(() => {
     let stopped = false
@@ -39,7 +44,12 @@ export function VideoPlayer({
         const json = await res.json()
         if (stopped) return
         if (!res.ok) {
-          setError(json.error || 'Не удалось загрузить видео')
+          // 403 — доступ по подписке: показываем гейт с названием уровня.
+          if (res.status === 403) {
+            setGate({ tier: json.requiredTierName ?? null, reason: String(json.reason || '') })
+          } else {
+            setError(json.error || 'Не удалось загрузить видео')
+          }
           return
         }
         if (json.provider === 'embed') {
@@ -89,17 +99,42 @@ export function VideoPlayer({
           background: '#000',
         }}
       >
-        {error ? (
+        {gate ? (
+          // Плеер всегда на чёрном фоне, поэтому цвета фиксированные светлые —
+          // читаемо и в тёмной, и в светлой теме (тема на плеер не влияет).
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-6">
+            <span
+              className="inline-flex items-center justify-center rounded-full"
+              style={{ width: 52, height: 52, background: 'rgba(255,255,255,.14)' }}
+            >
+              <Lock size={22} color="#fff" />
+            </span>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: '1.05rem' }}>
+              {gate.tier ? (
+                <>Видео доступно с уровня «{gate.tier}»</>
+              ) : (
+                <>Видео доступно по подписке</>
+              )}
+            </span>
+            <Link
+              href="/subscribe"
+              className="inline-block text-sm font-semibold px-5 py-2.5 rounded-xl"
+              style={{ background: '#fff', color: '#111', marginTop: 4 }}
+            >
+              {gate.reason === 'need-login' ? 'Войти или оформить подписку' : 'Оформить подписку'}
+            </Link>
+          </div>
+        ) : error ? (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-6"
-            style={{ color: 'var(--brand-muted)' }}
+            style={{ color: 'rgba(255,255,255,.85)' }}
           >
             <span>{error}</span>
           </div>
         ) : !src ? (
           <div
             className="absolute inset-0 flex items-center justify-center"
-            style={{ color: 'var(--brand-muted)' }}
+            style={{ color: 'rgba(255,255,255,.7)' }}
           >
             Загрузка плеера…
           </div>

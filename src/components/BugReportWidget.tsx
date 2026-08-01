@@ -199,12 +199,17 @@ export function BugReportWidget({
 }
 
 const CSS = `
-.cb-bug-fab{position:fixed;right:18px;bottom:18px;z-index:9998;display:inline-flex;align-items:center;gap:8px;
-  padding:10px 16px;border:none;border-radius:999px;cursor:pointer;font:600 14px/1 var(--font-body,system-ui,sans-serif);
-  color:#fff;background:var(--brand-primary,#7C3AED);box-shadow:0 8px 24px rgba(0,0,0,.28);transition:transform .15s ease,box-shadow .15s ease}
-.cb-bug-fab:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(124,58,237,.36)}
+/* Вертикальный «язычок» у правого края окна, по центру высоты. Так плашка не
+   перекрывает нижние/верхние панели действий (кнопки «Отмена»/«Сохранить» в
+   модалках, футер и т.п.), в отличие от прежнего положения в нижнем углу. */
+.cb-bug-fab{position:fixed;right:0;top:50%;z-index:9998;transform:translateY(-50%);
+  writing-mode:vertical-rl;display:inline-flex;align-items:center;gap:8px;
+  padding:16px 9px;border:none;border-radius:14px 0 0 14px;cursor:pointer;
+  font:600 13px/1 var(--font-body,system-ui,sans-serif);
+  color:#fff;background:var(--brand-primary,#7C3AED);box-shadow:-6px 8px 24px rgba(0,0,0,.28);transition:transform .15s ease,box-shadow .15s ease}
+.cb-bug-fab:hover{transform:translateY(-50%) translateX(-3px);box-shadow:-10px 12px 30px rgba(124,58,237,.36)}
 .cb-bug-fab-ico{font-size:16px}
-@media(max-width:560px){.cb-bug-fab-txt{display:none}.cb-bug-fab{padding:12px}}
+@media(max-width:560px){.cb-bug-fab-txt{display:none}.cb-bug-fab{padding:11px 9px}}
 .cb-bug-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;
   background:rgba(8,6,16,.55);backdrop-filter:blur(2px);padding:16px}
 @media(min-width:560px){.cb-bug-overlay{align-items:center}}

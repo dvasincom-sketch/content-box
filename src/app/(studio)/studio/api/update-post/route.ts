@@ -61,6 +61,23 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     patch.cover = await resolveRel(payload, 'media', data.coverId, tenantId)
   }
 
+  // Дополнительные категории: если ключ передан — заменяем набор целиком
+  // (пустой = очистить). Исключаем основную, чтобы не дублировалась.
+  if ('extraCategoryIds' in data) {
+    const primaryId =
+      'categoryId' in data
+        ? (patch.category ?? undefined)
+        : existing.category && typeof existing.category === 'object'
+          ? existing.category.id
+          : existing.category ?? undefined
+    patch.extraCategories = await filterTenantCategories(
+      payload,
+      data.extraCategoryIds,
+      tenantId,
+      primaryId != null ? Number(primaryId) : undefined,
+    )
+  }
+
   // Прикреплённые видео: если ключ передан — заменяем набор целиком (пустой = открепить все)
   if ('relatedVideoIds' in data) {
     patch.relatedVideos = await filterTenantVideos(payload, data.relatedVideoIds, tenantId)
@@ -74,6 +91,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   // Признак «Новость»
   if ('isNews' in data) {
     patch.isNews = Boolean(data.isNews)
+  }
+
+  // Признак «Новинка». Окно newUntil проставит/снимет хук коллекции.
+  if ('isNew' in data) {
+    patch.isNew = Boolean(data.isNew)
   }
 
   // Свободные теги: если ключ передан — заменяем набор (пустой = очистить).
@@ -128,6 +150,41 @@ async function resolveRel(
   } catch {
     return null
   }
+}
+
+/**
+ * Из массива id категорий оставляет только принадлежащие тенанту, в исходном
+ * порядке, без дублей и без основной (excludeId). Для extraCategories.
+ */
+async function filterTenantCategories(
+  payload: Payload,
+  ids: any,
+  tenantId: number,
+  excludeId?: number,
+): Promise<number[]> {
+  if (!Array.isArray(ids) || ids.length === 0) return []
+  const seen = new Set<number>()
+  const out: number[] = []
+  for (const raw of ids) {
+    const cid = Number(raw)
+    if (!Number.isFinite(cid) || seen.has(cid) || cid === excludeId) continue
+    try {
+      const doc = await payload.findByID({
+        collection: 'categories',
+        id: cid,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const t = doc?.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc?.tenant
+      if (Number(t) === Number(tenantId)) {
+        seen.add(cid)
+        out.push(cid)
+      }
+    } catch {
+      // категория не найдена — пропускаем
+    }
+  }
+  return out
 }
 
 /**

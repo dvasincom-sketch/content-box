@@ -123,15 +123,33 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
     const branchIDs = (branchRes.docs as any[]).map((c) => c.id)
     if (branchIDs.length === 0) branchIDs.push(category.id)
 
+    // Публикация попадает в раздел по ОСНОВНОЙ или по ДОПОЛНИТЕЛЬНОЙ категории.
+    const catMatch: any[] = [
+      { category: { in: branchIDs } },
+      { extraCategories: { in: branchIDs } },
+    ]
+    // Витрина «Новинки» (категория со slug 'new'): помимо привязанных к разделу —
+    // все публикации с активным флагом «Новинка» (14 дней), независимо от их
+    // собственной категории. По истечении окна публикация уходит из витрины и
+    // остаётся только в своих категориях.
+    if (category.slug === 'new') {
+      catMatch.push({
+        and: [
+          { isNew: { equals: true } },
+          { newUntil: { greater_than: new Date().toISOString() } },
+        ],
+      })
+    }
+
     const pubsRes = await payload.find({
       collection: 'publications',
       where: {
         and: [
           { tenant: { equals: tenant.id } },
-          { category: { in: branchIDs } },
           // Без этого черновики ветки попадали в листинг категории, а из-за
           // NULLS FIRST при '-publishedAt' — сразу наверх.
           publishedWhere(),
+          { or: catMatch },
         ],
       },
       sort: '-publishedAt',

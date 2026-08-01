@@ -37,6 +37,15 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     if (ok) categoryId = Number(data.categoryId)
   }
 
+  // Дополнительные категории: только принадлежащие тенанту, без дублей и без
+  // основной (её роль отдельная). Порядок сохраняем.
+  const extraCategoryIds = await filterTenantCategories(
+    payload,
+    data.extraCategoryIds,
+    tenantId,
+    categoryId,
+  )
+
   // Проверка, что уровень принадлежит тенанту автора
   let minTierId: number | undefined
   if (data.minTierId) {
@@ -68,11 +77,13 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
         tenant: tenantId,
         description: htmlToLexical(data.body || ''),
         ...(categoryId ? { category: categoryId } : {}),
+        ...(extraCategoryIds.length ? { extraCategories: extraCategoryIds } : {}),
         ...(minTierId ? { minTier: minTierId } : {}),
         ...(coverId ? { cover: coverId } : {}),
         ...(relatedVideos.length ? { relatedVideos } : {}),
         ...(gallery.length ? { gallery } : {}),
         ...(data.isNews ? { isNews: true } : {}),
+        ...(data.isNew ? { isNew: true } : {}),
         ...(Array.isArray(data.tags) && data.tags.length
           ? {
               tags: (data.tags as unknown[])
@@ -110,6 +121,31 @@ async function filterTenantVideos(
     if (ok) {
       seen.add(vid)
       out.push(vid)
+    }
+  }
+  return out
+}
+
+/**
+ * Из массива id категорий оставляет только принадлежащие тенанту, в исходном
+ * порядке, без дублей и без основной категории (excludeId). Для extraCategories.
+ */
+async function filterTenantCategories(
+  payload: Payload,
+  ids: any,
+  tenantId: number,
+  excludeId?: number,
+): Promise<number[]> {
+  if (!Array.isArray(ids) || ids.length === 0) return []
+  const seen = new Set<number>()
+  const out: number[] = []
+  for (const raw of ids) {
+    const cid = Number(raw)
+    if (!Number.isFinite(cid) || seen.has(cid) || cid === excludeId) continue
+    const ok = await belongsToTenant(payload, 'categories', cid, tenantId)
+    if (ok) {
+      seen.add(cid)
+      out.push(cid)
     }
   }
   return out

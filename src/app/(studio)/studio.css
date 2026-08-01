@@ -1288,10 +1288,18 @@ select.studio-input {
 .catmgr__create:has(.studio-select.is-open) { z-index: 60; }
 .catmgr__create-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: var(--st-space-3);
   margin-bottom: var(--st-space-3);
 }
+.catmgr__create-parent { margin-bottom: var(--st-space-3); }
+.catmgr__create-parent-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--st-text);
+  margin-bottom: var(--st-space-2);
+}
+.catmgr__create-parent-label span { color: var(--st-text-muted); font-weight: 400; }
 .catmgr__create-actions {
   display: flex;
   justify-content: flex-end;

@@ -32,7 +32,20 @@ export const Publications: CollectionConfig = {
     },
     { name: 'cover', type: 'upload', relationTo: 'media', label: 'Обложка карточки' },
     { name: 'publishedAt', type: 'date', label: 'Дата публикации' },
-    { name: 'category', type: 'relationship', relationTo: 'categories' },
+    { name: 'category', type: 'relationship', relationTo: 'categories', label: 'Основная категория' },
+    {
+      // Дополнительные категории: публикация показывается и в них, но основной
+      // остаётся `category` выше (крошки, каноничный путь). Листинги категорий
+      // учитывают и основную, и дополнительные.
+      name: 'extraCategories',
+      type: 'relationship',
+      relationTo: 'categories',
+      hasMany: true,
+      label: 'Дополнительные категории',
+      admin: {
+        description: 'Публикация появится и в этих разделах. Основная категория — отдельное поле выше.',
+      },
+    },
     {
       // Связка «Мир BTS» → «Смотреть». Статья-энциклопедия ссылается на
       // категорию из блока «Смотреть» с видео по теме: читатель из органики
@@ -175,6 +188,29 @@ export const Publications: CollectionConfig = {
         description: 'Отметьте, если это новость о событиях во вселенной BTS. Такие материалы попадают в секцию «Новости» на главной.',
       },
     },
+    {
+      name: 'isNew',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Новинка',
+      index: true,
+      admin: {
+        description: 'Публикация 14 дней висит в разделе «Новинки», затем остаётся только в своих категориях. Окно (newUntil) проставляется автоматически.',
+      },
+    },
+    {
+      // Момент, до которого публикация считается «новинкой». Ставится хуком по
+      // флагу isNew (сейчас + 14 дней), обнуляется при снятии флага. Витрина
+      // «Новинки» показывает публикации с isNew && newUntil > now.
+      name: 'newUntil',
+      type: 'date',
+      label: 'Новинка до',
+      index: true,
+      admin: {
+        readOnly: true,
+        description: 'Заполняется автоматически от флага «Новинка».',
+      },
+    },
     tagsField,
     {
       name: 'seo',
@@ -249,8 +285,27 @@ export const Publications: CollectionConfig = {
         return data
       },
     ],
-    // Свободные теги: тримим label и считаем slug (slugify), убираем дубли.
-    beforeChange: [({ data }) => normalizeTags(data)],
+    beforeChange: [
+      // Свободные теги: тримим label и считаем slug (slugify), убираем дубли.
+      ({ data }) => normalizeTags(data),
+      // Окно «Новинки»: при включении флага ставим newUntil = сейчас + 14 дней;
+      // при снятии — обнуляем. Повторное сохранение уже активной новинки срок
+      // НЕ продлевает (окно фиксируется от момента отметки).
+      ({ data, originalDoc }) => {
+        if (!data) return data
+        const NEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000
+        if (data.isNew) {
+          const wasNew = Boolean(originalDoc?.isNew)
+          const prevUntil = originalDoc?.newUntil ? new Date(originalDoc.newUntil).getTime() : 0
+          if (!wasNew || !prevUntil || prevUntil < Date.now()) {
+            data.newUntil = new Date(Date.now() + NEW_WINDOW_MS).toISOString()
+          }
+        } else {
+          data.newUntil = null
+        }
+        return data
+      },
+    ],
     // Состав секций главной зависит от публикаций — сбрасываем кэш ленты
     // тенанта. Тег точечный, соседние сайты не затрагиваются.
     afterChange: [async ({ doc, req }) => { await revalidateHomeFeed(doc?.tenant ?? getUserTenantID(req.user as any)) }],

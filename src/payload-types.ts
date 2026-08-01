@@ -537,6 +537,10 @@ export interface Publication {
   publishedAt?: string | null;
   category?: (number | null) | Category;
   /**
+   * Публикация появится и в этих разделах. Основная категория — отдельное поле выше.
+   */
+  extraCategories?: (number | Category)[] | null;
+  /**
    * Категория из блока «Смотреть» с видео по теме этой статьи. Связь 1:1 — категорию нельзя привязать к двум статьям.
    */
   watchCategory?: (number | null) | Category;
@@ -595,6 +599,14 @@ export interface Publication {
    * Отметьте, если это новость о событиях во вселенной BTS. Такие материалы попадают в секцию «Новости» на главной.
    */
   isNews?: boolean | null;
+  /**
+   * Публикация 14 дней висит в разделе «Новинки», затем остаётся только в своих категориях. Окно (newUntil) проставляется автоматически.
+   */
+  isNew?: boolean | null;
+  /**
+   * Заполняется автоматически от флага «Новинка».
+   */
+  newUntil?: string | null;
   /**
    * Свободные теги — связывают материалы из разных категорий. Slug считается автоматически.
    */
@@ -1510,6 +1522,7 @@ export interface PublicationsSelect<T extends boolean = true> {
   cover?: T;
   publishedAt?: T;
   category?: T;
+  extraCategories?: T;
   watchCategory?: T;
   author?: T;
   section?: T;
@@ -1534,6 +1547,8 @@ export interface PublicationsSelect<T extends boolean = true> {
       };
   featured?: T;
   isNews?: T;
+  isNew?: T;
+  newUntil?: T;
   tags?:
     | T
     | {

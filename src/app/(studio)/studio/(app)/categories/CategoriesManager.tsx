@@ -2,9 +2,9 @@
 
 import React, { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Plus, Pencil, Trash2, Loader2, FolderTree, Image as ImageIcon } from 'lucide-react'
+import { ChevronRight, Plus, Pencil, Trash2, Loader2, FolderTree, Image as ImageIcon, FolderPlus } from 'lucide-react'
 import { CategoryEditPanel, type EditableCat } from './CategoryEditPanel'
-import { StudioSelect } from '../_ui/StudioSelect'
+import { CategoryPicker } from '../posts/new/CategoryPicker'
 
 type Cat = {
   id: number | string
@@ -50,6 +50,21 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
   const [newParent, setNewParent] = useState<string>('')
 
   const tree = useMemo(() => buildTree(cats), [cats])
+  // Плоский список для иерархического пикера родителя (дерево строит сам пикер).
+  const catItems = useMemo(
+    () => cats.map((c) => ({ id: c.id, title: c.title, parentId: c.parentId })),
+    [cats],
+  )
+
+  // Быстрое добавление подкатегории: открываем форму создания с уже выбранным
+  // родителем (та самая «авто-опция» — родитель подставляется из строки).
+  function addChild(node: TreeNode) {
+    setError(null)
+    setNewTitle('')
+    setNewParent(String(node.id))
+    setCreating(true)
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   function toggle(id: string) {
     setExpanded((prev) => {
@@ -159,18 +174,15 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
               onChange={(e) => setNewTitle(e.target.value)}
               autoFocus
             />
-            <StudioSelect
-              value={newParent}
-              onChange={setNewParent}
-              options={[
-                { value: '', label: 'Корневая (без родителя)' },
-                ...cats
-                  .slice()
-                  .sort((a, b) => a.title.localeCompare(b.title, 'ru'))
-                  .map((c) => ({ value: String(c.id), label: c.title })),
-              ]}
-              ariaLabel="Родительская категория"
-            />
+          </div>
+          {/* Родитель: иерархический пикер с деревом и поиском (вместо плоского
+              списка). Пусто = корневая категория. При быстром добавлении из
+              строки («+») родитель уже подставлен. */}
+          <div className="catmgr__create-parent">
+            <div className="catmgr__create-parent-label">
+              Родительская категория <span>(пусто = корневая)</span>
+            </div>
+            <CategoryPicker categories={catItems} value={newParent} onChange={setNewParent} />
           </div>
           <div className="catmgr__create-actions">
             <button className="studio-btn studio-btn--ghost" onClick={() => setCreating(false)}>
@@ -206,6 +218,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
               expanded={expanded}
               onToggle={toggle}
               onEdit={openEdit}
+              onAddChild={addChild}
               onRemove={removeCat}
               busy={busy}
             />
@@ -233,6 +246,7 @@ function CatRow({
   expanded,
   onToggle,
   onEdit,
+  onAddChild,
   onRemove,
   busy,
 }: {
@@ -241,6 +255,7 @@ function CatRow({
   expanded: Set<string>
   onToggle: (id: string) => void
   onEdit: (n: TreeNode) => void
+  onAddChild: (n: TreeNode) => void
   onRemove: (n: TreeNode) => void
   busy: string | null
 }) {
@@ -273,6 +288,13 @@ function CatRow({
         <span className="catmgr__slug">/{node.slug}</span>
         {hasChildren && <span className="catmgr__count">{node.children.length}</span>}
         <div className="catmgr__actions">
+          <button
+            className="catmgr__icon-btn"
+            onClick={() => onAddChild(node)}
+            title="Добавить подкатегорию"
+          >
+            <FolderPlus size={15} />
+          </button>
           <button className="catmgr__icon-btn" onClick={() => onEdit(node)} title="Редактировать">
             <Pencil size={15} />
           </button>
@@ -297,6 +319,7 @@ function CatRow({
             expanded={expanded}
             onToggle={onToggle}
             onEdit={onEdit}
+            onAddChild={onAddChild}
             onRemove={onRemove}
             busy={busy}
           />
