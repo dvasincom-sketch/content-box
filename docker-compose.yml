@@ -17,7 +17,7 @@ services:
     # из-за чего правки не доезжали до прода). У SHA-тега такой проблемы нет:
     # реестр отдаёт новый образ, потому что тег другой. При каждом релизе меняем
     # этот тег на SHA нужного коммита (CI пушит content-box:<sha>).
-    image: ghcr.io/dvasincom-sketch/content-box:e024c2be2bc5000257ef620f281e8fa8f2b07327
+    image: ghcr.io/dvasincom-sketch/content-box:f7b7d4a458262faed480929aa1b0c0be87880f9d
     pull_policy: always
     ports:
       - '3000:3000'
