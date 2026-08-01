@@ -21,8 +21,8 @@ export async function stabilize(page: Page): Promise<void> {
       'caret-color:transparent!important;scroll-behavior:auto!important}',
   })
   await page.evaluate(() => (document as unknown as { fonts?: { ready?: Promise<unknown> } }).fonts?.ready).catch(() => {})
-  await page.waitForLoadState('networkidle').catch(() => {})
-  await page.waitForTimeout(200)
+  await page.waitForLoadState('load').catch(() => {})
+  await page.waitForTimeout(400)
 }
 
 /** Принудительная тема: класс на <html> + localStorage (как это делает ThemeToggle). */
