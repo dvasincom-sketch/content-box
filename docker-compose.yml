@@ -11,8 +11,13 @@ services:
     # Готовый образ из GHCR (собирается в GitHub Actions, см.
     # .github/workflows/deploy-image.yml и docs/deploy-prebuilt-image.md).
     # Так деплой не собирает образ на проде — окно 502 при выкате исчезает.
-    # Откат: вернуть блок build: (context/args) вместо image:.
-    image: ghcr.io/dvasincom-sketch/content-box:latest
+    #
+    # ВАЖНО: пинимся на НЕИЗМЕНЯЕМЫЙ тег коммита, а НЕ на :latest. Timeweb не
+    # перечитывал плавающий :latest (деплой перезапускал закешированный образ,
+    # из-за чего правки не доезжали до прода). У SHA-тега такой проблемы нет:
+    # реестр отдаёт новый образ, потому что тег другой. При каждом релизе меняем
+    # этот тег на SHA нужного коммита (CI пушит content-box:<sha>).
+    image: ghcr.io/dvasincom-sketch/content-box:e024c2be2bc5000257ef620f281e8fa8f2b07327
     pull_policy: always
     ports:
       - '3000:3000'
