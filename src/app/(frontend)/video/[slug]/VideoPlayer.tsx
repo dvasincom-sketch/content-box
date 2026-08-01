@@ -38,9 +38,29 @@ export function VideoPlayer({
 
   useEffect(() => {
     let stopped = false
-    async function load() {
+    // Токен иногда падает на первом запросе после простоя (перемежающийся 502/сброс
+    // соединения на прокси — гонка keep-alive) и всегда проходит с повтора.
+    // Тихо ретраим 5xx/сетевые осечки до 2 раз, чтобы не показывать «Ошибку
+    // соединения» на бесплатном видео. 4xx (403 — гейт, 404) НЕ ретраим.
+    async function fetchTokenWithRetry(attempt = 0): Promise<Response> {
       try {
         const res = await fetch(`/api/video-token?id=${videoId}`, { credentials: 'include' })
+        if (res.status >= 500 && attempt < 2) {
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
+          return fetchTokenWithRetry(attempt + 1)
+        }
+        return res
+      } catch (e) {
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
+          return fetchTokenWithRetry(attempt + 1)
+        }
+        throw e
+      }
+    }
+    async function load() {
+      try {
+        const res = await fetchTokenWithRetry()
         const json = await res.json()
         if (stopped) return
         if (!res.ok) {
