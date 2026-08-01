@@ -853,7 +853,9 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   color: var(--st-text);
 }
 .composer__flag.is-on {
-  color: #fff;
+  /* На --st-accent (в тёмной теме он белый) текст должен быть --st-accent-text,
+     иначе #fff давал белый текст на белом фоне — кнопка выглядела пустой. */
+  color: var(--st-accent-text);
   background: var(--st-accent);
   border-style: solid;
   border-color: var(--st-accent);
@@ -2124,7 +2126,8 @@ select.studio-input {
   border-color: var(--st-border-strong);
 }
 .catedit__poster-opt.is-on {
-  color: #fff;
+  /* --st-accent в тёмной теме белый → белый текст был невидим. */
+  color: var(--st-accent-text);
   background: var(--st-accent);
   border-color: var(--st-accent);
 }

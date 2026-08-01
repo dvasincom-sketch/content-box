@@ -149,6 +149,7 @@ export default async function EditPostPage({
     isPublished,
     isNews: !!post.isNews,
     isNew: !!post.isNew,
+    newUntil: post.newUntil ?? null,
     relatedVideoIds,
     gallery,
     tags: Array.isArray(post.tags)

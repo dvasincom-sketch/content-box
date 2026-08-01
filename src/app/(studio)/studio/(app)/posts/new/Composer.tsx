@@ -30,6 +30,8 @@ export type PostInitial = {
   isPublished: boolean
   isNews?: boolean
   isNew?: boolean
+  /** До какого момента публикация висит в «Новинках» (проставляет сервер). */
+  newUntil?: string | null
   relatedVideoIds: (number | string)[]
   gallery: GalleryItem[]
   tags?: string[]
@@ -317,6 +319,13 @@ export function Composer({
               Новинка
             </button>
           </div>
+          {isNew && (
+            <div className="composer__hint" style={{ marginTop: 8 }}>
+              {initial?.isNew && initial?.newUntil
+                ? `В разделе «Новинки» до ${new Date(initial.newUntil).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                : 'После сохранения — 14 дней в разделе «Новинки», затем только в своих категориях'}
+            </div>
+          )}
           <input
             className="composer__title"
             placeholder="Заголовок публикации"
