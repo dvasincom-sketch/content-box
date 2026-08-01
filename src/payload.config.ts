@@ -166,9 +166,53 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
+  // Живучесть процесса при разрывах соединения с БД (см. комментарий у db.pool).
+  //
+  // 1) pool.on('error') — ошибку простаивающего клиента pg (управляемая БД
+  //    закрыла соединение) только логируем; пул сам заменит соединение. Без
+  //    этого слушателя EventEmitter кидает ошибку в процесс.
+  // 2) process.on('unhandledRejection') — одиночный ECONNRESET при установке
+  //    соединения всплывает как необработанное отклонение, а Node по умолчанию
+  //    ГАСИТ процесс. Тогда инфраслой отдаёт 503 всем, а не только сбойному
+  //    запросу. Здесь — логируем и продолжаем работать.
+  onInit: async (payload) => {
+    const pool = (
+      payload.db as unknown as { pool?: { on?: (e: 'error', cb: (err: unknown) => void) => void } }
+    ).pool
+    if (pool && typeof pool.on === 'function') {
+      pool.on('error', (err) => {
+        payload.logger.warn(
+          { err },
+          '[db] ошибка простаивающего клиента пула Postgres — соединение будет пересоздано',
+        )
+      })
+    }
+    const g = globalThis as unknown as { __cbUnhandledGuard?: boolean }
+    if (!g.__cbUnhandledGuard) {
+      g.__cbUnhandledGuard = true
+      process.on('unhandledRejection', (reason) => {
+        payload.logger.error({ reason }, '[process] unhandledRejection проглочено — процесс продолжает работу')
+      })
+    }
+  },
   db: postgresAdapter({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
+      // Стабильность соединения под управляемым Postgres (Timeweb).
+      // Симптом был: переход в раздел из меню иногда падал — RSC-запрос
+      // отдавал 503 (в браузере «network error»), показывался экран «Не
+      // удалось загрузить раздел», а прямой заход тем же URL работал. В логах:
+      // «cannot connect to Postgres. Details: read ECONNRESET». Управляемая БД
+      // молча рвёт простаивающее TCP-соединение, а пул pg потом отдаёт
+      // «мёртвое» соединение. keepAlive держит соединение живым (TCP-пробы),
+      // maxUses периодически пересоздаёт клиентов, короткие таймауты не дают
+      // залипнуть на дохлом соединении.
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 10_000,
+      max: 10,
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 10_000,
+      maxUses: 7_500,
     },
     push: false,
   }),

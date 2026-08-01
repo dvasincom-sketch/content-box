@@ -33,8 +33,27 @@ function isChunkLoadError(e: unknown): boolean {
   )
 }
 
+/**
+ * Сетевая осечка КЛИЕНТСКОЙ навигации: RSC-запрос (?_rsc=…) не доехал.
+ * Наблюдалось при переходе в раздел из меню, когда управляемая БД рвала
+ * соединение и инфраслой отдавал 503 → в браузере «network error» / «Failed to
+ * fetch». Прямой заход (полная перезагрузка) тем же URL уже работает — свежее
+ * соединение с БД, — поэтому один тихий reload лечит осечку. Причина на сервере
+ * устранена (пул Postgres + защита процесса в payload.config), это подстраховка
+ * на случай единичного разрыва.
+ */
+function isTransientNavError(e: unknown): boolean {
+  const obj = e as { name?: unknown; message?: unknown } | null
+  const name = obj && typeof obj.name === 'string' ? obj.name : ''
+  const message = obj && typeof obj.message === 'string' ? obj.message : ''
+  return (
+    /NetworkError/i.test(name) ||
+    /network error|Failed to fetch|Load failed|Connection closed|net::ERR/i.test(message)
+  )
+}
+
 export function RouteError({ error }: { error: Error & { digest?: string } }) {
-  const chunk = isChunkLoadError(error)
+  const chunk = isChunkLoadError(error) || isTransientNavError(error)
   const [reloading, setReloading] = useState(chunk)
 
   useEffect(() => {
