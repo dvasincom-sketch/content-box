@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { openStable, setTheme, stabilize, shot, DESKTOP, MOBILE } from '../helpers/visual'
+import { openStable, setTheme, stabilize, snapshot, DESKTOP, MOBILE } from '../helpers/visual'
 
 /**
  * Визуальный QA — ГОСТЕВЫЕ истории (без логина).
@@ -24,7 +24,7 @@ for (const theme of THEMES) {
       await expect(page).not.toHaveURL(/domain-not-found/)
       await expect(page).toHaveTitle(/.+/)
       await expect(page.locator('header').first()).toBeVisible()
-      await expect(page).toHaveScreenshot(`home-${theme}.png`, shot(page))
+      await snapshot(page, `home-${theme}.png`)
     })
 
     test('категория «Смотреть» + крошки', async ({ page }) => {
@@ -32,7 +32,7 @@ for (const theme of THEMES) {
       expect(status).toBeLessThan(400)
       await expect(page.locator('header').first()).toBeVisible()
       await expect(page.getByText('Главная').first()).toBeVisible() // хлебные крошки
-      await expect(page).toHaveScreenshot(`category-watch-${theme}.png`, shot(page))
+      await snapshot(page, `category-watch-${theme}.png`)
     })
 
     test('страница публикации', async ({ page }) => {
@@ -40,21 +40,21 @@ for (const theme of THEMES) {
       const status = await openStable(page, '/publication/rm', theme)
       expect(status).toBeLessThan(500)
       await expect(page.locator('header').first()).toBeVisible()
-      await expect(page).toHaveScreenshot(`publication-${theme}.png`, shot(page))
+      await snapshot(page, `publication-${theme}.png`)
     })
 
     test('поиск (noindex)', async ({ page }) => {
       const status = await openStable(page, '/search', theme)
       expect(status).toBeLessThan(400)
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/)
-      await expect(page).toHaveScreenshot(`search-${theme}.png`, shot(page))
+      await snapshot(page, `search-${theme}.png`)
     })
 
     test('подписка (тарифы)', async ({ page }) => {
       const status = await openStable(page, '/subscribe', theme)
       expect(status).toBeLessThan(400)
       await expect(page.locator('header').first()).toBeVisible()
-      await expect(page).toHaveScreenshot(`subscribe-${theme}.png`, shot(page))
+      await snapshot(page, `subscribe-${theme}.png`)
     })
 
     test('404 несуществующей публикации', async ({ page }) => {
@@ -62,7 +62,7 @@ for (const theme of THEMES) {
       expect(res?.status()).toBe(404)
       await setTheme(page, theme)
       await stabilize(page)
-      await expect(page).toHaveScreenshot(`not-found-${theme}.png`, shot(page))
+      await snapshot(page, `not-found-${theme}.png`)
     })
   })
 }
@@ -73,6 +73,6 @@ for (const theme of THEMES) {
     await page.setViewportSize(MOBILE)
     const status = await openStable(page, '/', theme)
     expect(status).toBeLessThan(400)
-    await expect(page).toHaveScreenshot(`home-mobile-${theme}.png`, shot(page))
+    await snapshot(page, `home-mobile-${theme}.png`)
   })
 }

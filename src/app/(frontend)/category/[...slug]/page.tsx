@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
   const category = await findCategory(payload, tenant.id as number, slug)
-  if (!category) return {}
+  if (!category) notFound()
 
   return buildMetadata({
     defaults: settings?.seoDefaults,

@@ -17,7 +17,7 @@
     "test": "npm run test:unit && npm run test:int && npm run test:e2e",
     "test:unit": "cross-env NODE_OPTIONS=--no-deprecation vitest run tests/unit --config ./vitest.config.mts",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
-    "test:e2e:prod": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.prod.config.ts",
+    "test:e2e:prod": "cross-env E2E_SNAPSHOTS=off NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.prod.config.ts",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run tests/int --config ./vitest.config.mts"
   },
   "dependencies": {

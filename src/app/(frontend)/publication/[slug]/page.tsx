@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   })
 
   const pub = res.docs[0] as any
-  if (!pub || !isPublished(pub)) return {}
+  if (!pub || !isPublished(pub)) notFound()
 
   const category = pub.category && typeof pub.category === 'object' ? pub.category : null
 
