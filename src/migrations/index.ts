@@ -44,6 +44,7 @@ import * as migration_20260730_140000_add_publication_watch_category from './202
 import * as migration_20260730_191608_add_tags from './20260730_191608_add_tags';
 import * as migration_20260731_120000_add_bug_reports from './20260731_120000_add_bug_reports';
 import * as migration_20260801_000000_add_multi_category_and_new_flag from './20260801_000000_add_multi_category_and_new_flag';
+import * as migration_20260802_120000_add_perk_excluded from './20260802_120000_add_perk_excluded';
 
 export const migrations = [
   {
@@ -275,5 +276,10 @@ export const migrations = [
     up: migration_20260801_000000_add_multi_category_and_new_flag.up,
     down: migration_20260801_000000_add_multi_category_and_new_flag.down,
     name: '20260801_000000_add_multi_category_and_new_flag',
+  },
+  {
+    up: migration_20260802_120000_add_perk_excluded.up,
+    down: migration_20260802_120000_add_perk_excluded.down,
+    name: '20260802_120000_add_perk_excluded',
   },
 ];

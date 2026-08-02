@@ -5,10 +5,11 @@ import React from 'react'
  * currentColor). Используются и в редакторе плюшек, и на витрине подписки.
  */
 
-export type PerkType = 'included' | 'star' | 'warning' | 'info'
+export type PerkType = 'included' | 'excluded' | 'star' | 'warning' | 'info'
 
 export const PERK_TYPES: { value: PerkType; label: string }[] = [
   { value: 'included', label: 'Входит' },
+  { value: 'excluded', label: 'Не входит' },
   { value: 'star', label: 'Особое' },
   { value: 'warning', label: 'Внимание' },
   { value: 'info', label: 'Инфо' },
@@ -33,6 +34,14 @@ export function PerkIcon({ type, size = 16 }: { type: PerkType; size?: number })
         <svg {...common}>
           <circle cx="12" cy="12" r="9" />
           <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+        </svg>
+      )
+    case 'excluded':
+      // прочерк в круге — «не входит»
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M8 12h8" />
         </svg>
       )
     case 'star':

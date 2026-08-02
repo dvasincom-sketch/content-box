@@ -92,6 +92,7 @@ export const SubscriptionTiers: CollectionConfig = {
           label: 'Тип',
           options: [
             { label: 'Входит (галочка)', value: 'included' },
+            { label: 'Не входит (прочерк)', value: 'excluded' },
             { label: 'Особое (звезда)', value: 'star' },
             { label: 'Предупреждение', value: 'warning' },
             { label: 'Информация', value: 'info' },

@@ -172,16 +172,23 @@ function TierCard({ tier, highlighted }: { tier: Tier; highlighted: boolean }) {
                 className="sub-card__perk-icon"
                 style={{
                   color:
-                    perk.type === 'warning'
-                      ? 'var(--warn)'
-                      : perk.type === 'star'
-                        ? 'var(--brand-accent)'
-                        : 'var(--brand-primary)',
+                    perk.type === 'excluded'
+                      ? 'var(--brand-muted)'
+                      : perk.type === 'warning'
+                        ? 'var(--warn)'
+                        : perk.type === 'star'
+                          ? 'var(--brand-accent)'
+                          : 'var(--brand-primary)',
                 }}
               >
                 <PerkIcon type={perk.type} size={18} />
               </span>
-              <span className="sub-card__perk-text">{perk.text}</span>
+              <span
+                className="sub-card__perk-text"
+                style={perk.type === 'excluded' ? { color: 'var(--brand-muted)' } : undefined}
+              >
+                {perk.text}
+              </span>
             </li>
           ))}
         </ul>
