@@ -11,7 +11,7 @@ import { InstallPWA } from '@/components/InstallPWA'
 import type { MenuNode } from '@/lib/buildMenu'
 
 export type NavItem = { label: string; url: string }
-export type HeaderSubscriber = { email?: string | null; displayName?: string | null } | null
+export type HeaderSubscriber = { email?: string | null; displayName?: string | null; avatarUrl?: string | null } | null
 export type SiteHeaderProps = {
   logoUrl?: string | null
   logoAlt?: string | null
@@ -53,6 +53,8 @@ export function SiteHeader({
   }
 
   const subscriberName = subscriber?.displayName || subscriber?.email || 'Профиль'
+  const avatarUrl = subscriber?.avatarUrl || null
+  const avatarInitial = (subscriberName || '?').charAt(0).toUpperCase()
 
   return (
     <header
@@ -119,8 +121,13 @@ export function SiteHeader({
                   aria-expanded={menuOpen}
                   title="Аккаунт"
                 >
-                  <span className="c-avatar c-avatar--soft c-avatar--sm">
-                    {(subscriberName || '?').charAt(0).toUpperCase()}
+                  <span className="c-avatar c-avatar--soft c-avatar--sm" style={{ overflow: 'hidden' }}>
+                    {avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      avatarInitial
+                    )}
                   </span>
                 </button>
                 {menuOpen && (
@@ -129,7 +136,14 @@ export function SiteHeader({
                     <div className="acct-menu__panel" role="menu">
                       {/* Кликабельная карточка профиля вместо неактивного имени. */}
                       <Link href="/account" className="acct-menu__card" onClick={() => setMenuOpen(false)}>
-                        <span className="acct-menu__ava">{(subscriberName || '?').charAt(0).toUpperCase()}</span>
+                        <span className="acct-menu__ava">
+                          {avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            avatarInitial
+                          )}
+                        </span>
                         <span className="acct-menu__id">
                           <span className="acct-menu__name">{subscriberName}</span>
                           {subscriber.displayName && subscriber.email && (
@@ -229,9 +243,15 @@ export function SiteHeader({
                         fontWeight: 700,
                         background: 'color-mix(in srgb, var(--brand-primary) 16%, transparent)',
                         color: 'var(--brand-text)',
+                        overflow: 'hidden',
                       }}
                     >
-                      {(subscriberName || '?').charAt(0).toUpperCase()}
+                      {avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        avatarInitial
+                      )}
                     </span>
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: 'block', fontWeight: 600, color: 'var(--brand-text)' }}>

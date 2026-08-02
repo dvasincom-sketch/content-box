@@ -85,41 +85,24 @@ export default async function AccountOverviewPage() {
           </span>
         </div>
 
-        {/* Лестница уровней */}
-        <div style={{ marginTop: 12, borderTop: '1px solid var(--brand-border)', paddingTop: 6 }}>
+        {/* Лестница уровней — вертикальный степпер с соединителем */}
+        <div className="lvl-ladder">
           {LEVELS.map((l, i) => {
             const reached = points >= l.min
             const isCurrent = i === prog.idx
+            const linkOn = i + 1 < LEVELS.length && points >= LEVELS[i + 1].min
             return (
-              <div
-                key={l.name}
-                style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 12px', borderRadius: 10,
-                  background: isCurrent ? 'color-mix(in srgb, var(--brand-primary) 12%, transparent)' : 'transparent',
-                }}
-              >
-                <span
-                  aria-hidden
-                  style={{
-                    flex: 'none', width: 22, height: 22, borderRadius: 999, display: 'grid', placeItems: 'center', marginTop: 1,
-                    fontSize: 12, fontWeight: 700,
-                    color: reached ? '#fff' : 'var(--brand-muted)',
-                    background: reached ? 'var(--brand-primary)' : 'color-mix(in srgb, var(--brand-text) 10%, transparent)',
-                  }}
-                >
-                  {reached ? <Check size={13} /> : i + 1}
+              <div key={l.name} className={`lvl-step${isCurrent ? ' is-current' : ''}${linkOn ? ' lvl-step--link' : ''}`}>
+                <span className={`lvl-step__badge${reached ? ' is-reached' : ''}`} aria-hidden>
+                  {reached ? <Check size={14} /> : i + 1}
                 </span>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: reached ? 'var(--brand-text)' : 'var(--brand-muted)', fontWeight: isCurrent ? 700 : 600 }}>
-                    {l.name}
-                    <span style={{ color: 'var(--brand-muted)', fontWeight: 400, fontSize: 13 }}> · {l.min} очков</span>
-                    {isCurrent && (
-                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, padding: '1px 8px', borderRadius: 999, color: 'var(--brand-primary)', background: 'color-mix(in srgb, var(--brand-primary) 14%, transparent)' }}>
-                        вы здесь
-                      </span>
-                    )}
+                <div className="lvl-step__body">
+                  <div className="lvl-step__title">
+                    <span className={`lvl-step__name${reached ? ' is-reached' : ''}${isCurrent ? ' is-current' : ''}`}>{l.name}</span>
+                    <span className="lvl-step__pts">· {l.min} очков</span>
+                    {isCurrent && <span className="lvl-step__here">вы здесь</span>}
                   </div>
-                  <div style={{ fontSize: 13, color: 'var(--brand-muted)', marginTop: 2 }}>{PERKS[i]}</div>
+                  <div className="lvl-step__perk">{PERKS[i]}</div>
                 </div>
               </div>
             )

@@ -43,6 +43,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const footerTree = tenant ? await buildMenu(tenant.id as number, 'footer') : []
   const { nav: footerNav, columns: footerColumns } = footerFromTree(footerTree)
   const navItems: { label: string; url: string }[] = []
+  let subscriberAvatarUrl: string | null = null
 
   if (tenant?.id) {
     const payloadConfig = await config
@@ -64,6 +65,20 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
     // Страницы с showInMenu — ссылки в шапке (рядом с деревом категорий).
     for (const page of pagesRes.docs as any[]) {
       navItems.push({ label: page.title, url: `/page/${page.slug}` })
+    }
+
+    // Аватар подписчика для шапки: payload.auth отдаёт avatar как id (без URL),
+    // поэтому подтягиваем медиа отдельно.
+    const av = (subscriber as any)?.avatar
+    if (av) {
+      if (typeof av === 'object' && av.url) {
+        subscriberAvatarUrl = av.url
+      } else {
+        const media = await payload
+          .findByID({ collection: 'media', id: av, depth: 0, overrideAccess: true })
+          .catch(() => null)
+        subscriberAvatarUrl = (media as any)?.url ?? null
+      }
     }
   }
 
@@ -123,7 +138,11 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             brandName={tenant?.name ?? ''}
             nav={navItems}
             menu={menu}
-            subscriber={subscriber}
+            subscriber={
+              subscriber
+                ? { email: subscriber.email, displayName: subscriber.displayName, avatarUrl: subscriberAvatarUrl }
+                : null
+            }
           />
         )}
         <main>{children}</main>
