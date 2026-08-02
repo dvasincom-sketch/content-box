@@ -21,6 +21,9 @@ type Vid = {
   videoRef: string | null
   /** 'stream' | 'kinescope' | 'embed'. У embed файла в хранилище нет. */
   provider?: string
+  embedProvider?: string | null
+  embedSrc?: string | null
+  embedAspect?: string | null
   isPreview: boolean
   minTierName: string | null
   minTierId: string
@@ -225,7 +228,7 @@ export function VideosManager({
                   video={v}
                   categoryPath={v.categoryId ? catPathById.get(String(v.categoryId)) || null : null}
                   onEdit={() =>
-                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, season: v.season, episode: v.episode, categoryId: v.categoryId, tags: v.tags, usedIn: v.usedIn })
+                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, season: v.season, episode: v.episode, categoryId: v.categoryId, tags: v.tags, usedIn: v.usedIn, provider: v.provider, embedProvider: v.embedProvider ?? null, embedSrc: v.embedSrc ?? null })
                   }
                 />
               ))}

@@ -1,5 +1,6 @@
 import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
+import { parseVideoEmbed } from '@/lib/videoEmbed'
 
 /**
  * Обновить название и уровень доступа видео.
@@ -81,6 +82,22 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
           .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
           .map((t) => ({ label: t.trim() }))
       : []
+  }
+
+  // Внешняя вставка: смена исходной ссылки — переразбор и запись embed-полей.
+  // Так чинится видео с ошибкой в ссылке. Поля embed под field-access
+  // (только сервер), пишутся через overrideAccess у payload.update ниже.
+  if (typeof data.embedUrl === 'string' && data.embedUrl.trim() !== '') {
+    if (video.provider !== 'embed') {
+      return apiError('Ссылку можно менять только у видео по внешней ссылке')
+    }
+    const parsed = parseVideoEmbed(data.embedUrl.trim())
+    if (!parsed) {
+      return apiError('Не удалось разобрать ссылку. Поддерживаются VK Видео, VK Клипы и Дзен.')
+    }
+    patch.embedProvider = parsed.provider
+    patch.embedSrc = parsed.src
+    patch.embedAspect = parsed.aspect
   }
 
   try {

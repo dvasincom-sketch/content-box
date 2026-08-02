@@ -52,6 +52,11 @@ export default async function VideosPage() {
     // готовности кодирования к ней неприменим — иначе видео вечно висит в
     // статусе «нет файла» и превью недоступно.
     provider: (v.provider as string) || 'stream',
+    // Внешняя вставка: нужно клиенту, чтобы дать редактировать ссылку
+    // ошибочного embed-видео (перербор на сервере).
+    embedProvider: (v.embedProvider as string) || null,
+    embedSrc: (v.embedSrc as string) || null,
+    embedAspect: (v.embedAspect as string) || null,
     isPreview: Boolean(v.isPreview),
     minTierName:
       v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug : null,
