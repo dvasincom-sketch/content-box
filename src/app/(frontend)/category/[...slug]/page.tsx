@@ -213,6 +213,13 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
 
   const crumbs = (category.breadcrumbs ?? []) as { url?: string; label?: string }[]
 
+  // Обложка категории — фолбэк-превью для серий без собственной обложки
+  // (внешние VK/Дзен-вставки постера не имеют).
+  const seriesCoverRaw =
+    (category as any).cover && typeof (category as any).cover === 'object' ? (category as any).cover : null
+  const seriesCoverUrl =
+    seriesCoverRaw?.sizes?.card?.url || seriesCoverRaw?.sizes?.thumb?.url || seriesCoverRaw?.url || null
+
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -243,7 +250,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
         {isVideoSeries ? (
           <>
             <VpnVideoNotice />
-            <VideoSeriesBlock episodes={seriesEpisodes} />
+            <VideoSeriesBlock episodes={seriesEpisodes} seriesCoverUrl={seriesCoverUrl} />
           </>
         ) : isPosterContainer ? (
           // Контейнер: сетка афиш — прямые дочерние категории вертикальными

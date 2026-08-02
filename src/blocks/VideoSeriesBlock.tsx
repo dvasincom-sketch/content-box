@@ -61,7 +61,14 @@ function groupSeasons(episodes: SeriesEpisode[]): Season[] {
   return seasons
 }
 
-export function VideoSeriesBlock({ episodes }: { episodes: SeriesEpisode[] }) {
+export function VideoSeriesBlock({
+  episodes,
+  seriesCoverUrl = null,
+}: {
+  episodes: SeriesEpisode[]
+  /** Обложка категории — фолбэк-превью для серий без своей обложки. */
+  seriesCoverUrl?: string | null
+}) {
   const seasons = useMemo(() => groupSeasons(episodes), [episodes])
 
   const [seasonKey, setSeasonKey] = useState<string | null>(null)
@@ -130,6 +137,8 @@ export function VideoSeriesBlock({ episodes }: { episodes: SeriesEpisode[] }) {
         <ol className="vseries__episodes">
           {activeSeason.episodes.map((ep, i) => {
             const isActive = String(ep.id) === String(selected.id)
+            const thumb = ep.coverUrl || seriesCoverUrl
+            const usingFallback = !ep.coverUrl
             return (
               <li key={ep.id}>
                 <button
@@ -138,11 +147,25 @@ export function VideoSeriesBlock({ episodes }: { episodes: SeriesEpisode[] }) {
                   onClick={() => setSelectedId(String(ep.id))}
                 >
                   <span className="vseries__ep-thumb">
-                    {ep.coverUrl ? (
+                    {thumb ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={ep.coverUrl} alt="" loading="lazy" />
+                      <img
+                        src={thumb}
+                        alt=""
+                        loading="lazy"
+                        className={usingFallback ? 'is-fallback' : undefined}
+                      />
                     ) : (
-                      <span className="vseries__ep-num">{ep.episode ?? i + 1}</span>
+                      // Ни своей обложки, ни обложки категории — брендовая заглушка.
+                      <span className="vseries__ep-ph" aria-hidden>
+                        <Play size={18} fill="currentColor" />
+                      </span>
+                    )}
+                    {/* Номер серии — только когда превью общее (обложка категории
+                        или заглушка): тогда он и различает серии. У серии со своей
+                        обложкой номер не нужен. */}
+                    {usingFallback && (
+                      <span className="vseries__ep-badge">{ep.episode ?? i + 1}</span>
                     )}
                     {isActive && (
                       <span className="vseries__ep-playing" aria-hidden>

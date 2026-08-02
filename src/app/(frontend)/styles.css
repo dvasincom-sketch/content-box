@@ -2329,9 +2329,42 @@ svg {
   height: 63px;
   border-radius: 8px;
   overflow: hidden;
-  background: #000;
+  /* Фон-заглушка (виден, когда нет ни своей обложки, ни обложки категории):
+     брендовый градиент вместо чёрного квадрата. */
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--brand-primary) 82%, #000),
+    color-mix(in srgb, var(--brand-accent) 82%, #000)
+  );
   display: grid;
   place-items: center;
+}
+/* Общая обложка категории как фолбэк — чуть приглушаем, чтобы номер и замок
+   уверенно читались поверх любого кадра. */
+.vseries__ep-thumb img.is-fallback { opacity: 0.9; }
+/* Заглушка без картинки: полупрозрачная иконка play на градиенте. */
+.vseries__ep-ph {
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.9);
+}
+/* Номер серии — маленький бейдж в углу (только для общего превью). */
+.vseries__ep-badge {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.66);
+  border-radius: 5px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 .vseries__ep-thumb img {
   width: 100%;
