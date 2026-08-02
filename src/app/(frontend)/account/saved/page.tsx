@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { Bookmark } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
@@ -30,7 +31,45 @@ export default async function SavedPage() {
     <>
       <h1 style={{ fontSize: 26, color: 'var(--brand-text)', marginBottom: 20 }}>Сохранённое</h1>
       {rows.length === 0 ? (
-        <p style={{ color: 'var(--brand-muted)' }}>Пока пусто. Нажимайте «Сохранить» на публикациях и видео — вернётесь к ним здесь.</p>
+        <div className="c-card" style={{ padding: '30px 24px', textAlign: 'center' }}>
+          <span
+            style={{
+              display: 'inline-grid',
+              placeItems: 'center',
+              width: 56,
+              height: 56,
+              borderRadius: 16,
+              marginBottom: 14,
+              background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)',
+              color: 'var(--brand-primary)',
+            }}
+          >
+            <Bookmark size={26} />
+          </span>
+          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--brand-text)', marginBottom: 8 }}>
+            Здесь будут сохранённые материалы
+          </div>
+          <p style={{ color: 'var(--brand-muted)', fontSize: 14, lineHeight: 1.55, maxWidth: 440, margin: '0 auto' }}>
+            На странице любой публикации или видео нажмите значок закладки
+            <span
+              style={{
+                display: 'inline-grid',
+                placeItems: 'center',
+                width: 26,
+                height: 26,
+                borderRadius: 8,
+                verticalAlign: 'middle',
+                margin: '0 5px',
+                background: 'var(--brand-surface)',
+                border: '1px solid var(--brand-border)',
+                color: 'var(--brand-text)',
+              }}
+            >
+              <Bookmark size={15} />
+            </span>
+            — материал добавится в этот раздел. Значок появляется, когда вы вошли в аккаунт.
+          </p>
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {rows.map((r) => (

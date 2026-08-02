@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from '@/components/AppLink'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Star, Search } from 'lucide-react'
+import { Menu, X, Star, Search, ChevronRight, LogOut } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DesktopMenu } from '@/components/DesktopMenu'
 import { MobileMenu } from '@/components/MobileMenu'
@@ -199,24 +199,56 @@ export function SiteHeader({
             <div className="mt-2 pt-2 border-t flex flex-col gap-1" style={{ borderColor: borderSoft }}>
               {subscriber ? (
                 <>
-                  <span className="py-2 px-2 text-base" style={{ color: 'var(--brand-muted)' }}>
-                    {subscriberName}
-                  </span>
+                  {/* Кликабельная карточка профиля вместо неактивного имени. */}
                   <Link
                     href="/account"
                     onClick={() => setOpen(false)}
-                    className="c-navlink py-2 px-2 rounded-lg text-base font-medium"
+                    className="flex items-center gap-3 py-2 px-2 rounded-xl c-navlink"
                   >
-                    Мой профиль
+                    <span
+                      style={{
+                        display: 'grid',
+                        placeItems: 'center',
+                        width: 40,
+                        height: 40,
+                        flex: 'none',
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        background: 'color-mix(in srgb, var(--brand-primary) 16%, transparent)',
+                        color: 'var(--brand-text)',
+                      }}
+                    >
+                      {(subscriberName || '?').charAt(0).toUpperCase()}
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', fontWeight: 600, color: 'var(--brand-text)' }}>
+                        {subscriberName}
+                      </span>
+                      {subscriber.displayName && subscriber.email && (
+                        <span
+                          style={{
+                            display: 'block',
+                            fontSize: 12,
+                            color: 'var(--brand-muted)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {subscriber.email}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronRight size={18} style={{ color: 'var(--brand-muted)', flex: 'none' }} />
                   </Link>
                   <button
                     type="button"
                     onClick={() => { setOpen(false); logout() }}
                     disabled={loggingOut}
-                    className="c-navlink py-2 px-2 rounded-lg text-base font-medium text-left"
+                    className="c-navlink py-2 px-2 rounded-lg text-base font-medium text-left flex items-center gap-2"
                     style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                   >
-                    Выйти
+                    <LogOut size={18} /> {loggingOut ? 'Выхожу…' : 'Выйти'}
                   </button>
                 </>
               ) : (
