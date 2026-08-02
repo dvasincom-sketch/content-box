@@ -254,7 +254,7 @@ export function SiteHeader({
                       )}
                     </span>
                     <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: 'block', fontWeight: 600, color: 'var(--brand-text)' }}>
+                      <span style={{ display: 'block', fontWeight: 600, lineHeight: 1.3, color: 'var(--brand-text)' }}>
                         {subscriberName}
                       </span>
                       {subscriber.displayName && subscriber.email && (
@@ -262,6 +262,7 @@ export function SiteHeader({
                           style={{
                             display: 'block',
                             fontSize: 12,
+                            lineHeight: 1.2,
                             color: 'var(--brand-muted)',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',

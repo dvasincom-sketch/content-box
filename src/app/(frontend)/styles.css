@@ -2186,8 +2186,8 @@ svg {
 .acct__user { display: flex; align-items: center; gap: 12px; padding: 6px 4px 14px; }
 .acct__ava { width: 44px; height: 44px; border-radius: 14px; overflow: hidden; flex: none; display: grid; place-items: center; background: color-mix(in srgb, var(--brand-primary) 16%, transparent); color: var(--brand-text); font-weight: 700; }
 .acct__ava img { width: 100%; height: 100%; object-fit: cover; }
-.acct__user-name { font-weight: 600; color: var(--brand-text); font-size: 15px; }
-.acct__user-mail { font-size: 12px; color: var(--brand-muted); word-break: break-all; }
+.acct__user-name { font-weight: 600; color: var(--brand-text); font-size: 15px; line-height: 1.3; }
+.acct__user-mail { font-size: 12px; line-height: 1.25; color: var(--brand-muted); word-break: break-all; }
 .acct__nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-md); color: var(--brand-muted); font-weight: 500; transition: background .15s, color .15s; }
 .acct__nav-item:hover { color: var(--brand-text); background: color-mix(in srgb, var(--brand-primary) 8%, transparent); }
 .acct__nav-item.is-active { color: var(--brand-text); background: color-mix(in srgb, var(--brand-primary) 14%, transparent); }
@@ -2294,7 +2294,7 @@ svg {
 .lvl-step:first-child::before { top: 25px; }
 .lvl-step:last-child::before { bottom: calc(100% - 25px); }
 .lvl-step--link::before { background: color-mix(in srgb, var(--brand-primary) 45%, var(--brand-border)); }
-.lvl-step__badge { position: relative; z-index: 1; flex: none; width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: var(--brand-muted); background: color-mix(in srgb, var(--brand-text) 9%, transparent); }
+.lvl-step__badge { position: relative; z-index: 1; flex: none; width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 700; line-height: 1; color: var(--brand-muted); background: color-mix(in srgb, var(--brand-text) 9%, transparent); }
 .lvl-step__badge.is-reached { color: #fff; background: var(--brand-primary); }
 .lvl-step__body { min-width: 0; flex: 1; padding-top: 2px; }
 .lvl-step__title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -2307,7 +2307,8 @@ svg {
 
 /* ── Выпадающее меню аккаунта в хедере ── */
 .acct-menu { position: relative; }
-.acct-menu__trigger { background: none; border: none; cursor: pointer; padding: 0; border-radius: 999px; display: inline-flex; }
+.acct-menu__trigger { background: none; border: none; cursor: pointer; padding: 0; border-radius: 999px; display: inline-flex; align-items: center; }
+.acct-menu__trigger .c-avatar { width: 40px; height: 40px; font-size: 14px; }
 .acct-menu__backdrop { position: fixed; inset: 0; z-index: 40; }
 .acct-menu__panel { position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; min-width: 248px; padding: 6px; border-radius: var(--radius-lg); background: var(--glass-3); -webkit-backdrop-filter: blur(var(--glass-blur-3)); backdrop-filter: blur(var(--glass-blur-3)); border: 1px solid var(--brand-border); box-shadow: var(--elev-3); display: flex; flex-direction: column; gap: 2px; }
 .acct-menu__head { padding: 8px 12px 8px; font-size: 12px; color: var(--brand-muted); border-bottom: 1px solid var(--brand-border); margin-bottom: 4px; }
@@ -2319,8 +2320,8 @@ svg {
 .acct-menu__card:hover { background: color-mix(in srgb, var(--brand-primary) 10%, transparent); }
 .acct-menu__ava { width: 38px; height: 38px; flex: none; border-radius: 11px; overflow: hidden; display: grid; place-items: center; font-weight: 700; background: color-mix(in srgb, var(--brand-primary) 16%, transparent); color: var(--brand-text); }
 .acct-menu__id { min-width: 0; display: flex; flex-direction: column; }
-.acct-menu__name { font-weight: 600; font-size: 14px; color: var(--brand-text); }
-.acct-menu__mail { font-size: 12px; color: var(--brand-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 175px; }
+.acct-menu__name { font-weight: 600; font-size: 14px; line-height: 1.3; color: var(--brand-text); }
+.acct-menu__mail { font-size: 12px; line-height: 1.2; color: var(--brand-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 175px; }
 .acct-menu__sep { height: 1px; background: var(--brand-border); margin: 4px; }
 
 /* ============================================================================
