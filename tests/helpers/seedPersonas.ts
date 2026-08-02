@@ -41,14 +41,16 @@ export async function seedPersonas(): Promise<void> {
   await payload.delete({ collection: 'subscribers', where: { email: { equals: subscriberUser.email } }, overrideAccess: true })
   await payload.create({
     collection: 'subscribers',
-    data: { ...subscriberUser, tenant } as Record<string, unknown>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: { ...subscriberUser, tenant } as any,
     overrideAccess: true,
   })
 
   await payload.delete({ collection: 'users', where: { email: { equals: studioAuthor.email } }, overrideAccess: true })
   await payload.create({
     collection: 'users',
-    data: { ...studioAuthor, tenant, tenantRole: 'editor' } as Record<string, unknown>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: { ...studioAuthor, tenant, tenantRole: 'editor' } as any,
     overrideAccess: true,
   })
 }
