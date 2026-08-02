@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { Users } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
@@ -43,9 +44,32 @@ export default async function FeedPage() {
 
   return (
     <>
-      <h1 style={{ fontSize: 26, color: 'var(--brand-text)', marginBottom: 20 }}>Лента</h1>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+        <h1 style={{ fontSize: 26, color: 'var(--brand-text)' }}>Лента</h1>
+        <Link href="/community" style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-primary)' }}>
+          Лента сообщества →
+        </Link>
+      </div>
       {ids.length === 0 ? (
-        <p style={{ color: 'var(--brand-muted)' }}>Вы пока ни на кого не подписаны. Открывайте профили участников и подписывайтесь — их публикации появятся здесь.</p>
+        <div className="c-card" style={{ padding: '30px 24px', textAlign: 'center' }}>
+          <span
+            style={{
+              display: 'inline-grid', placeItems: 'center', width: 56, height: 56, borderRadius: 16, marginBottom: 14,
+              background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)', color: 'var(--brand-primary)',
+            }}
+          >
+            <Users size={26} />
+          </span>
+          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--brand-text)', marginBottom: 8 }}>
+            Ваша лента пока пуста
+          </div>
+          <p style={{ color: 'var(--brand-muted)', fontSize: 14, lineHeight: 1.55, maxWidth: 440, margin: '0 auto 18px' }}>
+            Подпишитесь на участников — и их публикации будут собираться здесь. Загляните в ленту сообщества и выберите авторов, чьи материалы вам близки.
+          </p>
+          <Link href="/community" className="c-btn c-btn--primary">
+            Смотреть публикации участников
+          </Link>
+        </div>
       ) : pubs.length === 0 ? (
         <p style={{ color: 'var(--brand-muted)' }}>У ваших авторов пока нет публикаций.</p>
       ) : (
