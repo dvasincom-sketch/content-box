@@ -2182,7 +2182,7 @@ svg {
 
 /* ── Личный кабинет участника (боковое меню) ── */
 .acct { display: grid; grid-template-columns: 240px 1fr; gap: 28px; align-items: start; }
-.acct__sidebar { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 4px; }
+.acct__sidebar { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .acct__user { display: flex; align-items: center; gap: 12px; padding: 6px 4px 14px; }
 .acct__ava { width: 44px; height: 44px; border-radius: 14px; overflow: hidden; flex: none; display: grid; place-items: center; background: color-mix(in srgb, var(--brand-primary) 16%, transparent); color: var(--brand-text); font-weight: 700; }
 .acct__ava img { width: 100%; height: 100%; object-fit: cover; }
@@ -2200,7 +2200,7 @@ svg {
 .acct__secondary { display: flex; flex-direction: column; gap: 4px; }
 
 @media (max-width: 768px) {
-  .acct { grid-template-columns: 1fr; gap: 12px; }
+  .acct { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .acct__sidebar { position: static; flex-direction: column; }
   .acct__user { width: 100%; }
 
@@ -2209,6 +2209,7 @@ svg {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
     border-bottom: 1px solid var(--brand-border);
     padding-bottom: 8px;
   }
