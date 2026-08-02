@@ -11,6 +11,7 @@ import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { RichText } from '@/components/RichText'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
+import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { categoryHref } from '@/lib/categoryHref'
 import { CrossLinkCard } from '@/components/CrossLinkCard'
 import { publishedWhere } from '@/lib/published'
@@ -240,7 +241,10 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
         )}
 
         {isVideoSeries ? (
-          <VideoSeriesBlock episodes={seriesEpisodes} />
+          <>
+            <VpnVideoNotice />
+            <VideoSeriesBlock episodes={seriesEpisodes} />
+          </>
         ) : isPosterContainer ? (
           // Контейнер: сетка афиш — прямые дочерние категории вертикальными
           // постерами 2:3. Клик по афише → страница дочерней категории (эпизоды).

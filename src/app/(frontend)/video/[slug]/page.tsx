@@ -7,9 +7,7 @@ import { checkVideoAccess } from '@/lib/videoAccess'
 import { notFound } from 'next/navigation'
 import { Lock } from 'lucide-react'
 import { VideoPlayer } from './VideoPlayer'
-import { VpnVideoHint } from './VpnVideoHint'
-import { isForeignViewer } from '@/lib/geo'
-import { headers } from 'next/headers'
+import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
@@ -58,8 +56,6 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
     bookmarked = bm.docs.length > 0
   }
   const category = video.category && typeof video.category === 'object' ? video.category : null
-  // Зарубежный/VPN-трафик? Определяем по IP (оффлайн GeoIP). Для баннера ниже.
-  const foreignViewer = await isForeignViewer(await headers())
   const dateStr = video.publishedAt
     ? new Date(video.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
@@ -98,7 +94,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
         <ViewTracker targetType="video" targetId={video.id} />
 
         {/* Подсказка про VPN/заграницу — только для зарубежных посетителей */}
-        {foreignViewer && <VpnVideoHint />}
+        <VpnVideoNotice />
 
         {/* Плеер (если доступ) или замок (если нет) */}
         {access.allowed ? (

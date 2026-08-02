@@ -16,6 +16,7 @@ import { buildMetadata } from '@/lib/seo'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
+import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
 import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
 import { CrossLinkCard, breadcrumbLabelPath } from '@/components/CrossLinkCard'
@@ -369,6 +370,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
             {/* Прикреплённые видео — до описания, каждое со своим гейтингом */}
             {relatedVideos.length > 0 && (
               <div className="flex flex-col gap-6 mb-8">
+                <VpnVideoNotice />
                 {relatedVideos.map(({ video, allowed, access }, i) => (
                   <div
                     key={video?.id ?? i}
