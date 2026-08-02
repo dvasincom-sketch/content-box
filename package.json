@@ -45,6 +45,7 @@
     "@tiptap/starter-kit": "^3.29.2",
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
+    "fast-geoip": "^1.1.88",
     "graphql": "^16.8.1",
     "lucide-react": "^1.23.0",
     "meilisearch": "^0.60.0",

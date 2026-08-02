@@ -12,6 +12,9 @@ const mediaPublicUrl = process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL
 const mediaHost = mediaPublicUrl ? new URL(mediaPublicUrl).hostname : undefined
 
 const nextConfig: NextConfig = {
+  // fast-geoip читает свои .dat из node_modules в рантайме — не бандлим его,
+  // иначе рушится путь к данным. База едет в образ (полный node_modules).
+  serverExternalPackages: ['fast-geoip'],
   images: {
     localPatterns: [
       {
