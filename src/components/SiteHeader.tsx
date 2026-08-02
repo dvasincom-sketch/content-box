@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from '@/components/AppLink'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Star, Search, ChevronRight, LogOut } from 'lucide-react'
+import { Menu, X, Star, Search, ChevronRight, LogOut, FileText, Settings } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DesktopMenu } from '@/components/DesktopMenu'
 import { MobileMenu } from '@/components/MobileMenu'
@@ -127,17 +127,30 @@ export function SiteHeader({
                   <>
                     <div className="acct-menu__backdrop" onClick={() => setMenuOpen(false)} />
                     <div className="acct-menu__panel" role="menu">
-                      <div className="acct-menu__head">{subscriberName}</div>
-                      <Link href="/account" className="acct-menu__item" onClick={() => setMenuOpen(false)}>Профиль</Link>
-                      <Link href="/account/publications" className="acct-menu__item" onClick={() => setMenuOpen(false)}>Мои публикации</Link>
-                      <Link href="/account/settings" className="acct-menu__item" onClick={() => setMenuOpen(false)}>Настройки</Link>
+                      {/* Кликабельная карточка профиля вместо неактивного имени. */}
+                      <Link href="/account" className="acct-menu__card" onClick={() => setMenuOpen(false)}>
+                        <span className="acct-menu__ava">{(subscriberName || '?').charAt(0).toUpperCase()}</span>
+                        <span className="acct-menu__id">
+                          <span className="acct-menu__name">{subscriberName}</span>
+                          {subscriber.displayName && subscriber.email && (
+                            <span className="acct-menu__mail">{subscriber.email}</span>
+                          )}
+                        </span>
+                      </Link>
+                      <Link href="/account/publications" className="acct-menu__item" onClick={() => setMenuOpen(false)}>
+                        <FileText size={16} /> Мои публикации
+                      </Link>
+                      <Link href="/account/settings" className="acct-menu__item" onClick={() => setMenuOpen(false)}>
+                        <Settings size={16} /> Настройки
+                      </Link>
+                      <div className="acct-menu__sep" />
                       <button
                         type="button"
                         className="acct-menu__item acct-menu__item--danger"
                         onClick={() => { setMenuOpen(false); logout() }}
                         disabled={loggingOut}
                       >
-                        {loggingOut ? '…' : 'Выйти'}
+                        <LogOut size={16} /> {loggingOut ? '…' : 'Выйти'}
                       </button>
                     </div>
                   </>
