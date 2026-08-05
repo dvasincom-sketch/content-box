@@ -3,7 +3,7 @@
 import React from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, FileText, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck } from 'lucide-react'
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean }
 
@@ -14,6 +14,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/studio', label: 'Дашборд', icon: <LayoutDashboard size={18} />, exact: true },
       { href: '/studio/posts', label: 'Публикации', icon: <FileText size={18} /> },
+      { href: '/studio/books', label: 'Книги', icon: <BookOpen size={18} /> },
       { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} /> },
       { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} /> },
       { href: '/studio/settings', label: 'Настройки', icon: <Settings size={18} /> },
