@@ -8,6 +8,8 @@ import { checkChapterAccess } from '@/lib/chapterAccess'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { ChevronLeft, ChevronRight, List, Lock } from 'lucide-react'
 import { ViewTracker } from '@/components/social/ViewTracker'
+import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { ChapterComments, type CommentNode } from './ChapterComments'
 import '../../../styles.css'
 
 export const dynamic = 'force-dynamic'
@@ -52,6 +54,40 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
 
   const chapter = access.allowed ? access.chapter : chapterStub
 
+  // Комментарии к главе (если доступ есть и у книги разрешены).
+  const commentsOn = access.allowed && book.allowComments !== false
+  const viewer = commentsOn ? await getCurrentSubscriber(tenant.id).catch(() => null) as any : null
+  let commentNodes: CommentNode[] = []
+  let commentTotal = 0
+  if (commentsOn) {
+    const cRes = await payload.find({
+      collection: 'comments',
+      where: { and: [{ tenant: { equals: tenant.id } }, { chapter: { equals: chapter.id } }, { status: { equals: 'published' } }] },
+      sort: 'createdAt', limit: 500, depth: 1, overrideAccess: true,
+    })
+    const all = cRes.docs as any[]
+    commentTotal = all.length
+    const meId = viewer?.id != null ? String(viewer.id) : null
+    const nameOf = (a: any) => { const o = a && typeof a === 'object' ? a : null; return o ? (o.displayName || o.handle || 'Читатель') : 'Читатель' }
+    const fmt = (iso: any) => { try { return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) } catch { return '' } }
+    const ownOf = (a: any) => meId != null && String(typeof a === 'object' ? a?.id : a) === meId
+    const repliesByParent = new Map<string, any[]>()
+    for (const c of all) {
+      if (c.parent) {
+        const pid = String(typeof c.parent === 'object' ? c.parent.id : c.parent)
+        if (!repliesByParent.has(pid)) repliesByParent.set(pid, [])
+        repliesByParent.get(pid)!.push(c)
+      }
+    }
+    const toNode = (c: any): CommentNode => ({
+      id: c.id, authorName: nameOf(c.author), text: c.text || '', date: fmt(c.createdAt), own: ownOf(c.author),
+      replies: (repliesByParent.get(String(c.id)) || []).map((r) => ({ id: r.id, authorName: nameOf(r.author), text: r.text || '', date: fmt(r.createdAt), own: ownOf(r.author), replies: [] })),
+    })
+    commentNodes = all.filter((c) => !c.parent).map(toNode)
+  }
+  const canComment = !!viewer && !viewer.isBlocked
+  const canModerate = !!viewer && (Number(viewer.level) || 0) >= 3
+
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -77,6 +113,10 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
                 <Link href={`/book/${slug}/${next}`} className="inline-flex items-center gap-1 text-sm font-semibold px-4 py-2.5 rounded-xl" style={{ background: 'var(--brand-primary)', color: '#fff' }}>Далее <ChevronRight size={16} /></Link>
               ) : <span />}
             </nav>
+
+            {commentsOn && (
+              <ChapterComments chapterId={chapter.id} slug={slug} order={order} comments={commentNodes} canComment={canComment} canModerate={canModerate} total={commentTotal} />
+            )}
           </>
         ) : (
           <ChapterLock reason={access.reason} requiredTierName={access.requiredTierName} />

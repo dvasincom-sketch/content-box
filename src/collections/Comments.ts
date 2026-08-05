@@ -59,9 +59,17 @@ export const Comments: CollectionConfig = {
       name: 'publication',
       type: 'relationship',
       relationTo: 'publications',
-      required: true,
       index: true,
       label: 'Публикация',
+      admin: { description: 'Заполнено у комментария к публикации (иначе — к главе).' },
+    },
+    {
+      name: 'chapter',
+      type: 'relationship',
+      relationTo: 'chapters',
+      index: true,
+      label: 'Глава',
+      admin: { description: 'Заполнено у комментария к главе книги.' },
     },
     {
       name: 'author',
