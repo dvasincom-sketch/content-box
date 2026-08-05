@@ -161,12 +161,6 @@ export function VideoSeriesBlock({
                         <Play size={18} fill="currentColor" />
                       </span>
                     )}
-                    {/* Номер серии — только когда превью общее (обложка категории
-                        или заглушка): тогда он и различает серии. У серии со своей
-                        обложкой номер не нужен. */}
-                    {usingFallback && (
-                      <span className="vseries__ep-badge">{ep.episode ?? i + 1}</span>
-                    )}
                     {isActive && (
                       <span className="vseries__ep-playing" aria-hidden>
                         <Play size={16} fill="currentColor" />
