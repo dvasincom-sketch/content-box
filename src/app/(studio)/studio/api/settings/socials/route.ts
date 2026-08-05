@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -11,7 +11,8 @@ import { errorMessage } from '@/lib/errorMessage'
 
 const PLATFORMS = ['boosty', 'vk', 'telegram', 'youtube', 'instagram']
 
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

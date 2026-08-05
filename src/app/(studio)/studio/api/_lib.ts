@@ -119,3 +119,35 @@ export async function hasCapability(payload: Payload, tenantId: number, cap: Cap
   const ent = await loadEntitlements(payload, tenantId)
   return canUse(ent, cap)
 }
+
+/** Ограниченный участник тенанта (роль 'contributor'). */
+export function isContributor(author: Author): boolean {
+  return (author.user as { tenantRole?: string | null }).tenantRole === 'contributor'
+}
+
+/**
+ * Может ли автор мутировать запись: участник — только свою (owner === self);
+ * полноправный сотрудник — любую (тенант проверяется в самом роуте). Запись
+ * читается overrideAccess. false, если участник не владелец или записи нет.
+ */
+export async function ownsForContributor(
+  payload: Payload,
+  collection: CollectionSlug,
+  id: string | number,
+  author: Author,
+): Promise<boolean> {
+  if (!isContributor(author)) return true
+  try {
+    const doc = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
+    const owner = (doc as { owner?: unknown } | null)?.owner
+    const ownerId = owner && typeof owner === 'object' ? (owner as { id?: unknown }).id : owner
+    return ownerId != null && Number(ownerId) === Number(author.user.id)
+  } catch {
+    return false
+  }
+}
+
+/** where-фрагмент для студийных списков: участник — только своё, иначе null. */
+export function ownerWhere(author: Author): Record<string, unknown> | null {
+  return isContributor(author) ? { owner: { equals: author.user.id } } : null
+}

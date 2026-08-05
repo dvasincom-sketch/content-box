@@ -1,5 +1,5 @@
-import type { Access, CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID } from '../access'
+import type { CollectionConfig } from 'payload'
+import { isSuperAdmin, getUserTenantID, ownerScoped, ownerField, stampOwner } from '../access'
 import { tagsField, normalizeTags } from '../fields/tags'
 
 /**
@@ -18,13 +18,6 @@ import { tagsField, normalizeTags } from '../fields/tags'
  * Группа админки: «Контент».
  */
 
-const videosScoped: Access = ({ req: { user } }) => {
-  if (isSuperAdmin(user)) return true
-  const tenantID = getUserTenantID(user)
-  if (!tenantID) return false
-  return { tenant: { equals: tenantID } }
-}
-
 export const Videos: CollectionConfig = {
   slug: 'videos',
   labels: { singular: 'Видео', plural: 'Видео' },
@@ -35,13 +28,14 @@ export const Videos: CollectionConfig = {
     description: 'Видеоконтент с доступом по уровню подписки.',
   },
   access: {
-    read: videosScoped,
+    read: ownerScoped,
     create: ({ req: { user } }) =>
       isSuperAdmin(user) || Boolean(getUserTenantID(user)),
-    update: videosScoped,
-    delete: videosScoped,
+    update: ownerScoped,
+    delete: ownerScoped,
   },
   fields: [
+    ownerField,
     { name: 'title', type: 'text', required: true, label: 'Название' },
     {
       name: 'slug',
@@ -225,7 +219,7 @@ export const Videos: CollectionConfig = {
   ],
   hooks: {
     // Свободные теги: тримим label и считаем slug (slugify), убираем дубли.
-    beforeChange: [({ data }) => normalizeTags(data)],
+    beforeChange: [stampOwner, ({ data }) => normalizeTags(data)],
   },
   timestamps: true,
 }

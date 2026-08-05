@@ -157,6 +157,7 @@ export function VideosManager({
       {adding && (
         <AddPanel
           tiers={tiers}
+          categories={flatCategories}
           onDone={() => {
             setAdding(false)
             router.refresh()
@@ -522,17 +523,73 @@ function VideoRow({
 /* ============================================================================
    ДОБАВЛЕНИЕ ВИДЕО (без изменений — перенесено как есть)
    ============================================================================ */
-function AddPanel({
+type MetaCat = { id: number | string; title: string; depth: number }
+
+/** Общий блок метаданных при добавлении видео: категория (дерево) + сезон +
+ *  серия + теги. Прикрепление к публикации остаётся в редакторе видео. */
+function VideoMetaFields({
+  categories, categoryId, setCategoryId, season, setSeason, episode, setEpisode, tags, setTags,
+}: {
+  categories: MetaCat[]
+  categoryId: string; setCategoryId: (v: string) => void
+  season: string; setSeason: (v: string) => void
+  episode: string; setEpisode: (v: string) => void
+  tags: string[]; setTags: (v: string[]) => void
+}) {
+  const [tagInput, setTagInput] = useState('')
+  const addTag = () => { const t = tagInput.trim(); if (t && !tags.includes(t)) setTags([...tags, t]); setTagInput('') }
+  return (
+    <>
+      <label className="studio-field">
+        <span className="studio-field__label">Раздел / категория</span>
+        <StudioSelect value={categoryId} onChange={setCategoryId} ariaLabel="Категория"
+          options={[{ value: '', label: '\u2014 без категории \u2014' }, ...categories.map((c) => ({ value: String(c.id), label: c.title, depth: c.depth }))]} />
+      </label>
+      <div style={{ display: 'flex', gap: 12 }}>
+        <label className="studio-field" style={{ flex: 1 }}>
+          <span className="studio-field__label">Сезон</span>
+          <input className="studio-input" type="number" min={0} value={season} onChange={(e) => setSeason(e.target.value)} />
+        </label>
+        <label className="studio-field" style={{ flex: 1 }}>
+          <span className="studio-field__label">Серия / эпизод</span>
+          <input className="studio-input" type="number" min={0} value={episode} onChange={(e) => setEpisode(e.target.value)} />
+        </label>
+      </div>
+      <div className="studio-field">
+        <span className="studio-field__label">Теги</span>
+        {tags.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+            {tags.map((t) => (
+              <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 'var(--st-radius-sm)', background: 'var(--st-surface-hover)', fontSize: 'var(--st-text-sm)' }}>
+                {t}<button type="button" onClick={() => setTags(tags.filter((x) => x !== t))} style={{ border: 0, background: 'transparent', cursor: 'pointer', display: 'grid', placeItems: 'center', color: 'var(--st-text-muted)' }}><X size={12} /></button>
+              </span>
+            ))}
+          </div>
+        )}
+        <input className="studio-input" placeholder="Добавить тег и Enter" value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} />
+      </div>
+    </>
+  )
+}
+
+export function AddPanel({
   tiers,
+  categories,
   onDone,
   onCancel,
+  onCreated,
 }: {
   tiers: Tier[]
+  categories: MetaCat[]
   onDone: () => void
   onCancel: () => void
+  /** Вызывается с созданной записью — для авто-прикрепления из композера. */
+  onCreated?: (v: { id: number | string; title: string }) => void
 }) {
   const [mode, setMode] = useState<'upload' | 'url' | 'library'>('upload')
-  const [provider, setProvider] = useState<'stream' | 'kinescope' | 'embed'>('kinescope')
+  const [provider, setProvider] = useState<'stream' | 'kinescope' | 'embed'>('embed')
   // Вкладка «Библиотека» есть только у Kinescope. При переключении на Cloudflare
   // возвращаемся к загрузке, чтобы не остаться на скрытой вкладке.
   useEffect(() => {
@@ -602,11 +659,11 @@ function AddPanel({
       )}
 
       {provider === 'embed' ? (
-        <EmbedFields tiers={tiers} onDone={onDone} onCancel={onCancel} />
+        <EmbedFields tiers={tiers} categories={categories} onDone={onDone} onCancel={onCancel} onCreated={onCreated} />
       ) : mode === 'upload' ? (
-        <UploadFileForm provider={provider} tiers={tiers} onDone={onDone} onCancel={onCancel} />
+        <UploadFileForm provider={provider} tiers={tiers} categories={categories} onDone={onDone} onCancel={onCancel} onCreated={onCreated} />
       ) : mode === 'url' ? (
-        <UrlFields provider={provider} tiers={tiers} onDone={onDone} onCancel={onCancel} />
+        <UrlFields provider={provider} tiers={tiers} categories={categories} onDone={onDone} onCancel={onCancel} onCreated={onCreated} />
       ) : (
         <KinescopeLibrary onDone={onDone} onCancel={onCancel} />
       )}
@@ -964,18 +1021,26 @@ function KinescopeLibrary({ onDone, onCancel }: { onDone: () => void; onCancel: 
 function UploadFileForm({
   provider,
   tiers,
+  categories,
   onDone,
   onCancel,
+  onCreated,
 }: {
   provider: 'stream' | 'kinescope'
   tiers: Tier[]
+  categories: MetaCat[]
   onDone: () => void
   onCancel: () => void
+  onCreated?: (v: { id: number | string; title: string }) => void
 }) {
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
   const [minTierId, setMinTierId] = useState('')
   const [isPreview, setIsPreview] = useState(false)
+  const [categoryId, setCategoryId] = useState('')
+  const [season, setSeason] = useState('')
+  const [episode, setEpisode] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [pct, setPct] = useState(0)
   const [uploaded, setUploaded] = useState(0)
@@ -1004,6 +1069,10 @@ function UploadFileForm({
     fd.append('title', title.trim())
     if (minTierId) fd.append('minTierId', minTierId)
     fd.append('isPreview', String(isPreview))
+    if (categoryId) fd.append('categoryId', categoryId)
+    if (season.trim()) fd.append('season', season.trim())
+    if (episode.trim()) fd.append('episode', episode.trim())
+    if (tags.length) fd.append('tags', tags.join(','))
 
     const xhr = new XMLHttpRequest()
     xhrRef.current = xhr
@@ -1021,6 +1090,7 @@ function UploadFileForm({
       let json: any = {}
       try { json = JSON.parse(xhr.responseText) } catch {}
       if (xhr.status >= 200 && xhr.status < 300 && json.ok) {
+        if (json.id != null) onCreated?.({ id: json.id, title: title.trim() })
         onDone()
       } else {
         setError(json.error || `Не удалось загрузить (HTTP ${xhr.status})`)
@@ -1090,6 +1160,10 @@ function UploadFileForm({
                 title: title.trim(),
                 minTierId: minTierId || null,
                 isPreview,
+                categoryId: categoryId || null,
+                season: season.trim() || null,
+                episode: episode.trim() || null,
+                tags,
               }),
             })
             const cj = await cr.json()
@@ -1098,6 +1172,7 @@ function UploadFileForm({
               setUploading(false)
               return
             }
+            if (cj.id != null) onCreated?.({ id: cj.id, title: title.trim() })
             onDone()
           } catch {
             setError('Файл залит, но запись создать не удалось')
@@ -1201,6 +1276,16 @@ function UploadFileForm({
         </label>
       </div>
 
+      {!uploading && (
+        <VideoMetaFields
+          categories={categories}
+          categoryId={categoryId} setCategoryId={setCategoryId}
+          season={season} setSeason={setSeason}
+          episode={episode} setEpisode={setEpisode}
+          tags={tags} setTags={setTags}
+        />
+      )}
+
       {uploading && (
         <div className="vid__progress">
           <div className="vid__progress-bar">
@@ -1231,18 +1316,26 @@ function UploadFileForm({
 function UrlFields({
   provider,
   tiers,
+  categories,
   onDone,
   onCancel,
+  onCreated,
 }: {
   provider: 'stream' | 'kinescope'
   tiers: Tier[]
+  categories: MetaCat[]
   onDone: () => void
   onCancel: () => void
+  onCreated?: (v: { id: number | string; title: string }) => void
 }) {
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
   const [minTierId, setMinTierId] = useState('')
   const [isPreview, setIsPreview] = useState(false)
+  const [categoryId, setCategoryId] = useState('')
+  const [season, setSeason] = useState('')
+  const [episode, setEpisode] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -1265,11 +1358,18 @@ function UrlFields({
           url: url.trim(),
           minTierId: minTierId || null,
           isPreview,
+          categoryId: categoryId || null,
+          season: season.trim() || null,
+          episode: episode.trim() || null,
+          tags,
         }),
       })
       const json = await res.json()
       if (!res.ok) setError(json.error || 'Не удалось добавить видео')
-      else onDone()
+      else {
+        if (json.id != null) onCreated?.({ id: json.id, title: title.trim() })
+        onDone()
+      }
     } catch {
       setError('Ошибка соединения')
     } finally {
@@ -1316,6 +1416,13 @@ function UrlFields({
           Бесплатное превью
         </label>
       </div>
+      <VideoMetaFields
+        categories={categories}
+        categoryId={categoryId} setCategoryId={setCategoryId}
+        season={season} setSeason={setSeason}
+        episode={episode} setEpisode={setEpisode}
+        tags={tags} setTags={setTags}
+      />
       {error && <div className="studio-login__error">{error}</div>}
       <div className="vid__form-actions">
         <button className="studio-btn studio-btn--ghost" onClick={onCancel}>Отмена</button>
@@ -1341,17 +1448,25 @@ function UrlFields({
 */
 function EmbedFields({
   tiers,
+  categories,
   onDone,
   onCancel,
+  onCreated,
 }: {
   tiers: Tier[]
+  categories: MetaCat[]
   onDone: () => void
   onCancel: () => void
+  onCreated?: (v: { id: number | string; title: string }) => void
 }) {
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
   const [minTierId, setMinTierId] = useState('')
   const [isPreview, setIsPreview] = useState(false)
+  const [categoryId, setCategoryId] = useState('')
+  const [season, setSeason] = useState('')
+  const [episode, setEpisode] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -1371,11 +1486,18 @@ function EmbedFields({
           url: url.trim(),
           minTierId: minTierId || null,
           isPreview,
+          categoryId: categoryId || null,
+          season: season.trim() || null,
+          episode: episode.trim() || null,
+          tags,
         }),
       })
       const json = await res.json()
       if (!res.ok) setError(json.error || 'Не удалось добавить видео')
-      else onDone()
+      else {
+        if (json.id != null) onCreated?.({ id: json.id, title: title.trim() || (json.providerLabel ? `Видео · ${json.providerLabel}` : 'Видео') })
+        onDone()
+      }
     } catch {
       setError('Ошибка соединения')
     } finally {
@@ -1429,6 +1551,14 @@ function EmbedFields({
           Бесплатное превью
         </label>
       </div>
+
+      <VideoMetaFields
+        categories={categories}
+        categoryId={categoryId} setCategoryId={setCategoryId}
+        season={season} setSeason={setSeason}
+        episode={episode} setEpisode={setEpisode}
+        tags={tags} setTags={setTags}
+      />
 
       {gated && (
         <div className="vid__form-hint" style={{ color: 'var(--st-warning)' }}>

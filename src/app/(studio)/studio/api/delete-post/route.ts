@@ -1,15 +1,16 @@
-import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Удаление публикации. Проверяем принадлежность тенанту автора.
  * Body: { id }
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
   const id = data.id
+  if (!(await ownsForContributor(payload, 'publications', id, author))) return apiError('Нет доступа к чужому контенту', 403)
   if (!id) return apiError('Не указана публикация')
 
   const doc: any = await payload

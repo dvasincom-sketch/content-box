@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
@@ -9,10 +9,11 @@ import { errorMessage } from '@/lib/errorMessage'
  *         minTierId?, freeChapters?, coverId?, tags?, cycleId?, cycleOrder?,
  *         allowComments?, allowDownload? }
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
   const id = data.id
+  if (!(await ownsForContributor(payload, 'books' as any, id, author))) return apiError('Нет доступа к чужому контенту', 403)
   if (!id) return apiError('Не указана книга')
   const title = String(data.title || '').trim()
   if (!title) return apiError('Укажите название')

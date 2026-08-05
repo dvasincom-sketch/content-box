@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import type { Payload } from 'payload'
 import { errorMessage } from '@/lib/errorMessage'
@@ -27,6 +27,7 @@ async function uniqueSlug(payload: Payload, tenantId: number, base: string): Pro
 }
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
   const id = Number(data.id)

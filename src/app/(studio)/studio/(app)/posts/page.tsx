@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Plus, FileText } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { PostRow } from './PostRow'
 
 /**
@@ -30,11 +30,12 @@ type PubDoc = {
 
 export default async function StudioPostsPage() {
   const author = await getCurrentAuthor() // guard в (app)/layout гарантирует наличие
+  const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
 
   const res = await payload.find({
     collection: 'publications',
-    where: { tenant: { equals: author!.tenantId } },
+    where: { and: [{ tenant: { equals: author!.tenantId } }, ...(ownFilter ? [ownFilter] : [])] },
     sort: '-publishedAt',
     limit: 100,
     depth: 1, // подтянуть cover и category

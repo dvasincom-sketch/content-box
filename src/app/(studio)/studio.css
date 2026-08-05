@@ -2783,6 +2783,15 @@ select.studio-input {
   color: var(--st-text-faint);
   text-align: center;
 }
+/* Заголовок категории в списке «Из библиотеки» (иерархия). */
+.vpick__group {
+  padding: var(--st-space-2) var(--st-space-2) var(--st-space-1);
+  font-size: var(--st-text-sm);
+  font-weight: 600;
+  color: var(--st-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
 /* ============================================================================
    ТАБЛИЦА ВИДЕО + ПАПКИ (задача 5.4)
    ============================================================================ */
@@ -3312,6 +3321,67 @@ select.studio-input {
   gap: var(--st-space-2);
 }
 .composer__gallery-label { margin-bottom: var(--st-space-1); }
+
+/* Область «Медиа» внизу композера: галерея / видео / аудио секциями. */
+.composer__media {
+  margin-top: var(--st-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+}
+.composer__media-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+  padding: var(--st-space-4) 0;
+  border-top: 1px solid var(--st-border);
+}
+.composer__media-section:first-of-type { border-top: 0; padding-top: var(--st-space-2); }
+.composer__media-head {
+  font-size: var(--st-text-sm);
+  font-weight: 600;
+  color: var(--st-text-muted);
+}
+.composer__media-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 6px 10px;
+  border: 1px dashed var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: transparent;
+  color: var(--st-text-muted);
+  font-size: var(--st-text-sm);
+  cursor: pointer;
+  transition: color var(--st-dur) var(--st-ease), border-color var(--st-dur) var(--st-ease);
+}
+.composer__media-create:hover { color: var(--st-text); border-color: var(--st-text-muted); }
+
+/* Инлайн-загрузка аудио в композере. */
+.mediacreate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+  padding: var(--st-space-3);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius);
+  background: var(--st-surface);
+}
+.mediacreate__file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--st-text-sm);
+  color: var(--st-text);
+}
+.mediacreate__file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .gcomp { display: flex; flex-direction: column; gap: var(--st-space-3); }
 
@@ -4592,3 +4662,25 @@ a.session-expired__btn {
 .kinlib__st-proc {
   color: var(--st-warning);
 }
+
+/* ============================================================================
+   ВКЛАДКА «ДОСТУП» (участники + приглашения)
+   ============================================================================ */
+.access__invite { display: flex; flex-direction: column; gap: var(--st-space-3); padding: var(--st-space-4); }
+.access__invite-row { display: flex; gap: var(--st-space-3); align-items: flex-end; flex-wrap: wrap; }
+.access__invite-btn { white-space: nowrap; }
+.access__link { display: flex; flex-direction: column; gap: var(--st-space-2); padding: var(--st-space-3); border-radius: var(--st-radius-sm); background: var(--st-surface-hover); }
+.access__link-note { font-size: var(--st-text-sm); color: var(--st-text-muted); line-height: 1.5; }
+.access__link-row { display: flex; gap: var(--st-space-2); align-items: center; }
+.access__link-row input { flex: 1; font-family: var(--st-font-mono); font-size: var(--st-text-xs); }
+.access__list { display: flex; flex-direction: column; gap: var(--st-space-2); margin-top: var(--st-space-4); }
+.access__row { display: flex; align-items: center; gap: var(--st-space-3); padding: var(--st-space-3) var(--st-space-4); }
+.access__row-body { flex: 1; min-width: 0; }
+.access__row-name { font-weight: 600; }
+.access__row-email { font-size: var(--st-text-sm); color: var(--st-text-muted); }
+.access__status { font-size: var(--st-text-xs); font-weight: 600; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+.access__status.is-owner { background: color-mix(in srgb, var(--st-accent) 18%, transparent); color: var(--st-text); }
+.access__status.is-active { background: color-mix(in srgb, var(--st-success) 20%, transparent); color: var(--st-success); }
+.access__status.is-pending { background: color-mix(in srgb, var(--st-warning) 22%, transparent); color: var(--st-warning); }
+.access__status.is-expired { background: var(--st-surface-hover); color: var(--st-text-faint); }
+.access__revoke { white-space: nowrap; }

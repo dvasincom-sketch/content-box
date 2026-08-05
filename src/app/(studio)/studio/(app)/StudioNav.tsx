@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock } from 'lucide-react'
 
-type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media' }
+type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media'; ownerOnly?: boolean }
 
 // Меню сгруппировано: «Медиа» объединяет видео и аудио (позже — галерея).
 type NavGroup = { label?: string; items: NavItem[] }
@@ -14,9 +14,9 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/studio', label: 'Дашборд', icon: <LayoutDashboard size={18} />, exact: true },
       { href: '/studio/posts', label: 'Публикации', icon: <FileText size={18} /> },
-      { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} /> },
-      { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} /> },
-      { href: '/studio/settings', label: 'Настройки', icon: <Settings size={18} /> },
+      { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} />, ownerOnly: true },
+      { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} />, ownerOnly: true },
+      { href: '/studio/settings', label: 'Настройки', icon: <Settings size={18} />, ownerOnly: true },
     ],
   },
   {
@@ -36,7 +36,7 @@ function isActive(pathname: string, item: NavItem): boolean {
   return pathname === item.href || pathname.startsWith(item.href + '/')
 }
 
-export function StudioNav({ authorEmail, brandName, nav }: { authorEmail: string; brandName: string; nav?: { books: boolean; media: boolean; frozen: boolean } }) {
+export function StudioNav({ authorEmail, brandName, nav, isOwner = true }: { authorEmail: string; brandName: string; nav?: { books: boolean; media: boolean; frozen: boolean }; isOwner?: boolean }) {
   const pathname = usePathname()
 
   return (
@@ -88,7 +88,7 @@ export function StudioNav({ authorEmail, brandName, nav }: { authorEmail: string
                 {group.label}
               </div>
             )}
-            {group.items.map((item) => {
+            {group.items.filter((item) => !item.ownerOnly || isOwner).map((item) => {
               const active = isActive(pathname, item)
               const locked = nav ? ((item.cap === 'books' && !nav.books) || (item.cap === 'media' && !nav.media)) : false
               if (locked) {

@@ -7,7 +7,7 @@ import { wordCountFromHtml } from '../_wordcount'
  * Создание главы книги. Порядок — авто (макс+1), если не задан.
  * Body: { bookId, title, body(html)?, isPreview?, minTierId?, order? }
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (!(await hasCapability(payload, tenantId, 'books'))) return apiError('Раздел книг недоступен на текущем тарифе. Оформите пакет в студии.', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
@@ -38,6 +38,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       collection: 'chapters' as any,
       data: {
         tenant: tenantId,
+        owner: author.user.id,
         book: Number(bookId),
         title,
         order,

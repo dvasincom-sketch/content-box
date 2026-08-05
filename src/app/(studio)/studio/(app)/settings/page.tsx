@@ -12,6 +12,7 @@ import '@fontsource-variable/roboto'
 import '@/app/(frontend)/pt-serif.css'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { redirect } from 'next/navigation'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { normalizeHomeSections } from '@/lib/homeSections'
 import { SettingsView } from './SettingsView'
@@ -26,6 +27,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
   const author = await getCurrentAuthor()
+  if ((author!.user as { tenantRole?: string | null }).tenantRole === 'contributor') redirect('/studio')
   const payload = await getPayload({ config: await config })
 
   const [settingsRes, tiersRes] = await Promise.all([
@@ -71,6 +73,21 @@ export default async function SettingsPage() {
       : [],
   }))
 
+  // Участники тенанта (вкладка «Доступ», видна только владельцу).
+  const usersRes = await payload.find({
+    collection: 'users',
+    where: { tenant: { equals: author!.tenantId } },
+    limit: 100, depth: 0, overrideAccess: true,
+  })
+  const selfId = author!.user.id
+  const isOwner = (author!.user as { tenantRole?: string | null }).tenantRole !== 'contributor'
+  const members = (usersRes.docs as any[]).map((u) => {
+    const pending = !!u.inviteTokenHash && !u.inviteAcceptedAt
+    const expired = pending && u.inviteExpiresAt ? new Date(u.inviteExpiresAt).getTime() < Date.now() : false
+    const status = u.tenantRole !== 'contributor' ? 'owner' : u.disabled ? 'disabled' : expired ? 'expired' : pending ? 'pending' : 'active'
+    return { id: u.id, email: u.email as string, name: (u.name as string) || '', status, isSelf: Number(u.id) === Number(selfId) }
+  })
+
   return (
     <SettingsView
       logoUrl={logoUrl}
@@ -78,6 +95,8 @@ export default async function SettingsPage() {
       tiers={tiers}
       homeSections={homeSections}
       themePreset={settings?.themePreset ?? DEFAULT_PRESET_ID}
+      members={members}
+      isOwner={isOwner}
     />
   )
 }

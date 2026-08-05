@@ -1,6 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { redirect } from 'next/navigation'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { ModerationView } from './ModerationView'
 
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function ModerationPage() {
   const author = await getCurrentAuthor()
+  if ((author!.user as { tenantRole?: string | null }).tenantRole === 'contributor') redirect('/studio')
   const payload = await getPayload({ config: await config })
 
   const res = await payload.find({

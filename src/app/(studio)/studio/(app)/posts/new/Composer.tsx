@@ -1,21 +1,42 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ImagePlus, X, Loader2, Trash2, Newspaper, Sparkles } from 'lucide-react'
+import { ArrowLeft, ImagePlus, X, Loader2, Trash2, Newspaper, Sparkles, Video, Music, Plus } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
 import { CategoryMultiPicker } from '../../settings/CategoryMultiPicker'
 import { TiptapEditor } from './TiptapEditor'
 import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
+import { VideoCreateModal, AudioUploadButton, type CreatedMedia } from './MediaCreate'
 import { StudioSelect } from '../../_ui/StudioSelect'
 import { TagInput } from '../../_ui/TagInput'
 
 type Category = CatItem
 type GalleryFolder = { id: number | string; title: string; parentId: number | string | null }
 type Tier = { id: number | string; name: string; weight: number; priceRub: number }
+type MetaCat = { id: number | string; title: string; depth: number }
+
+/** Плоский список категорий с глубиной (для дерева в форме добавления видео). */
+function flattenCategories(cats: Category[]): MetaCat[] {
+  const byParent = new Map<string, Category[]>()
+  for (const c of cats) {
+    const key = c.parentId == null ? 'root' : String(c.parentId)
+    if (!byParent.has(key)) byParent.set(key, [])
+    byParent.get(key)!.push(c)
+  }
+  const out: MetaCat[] = []
+  const walk = (key: string, depth: number) => {
+    for (const c of byParent.get(key) || []) {
+      out.push({ id: c.id, title: c.title, depth })
+      walk(String(c.id), depth + 1)
+    }
+  }
+  walk('root', 0)
+  return out
+}
 
 export type PostInitial = {
   id: number | string
@@ -42,12 +63,15 @@ export function Composer({
   tiers,
   videos = [],
   galleryFolders = [],
+  canCreateMedia = true,
   initial,
 }: {
   categories: Category[]
   tiers: Tier[]
   videos?: VideoOption[]
   galleryFolders?: GalleryFolder[]
+  /** Право создавать медиа инлайн (capMedia). Прикрепление существующего — всегда. */
+  canCreateMedia?: boolean
   initial?: PostInitial
 }) {
   const router = useRouter()
@@ -65,9 +89,33 @@ export function Composer({
   const [coverUrl, setCoverUrl] = useState<string | null>(initial?.coverUrl ?? null)
   const [uploading, setUploading] = useState(false)
 
-  const [relatedVideoIds, setRelatedVideoIds] = useState<(number | string)[]>(
-    initial?.relatedVideoIds ?? [],
+  // Медиа-записи (видео + аудио — одна коллекция videos, аудио = provider 'audio').
+  // Держим клиентский список, чтобы созданное инлайн сразу появлялось в пикерах.
+  const [allMedia, setAllMedia] = useState<VideoOption[]>(videos)
+  const videoCandidates = useMemo(() => allMedia.filter((v) => (v.provider ?? null) !== 'audio'), [allMedia])
+  const audioCandidates = useMemo(() => allMedia.filter((v) => (v.provider ?? null) === 'audio'), [allMedia])
+  const videoModalCats = useMemo(() => flattenCategories(categories), [categories])
+
+  // Разбиваем прикреплённые из initial по типу (видео / аудио) по provider.
+  const initRelated = initial?.relatedVideoIds ?? []
+  const [videoIds, setVideoIds] = useState<(number | string)[]>(
+    initRelated.filter((id) => (videos.find((v) => String(v.id) === String(id))?.provider ?? null) !== 'audio'),
   )
+  const [audioIds, setAudioIds] = useState<(number | string)[]>(
+    initRelated.filter((id) => (videos.find((v) => String(v.id) === String(id))?.provider ?? null) === 'audio'),
+  )
+  const [videoModalOpen, setVideoModalOpen] = useState(false)
+
+  function onVideoCreated(v: CreatedMedia) {
+    setAllMedia((prev) => [{ id: v.id, title: v.title, addedAt: null, provider: null }, ...prev])
+    setVideoIds((prev) => (prev.some((x) => String(x) === String(v.id)) ? prev : [...prev, v.id]))
+    setVideoModalOpen(false)
+  }
+  function onAudioCreated(v: CreatedMedia) {
+    setAllMedia((prev) => [{ id: v.id, title: v.title, addedAt: null, provider: 'audio' }, ...prev])
+    setAudioIds((prev) => (prev.some((x) => String(x) === String(v.id)) ? prev : [...prev, v.id]))
+  }
+
   const [gallery, setGallery] = useState<GalleryItem[]>(initial?.gallery ?? [])
   const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
 
@@ -138,10 +186,12 @@ export function Composer({
       extraCategoryIds: isEdit ? extraCategoryIds : (extraCategoryIds.length ? extraCategoryIds : undefined),
       minTierId: isEdit ? (minTierId || null) : (minTierId || undefined),
       coverId: isEdit ? (coverId ?? null) : (coverId || undefined),
-      // в edit всегда шлём массив (пустой = открепить все); в create — только если есть
+      // видео + аудио — одно поле relatedVideos (аудио = provider 'audio').
+      // Порядок: сначала видео, затем аудио. В edit всегда шлём массив
+      // (пустой = открепить все); в create — только если есть.
       relatedVideoIds: isEdit
-        ? relatedVideoIds
-        : (relatedVideoIds.length ? relatedVideoIds : undefined),
+        ? [...videoIds, ...audioIds]
+        : (videoIds.length || audioIds.length ? [...videoIds, ...audioIds] : undefined),
       // галерея: массив {imageId, caption} в текущем порядке.
       // в edit всегда шлём (пустой = очистить); в create — только если есть
       gallery: isEdit
@@ -371,15 +421,59 @@ export function Composer({
             placeholder="Текст публикации. Выделите текст и примените форматирование."
           />
 
-          <div className="composer__gallery">
-            <div className="composer__field-label composer__gallery-label">Галерея</div>
-            <GalleryComposer
-              value={gallery}
-              onChange={setGallery}
-              folders={galleryFolders}
-            />
-            <div className="composer__hint">
-              Изображения показываются сеткой на странице публикации. Доступ — по уровню самой публикации. Порядок — перетаскиванием.
+          <div className="composer__media">
+            <div className="composer__field-label composer__gallery-label">Медиа</div>
+
+            <div className="composer__media-section">
+              <div className="composer__media-head">Галерея</div>
+              <GalleryComposer
+                value={gallery}
+                onChange={setGallery}
+                folders={galleryFolders}
+              />
+              <div className="composer__hint">
+                Изображения показываются сеткой на странице публикации. Доступ — по уровню самой публикации. Порядок — перетаскиванием.
+              </div>
+            </div>
+
+            <div className="composer__media-section">
+              <div className="composer__media-head">Видео</div>
+              <VideoAttachPicker
+                videos={videoCandidates}
+                value={videoIds}
+                onChange={setVideoIds}
+                categoryTree={videoModalCats}
+                searchPlaceholder="Поиск видео по названию…"
+                emptyLabel="Нет загруженных видео"
+                icon={Video}
+                leadingButton={canCreateMedia ? (
+                  <button type="button" className="gcomp__add" onClick={() => setVideoModalOpen(true)}>
+                    <Plus size={16} /> Добавить видео
+                  </button>
+                ) : undefined}
+              />
+              <div className="composer__hint">
+                Видео появятся на странице публикации в указанном порядке — до описания.
+              </div>
+            </div>
+
+            <div className="composer__media-section">
+              <div className="composer__media-head">Аудио</div>
+              <VideoAttachPicker
+                videos={audioCandidates}
+                value={audioIds}
+                onChange={setAudioIds}
+                categoryTree={videoModalCats}
+                searchPlaceholder="Поиск аудио по названию…"
+                emptyLabel="Нет загруженных аудио"
+                icon={Music}
+                leadingButton={canCreateMedia ? (
+                  <AudioUploadButton onCreated={onAudioCreated} />
+                ) : undefined}
+              />
+              <div className="composer__hint">
+                Аудио (MP3) показывается плеером на странице публикации.
+              </div>
             </div>
           </div>
         </div>
@@ -425,20 +519,17 @@ export function Composer({
               Связывают материалы из разных категорий. Клик по тегу на сайте ведёт на страницу со всеми материалами тега.
             </div>
           </div>
-
-          <div className="composer__field">
-            <div className="composer__field-label">Прикреплённые видео</div>
-            <VideoAttachPicker
-              videos={videos}
-              value={relatedVideoIds}
-              onChange={setRelatedVideoIds}
-            />
-            <div className="composer__hint">
-              Видео появятся на странице публикации в указанном порядке — до описания.
-            </div>
-          </div>
         </aside>
       </div>
+
+      {videoModalOpen && (
+        <VideoCreateModal
+          tiers={tiers}
+          categories={videoModalCats}
+          onCreated={onVideoCreated}
+          onClose={() => setVideoModalOpen(false)}
+        />
+      )}
     </div>
   )
 }

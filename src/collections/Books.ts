@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { tenantScopedCollection } from '../access'
+import { ownerScopedCollection, ownerField, stampOwner } from '../access'
 import { slugify } from '../lib/slugify'
 
 /**
@@ -22,7 +22,7 @@ export const Books: CollectionConfig = {
     group: 'Контент',
     description: 'Авторские произведения (книги, рассказы) с главами.',
   },
-  access: tenantScopedCollection,
+  access: ownerScopedCollection,
   hooks: {
     beforeValidate: [
       ({ data }) => {
@@ -30,9 +30,11 @@ export const Books: CollectionConfig = {
         return data
       },
     ],
+    beforeChange: [stampOwner],
   },
   fields: [
     // `tenant` добавляет multi-tenant плагин.
+    ownerField,
     { name: 'title', type: 'text', required: true, label: 'Название' },
     {
       name: 'slug',

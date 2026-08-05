@@ -56,6 +56,10 @@ import * as migration_20260805_180000_add_book_follows from './20260805_180000_a
 import * as migration_20260805_190000_add_studio_entitlements from './20260805_190000_add_studio_entitlements';
 import * as migration_20260805_200000_add_booktrailer_video from './20260805_200000_add_booktrailer_video';
 import * as migration_20260805_210000_add_book_genres_multi from './20260805_210000_add_book_genres_multi';
+import * as migration_20260805_220000_add_contributor_role from './20260805_220000_add_contributor_role';
+import * as migration_20260805_221000_add_content_owner from './20260805_221000_add_content_owner';
+import * as migration_20260805_230000_add_user_invites from './20260805_230000_add_user_invites';
+import * as migration_20260805_240000_add_user_disabled from './20260805_240000_add_user_disabled';
 
 export const migrations = [
   {
@@ -347,5 +351,25 @@ export const migrations = [
     up: migration_20260805_210000_add_book_genres_multi.up,
     down: migration_20260805_210000_add_book_genres_multi.down,
     name: '20260805_210000_add_book_genres_multi',
+  },
+  {
+    up: migration_20260805_220000_add_contributor_role.up,
+    down: migration_20260805_220000_add_contributor_role.down,
+    name: '20260805_220000_add_contributor_role',
+  },
+  {
+    up: migration_20260805_221000_add_content_owner.up,
+    down: migration_20260805_221000_add_content_owner.down,
+    name: '20260805_221000_add_content_owner',
+  },
+  {
+    up: migration_20260805_230000_add_user_invites.up,
+    down: migration_20260805_230000_add_user_invites.down,
+    name: '20260805_230000_add_user_invites',
+  },
+  {
+    up: migration_20260805_240000_add_user_disabled.up,
+    down: migration_20260805_240000_add_user_disabled.down,
+    name: '20260805_240000_add_user_disabled',
   },
 ];

@@ -84,6 +84,8 @@ export const Users: CollectionConfig = {
       label: 'Роль в тенанте',
       options: [
         { label: 'Editor', value: 'editor' },
+        // Ограниченный участник: создаёт контент и правит только свой (Фаза доступа).
+        { label: 'Участник (ограниченный)', value: 'contributor' },
         // Reserved in enum for future use (ТЗ §2) — no Stage-1 logic, declared
         // now so extending roles needs no migration.
         { label: 'Admin (задел)', value: 'admin' },
@@ -91,8 +93,39 @@ export const Users: CollectionConfig = {
       ],
       admin: { condition: (data) => data?.platformRole !== 'superadmin' },
     },
+    // ── Приглашение участника (Фаза «Доступ») ──────────────────────────────
+    {
+      name: 'invitedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      label: 'Кем приглашён',
+      admin: { readOnly: true, condition: () => false },
+    },
+    {
+      name: 'inviteTokenHash',
+      type: 'text',
+      admin: { hidden: true },
+      access: { read: superAdminFieldAccess, create: superAdminFieldAccess, update: superAdminFieldAccess },
+    },
+    { name: 'inviteExpiresAt', type: 'date', admin: { hidden: true } },
+    { name: 'inviteAcceptedAt', type: 'date', admin: { hidden: true } },
+    {
+      name: 'disabled',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Доступ отключён',
+      admin: { description: 'Отключённый участник не может войти и пользоваться студией; аккаунт и авторство сохраняются.' },
+    },
   ],
   hooks: {
+    beforeLogin: [
+      ({ user }) => {
+        if ((user as { disabled?: boolean } | null)?.disabled) {
+          throw new Error('Доступ отключён владельцем студии.')
+        }
+        return user
+      },
+    ],
     beforeValidate: [
       ({ data }) => {
         if (!data) return data

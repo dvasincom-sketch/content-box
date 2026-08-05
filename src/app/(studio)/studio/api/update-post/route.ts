@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { errorMessage } from '@/lib/errorMessage'
 import type { Payload, CollectionSlug } from 'payload'
@@ -19,11 +19,12 @@ import type { Payload, CollectionSlug } from 'payload'
  *   - массив → заменить набор прикреплённых видео (порядок значим; фильтр по тенанту)
  *   - отсутствует → не трогать
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
   const id = data.id
+  if (!(await ownsForContributor(payload, 'publications', id, author))) return apiError('Нет доступа к чужому контенту', 403)
   if (!id) return apiError('Не указана публикация')
 
   // Пост принадлежит тенанту?

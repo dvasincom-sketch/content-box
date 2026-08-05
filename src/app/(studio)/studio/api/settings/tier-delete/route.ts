@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Удаление уровня подписки. Проверяем принадлежность тенанту.
@@ -7,7 +7,8 @@ import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api
  * Внимание: если на уровень ссылаются видео (minTier) или подписчики
  * (activeTier), Payload может вернуть ошибку связи — тогда сообщаем об этом.
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

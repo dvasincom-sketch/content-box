@@ -20,7 +20,7 @@ function numOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (!(await hasCapability(payload, tenantId, 'media'))) return apiError('Раздел медиа недоступен на текущем тарифе. Оформите пакет в студии.', 403)
   let form: FormData
   try {
@@ -79,6 +79,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
         folder: folderId,
         publishedAt: new Date().toISOString(),
         tenant: tenantId,
+        owner: author.user.id,
       } as any,
       overrideAccess: true,
     })) as any

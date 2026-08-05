@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
@@ -10,7 +10,8 @@ import type { Payload } from 'payload'
  * Контент пустой (заполняется потом в PageEditPanel). showInMenu/Footer = false.
  * Ответ: { ok, id, slug }
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

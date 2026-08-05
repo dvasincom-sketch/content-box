@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -8,7 +8,8 @@ import { errorMessage } from '@/lib/errorMessage'
  */
 const PERK_TYPES = ['included', 'star', 'warning', 'info']
 
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

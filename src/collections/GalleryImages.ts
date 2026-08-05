@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { tenantScopedCollection } from '../access'
+import { ownerScopedCollection, ownerField, stampOwner } from '../access'
 
 /**
  * GalleryImages — изображения для галерей публикаций (задача «Галерея»).
@@ -45,9 +45,13 @@ export const GalleryImages: CollectionConfig = {
     group: 'Контент',
     description: 'Фото для галерей публикаций.',
   },
-  access: tenantScopedCollection,
+  access: ownerScopedCollection,
+  hooks: {
+    beforeChange: [stampOwner],
+  },
   fields: [
     // `tenant` инжектит multi-tenant плагин.
+    ownerField,
     { name: 'alt', type: 'text', label: 'Alt / подпись по умолчанию' },
     {
       name: 'folder',

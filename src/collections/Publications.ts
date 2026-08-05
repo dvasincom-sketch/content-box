@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { tenantScopedCollection, getUserTenantID } from '../access'
+import { ownerScopedCollection, ownerField, stampOwner, getUserTenantID } from '../access'
 import { revalidateHomeFeed } from '../lib/revalidateHome'
 import { tagsField, normalizeTags } from '../fields/tags'
 
@@ -19,9 +19,10 @@ export const Publications: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'category', 'publishedAt', 'featured', 'isNews'],
   },
-  access: tenantScopedCollection,
+  access: ownerScopedCollection,
   fields: [
     // `tenant` added by the multi-tenant plugin.
+    ownerField,
     { name: 'title', type: 'text', required: true },
     {
       name: 'slug',
@@ -286,6 +287,8 @@ export const Publications: CollectionConfig = {
       },
     ],
     beforeChange: [
+      // Владелец при создании (страховка к явной простановке в studio-роуте).
+      stampOwner,
       // Свободные теги: тримим label и считаем slug (slugify), убираем дубли.
       ({ data }) => normalizeTags(data),
       // Окно «Новинки»: при включении флага ставим newUntil = сейчас + 14 дней;

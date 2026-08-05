@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { htmlToLexical } from '@/lib/lexical'
 import { errorMessage } from '@/lib/errorMessage'
@@ -13,7 +13,8 @@ import type { Payload } from 'payload'
  *
  * Body: { id, title?, slug?, parentId? }  (parentId: null → в корень)
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

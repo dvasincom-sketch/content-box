@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { tenantScopedCollection } from '../access'
+import { ownerScopedCollection, ownerField, stampOwner } from '../access'
 
 /**
  * Downloads («Файлы») — цифровые товары под подписку: книги, PDF, архивы,
@@ -33,9 +33,13 @@ export const Downloads: CollectionConfig = {
     group: 'Контент',
     description: 'Цифровые товары для скачивания по подписке (книги, PDF и др.).',
   },
-  access: tenantScopedCollection,
+  access: ownerScopedCollection,
+  hooks: {
+    beforeChange: [stampOwner],
+  },
   fields: [
     // `tenant` добавляет multi-tenant плагин.
+    ownerField,
     { name: 'title', type: 'text', required: true, label: 'Название' },
     {
       name: 'description',

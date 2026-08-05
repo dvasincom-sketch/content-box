@@ -1,5 +1,5 @@
 import type { CollectionSlug, Payload } from 'payload'
-import { withAuthor, readJson, apiError, apiOk, belongsToTenant, tenantIdOf } from './_lib'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant, tenantIdOf, isContributor } from './_lib'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -33,7 +33,8 @@ const BATCH = 100
 const MAX_DEPTH = 100
 
 export function makeFolderCreateRoute(cfg: FolderRoutesConfig) {
-  return withAuthor(async ({ req, payload, tenantId }) => {
+  return withAuthor(async ({ req, payload, tenantId, author }) => {
+    if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
     const data = await readJson(req)
     if (data === undefined) return apiError('Некорректный запрос')
 
@@ -70,7 +71,8 @@ export function makeFolderCreateRoute(cfg: FolderRoutesConfig) {
 }
 
 export function makeFolderUpdateRoute(cfg: FolderRoutesConfig) {
-  return withAuthor(async ({ req, payload, tenantId }) => {
+  return withAuthor(async ({ req, payload, tenantId, author }) => {
+    if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
     const data = await readJson(req)
     if (data === undefined) return apiError('Некорректный запрос')
 
@@ -119,7 +121,8 @@ export function makeFolderUpdateRoute(cfg: FolderRoutesConfig) {
 }
 
 export function makeFolderDeleteRoute(cfg: FolderRoutesConfig) {
-  return withAuthor(async ({ req, payload, tenantId }) => {
+  return withAuthor(async ({ req, payload, tenantId, author }) => {
+    if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
     const data = await readJson(req)
     if (data === undefined) return apiError('Некорректный запрос')
 

@@ -45,6 +45,7 @@ export default async function StudioAppLayout({ children }: { children: React.Re
     /* дефолт при ошибке */
   }
   const nav = { books: canUse(ent, 'books'), media: canUse(ent, 'media'), frozen: !!ent?.studioFrozen }
+  const isOwner = (author.user as { tenantRole?: string | null }).tenantRole !== 'contributor'
 
   // Незавершённый онбординг → в мастер (вне try, чтобы redirect не проглотился).
   if (!onboardingComplete) {
@@ -53,7 +54,7 @@ export default async function StudioAppLayout({ children }: { children: React.Re
 
   return (
     <div className="studio-shell">
-      <StudioNav authorEmail={author.user.email} brandName={brandName} nav={nav} />
+      <StudioNav authorEmail={author.user.email} brandName={brandName} nav={nav} isOwner={isOwner} />
       <main className="studio-main">
         {nav.frozen && (
           <div style={{ margin: '0 0 16px', padding: '12px 16px', borderRadius: 12, background: 'color-mix(in srgb, var(--st-warning, #d97706) 18%, transparent)', color: 'var(--st-text)', fontSize: 14 }}>

@@ -1,7 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { BooksManager } from './BooksManager'
@@ -14,20 +14,21 @@ const TYPE_LABEL: Record<string, string> = { novel: 'Роман', story: 'Рас
 
 export default async function BooksPage() {
   const author = await getCurrentAuthor()
+  const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
   const ent = await loadEntitlements(payload, author!.tenantId)
   if (!canUse(ent, 'books')) return <StudioUpsell cap="books" />
 
   const booksRes = await payload.find({
     collection: 'books' as any,
-    where: { tenant: { equals: author!.tenantId } },
+    where: { and: [{ tenant: { equals: author!.tenantId } }, ...(ownFilter ? [ownFilter] : [])] },
     sort: '-updatedAt', limit: 500, depth: 1, overrideAccess: true,
   })
 
   // Кол-во глав по книгам одним запросом.
   const chRes = await payload.find({
     collection: 'chapters' as any,
-    where: { tenant: { equals: author!.tenantId } },
+    where: { and: [{ tenant: { equals: author!.tenantId } }, ...(ownFilter ? [ownFilter] : [])] },
     limit: 5000, depth: 0, overrideAccess: true,
   })
   const counts = new Map<string, number>()

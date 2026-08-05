@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { isHomeSectionType, type HomeSectionType } from '@/lib/homeSections'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -13,7 +13,8 @@ import { errorMessage } from '@/lib/errorMessage'
  * стандартном порядке, см. normalizeHomeSections), т.е. это способ сброса.
  */
 
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

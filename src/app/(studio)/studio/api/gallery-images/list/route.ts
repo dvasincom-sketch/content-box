@@ -1,4 +1,4 @@
-import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -12,13 +12,14 @@ import { errorMessage } from '@/lib/errorMessage'
  *
  * Возвращает { images: [{id, url, width, height, alt, folderId}], totalPages, page, total }.
  */
-export const GET = withAuthor(async ({ req, payload, tenantId }) => {
+export const GET = withAuthor(async ({ req, payload, tenantId, author }) => {
   const { searchParams } = new URL(req.url)
   const folder = searchParams.get('folder') || ''
   const page = Math.max(1, Number(searchParams.get('page') || '1') || 1)
   const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || '40') || 40))
 
   const and: any[] = [{ tenant: { equals: tenantId } }]
+  if (isContributor(author)) and.push({ owner: { equals: author.user.id } })
   if (folder === 'none') {
     and.push({ folder: { exists: false } })
   } else if (folder && folder !== 'all') {

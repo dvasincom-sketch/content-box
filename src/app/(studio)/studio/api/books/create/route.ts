@@ -6,7 +6,7 @@ import { errorMessage } from '@/lib/errorMessage'
  * Создание книги. Минимум — название; остальное правится в редакторе книги.
  * Body: { title, slug? }
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (!(await hasCapability(payload, tenantId, 'books'))) return apiError('Раздел книг недоступен на текущем тарифе. Оформите пакет в студии.', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
@@ -20,7 +20,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     const doc = await payload.create({
       collection: 'books' as any,
       data: {
-        title, slug, tenant: tenantId, status: 'ongoing', freeChapters: 0,
+        title, slug, tenant: tenantId, owner: author.user.id, status: 'ongoing', freeChapters: 0,
         type: ['novel', 'story', 'mini', 'cycle'].includes(data.type) ? data.type : 'novel',
         publishedAt: new Date().toISOString(),
       } as any,

@@ -1,10 +1,4 @@
-import {
-  withAuthor,
-  readJson,
-  apiError,
-  apiOk,
-  findTenantSettings,
-} from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { PRESET_IDS } from '@/lib/themePresets'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -13,7 +7,8 @@ import { errorMessage } from '@/lib/errorMessage'
  * Body: { preset: <id пресета> }. Валидируем id по реестру THEME_PRESETS.
  * Пресет задаёт сразу палитру (свет+тьма) и шрифты — отдельного выбора нет.
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

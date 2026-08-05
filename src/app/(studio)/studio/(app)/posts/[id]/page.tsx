@@ -2,7 +2,8 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { lexicalToHtml } from '@/lib/lexical'
 import { Composer, type PostInitial } from '../new/Composer'
 
@@ -20,6 +21,7 @@ export default async function EditPostPage({
 }) {
   const { id } = await params
   const author = await getCurrentAuthor()
+  const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
 
   // Пост
@@ -30,6 +32,10 @@ export default async function EditPostPage({
   if (!post) notFound()
   const postTenant = post.tenant && typeof post.tenant === 'object' ? post.tenant.id : post.tenant
   if (Number(postTenant) !== Number(author!.tenantId)) notFound()
+  if (author!.user.tenantRole === 'contributor') {
+    const _o = post.owner && typeof post.owner === 'object' ? post.owner.id : post.owner
+    if (Number(_o) !== Number(author!.user.id)) notFound()
+  }
 
   // Категории, уровни и видео (как в композере создания)
   const [catsRes, tiersRes, videosRes, galFoldersRes] = await Promise.all([
@@ -53,7 +59,7 @@ export default async function EditPostPage({
     }),
     payload.find({
       collection: 'videos',
-      where: { tenant: { equals: author!.tenantId } },
+      where: { and: [{ tenant: { equals: author!.tenantId } }, ...(ownFilter ? [ownFilter] : [])] },
       sort: '-createdAt',
       limit: 500,
       depth: 0,
@@ -86,7 +92,12 @@ export default async function EditPostPage({
     id: v.id,
     title: v.title || 'Без названия',
     addedAt: v.publishedAt || v.createdAt || null,
+    provider: v.provider ?? null,
+    categoryId: (v.category && typeof v.category === 'object' ? v.category.id : v.category) ?? null,
   }))
+
+  const ent = await loadEntitlements(payload, author!.tenantId)
+  const canCreateMedia = canUse(ent, 'media')
 
   // Разворачиваем текущие значения поста
   const cover = post.cover
@@ -170,6 +181,7 @@ export default async function EditPostPage({
       tiers={tiers}
       videos={videos}
       galleryFolders={galleryFolders}
+      canCreateMedia={canCreateMedia}
       initial={initial}
     />
   )

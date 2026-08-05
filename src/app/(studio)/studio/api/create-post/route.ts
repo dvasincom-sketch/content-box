@@ -17,7 +17,7 @@ import type { Payload } from 'payload'
  *  { title, body, slug?, coverId?, categoryId?, minTierId?, relatedVideoIds?, publish }
  *  publish=true → publishedAt=now (опубликовано); false → черновик (без даты).
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
@@ -75,6 +75,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
         title,
         slug,
         tenant: tenantId,
+        owner: author.user.id,
         description: htmlToLexical(data.body || ''),
         ...(categoryId ? { category: categoryId } : {}),
         ...(extraCategoryIds.length ? { extraCategories: extraCategoryIds } : {}),

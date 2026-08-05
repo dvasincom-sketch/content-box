@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -10,11 +10,12 @@ import { errorMessage } from '@/lib/errorMessage'
  *
  * Одно видео = одна папка, поэтому просто перезаписываем поле folder.
  */
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
   const imageId = data.imageId
+  if (!(await ownsForContributor(payload, 'gallery-images', imageId, author))) return apiError('Нет доступа к чужому контенту', 403)
   if (!imageId) return apiError('Не указано изображение')
 
   // Видео принадлежит тенанту?

@@ -158,7 +158,7 @@ function ChapterModal({
   }
 
   return (
-    <div role="dialog" aria-modal="true"
+    <div role="dialog" aria-modal="true" className="studio-portal"
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'grid', placeItems: 'start center', padding: 16, overflow: 'auto', zIndex: 50 }}
       onClick={onClose}>
       <div className="studio-card" style={{ width: 'min(760px, 100%)', padding: 20, margin: '24px 0', display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--st-surface)' }} onClick={(e) => e.stopPropagation()}>

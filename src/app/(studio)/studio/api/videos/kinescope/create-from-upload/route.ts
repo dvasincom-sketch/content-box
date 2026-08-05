@@ -25,7 +25,7 @@ export const runtime = 'nodejs'
 
 const MAX_BYTES = 200 * 1024 * 1024 // 200 MB — потолок для загрузки через сервер
 
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   let form: FormData
   try {
     form = await req.formData()
@@ -78,7 +78,13 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
         minTier: numOrNull(form.get('minTierId')),
         isPreview: form.get('isPreview') === 'true',
         category: numOrNull(form.get('categoryId')),
+        season: numOrNull(form.get('season')),
+        episode: numOrNull(form.get('episode')),
+        ...(String(form.get('tags') || '').trim()
+          ? { tags: String(form.get('tags')).split(',').map((s2) => s2.trim()).filter(Boolean).map((t) => ({ label: t })) }
+          : {}),
         tenant: tenantId,
+        owner: author.user.id,
       } as any,
       overrideAccess: true,
     })

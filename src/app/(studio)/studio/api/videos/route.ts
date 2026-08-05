@@ -15,7 +15,7 @@ import { errorMessage } from '@/lib/errorMessage'
  */
 export const runtime = 'nodejs'
 
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
@@ -52,6 +52,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
         isPreview: Boolean(data.isPreview),
         category: numOrNull(data.categoryId),
         tenant: tenantId,
+        owner: author.user.id,
       } as any,
       overrideAccess: true,
     })

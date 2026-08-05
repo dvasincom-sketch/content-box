@@ -10,6 +10,7 @@ import { PagesPanel } from './PagesPanel'
 import { HomeBuilder } from './HomeBuilder'
 import { PresetPicker } from './PresetPicker'
 import type { HomeSectionConfig } from '@/lib/homeSections'
+import { AccessPanel } from './AccessPanel'
 
 type Social = { platform: string; url: string }
 type Perk = { type: PerkType; text: string }
@@ -24,7 +25,8 @@ type Tier = {
   perks: Perk[]
 }
 
-type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers'
+type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers' | 'access'
+export type Member = { id: number | string; email: string; name: string; status: string; isSelf: boolean }
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'appearance', label: 'Оформление' },
@@ -32,6 +34,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'socials', label: 'Соцсети' },
   { id: 'menu', label: 'Меню и футер' },
   { id: 'tiers', label: 'Подписки' },
+  { id: 'access', label: 'Доступ' },
 ]
 
 const PLATFORMS = [
@@ -48,12 +51,16 @@ export function SettingsView({
   tiers: initialTiers,
   homeSections,
   themePreset,
+  members,
+  isOwner,
 }: {
   logoUrl: string | null
   socials: Social[]
   tiers: Tier[]
   homeSections: HomeSectionConfig[]
   themePreset: string
+  members: Member[]
+  isOwner: boolean
 }) {
   const [tab, setTab] = useState<SettingsTab>('appearance')
 
@@ -67,7 +74,7 @@ export function SettingsView({
       </div>
 
       <div className="settings__tabs">
-        {TABS.map((t) => (
+        {TABS.filter((t) => t.id !== 'access' || isOwner).map((t) => (
           <button
             key={t.id}
             type="button"
@@ -92,6 +99,7 @@ export function SettingsView({
         {tab === 'menu' && <MenuBlock />}
         {tab === 'menu' && <PagesBlock />}
         {tab === 'tiers' && <TiersBlock initial={initialTiers} />}
+        {tab === 'access' && isOwner && <AccessPanel members={members} />}
       </div>
     </>
   )

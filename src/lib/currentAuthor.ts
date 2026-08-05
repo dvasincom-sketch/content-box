@@ -18,6 +18,7 @@ import type { User } from '@/payload-types'
 export async function getCurrentAuthor(): Promise<{ user: User; tenantId: number } | null> {
   const user = await authenticatedUser()
   if (!user || user.collection !== 'users') return null
+  if ((user as { disabled?: boolean }).disabled) return null
 
   // tenant может прийти как id (number) или как populated-объект
   const rawTenant = user.tenant
@@ -27,4 +28,11 @@ export async function getCurrentAuthor(): Promise<{ user: User; tenantId: number
   if (!tenantId) return null
 
   return { user, tenantId }
+}
+
+/** where-фрагмент «только своё» для участника (contributor); иначе null. */
+export function contributorOwnerFilter(
+  author: { user: { id: number | string; tenantRole?: string | null } },
+): { owner: { equals: number | string } } | null {
+  return author.user.tenantRole === 'contributor' ? { owner: { equals: author.user.id } } : null
 }

@@ -1,7 +1,8 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { Composer } from './Composer'
 
 /**
@@ -16,6 +17,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function NewPostPage() {
   const author = await getCurrentAuthor() // guard в (app)/layout гарантирует
+  const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
 
   const [catsRes, tiersRes, videosRes, galFoldersRes] = await Promise.all([
@@ -42,7 +44,7 @@ export default async function NewPostPage() {
     }),
     payload.find({
       collection: 'videos',
-      where: { tenant: { equals: author!.tenantId } },
+      where: { and: [{ tenant: { equals: author!.tenantId } }, ...(ownFilter ? [ownFilter] : [])] },
       sort: '-createdAt',
       limit: 500,
       depth: 0,
@@ -81,7 +83,13 @@ export default async function NewPostPage() {
     id: v.id,
     title: v.title || 'Без названия',
     addedAt: v.publishedAt || v.createdAt || null,
+    provider: v.provider ?? null,
+    categoryId: (v.category && typeof v.category === 'object' ? v.category.id : v.category) ?? null,
   }))
+
+  // Право создавать медиа инлайн (загрузка видео/аудио из публикации).
+  const ent = await loadEntitlements(payload, author!.tenantId)
+  const canCreateMedia = canUse(ent, 'media')
 
   const galleryFolders = (galFoldersRes.docs as any[]).map((f) => {
     const rawParent = f.parent
@@ -96,6 +104,7 @@ export default async function NewPostPage() {
       tiers={tiers}
       videos={videos}
       galleryFolders={galleryFolders}
+      canCreateMedia={canCreateMedia}
     />
   )
 }

@@ -13,7 +13,7 @@ import { errorMessage } from '@/lib/errorMessage'
  */
 export const runtime = 'nodejs'
 
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
@@ -39,7 +39,13 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
         minTier: numOrNull(data.minTierId),
         isPreview: Boolean(data.isPreview),
         category: numOrNull(data.categoryId),
+        season: numOrNull(data.season),
+        episode: numOrNull(data.episode),
+        ...(Array.isArray(data.tags) && (data.tags as any[]).length
+          ? { tags: (data.tags as unknown[]).filter((t): t is string => typeof t === 'string' && t.trim().length > 0).map((t) => ({ label: t.trim() })) }
+          : {}),
         tenant: tenantId,
+        owner: author.user.id,
       } as any,
       overrideAccess: true,
     })

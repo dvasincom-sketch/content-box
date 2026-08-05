@@ -82,6 +82,10 @@ export interface Config {
     'video-folders': VideoFolder;
     'gallery-images': GalleryImage;
     'gallery-folders': GalleryFolder;
+    downloads: Download;
+    books: Book;
+    chapters: Chapter;
+    'book-follows': BookFollow;
     comments: Comment;
     reactions: Reaction;
     'activity-events': ActivityEvent;
@@ -111,6 +115,10 @@ export interface Config {
     'video-folders': VideoFoldersSelect<false> | VideoFoldersSelect<true>;
     'gallery-images': GalleryImagesSelect<false> | GalleryImagesSelect<true>;
     'gallery-folders': GalleryFoldersSelect<false> | GalleryFoldersSelect<true>;
+    downloads: DownloadsSelect<false> | DownloadsSelect<true>;
+    books: BooksSelect<false> | BooksSelect<true>;
+    chapters: ChaptersSelect<false> | ChaptersSelect<true>;
+    'book-follows': BookFollowsSelect<false> | BookFollowsSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
     reactions: ReactionsSelect<false> | ReactionsSelect<true>;
     'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
@@ -194,6 +202,18 @@ export interface Tenant {
   status: 'pending' | 'active' | 'suspended';
   plan?: ('free' | 'basic' | 'pro') | null;
   /**
+   * Раздел «Книги». Триал — до даты ниже.
+   */
+  capBooks?: ('none' | 'trial' | 'active') | null;
+  capBooksUntil?: string | null;
+  /**
+   * Видео/Аудио/Файлы/Галерея. Триал — до даты ниже.
+   */
+  capMedia?: ('none' | 'trial' | 'active') | null;
+  capMediaUntil?: string | null;
+  capCustomDomain?: boolean | null;
+  studioFrozen?: boolean | null;
+  /**
    * Часть до .contentbox.site. `domain` = <subdomain>.contentbox.site.
    */
   subdomain?: string | null;
@@ -225,7 +245,15 @@ export interface User {
    * Только для платформенных пользователей.
    */
   platformRole?: 'superadmin' | null;
-  tenantRole?: ('editor' | 'admin' | 'viewer') | null;
+  tenantRole?: ('editor' | 'contributor' | 'admin' | 'viewer') | null;
+  invitedBy?: (number | null) | User;
+  inviteTokenHash?: string | null;
+  inviteExpiresAt?: string | null;
+  inviteAcceptedAt?: string | null;
+  /**
+   * Отключённый участник не может войти и пользоваться студией; аккаунт и авторство сохраняются.
+   */
+  disabled?: boolean | null;
   tenants?:
     | {
         tenant: number | Tenant;
@@ -531,6 +559,10 @@ export interface Category {
 export interface Publication {
   id: number;
   tenant?: (number | null) | Tenant;
+  /**
+   * Студийный аккаунт, создавший запись. Ограниченный участник видит и правит только свои записи.
+   */
+  owner?: (number | null) | User;
   title: string;
   slug: string;
   cover?: (number | null) | Media;
@@ -719,7 +751,7 @@ export interface SubscriptionTier {
    */
   perks?:
     | {
-        type: 'included' | 'star' | 'warning' | 'info';
+        type: 'included' | 'excluded' | 'star' | 'warning' | 'info';
         text: string;
         id?: string | null;
       }[]
@@ -736,6 +768,10 @@ export interface SubscriptionTier {
 export interface Video {
   id: number;
   tenant?: (number | null) | Tenant;
+  /**
+   * Студийный аккаунт, создавший запись. Ограниченный участник видит и правит только свои записи.
+   */
+  owner?: (number | null) | User;
   title: string;
   slug: string;
   description?: string | null;
@@ -759,7 +795,7 @@ export interface Video {
   /**
    * Где хранится видео. Stream — для зарубежной аудитории; Kinescope — для РФ (не блокируется провайдерами); внешняя ссылка — видео лежит на чужой площадке и НЕ защищается подпиской.
    */
-  provider: 'stream' | 'kinescope' | 'embed';
+  provider: 'stream' | 'kinescope' | 'embed' | 'audio';
   /**
    * Идентификатор видео в хранилище: CF Stream uid или Kinescope video_id (по provider). Для внешней ссылки не используется — см. поля ниже.
    */
@@ -776,6 +812,10 @@ export interface Video {
    * Подставляется по типу ссылки; можно поправить вручную.
    */
   embedAspect?: ('16:9' | '9:16') | null;
+  /**
+   * Ссылка на MP3 в хранилище. Заполняется сервером при загрузке файла.
+   */
+  audioSrc?: string | null;
   durationSec?: number | null;
   /**
    * Номер сезона в видео-плейлисте. Пусто = вне сезона.
@@ -834,6 +874,10 @@ export interface VideoFolder {
 export interface GalleryImage {
   id: number;
   tenant?: (number | null) | Tenant;
+  /**
+   * Студийный аккаунт, создавший запись. Ограниченный участник видит и правит только свои записи.
+   */
+  owner?: (number | null) | User;
   alt?: string | null;
   /**
    * Папка библиотеки для группировки. Одно изображение — одна папка.
@@ -987,6 +1031,194 @@ export interface MenuItem {
   createdAt: string;
 }
 /**
+ * Цифровые товары для скачивания по подписке (книги, PDF и др.).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "downloads".
+ */
+export interface Download {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Студийный аккаунт, создавший запись. Ограниченный участник видит и правит только свои записи.
+   */
+  owner?: (number | null) | User;
+  title: string;
+  /**
+   * Короткое описание товара (обычный текст).
+   */
+  description?: string | null;
+  /**
+   * Раздел витрины файлов.
+   */
+  category?: (number | null) | Category;
+  /**
+   * Пусто — файл бесплатен для всех. Иначе скачать могут подписчики этого уровня и выше.
+   */
+  minTier?: (number | null) | SubscriptionTier;
+  /**
+   * Открывает скачивание всем, перебивая минимальный уровень.
+   */
+  isPreview?: boolean | null;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Авторские произведения (книги, рассказы) с главами.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "books".
+ */
+export interface Book {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Студийный аккаунт, создавший запись. Ограниченный участник видит и правит только свои записи.
+   */
+  owner?: (number | null) | User;
+  title: string;
+  /**
+   * Заполняется автоматически из названия; можно поправить.
+   */
+  slug?: string | null;
+  /**
+   * Единая сущность: тип выбирается здесь, отдельных разделов нет.
+   */
+  type?: ('novel' | 'story' | 'mini' | 'cycle') | null;
+  /**
+   * Привязать к циклу (произведению типа «Цикл»).
+   */
+  cycle?: (number | null) | Book;
+  cycleOrder?: number | null;
+  cover?: (number | null) | Media;
+  annotation?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  status?: ('ongoing' | 'finished' | 'frozen') | null;
+  ageRating?: ('12' | '16' | '18') | null;
+  allowComments?: boolean | null;
+  allowDownload?: boolean | null;
+  category?: (number | null) | Category;
+  /**
+   * Жанры, метки, пейринги — навигация по каталогу.
+   */
+  tags?:
+    | {
+        label: string;
+        slug?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Пусто — вся книга бесплатна. Иначе платные главы требуют этот уровень и выше.
+   */
+  minTier?: (number | null) | SubscriptionTier;
+  /**
+   * Сколько первых глав открыты всем (0 — по флагу главы/подписке).
+   */
+  freeChapters?: number | null;
+  /**
+   * Список жанров через запятую (выбор в студии).
+   */
+  genres?: string | null;
+  /**
+   * Видна читателям на странице книги.
+   */
+  quote1?: string | null;
+  quote2?: string | null;
+  quote3?: string | null;
+  /**
+   * Видео из раздела «Видео».
+   */
+  booktrailerVideo?: (number | null) | Video;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Главы книг (текст).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chapters".
+ */
+export interface Chapter {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Студийный аккаунт, создавший запись. Ограниченный участник видит и правит только свои записи.
+   */
+  owner?: (number | null) | User;
+  book: number | Book;
+  /**
+   * Номер главы для сортировки.
+   */
+  order?: number | null;
+  title: string;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Открыта всем, независимо от уровня книги.
+   */
+  isPreview?: boolean | null;
+  /**
+   * Пусто — берётся уровень книги.
+   */
+  minTier?: (number | null) | SubscriptionTier;
+  wordCount?: number | null;
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Читатели, следящие за обновлениями произведений.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "book-follows".
+ */
+export interface BookFollow {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  subscriber: number | Subscriber;
+  book: number | Book;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Комментарии зрителей. Постмодерация: скрывайте нарушающие через статус.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -995,7 +1227,14 @@ export interface MenuItem {
 export interface Comment {
   id: number;
   tenant?: (number | null) | Tenant;
-  publication: number | Publication;
+  /**
+   * Заполнено у комментария к публикации (иначе — к главе).
+   */
+  publication?: (number | null) | Publication;
+  /**
+   * Заполнено у комментария к главе книги.
+   */
+  chapter?: (number | null) | Chapter;
   /**
    * Зритель, оставивший комментарий.
    */
@@ -1127,9 +1366,10 @@ export interface Bookmark {
   id: number;
   tenant?: (number | null) | Tenant;
   subscriber: number | Subscriber;
-  targetType: 'publication' | 'video';
+  targetType: 'publication' | 'video' | 'book';
   publication?: (number | null) | Publication;
   video?: (number | null) | Video;
+  book?: (number | null) | Book;
   updatedAt: string;
   createdAt: string;
 }
@@ -1157,9 +1397,11 @@ export interface View {
   id: number;
   tenant?: (number | null) | Tenant;
   subscriber: number | Subscriber;
-  targetType: 'publication' | 'video';
+  targetType: 'publication' | 'video' | 'book';
   publication?: (number | null) | Publication;
   video?: (number | null) | Video;
+  book?: (number | null) | Book;
+  chapter?: (number | null) | Chapter;
   viewedAt?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1243,6 +1485,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'gallery-folders';
         value: number | GalleryFolder;
+      } | null)
+    | ({
+        relationTo: 'downloads';
+        value: number | Download;
+      } | null)
+    | ({
+        relationTo: 'books';
+        value: number | Book;
+      } | null)
+    | ({
+        relationTo: 'chapters';
+        value: number | Chapter;
+      } | null)
+    | ({
+        relationTo: 'book-follows';
+        value: number | BookFollow;
       } | null)
     | ({
         relationTo: 'comments';
@@ -1338,6 +1596,12 @@ export interface TenantsSelect<T extends boolean = true> {
   domainVerified?: T;
   status?: T;
   plan?: T;
+  capBooks?: T;
+  capBooksUntil?: T;
+  capMedia?: T;
+  capMediaUntil?: T;
+  capCustomDomain?: T;
+  studioFrozen?: T;
   subdomain?: T;
   category?: T;
   description?: T;
@@ -1355,6 +1619,11 @@ export interface UsersSelect<T extends boolean = true> {
   tenant?: T;
   platformRole?: T;
   tenantRole?: T;
+  invitedBy?: T;
+  inviteTokenHash?: T;
+  inviteExpiresAt?: T;
+  inviteAcceptedAt?: T;
+  disabled?: T;
   tenants?:
     | T
     | {
@@ -1517,6 +1786,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface PublicationsSelect<T extends boolean = true> {
   tenant?: T;
+  owner?: T;
   title?: T;
   slug?: T;
   cover?: T;
@@ -1726,6 +1996,7 @@ export interface SubscribersSelect<T extends boolean = true> {
  */
 export interface VideosSelect<T extends boolean = true> {
   tenant?: T;
+  owner?: T;
   title?: T;
   slug?: T;
   description?: T;
@@ -1739,6 +2010,7 @@ export interface VideosSelect<T extends boolean = true> {
   embedProvider?: T;
   embedSrc?: T;
   embedAspect?: T;
+  audioSrc?: T;
   durationSec?: T;
   season?: T;
   episode?: T;
@@ -1779,6 +2051,7 @@ export interface VideoFoldersSelect<T extends boolean = true> {
  */
 export interface GalleryImagesSelect<T extends boolean = true> {
   tenant?: T;
+  owner?: T;
   alt?: T;
   folder?: T;
   updatedAt?: T;
@@ -1839,11 +2112,103 @@ export interface GalleryFoldersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "downloads_select".
+ */
+export interface DownloadsSelect<T extends boolean = true> {
+  tenant?: T;
+  owner?: T;
+  title?: T;
+  description?: T;
+  category?: T;
+  minTier?: T;
+  isPreview?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "books_select".
+ */
+export interface BooksSelect<T extends boolean = true> {
+  tenant?: T;
+  owner?: T;
+  title?: T;
+  slug?: T;
+  type?: T;
+  cycle?: T;
+  cycleOrder?: T;
+  cover?: T;
+  annotation?: T;
+  status?: T;
+  ageRating?: T;
+  allowComments?: T;
+  allowDownload?: T;
+  category?: T;
+  tags?:
+    | T
+    | {
+        label?: T;
+        slug?: T;
+        id?: T;
+      };
+  minTier?: T;
+  freeChapters?: T;
+  genres?: T;
+  quote1?: T;
+  quote2?: T;
+  quote3?: T;
+  booktrailerVideo?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chapters_select".
+ */
+export interface ChaptersSelect<T extends boolean = true> {
+  tenant?: T;
+  owner?: T;
+  book?: T;
+  order?: T;
+  title?: T;
+  body?: T;
+  isPreview?: T;
+  minTier?: T;
+  wordCount?: T;
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "book-follows_select".
+ */
+export interface BookFollowsSelect<T extends boolean = true> {
+  tenant?: T;
+  subscriber?: T;
+  book?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "comments_select".
  */
 export interface CommentsSelect<T extends boolean = true> {
   tenant?: T;
   publication?: T;
+  chapter?: T;
   author?: T;
   text?: T;
   parent?: T;
@@ -1928,6 +2293,7 @@ export interface BookmarksSelect<T extends boolean = true> {
   targetType?: T;
   publication?: T;
   video?: T;
+  book?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1952,6 +2318,8 @@ export interface ViewsSelect<T extends boolean = true> {
   targetType?: T;
   publication?: T;
   video?: T;
+  book?: T;
+  chapter?: T;
   viewedAt?: T;
   updatedAt?: T;
   createdAt?: T;

@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { tenantScopedCollection } from '../access'
+import { ownerScopedCollection, ownerField, stampOwner } from '../access'
 
 /**
  * Chapters («Главы») — главы книги (коллекция `books`). Текст в Lexical.
@@ -20,9 +20,13 @@ export const Chapters: CollectionConfig = {
     group: 'Контент',
     description: 'Главы книг (текст).',
   },
-  access: tenantScopedCollection,
+  access: ownerScopedCollection,
+  hooks: {
+    beforeChange: [stampOwner],
+  },
   fields: [
     // `tenant` добавляет multi-tenant плагин.
+    ownerField,
     {
       name: 'book',
       type: 'relationship',

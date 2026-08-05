@@ -19,7 +19,7 @@ export const runtime = 'nodejs'
 const MAX_BYTES = 25 * 1024 * 1024 // 25 MB — фото галереи крупнее обложек
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (!(await hasCapability(payload, tenantId, 'media'))) return apiError('Раздел медиа недоступен на текущем тарифе. Оформите пакет в студии.', 403)
   let form: FormData
   try {
@@ -59,6 +59,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       collection: 'gallery-images',
       data: {
         tenant: tenantId,
+        owner: author.user.id,
         alt: alt || undefined,
         ...(folderId ? { folder: folderId } : {}),
       } as any,

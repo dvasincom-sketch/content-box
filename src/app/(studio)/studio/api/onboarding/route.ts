@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { normalizeSubdomain, subdomainError, domainFromSubdomain } from '@/lib/subdomain'
 
 /**
@@ -15,7 +15,8 @@ export const dynamic = 'force-dynamic'
 
 const CATEGORIES = ['blogger', 'musician', 'podcaster', 'streamer', 'artist', 'education', 'other']
 
-export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const body = await readJson<Record<string, unknown>>(req)
   if (body === undefined) return apiError('Некорректный запрос.')
 

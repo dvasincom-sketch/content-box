@@ -22,6 +22,10 @@ export default async function BookEditPage({ params }: { params: Promise<{ id: s
   if (!book) notFound()
   const bTenant = book.tenant && typeof book.tenant === 'object' ? book.tenant.id : book.tenant
   if (Number(bTenant) !== Number(author!.tenantId)) notFound()
+  if (author!.user.tenantRole === 'contributor') {
+    const _o = book.owner && typeof book.owner === 'object' ? book.owner.id : book.owner
+    if (Number(_o) !== Number(author!.user.id)) notFound()
+  }
 
   const chRes = await payload.find({
     collection: 'chapters' as any,

@@ -1,7 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { DownloadsManager } from './DownloadsManager'
@@ -11,13 +11,14 @@ export const dynamic = 'force-dynamic'
 
 export default async function DownloadsPage() {
   const author = await getCurrentAuthor()
+  const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
   const ent = await loadEntitlements(payload, author!.tenantId)
   if (!canUse(ent, 'media')) return <StudioUpsell cap="media" />
 
   const res = await payload.find({
     collection: 'downloads' as any,
-    where: { tenant: { equals: author!.tenantId } },
+    where: { and: [{ tenant: { equals: author!.tenantId } }, ...(ownFilter ? [ownFilter] : [])] },
     sort: '-createdAt',
     limit: 500,
     depth: 1,

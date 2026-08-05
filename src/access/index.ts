@@ -1,4 +1,4 @@
-import type { Access, FieldAccess, Where} from 'payload'
+import type { Access, FieldAccess, Where, CollectionBeforeChangeHook } from 'payload'
 
 /**
  * Shared access-control helpers.
@@ -111,4 +111,98 @@ export const tenantsPublicRead: Access = ({ req: { user } }) => {
     ],
   }
   return query
+}
+
+/* ============================================================================
+   РОЛИ ТЕНАНТА И ВЛАДЕНИЕ КОНТЕНТОМ
+   ----------------------------------------------------------------------------
+   Роли (users.tenantRole): 'editor'/'admin' — полный доступ (владелец студии);
+   'contributor' — ограниченный участник: создаёт контент и правит ТОЛЬКО свой,
+   чужое не видит и не трогает; общие структуры (категории/тарифы/дизайн) — нет.
+   Владение фиксируется полем `owner` (→ users) на контентных коллекциях.
+   ============================================================================ */
+
+/** Роль пользователя в тенанте ('editor' | 'admin' | 'contributor' | 'viewer'). */
+export const getUserRole = (user: MaybeUser): string | undefined => {
+  if (!user || !isStaff(user)) return undefined
+  return (user as { tenantRole?: string | null }).tenantRole ?? undefined
+}
+
+/** Ограниченный участник тенанта. */
+export const isContributor = (user: MaybeUser): boolean =>
+  isStaff(user) && getUserRole(user) === 'contributor'
+
+/** Полноправный сотрудник: суперадмин, либо editor/admin тенанта (не contributor/viewer). */
+export const isFullStaff = (user: MaybeUser): boolean =>
+  isSuperAdmin(user) ||
+  (isStaff(user) && (getUserRole(user) === 'editor' || getUserRole(user) === 'admin'))
+
+const userIdOf = (user: MaybeUser): string | number | undefined =>
+  (user as { id?: string | number } | null | undefined)?.id
+
+/**
+ * Доступ к контенту с владельцем. Полный сотрудник — весь тенант; ограниченный
+ * участник — только записи со своим `owner`. Аноним/зритель — отказ.
+ */
+export const ownerScoped: Access = ({ req: { user } }) => {
+  const u = user as MaybeUser
+  if (isSuperAdmin(u)) return true
+  const tenantID = getUserTenantID(u)
+  if (!tenantID) return false
+  if (isContributor(u)) {
+    const uid = userIdOf(u)
+    if (uid == null) return false
+    const own: Where = { and: [{ tenant: { equals: tenantID } }, { owner: { equals: uid } }] }
+    return own
+  }
+  const scoped: Where = { tenant: { equals: tenantID } }
+  return scoped
+}
+
+/**
+ * Набор access для контентных коллекций с владельцем. Создавать может любой
+ * сотрудник тенанта; читать/править/удалять ограниченный участник — только своё.
+ */
+export const ownerScopedCollection = {
+  read: ownerScoped,
+  create: tenantScoped,
+  update: ownerScoped,
+  delete: ownerScoped,
+}
+
+/** Field-access: изменять поле может только полный сотрудник (не участник). */
+export const fullStaffFieldAccess: FieldAccess = ({ req: { user } }) =>
+  isFullStaff(user as MaybeUser)
+
+/**
+ * Поле-владелец для контентных коллекций. Переназначить владельца может только
+ * полный сотрудник; проставляется автоматически хуком `stampOwner` при создании.
+ */
+export const ownerField = {
+  name: 'owner',
+  type: 'relationship' as const,
+  relationTo: 'users' as const,
+  index: true,
+  label: 'Владелец (создатель)',
+  admin: {
+    description:
+      'Студийный аккаунт, создавший запись. Ограниченный участник видит и правит только свои записи.',
+    position: 'sidebar' as const,
+  },
+  access: {
+    update: fullStaffFieldAccess,
+  },
+}
+
+/**
+ * beforeChange-хук: при создании проставляет owner = текущий сотрудник, если он
+ * ещё не задан. Studio-роуты задают owner явно (overrideAccess); хук — страховка
+ * для прямого REST под сессией участника, чтобы он не мог создать «ничьё».
+ */
+export const stampOwner: CollectionBeforeChangeHook = ({ operation, data, req }) => {
+  if (operation === 'create' && data && (data as { owner?: unknown }).owner == null) {
+    const u = req?.user as MaybeUser
+    if (u && isStaff(u)) (data as { owner?: unknown }).owner = userIdOf(u)
+  }
+  return data
 }
