@@ -31,6 +31,7 @@ export function VideoPlayer({
 }) {
   const [src, setSrc] = useState<string | null>(null)
   const [aspect, setAspect] = useState<'16:9' | '9:16'>(initialAspect)
+  const [kind, setKind] = useState<'video' | 'audio'>('video')
   const [error, setError] = useState<string | null>(null)
   // Гейт по подписке (403 от /api/video-token). Отдельно от error, чтобы
   // показать «Видео доступно с уровня «…»» и точку продажи, а не сухую ошибку.
@@ -72,7 +73,12 @@ export function VideoPlayer({
           }
           return
         }
-        if (json.provider === 'embed') {
+        if (json.provider === 'audio') {
+          setKind('audio')
+          const u = typeof json.audioUrl === 'string' && json.audioUrl.startsWith('http') ? json.audioUrl : null
+          if (u) setSrc(u)
+          else setError('Не удалось загрузить аудио')
+        } else if (json.provider === 'embed') {
           if (typeof json.src === 'string' && json.src.startsWith('https://')) {
             setSrc(json.src)
             setAspect(json.aspect === '9:16' ? '9:16' : '16:9')
@@ -97,6 +103,42 @@ export function VideoPlayer({
   }, [videoId])
 
   const vertical = aspect === '9:16'
+
+  // Аудио: компактный плеер-карточка (не 16:9-коробка). Гейт/ошибка/загрузка —
+  // в той же карточке, на брендовых токенах (работает в обеих темах).
+  if (kind === 'audio') {
+    return (
+      <div className="mb-8">
+        <div
+          className="rounded-2xl"
+          style={{ background: 'var(--brand-surface)', border: '1px solid var(--brand-border)', padding: 16 }}
+        >
+          {gate ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center', padding: '16px 8px' }}>
+              <span
+                className="inline-flex items-center justify-center rounded-full"
+                style={{ width: 48, height: 48, background: 'color-mix(in srgb, var(--brand-primary) 14%, transparent)', color: 'var(--brand-primary)' }}
+              >
+                <Lock size={20} />
+              </span>
+              <span style={{ fontWeight: 700, color: 'var(--brand-text)' }}>
+                {gate.tier ? <>Аудио доступно с уровня «{gate.tier}»</> : <>Аудио доступно по подписке</>}
+              </span>
+              <Link href="/subscribe" className="c-btn c-btn--primary">
+                {gate.reason === 'need-login' ? 'Войти или оформить подписку' : 'Оформить подписку'}
+              </Link>
+            </div>
+          ) : error ? (
+            <div style={{ color: 'var(--brand-muted)', textAlign: 'center', padding: '16px 8px' }}>{error}</div>
+          ) : !src ? (
+            <div style={{ color: 'var(--brand-muted)', textAlign: 'center', padding: '16px 8px' }}>Загрузка плеера…</div>
+          ) : (
+            <audio controls preload="metadata" src={src} style={{ width: '100%' }} />
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     // Два уровня намеренно. `padding-top` в процентах считается от ширины

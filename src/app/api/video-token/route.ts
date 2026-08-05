@@ -53,6 +53,17 @@ export async function GET(req: NextRequest) {
   // Отдаём src, который лежит в базе: он туда попал уже разобранным и с
   // проверенным хостом (src/lib/videoEmbed.ts). Здесь ничего не собираем и не
   // доверяем полю вслепую — на всякий случай сверяем схему ещё раз.
+  // Аудио: MP3 в S3. Проверка доступа выше уже прошла; отдаём URL файла.
+  // Защита мягкая (публичный S3-URL) — как у embed; для платного контента
+  // это барьер доступа к плееру, не к самому файлу по прямой ссылке.
+  if (access.video.provider === 'audio') {
+    const url = String(access.video.audioSrc || '')
+    if (!url.startsWith('http')) {
+      return NextResponse.json({ error: 'У аудио нет файла' }, { status: 400 })
+    }
+    return NextResponse.json({ ok: true, provider: 'audio', audioUrl: url })
+  }
+
   if (access.video.provider === 'embed') {
     const src = String(access.video.embedSrc || '')
     if (!src.startsWith('https://')) {

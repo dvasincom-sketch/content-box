@@ -15,7 +15,7 @@ export const Media: CollectionConfig = {
     // как есть, на сайт отдаём размеры ниже (в разы легче). sharp генерирует
     // их при загрузке. Обложки грузятся по одной (upload-cover), поэтому
     // параллельного OOM, как было в галерее, здесь нет.
-    mimeTypes: ['image/*'],
+    mimeTypes: ['image/*', 'audio/*'],
     imageSizes: [
       // landscape-обложка для обычных карточек публикаций
       {

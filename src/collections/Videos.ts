@@ -100,13 +100,17 @@ export const Videos: CollectionConfig = {
         { label: 'Cloudflare Stream (зарубежный)', value: 'stream' },
         { label: 'Kinescope (российский)', value: 'kinescope' },
         { label: 'Внешняя ссылка (VK, Дзен)', value: 'embed' },
+        { label: 'Аудио (MP3)', value: 'audio' },
       ],
       // Выбрать 'embed' руками нельзя: адрес плеера заполняет сервер после
       // разбора ссылки, и запись без него будет неиграбельной. Такие видео
       // создаются в студии кнопкой «Не хранить».
-      validate: (value: unknown, { data }: { data?: { embedSrc?: unknown } }) => {
+      validate: (value: unknown, { data }: { data?: { embedSrc?: unknown; audioSrc?: unknown } }) => {
         if (value === 'embed' && !data?.embedSrc) {
           return 'Видео по внешней ссылке добавляется в студии — там разбирается ссылка и проверяется площадка.'
+        }
+        if (value === 'audio' && !data?.audioSrc) {
+          return 'Аудио добавляется в студии загрузкой MP3-файла.'
         }
         return true
       },
@@ -174,6 +178,21 @@ export const Videos: CollectionConfig = {
       admin: {
         condition: (data) => data?.provider === 'embed',
         description: 'Подставляется по типу ссылки; можно поправить вручную.',
+      },
+    },
+    // ── Аудио (provider = 'audio') ──────────────────────────────────────────
+    // MP3 лежит в S3 (загружается в студии), audioSrc — публичный URL файла.
+    // Как и embedSrc, пишет ТОЛЬКО сервер (overrideAccess) после загрузки;
+    // `readOnly`/field-access закрывают правку руками.
+    {
+      name: 'audioSrc',
+      type: 'text',
+      label: 'Файл аудио (URL в хранилище)',
+      access: { create: () => false, update: () => false },
+      admin: {
+        condition: (data) => data?.provider === 'audio',
+        readOnly: true,
+        description: 'Ссылка на MP3 в хранилище. Заполняется сервером при загрузке файла.',
       },
     },
     {
