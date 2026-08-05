@@ -26,6 +26,7 @@ import { Videos } from './collections/Videos'
 import { VideoFolders } from './collections/VideoFolders'
 import { GalleryImages } from './collections/GalleryImages'
 import { GalleryFolders } from './collections/GalleryFolders'
+import { Downloads } from './collections/Downloads'
 import { Comments } from './collections/Comments'
 import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
@@ -149,6 +150,7 @@ export default buildConfig({
     VideoFolders,
     GalleryImages,
     GalleryFolders,
+    Downloads,
     Comments,
     Reactions,
     ActivityEvents,
@@ -243,6 +245,15 @@ export default buildConfig({
           generateFileURL: ({ filename }) =>
             `${process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL}/${filename}`,
         },
+        downloads: {
+          // Файлы («Файлы») лежат в том же бакете. Прямой публичный URL на сайт
+          // НЕ отдаётся — скачивание идёт через защищённый роут
+          // `/api/download/[id]` (гейтинг по подписке). Здесь URL нужен, чтобы
+          // роут смог прочитать объект из хранилища на стороне сервера.
+          disablePayloadAccessControl: true,
+          generateFileURL: ({ filename }) =>
+            `${process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL}/${filename}`,
+        },
       },
       // Объектное хранилище S3. Переезд с Cloudflare R2 на Timeweb Cloud S3:
       // endpoint https://s3.twcstorage.ru, регион ru-1, адреса path-style
@@ -282,6 +293,7 @@ export default buildConfig({
         'video-folders': { useTenantAccess: false },
         'gallery-images': { useTenantAccess: false },
         'gallery-folders': { useTenantAccess: false },
+        downloads: { useTenantAccess: false },
         comments: { useTenantAccess: false },
         reactions: { useTenantAccess: false },
         'activity-events': { useTenantAccess: false },
