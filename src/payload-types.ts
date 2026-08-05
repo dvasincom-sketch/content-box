@@ -290,7 +290,7 @@ export interface SiteSetting {
   /**
    * Готовый пресет: палитра (светлая + тёмная версии) и пара шрифтов уже подобраны под нишу. Выбирается в Студии.
    */
-  themePreset?: ('neon-dawn' | 'warm-earth' | 'digital-monolith' | 'velvet-resonance' | 'amber-pulse') | null;
+  themePreset?: ('neon-dawn' | 'warm-earth' | 'digital-monolith' | 'velvet-resonance' | 'amber-pulse' | 'frost') | null;
   theme?: {
     /**
      * напр. #7C3AED

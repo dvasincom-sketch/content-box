@@ -60,6 +60,7 @@ import * as migration_20260805_220000_add_contributor_role from './20260805_2200
 import * as migration_20260805_221000_add_content_owner from './20260805_221000_add_content_owner';
 import * as migration_20260805_230000_add_user_invites from './20260805_230000_add_user_invites';
 import * as migration_20260805_240000_add_user_disabled from './20260805_240000_add_user_disabled';
+import * as migration_20260805_250000_add_frost_preset from './20260805_250000_add_frost_preset';
 
 export const migrations = [
   {
@@ -371,5 +372,10 @@ export const migrations = [
     up: migration_20260805_240000_add_user_disabled.up,
     down: migration_20260805_240000_add_user_disabled.down,
     name: '20260805_240000_add_user_disabled',
+  },
+  {
+    up: migration_20260805_250000_add_frost_preset.up,
+    down: migration_20260805_250000_add_frost_preset.down,
+    name: '20260805_250000_add_frost_preset',
   },
 ];

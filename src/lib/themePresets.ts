@@ -130,6 +130,17 @@ export const THEME_PRESETS: ThemePreset[] = [
     dark: { bg: '#121212', surface: '#1E1E1E', primary: '#FF7A1A', accent: '#4D77FF', text: '#F5F5F5' },
     light: { bg: '#FAF8F5', surface: '#F0EAE1', primary: '#FF6B00', accent: '#2D5BFF', text: '#1A1A1A' },
   },
+  {
+    id: 'frost',
+    name: 'Ледяной иней',
+    subtitleEn: 'Frost & Aurora',
+    niche: 'фанфики, фандом, сказочные и зимние проекты, читательские сообщества',
+    fonts: { heading: 'ptserif', body: 'golos' },
+    darkName: 'Полярная ночь',
+    lightName: 'Морозное утро',
+    dark: { bg: '#0A1622', surface: '#122234', primary: '#5CC8F0', accent: '#A78BFA', text: '#EAF6FF' },
+    light: { bg: '#EEF6FC', surface: '#FFFFFF', primary: '#0EA5E9', accent: '#7C3AED', text: '#0F2438' },
+  },
 ]
 
 export const DEFAULT_PRESET_ID = 'neon-dawn'
