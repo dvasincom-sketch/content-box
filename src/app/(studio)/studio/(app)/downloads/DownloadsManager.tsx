@@ -146,7 +146,7 @@ export function DownloadsManager({
       </div>
 
       {/* Загрузка */}
-      <div className="c-card" style={{ padding: 20, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="studio-card" style={{ padding: 20, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ fontWeight: 700 }}>Загрузить файл</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <label className="studio-btn studio-btn--ghost" style={{ cursor: 'pointer' }}>
@@ -232,7 +232,7 @@ export function DownloadsManager({
           {initialItems.map((a) => (
             <div
               key={a.id}
-              className="c-card"
+              className="studio-card"
               style={{ padding: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}
             >
               <FileDown size={18} style={{ flex: 'none', color: 'var(--st-text-muted)' }} />
@@ -347,8 +347,8 @@ function EditModal({
       onClick={onClose}
     >
       <div
-        className="c-card"
-        style={{ width: 'min(520px, 100%)', padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}
+        className="studio-card"
+        style={{ width: 'min(520px, 100%)', padding: 20, display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--st-surface)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -60,7 +60,12 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   const strField = (k: string) => {
     if (k in data) patch[k] = typeof data[k] === 'string' && data[k].trim() ? data[k].trim() : null
   }
-  ;['genre1', 'genre2', 'quote1', 'quote2', 'quote3'].forEach(strField)
+  ;['quote1', 'quote2', 'quote3'].forEach(strField)
+  if ('genres' in data) {
+    patch.genres = Array.isArray(data.genres)
+      ? (data.genres as unknown[]).filter((g): g is string => typeof g === 'string' && g.trim().length > 0).join(', ') || null
+      : (typeof data.genres === 'string' && data.genres.trim() ? data.genres.trim() : null)
+  }
   if ('booktrailerVideoId' in data) {
     patch.booktrailerVideo = data.booktrailerVideoId && (await belongsToTenant(payload, 'videos', data.booktrailerVideoId, tenantId))
       ? Number(data.booktrailerVideoId) : null

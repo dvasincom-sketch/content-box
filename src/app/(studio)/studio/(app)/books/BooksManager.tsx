@@ -73,7 +73,7 @@ export function BooksManager({ initialBooks }: { initialBooks: Book[] }) {
     <div className="studio-page">
       <div className="studio-page-head"><h1>Произведения</h1></div>
 
-      <div className="c-card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className="studio-card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <input
           className="studio-input" placeholder="Название нового произведения" value={title}
           onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && create()}
@@ -110,7 +110,7 @@ export function BooksManager({ initialBooks }: { initialBooks: Book[] }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {shown.map((b) => (
-            <div key={b.id} className="c-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div key={b.id} className="studio-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 'none', width: 46, height: 62, borderRadius: 6, overflow: 'hidden', background: 'var(--st-surface)', display: 'grid', placeItems: 'center' }}>
                 {b.coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element

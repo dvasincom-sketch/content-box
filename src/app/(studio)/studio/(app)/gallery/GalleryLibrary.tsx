@@ -176,7 +176,7 @@ export function GalleryLibrary({ folders }: { folders: FolderItem[] }) {
       </div>
 
       {managing && (
-        <div className="c-card" style={{ padding: 16, marginBottom: 16 }}>
+        <div className="studio-card" style={{ padding: 16, marginBottom: 16 }}>
           <GalleryFolderManager folders={flat} onChanged={() => { router.refresh(); setReloadKey((k) => k + 1) }} />
         </div>
       )}
@@ -197,7 +197,7 @@ export function GalleryLibrary({ folders }: { folders: FolderItem[] }) {
 
       {/* Панель действий с выбранными */}
       {selected.size > 0 && (
-        <div className="c-card" style={{ padding: 12, marginBottom: 12, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="studio-card" style={{ padding: 12, marginBottom: 12, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 13, color: 'var(--st-text-muted)' }}>Выбрано: {selected.size}</span>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <FolderInput size={15} style={{ color: 'var(--st-text-muted)' }} />

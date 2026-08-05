@@ -115,7 +115,7 @@ export function AudioManager({
       </div>
 
       {/* Загрузка */}
-      <div className="c-card" style={{ padding: 20, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="studio-card" style={{ padding: 20, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ fontWeight: 700 }}>Загрузить аудио (MP3)</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <label className="studio-btn studio-btn--ghost" style={{ cursor: 'pointer' }}>
@@ -194,7 +194,7 @@ export function AudioManager({
           {initialAudios.map((a) => (
             <div
               key={a.id}
-              className="c-card"
+              className="studio-card"
               style={{ padding: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}
             >
               <Headphones size={18} style={{ flex: 'none', color: 'var(--st-text-muted)' }} />

@@ -63,7 +63,7 @@ export function ChaptersManager({
   }
 
   return (
-    <div className="c-card" style={{ padding: 20 }}>
+    <div className="studio-card" style={{ padding: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <div style={{ fontWeight: 700, fontSize: 16 }}>Главы</div>
         {savingOrder && <span style={{ fontSize: 12, color: 'var(--st-text-muted)', display: 'inline-flex', gap: 4, alignItems: 'center' }}><Loader2 size={12} className="spin" /> сохраняю порядок…</span>}
@@ -157,7 +157,7 @@ function ChapterModal({
     <div role="dialog" aria-modal="true"
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'grid', placeItems: 'start center', padding: 16, overflow: 'auto', zIndex: 50 }}
       onClick={onClose}>
-      <div className="c-card" style={{ width: 'min(760px, 100%)', padding: 20, margin: '24px 0', display: 'flex', flexDirection: 'column', gap: 12 }} onClick={(e) => e.stopPropagation()}>
+      <div className="studio-card" style={{ width: 'min(760px, 100%)', padding: 20, margin: '24px 0', display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--st-surface)' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontWeight: 700, fontSize: 16 }}>{chapter ? 'Изменить главу' : 'Новая глава'}</div>
           <button className="studio-btn studio-btn--ghost" onClick={onClose} aria-label="Закрыть"><X size={16} /></button>

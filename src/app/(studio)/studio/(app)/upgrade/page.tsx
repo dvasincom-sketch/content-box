@@ -25,13 +25,13 @@ export default async function UpgradePage() {
     <div className="studio-page">
       <div className="studio-page-head"><h1>Пакеты студии</h1></div>
       {ent?.studioFrozen && (
-        <div className="c-card" style={{ padding: 16, marginBottom: 16, background: 'color-mix(in srgb, var(--st-warning, #d97706) 18%, transparent)' }}>
+        <div className="studio-card" style={{ padding: 16, marginBottom: 16, background: 'color-mix(in srgb, var(--st-warning, #d97706) 18%, transparent)' }}>
           Студия заморожена. Чтобы снять заморозку, включите платные подписки и оформите пакет.
         </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 720 }}>
         {rows.map((r) => (
-          <div key={r.title} className="c-card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div key={r.title} className="studio-card" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ flex: 'none', width: 36, height: 36, borderRadius: 999, display: 'grid', placeItems: 'center', background: r.on ? 'color-mix(in srgb, var(--st-success, #16a34a) 18%, transparent)' : 'var(--st-surface-hover)' }}>
               {r.on ? <Check size={18} style={{ color: 'var(--st-success, #16a34a)' }} /> : <Lock size={16} style={{ color: 'var(--st-text-muted)' }} />}
             </div>

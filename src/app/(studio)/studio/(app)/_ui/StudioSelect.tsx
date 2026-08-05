@@ -1,36 +1,18 @@
 'use client'
 
-import React, { useEffect, useId, useRef, useState } from 'react'
-import { ChevronDown, Check } from 'lucide-react'
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { ChevronDown, Check, Search } from 'lucide-react'
 
 /**
- * StudioSelect — кастомный дропдаун в стиле студии (тёмное стекло).
- * Заменяет нативный <select>, чтобы раскрытый список тоже был в дизайн-системе.
- *
- * Полностью управляемый: value + onChange, как у нативного select.
- * Доступность: роль listbox, стрелки/Enter/Esc, закрытие по клику вне.
- *
- * options: массив { value, label, depth? }.
- *   - value — строка (как в нативном select; числа приводите к String заранее).
- *   - label — что показывать.
- *   - depth — необязательный уровень вложенности (для деревьев папок): добавляет
- *     отступ слева, заменяя прежние &nbsp;-хаки.
+ * StudioSelect — кастомный дропдаун в стиле студии. Заменяет нативный <select>.
+ * Поддерживает depth (дерево, отступ) и поиск по списку (авто при >8 пунктах
+ * или явно через searchable) — для длинных списков (видео, категории).
  */
 
-export type StudioSelectOption = {
-  value: string
-  label: string
-  depth?: number
-}
+export type StudioSelectOption = { value: string; label: string; depth?: number }
 
 export function StudioSelect({
-  value,
-  onChange,
-  options,
-  placeholder,
-  disabled = false,
-  className,
-  ariaLabel,
+  value, onChange, options, placeholder, disabled = false, className, ariaLabel, searchable,
 }: {
   value: string
   onChange: (value: string) => void
@@ -39,120 +21,95 @@ export function StudioSelect({
   disabled?: boolean
   className?: string
   ariaLabel?: string
+  searchable?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState<number>(-1)
   const rootRef = useRef<HTMLDivElement>(null)
-  const listRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
   const listboxId = useId()
+
+  const showSearch = (searchable ?? options.length > 8)
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options
+  }, [query, options])
 
   const selected = options.find((o) => o.value === value) || null
   const displayLabel = selected ? selected.label : (placeholder ?? '—')
 
-  // Закрытие по клику вне и по Esc
   useEffect(() => {
-    if (!open) return
-    function onDocClick(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setOpen(false)
-      }
-    }
+    if (!open) { setQuery(''); return }
+    function onDocClick(e: MouseEvent) { if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false) }
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', onDocClick)
     document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDocClick)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
+    if (showSearch) setTimeout(() => searchRef.current?.focus(), 0)
+    return () => { document.removeEventListener('mousedown', onDocClick); document.removeEventListener('keydown', onKey) }
+  }, [open, showSearch])
 
-  // При открытии — активный пункт на выбранном
   useEffect(() => {
     if (open) {
-      const idx = options.findIndex((o) => o.value === value)
+      const idx = shown.findIndex((o) => o.value === value)
       setActiveIndex(idx >= 0 ? idx : 0)
     }
-  }, [open, value, options])
+  }, [open, value, shown])
 
-  function commit(idx: number) {
-    const opt = options[idx]
+  function commit(opt?: StudioSelectOption) {
     if (!opt) return
     onChange(opt.value)
     setOpen(false)
+    setQuery('')
   }
 
-  function onTriggerKeyDown(e: React.KeyboardEvent) {
+  function onKeyNav(e: React.KeyboardEvent) {
     if (disabled) return
     if (!open) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        setOpen(true)
-      }
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true) }
       return
     }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setActiveIndex((i: number) => Math.min(options.length - 1, i + 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setActiveIndex((i: number) => Math.max(0, i - 1))
-    } else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      commit(activeIndex)
-    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex((i) => Math.min(shown.length - 1, i + 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex((i) => Math.max(0, i - 1)) }
+    else if (e.key === 'Enter') { e.preventDefault(); commit(shown[activeIndex]) }
   }
 
   return (
-    <div
-      ref={rootRef}
-      className={`studio-select${open ? ' is-open' : ''}${disabled ? ' is-disabled' : ''}${className ? ' ' + className : ''}`}
-    >
+    <div ref={rootRef} className={`studio-select${open ? ' is-open' : ''}${disabled ? ' is-disabled' : ''}${className ? ' ' + className : ''}`}>
       <button
-        type="button"
-        className="studio-select__trigger"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={ariaLabel}
-        disabled={disabled}
-        onClick={() => !disabled && setOpen((v: boolean) => !v)}
-        onKeyDown={onTriggerKeyDown}
+        type="button" className="studio-select__trigger" aria-haspopup="listbox" aria-expanded={open}
+        aria-label={ariaLabel} disabled={disabled}
+        onClick={() => !disabled && setOpen((v) => !v)} onKeyDown={onKeyNav}
       >
-        <span
-          className={`studio-select__value${selected ? '' : ' is-placeholder'}`}
-        >
-          {displayLabel}
-        </span>
+        <span className={`studio-select__value${selected ? '' : ' is-placeholder'}`}>{displayLabel}</span>
         <ChevronDown size={16} className="studio-select__caret" aria-hidden />
       </button>
 
       {open && (
-        <div
-          ref={listRef}
-          className="studio-select__list"
-          role="listbox"
-          id={listboxId}
-          tabIndex={-1}
-        >
-          {options.map((opt, idx) => {
+        <div className="studio-select__list" role="listbox" id={listboxId} tabIndex={-1}>
+          {showSearch && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '1px solid var(--st-border)', position: 'sticky', top: 0, background: 'var(--st-surface)' }}>
+              <Search size={15} style={{ color: 'var(--st-text-muted)', flex: 'none' }} />
+              <input
+                ref={searchRef} value={query} onChange={(e) => { setQuery(e.target.value); setActiveIndex(0) }}
+                onKeyDown={onKeyNav} placeholder="Поиск…"
+                style={{ flex: 1, minWidth: 0, background: 'transparent', border: 0, outline: 'none', color: 'var(--st-text)', fontSize: 'var(--st-text-md)' }}
+              />
+            </div>
+          )}
+          {shown.length === 0 ? (
+            <div style={{ padding: '10px 12px', color: 'var(--st-text-muted)', fontSize: 'var(--st-text-sm)' }}>Ничего не найдено</div>
+          ) : shown.map((opt, idx) => {
             const isSelected = opt.value === value
             const isActive = idx === activeIndex
             return (
               <div
-                key={opt.value + ':' + idx}
-                role="option"
-                aria-selected={isSelected}
+                key={opt.value + ':' + idx} role="option" aria-selected={isSelected}
                 className={`studio-select__option${isSelected ? ' is-selected' : ''}${isActive ? ' is-active' : ''}`}
                 style={opt.depth ? { paddingLeft: `calc(var(--st-space-3) + ${opt.depth * 14}px)` } : undefined}
-                onMouseEnter={() => setActiveIndex(idx)}
-                onClick={() => commit(idx)}
+                onMouseEnter={() => setActiveIndex(idx)} onClick={() => commit(opt)}
               >
-                <span className="studio-select__check" aria-hidden>
-                  {isSelected ? <Check size={15} /> : null}
-                </span>
+                <span className="studio-select__check" aria-hidden>{isSelected ? <Check size={15} /> : null}</span>
                 <span className="studio-select__option-label">{opt.label}</span>
               </div>
             )

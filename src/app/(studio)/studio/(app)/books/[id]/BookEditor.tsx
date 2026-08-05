@@ -7,7 +7,8 @@ import { Loader2, ImagePlus, X, ArrowLeft, Save, BookOpen } from 'lucide-react'
 import { StudioSelect } from '../../_ui/StudioSelect'
 import { TiptapEditor } from '../../posts/new/TiptapEditor'
 import { ChaptersManager, type ChapterItem } from './ChaptersManager'
-import { BOOK_GENRE_OPTIONS } from '@/lib/bookGenres'
+import { BOOK_GENRES } from '@/lib/bookGenres'
+import { CategoryMultiPicker } from '../../settings/CategoryMultiPicker'
 
 type Tier = { id: number | string; name: string }
 type Cat = { id: number | string; title: string; parentId: number | null }
@@ -29,13 +30,14 @@ type BookData = {
   coverUrl: string | null
   annotationHtml: string
   tags: string[]
-  genre1: string
-  genre2: string
+  genres: string[]
   quote1: string
   quote2: string
   quote3: string
   booktrailerVideoId: string
 }
+
+const GENRE_ITEMS = BOOK_GENRES.map((g) => ({ id: g, title: g, parentId: null as string | null }))
 
 function categoryOptions(cats: Cat[]): { value: string; label: string; depth: number }[] {
   const present = new Set(cats.map((c) => Number(c.id)))
@@ -86,8 +88,7 @@ export function BookEditor({
   const [annotationHtml, setAnnotationHtml] = useState(book.annotationHtml)
   const [tags, setTags] = useState<string[]>(book.tags)
   const [tagInput, setTagInput] = useState('')
-  const [genre1, setGenre1] = useState(book.genre1)
-  const [genre2, setGenre2] = useState(book.genre2)
+  const [genres, setGenres] = useState<string[]>(book.genres)
   const [quote1, setQuote1] = useState(book.quote1)
   const [quote2, setQuote2] = useState(book.quote2)
   const [quote3, setQuote3] = useState(book.quote3)
@@ -130,7 +131,7 @@ export function BookEditor({
           id: book.id, title: title.trim(), annotation: annotationHtml, status, type, ageRating,
           allowComments, allowDownload, cycleId: cycleId || '', cycleOrder: cycleOrder || '',
           freeChapters: Number(freeChapters) || 0, categoryId: categoryId || '', minTierId: minTierId || '',
-          coverId: coverId ?? null, tags, genre1, genre2, quote1, quote2, quote3, booktrailerVideoId,
+          coverId: coverId ?? null, tags, genres, quote1, quote2, quote3, booktrailerVideoId,
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -216,17 +217,19 @@ export function BookEditor({
             <StudioSelect value={categoryId} onChange={setCategoryId} ariaLabel="Категория"
               options={[{ value: '', label: '— без категории —' }, ...catOptions]} />
           </div>
-          <div style={{ display: 'flex', gap: 'var(--st-space-3)' }}>
-            <div className="studio-field" style={{ flex: 1, minWidth: 0 }}>
-              <div className="studio-field__label">Жанр 1</div>
-              <StudioSelect value={genre1} onChange={setGenre1} ariaLabel="Жанр 1"
-                options={[{ value: '', label: '— не выбрано —' }, ...BOOK_GENRE_OPTIONS]} />
-            </div>
-            <div className="studio-field" style={{ flex: 1, minWidth: 0 }}>
-              <div className="studio-field__label">Жанр 2</div>
-              <StudioSelect value={genre2} onChange={setGenre2} ariaLabel="Жанр 2"
-                options={[{ value: '', label: '— не выбрано —' }, ...BOOK_GENRE_OPTIONS]} />
-            </div>
+          <div className="studio-field">
+            <div className="studio-field__label">Жанры</div>
+            {genres.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                {genres.map((g) => (
+                  <span key={g} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 'var(--st-radius-sm)', background: 'var(--st-surface-hover)', color: 'var(--st-text)', fontSize: 'var(--st-text-sm)' }}>
+                    {g}
+                    <button onClick={() => setGenres(genres.filter((x) => x !== g))} style={{ border: 0, background: 'transparent', color: 'var(--st-text-muted)', cursor: 'pointer', display: 'grid', placeItems: 'center' }}><X size={12} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <CategoryMultiPicker categories={GENRE_ITEMS} value={genres} onChange={setGenres} />
           </div>
 
           <div style={{ display: 'flex', gap: 'var(--st-space-3)' }}>

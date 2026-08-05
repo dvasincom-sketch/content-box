@@ -109,7 +109,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
   }
   const coverUrl = book.cover && typeof book.cover === 'object' ? (book.cover.url || null) : null
   const tags = Array.isArray(book.tags) ? (book.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0) : []
-  const genres = [book.genre1, book.genre2].filter((g): g is string => typeof g === 'string' && g.trim().length > 0)
+  const genres = book.genres ? String(book.genres).split(',').map((g) => g.trim()).filter(Boolean) : []
   const quotes = [book.quote1, book.quote2, book.quote3].filter((q): q is string => typeof q === 'string' && q.trim().length > 0)
   const trailerVideo = book.booktrailerVideo && typeof book.booktrailerVideo === 'object' ? book.booktrailerVideo : null
 

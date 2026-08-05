@@ -8,7 +8,7 @@ export function StudioUpsell({ cap }: { cap: Capability }) {
   const copy = CAP_UPSELL[cap]
   return (
     <div className="studio-page">
-      <div className="c-card" style={{ padding: 32, maxWidth: 560, margin: '40px auto', textAlign: 'center' }}>
+      <div className="studio-card" style={{ padding: 32, maxWidth: 560, margin: '40px auto', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', width: 56, height: 56, borderRadius: 999, alignItems: 'center', justifyContent: 'center', background: 'var(--st-surface-hover)', marginBottom: 16 }}>
           <Lock size={24} style={{ color: 'var(--st-text-muted)' }} />
         </div>
