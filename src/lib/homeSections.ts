@@ -32,6 +32,7 @@ export const HOME_SECTION_DEFS = [
   { type: 'categories', label: 'Категории (плитки)' },
   { type: 'popularCategories', label: 'Популярные разделы' },
   { type: 'whyUs', label: '«Почему мы»' },
+  { type: 'authorSpotlight', label: 'Об авторе и подписка' },
   { type: 'socials', label: 'Соцсети' },
   { type: 'broadcast', label: 'Баннер «ON AIR»' },
 ] as const

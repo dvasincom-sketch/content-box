@@ -370,6 +370,7 @@ export interface SiteSetting {
           | 'categories'
           | 'popularCategories'
           | 'whyUs'
+          | 'authorSpotlight'
           | 'socials'
           | 'broadcast';
         enabled?: boolean | null;

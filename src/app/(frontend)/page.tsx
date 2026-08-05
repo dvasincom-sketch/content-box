@@ -13,6 +13,7 @@ import { type HeroSlide } from '@/components/HeroFeaturedSlider'
 import { WhyUsBlock } from '@/blocks/WhyUsBlock'
 import { SocialLinksBlock } from '@/blocks/SocialLinksBlock'
 import { BroadcastBannerBlock } from '@/blocks/BroadcastBannerBlock'
+import { AuthorSpotlightBlock } from '@/blocks/AuthorSpotlightBlock'
 import { buildMetadata } from '@/lib/seo'
 import { categoryHref } from '@/lib/categoryHref'
 import { publishedWhere } from '@/lib/published'
@@ -99,6 +100,47 @@ async function getHeroSlides(payload: Payload, tenantId: number): Promise<HeroSl
   return out
 }
 
+/**
+ * Данные секции «Об авторе и подписка»: bio из тенанта, лого/соцсети из настроек,
+ * активные тарифы и счётчики контента/подписчиков (пер-тенант). Счётчики берём
+ * лениво — только когда секция включена. Нулевые статы не показываем.
+ */
+async function getAuthorSpotlight(payload: Payload, tenant: any, settings: any) {
+  const tenantId = tenant.id as number
+  const published = publishedWhere()
+  const [pubs, media, subs, tiersRes] = await Promise.all([
+    payload.find({ collection: 'publications', where: { and: [{ tenant: { equals: tenantId } }, published] }, limit: 0, depth: 0, overrideAccess: true }),
+    payload.find({ collection: 'videos', where: { tenant: { equals: tenantId } }, limit: 0, depth: 0, overrideAccess: true }),
+    payload.find({ collection: 'subscribers', where: { tenant: { equals: tenantId } }, limit: 0, depth: 0, overrideAccess: true }),
+    payload.find({ collection: 'subscription-tiers', where: { and: [{ tenant: { equals: tenantId } }, { isActive: { equals: true } }] }, sort: 'weight', depth: 0, limit: 10, overrideAccess: true }),
+  ])
+  const stats: { n: number; label: string }[] = []
+  if (pubs.totalDocs > 0) stats.push({ n: pubs.totalDocs, label: 'публикаций' })
+  if (media.totalDocs > 0) stats.push({ n: media.totalDocs, label: 'видео и аудио' })
+  if (subs.totalDocs > 0) stats.push({ n: subs.totalDocs, label: 'подписчиков' })
+
+  const tiers = (tiersRes.docs as any[]).map((t) => ({
+    name: t.name as string,
+    priceRub: Number(t.priceRub ?? 0),
+    perks: Array.isArray(t.perks)
+      ? (t.perks as any[]).map((pk) => pk?.text).filter((x: unknown): x is string => typeof x === 'string' && x.trim().length > 0).slice(0, 3)
+      : [],
+  }))
+
+  const logoUrl = settings?.logo && typeof settings.logo === 'object' ? (settings.logo.url ?? null) : null
+  const bio = typeof tenant.description === 'string' && tenant.description.trim() ? tenant.description : null
+
+  return {
+    name: (tenant.name as string) ?? '',
+    bio,
+    logoUrl,
+    stats,
+    socials: ((settings?.socials ?? []) as any[]).filter((so) => so && so.url).map((so) => ({ platform: so.platform, url: so.url })),
+    tiers,
+    subscribeHref: '/subscribe',
+  }
+}
+
 /** SEO главной (ТЗ §6): только дефолты тенанта, без titleTemplate. */
 export async function generateMetadata(): Promise<Metadata> {
   const ctx = await getTenantFromHeaders()
@@ -155,6 +197,10 @@ export default async function HomePage() {
   const feed = needsFeed
     ? await getHomeFeed(tenant.id as number, manualCategoryIds)
     : { news: [], latest: [], popular: [], discussed: [], popularCategories: [], posterRows: [] }
+
+  const spotlight = activeTypes.has('authorSpotlight')
+    ? await getAuthorSpotlight(payload, tenant, settings)
+    : null
 
   // Маппинг type → рендер секции. Пропсы собраны ровно как в прежнем JSX;
   // авто-скрытие при пустых данных остаётся внутри блок-компонентов.
@@ -225,6 +271,7 @@ export default async function HomePage() {
       />
     ),
     socials: () => <SocialLinksBlock items={(settings?.socials ?? []) as any[]} />,
+    authorSpotlight: () => (spotlight ? <AuthorSpotlightBlock {...spotlight} /> : null),
     broadcast: () => (
       <BroadcastBannerBlock
         tagline={textOr(settings?.banner?.tagline, DEFAULT_BANNER_TAGLINE)}
