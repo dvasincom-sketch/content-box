@@ -79,7 +79,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
 
   const firstReadable = chapters.find((c) => c.unlocked) || chapters[0]
   const coverUrl = book.cover && typeof book.cover === 'object' ? (book.cover.url || null) : null
-  const tags = Array.isArray(book.tags) ? (book.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l) : []
+  const tags = Array.isArray(book.tags) ? (book.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0) : []
 
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
