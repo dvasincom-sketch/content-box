@@ -16,7 +16,7 @@ export default async function VideosPage() {
 
   const res = await payload.find({
     collection: 'videos',
-    where: { tenant: { equals: author!.tenantId } },
+    where: { and: [{ tenant: { equals: author!.tenantId } }, { provider: { not_equals: 'audio' } }] },
     sort: '-createdAt',
     limit: 500,
     depth: 1,

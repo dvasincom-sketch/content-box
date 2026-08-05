@@ -3,17 +3,33 @@
 import React from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, FileText, FolderTree, Video, Settings, LogOut, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, FileText, FolderTree, Video, Headphones, Settings, LogOut, ShieldCheck } from 'lucide-react'
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean }
 
-const NAV: NavItem[] = [
-  { href: '/studio', label: 'Дашборд', icon: <LayoutDashboard size={18} />, exact: true },
-  { href: '/studio/posts', label: 'Публикации', icon: <FileText size={18} /> },
-  { href: '/studio/videos', label: 'Видео', icon: <Video size={18} /> },
-  { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} /> },
-  { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} /> },
-  { href: '/studio/settings', label: 'Настройки', icon: <Settings size={18} /> },
+// Меню сгруппировано: «Медиа» объединяет видео и аудио (позже — галерея).
+type NavGroup = { label?: string; items: NavItem[] }
+const NAV_GROUPS: NavGroup[] = [
+  {
+    items: [
+      { href: '/studio', label: 'Дашборд', icon: <LayoutDashboard size={18} />, exact: true },
+      { href: '/studio/posts', label: 'Публикации', icon: <FileText size={18} /> },
+    ],
+  },
+  {
+    label: 'Медиа',
+    items: [
+      { href: '/studio/videos', label: 'Видео', icon: <Video size={18} /> },
+      { href: '/studio/audio', label: 'Аудио', icon: <Headphones size={18} /> },
+    ],
+  },
+  {
+    items: [
+      { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} /> },
+      { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} /> },
+      { href: '/studio/settings', label: 'Настройки', icon: <Settings size={18} /> },
+    ],
+  },
 ]
 
 function isActive(pathname: string, item: NavItem): boolean {
@@ -63,20 +79,32 @@ export function StudioNav({ authorEmail, brandName }: { authorEmail: string; bra
       </div>
 
       <nav className="studio-nav__list">
-        {NAV.map((item) => {
-          const active = isActive(pathname, item)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`studio-nav__item${active ? ' is-active' : ''}`}
-              aria-current={active ? 'page' : undefined}
-            >
-              <span className="studio-nav__icon">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          )
-        })}
+        {NAV_GROUPS.map((group, gi) => (
+          <React.Fragment key={gi}>
+            {group.label && (
+              <div
+                className="studio-nav__group-label"
+                style={{ padding: '10px 12px 4px', fontSize: 11, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--st-text-muted)' }}
+              >
+                {group.label}
+              </div>
+            )}
+            {group.items.map((item) => {
+              const active = isActive(pathname, item)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`studio-nav__item${active ? ' is-active' : ''}`}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <span className="studio-nav__icon">{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })}
+          </React.Fragment>
+        ))}
       </nav>
 
       <div className="studio-nav__footer">
