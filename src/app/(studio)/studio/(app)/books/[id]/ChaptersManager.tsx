@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { Plus, Loader2, Pencil, Trash2, GripVertical, X, Lock, Unlock } from 'lucide-react'
 import { StudioSelect } from '../../_ui/StudioSelect'
@@ -29,6 +30,8 @@ export function ChaptersManager({
   const [chapters, setChapters] = useState<ChapterItem[]>(initialChapters)
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [editing, setEditing] = useState<ChapterItem | 'new' | null>(null)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const [savingOrder, setSavingOrder] = useState(false)
 
   async function persistOrder(next: ChapterItem[]) {
@@ -106,14 +109,15 @@ export function ChaptersManager({
         </div>
       )}
 
-      {editing && (
+      {editing && mounted && createPortal(
         <ChapterModal
           bookId={bookId}
           chapter={editing === 'new' ? null : editing}
           tiers={tiers}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); router.refresh() }}
-        />
+        />,
+        document.body,
       )}
     </div>
   )

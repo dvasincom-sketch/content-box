@@ -47,6 +47,62 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
   const book = await loadBook(slug, tenant.id)
   if (!book) notFound()
 
+  const payload0 = await getPayload({ config: await config })
+
+  // Цикл: показываем книги цикла вместо ридера.
+  if (book.type === 'cycle') {
+    const membersRes = await payload0.find({
+      collection: 'books' as any,
+      where: { and: [{ tenant: { equals: tenant.id } }, { cycle: { equals: book.id } }, { publishedAt: { exists: true } }] },
+      sort: 'cycleOrder', limit: 500, depth: 1, overrideAccess: true,
+    })
+    const members = (membersRes.docs as any[]).map((b) => ({
+      id: b.id, slug: b.slug || String(b.id), title: b.title || 'Без названия',
+      coverUrl: b.cover && typeof b.cover === 'object' ? (b.cover.url || null) : null,
+      status: STATUS_LABEL[b.status || 'ongoing'] || '',
+    }))
+    const cyCover = book.cover && typeof book.cover === 'object' ? (book.cover.url || null) : null
+    return (
+      <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <nav className="text-sm mb-6" style={{ color: 'var(--brand-muted)' }}>
+            <Link href="/books" className="c-navlink">Библиотека</Link>
+            <span aria-hidden> / </span>
+            <span style={{ color: 'var(--brand-text)' }}>{book.title}</span>
+          </nav>
+          <div className="flex gap-6 flex-col sm:flex-row mb-8">
+            <div className="flex-none w-[180px] mx-auto sm:mx-0">
+              <div className="w-[180px] h-[240px] rounded-xl overflow-hidden grid place-items-center" style={{ background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)' }}>
+                {cyCover ? <Image src={cyCover} alt="" width={180} height={240} className="object-cover w-full h-full" /> : <BookOpen size={40} style={{ color: 'var(--brand-primary)' }} />}
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs mb-2 px-2 py-1 rounded-full inline-block" style={{ background: 'color-mix(in srgb, var(--brand-primary) 16%, transparent)', color: 'var(--brand-text)' }}>Цикл</div>
+              <h1 className="text-3xl lg:text-4xl font-extrabold mb-3" style={{ color: 'var(--brand-text)' }}>{book.title}</h1>
+              {book.annotation && <div className="leading-relaxed" style={{ color: 'var(--brand-text)' }}><RichText data={book.annotation} /></div>}
+            </div>
+          </div>
+          <h2 className="text-xl font-bold mb-3" style={{ color: 'var(--brand-text)' }}>Книги цикла <span style={{ color: 'var(--brand-muted)', fontWeight: 400 }}>· {members.length}</span></h2>
+          {members.length === 0 ? (
+            <div style={{ color: 'var(--brand-muted)' }}>В цикле пока нет книг.</div>
+          ) : (
+            <div className="grid gap-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
+              {members.map((m) => (
+                <Link key={m.id} href={`/book/${m.slug}`}>
+                  <div className="rounded-xl overflow-hidden mb-2 grid place-items-center" style={{ aspectRatio: '3 / 4', background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)' }}>
+                    {m.coverUrl ? <Image src={m.coverUrl} alt="" width={300} height={400} className="object-cover w-full h-full" /> : <BookOpen size={32} style={{ color: 'var(--brand-primary)' }} />}
+                  </div>
+                  <div className="font-semibold leading-snug" style={{ color: 'var(--brand-text)' }}>{m.title}</div>
+                  <div className="text-xs" style={{ color: 'var(--brand-muted)' }}>{m.status}</div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+    )
+  }
+
   const payload = await getPayload({ config: await config })
   const chRes = await payload.find({
     collection: 'chapters' as any,
