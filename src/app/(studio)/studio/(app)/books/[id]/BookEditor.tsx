@@ -91,6 +91,7 @@ export function BookEditor({
   const [quote2, setQuote2] = useState(book.quote2)
   const [quote3, setQuote3] = useState(book.quote3)
   const [booktrailer, setBooktrailer] = useState(book.booktrailer)
+  const [quoteCount, setQuoteCount] = useState(Math.max(1, [book.quote1, book.quote2, book.quote3].filter((q) => q && q.trim()).length))
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -166,9 +167,15 @@ export function BookEditor({
           </div>
           <div className="studio-field" style={{ marginTop: 'var(--st-space-4)' }}>
             <div className="studio-field__label">Цитаты (видны читателям)</div>
-            <textarea className="studio-input" rows={2} placeholder="Цитата 1" value={quote1} onChange={(e) => setQuote1(e.target.value)} style={{ resize: 'vertical' }} />
-            <textarea className="studio-input" rows={2} placeholder="Цитата 2" value={quote2} onChange={(e) => setQuote2(e.target.value)} style={{ resize: 'vertical' }} />
-            <textarea className="studio-input" rows={2} placeholder="Цитата 3" value={quote3} onChange={(e) => setQuote3(e.target.value)} style={{ resize: 'vertical' }} />
+            {[quote1, quote2, quote3].slice(0, quoteCount).map((q, i) => (
+              <textarea key={i} className="studio-input" rows={2} placeholder={`Цитата ${i + 1}`} value={q}
+                onChange={(e) => [setQuote1, setQuote2, setQuote3][i](e.target.value)}
+                style={{ resize: 'vertical', marginBottom: 'var(--st-space-2)' }} />
+            ))}
+            {quoteCount < 3 && (
+              <button type="button" className="studio-btn studio-btn--ghost" style={{ alignSelf: 'flex-start' }}
+                onClick={() => setQuoteCount((c) => Math.min(3, c + 1))}>+ Добавить цитату</button>
+            )}
           </div>
         </div>
 
