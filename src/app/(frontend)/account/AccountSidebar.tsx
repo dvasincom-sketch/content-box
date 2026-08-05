@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  User, FileText, Settings, CreditCard, LogOut, Rss, Bookmark, History, MoreHorizontal,
+  User, FileText, Settings, CreditCard, LogOut, Rss, Bookmark, BookOpen, History, MoreHorizontal,
 } from 'lucide-react'
 
 type NavItem = { href: string; label: string; Icon: typeof User; exact?: boolean }
@@ -14,6 +14,7 @@ const NAV_PRIMARY: NavItem[] = [
   { href: '/account', label: 'Профиль', Icon: User, exact: true },
   { href: '/account/feed', label: 'Лента', Icon: Rss },
   { href: '/account/publications', label: 'Мои публикации', Icon: FileText },
+  { href: '/account/library', label: 'Библиотека', Icon: BookOpen },
   { href: '/account/saved', label: 'Сохранённое', Icon: Bookmark },
   { href: '/account/history', label: 'История', Icon: History },
 ]

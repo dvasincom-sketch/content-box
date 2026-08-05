@@ -5,7 +5,7 @@ import { Bookmark, BookmarkCheck } from 'lucide-react'
 import { toggleBookmark } from '@/app/(frontend)/social-actions'
 
 /** Кнопка «Посмотреть позже» (Фаза 5). Тумблер сохранения публикации/видео. */
-export function BookmarkButton({ targetType, targetId, initialSaved }: { targetType: 'publication' | 'video'; targetId: number | string; initialSaved: boolean }) {
+export function BookmarkButton({ targetType, targetId, initialSaved }: { targetType: 'publication' | 'video' | 'book'; targetId: number | string; initialSaved: boolean }) {
   const [saved, setSaved] = useState(initialSaved)
   const [busy, setBusy] = useState(false)
   async function click() {

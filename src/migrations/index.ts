@@ -49,6 +49,7 @@ import * as migration_20260802_140000_add_video_audio from './20260802_140000_ad
 import * as migration_20260805_120000_add_downloads from './20260805_120000_add_downloads';
 import * as migration_20260805_130000_add_books_chapters from './20260805_130000_add_books_chapters';
 import * as migration_20260805_140000_add_book_type_cycle from './20260805_140000_add_book_type_cycle';
+import * as migration_20260805_150000_add_book_library_progress from './20260805_150000_add_book_library_progress';
 
 export const migrations = [
   {
@@ -305,5 +306,10 @@ export const migrations = [
     up: migration_20260805_140000_add_book_type_cycle.up,
     down: migration_20260805_140000_add_book_type_cycle.down,
     name: '20260805_140000_add_book_type_cycle',
+  },
+  {
+    up: migration_20260805_150000_add_book_library_progress.up,
+    down: migration_20260805_150000_add_book_library_progress.down,
+    name: '20260805_150000_add_book_library_progress',
   },
 ];

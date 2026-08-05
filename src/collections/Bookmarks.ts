@@ -22,11 +22,12 @@ export const Bookmarks: CollectionConfig = {
     { name: 'subscriber', type: 'relationship', relationTo: 'subscribers', required: true, index: true, label: 'Участник' },
     {
       name: 'targetType', type: 'select', required: true, label: 'Тип',
-      options: [{ label: 'Публикация', value: 'publication' }, { label: 'Видео', value: 'video' }],
+      options: [{ label: 'Публикация', value: 'publication' }, { label: 'Видео', value: 'video' }, { label: 'Книга', value: 'book' }],
       admin: { position: 'sidebar' },
     },
     { name: 'publication', type: 'relationship', relationTo: 'publications', index: true, admin: { condition: (d: any) => d?.targetType === 'publication' } },
     { name: 'video', type: 'relationship', relationTo: 'videos', index: true, admin: { condition: (d: any) => d?.targetType === 'video' } },
+    { name: 'book', type: 'relationship', relationTo: 'books', index: true, admin: { condition: (d: any) => d?.targetType === 'book' } },
   ],
   timestamps: true,
 }

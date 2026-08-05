@@ -9,6 +9,7 @@ import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { tierWeight } from '@/lib/tierWeight'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { BookOpen, Lock, Play } from 'lucide-react'
+import { BookmarkButton } from '@/components/social/BookmarkButton'
 import type { Metadata } from 'next'
 import '../../styles.css'
 
@@ -78,6 +79,25 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
   })
 
   const firstReadable = chapters.find((c) => c.unlocked) || chapters[0]
+
+  // Библиотека читателя + прогресс.
+  let savedInLibrary = false
+  let continueOrder: number | null = null
+  if (viewer) {
+    const bm = await payload.find({
+      collection: 'bookmarks',
+      where: { and: [{ subscriber: { equals: viewer.id } }, { tenant: { equals: tenant.id } }, { book: { equals: book.id } }] },
+      limit: 1, depth: 0, overrideAccess: true,
+    })
+    savedInLibrary = bm.docs.length > 0
+    const pv = await payload.find({
+      collection: 'views',
+      where: { and: [{ subscriber: { equals: viewer.id } }, { tenant: { equals: tenant.id } }, { book: { equals: book.id } }] },
+      limit: 1, depth: 1, overrideAccess: true,
+    })
+    const ch = (pv.docs[0] as any)?.chapter
+    if (ch && typeof ch === 'object' && ch.order != null) continueOrder = Number(ch.order)
+  }
   const coverUrl = book.cover && typeof book.cover === 'object' ? (book.cover.url || null) : null
   const tags = Array.isArray(book.tags) ? (book.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0) : []
 
@@ -113,11 +133,18 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
                 ))}
               </div>
             )}
-            {firstReadable && (
-              <Link href={`/book/${slug}/${firstReadable.order}`} className="inline-flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-xl" style={{ background: 'var(--brand-primary)', color: '#fff' }}>
-                <Play size={16} /> Читать
-              </Link>
-            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              {continueOrder != null ? (
+                <Link href={`/book/${slug}/${continueOrder}`} className="inline-flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-xl" style={{ background: 'var(--brand-primary)', color: '#fff' }}>
+                  <Play size={16} /> Продолжить (глава {continueOrder})
+                </Link>
+              ) : firstReadable ? (
+                <Link href={`/book/${slug}/${firstReadable.order}`} className="inline-flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-xl" style={{ background: 'var(--brand-primary)', color: '#fff' }}>
+                  <Play size={16} /> Читать
+                </Link>
+              ) : null}
+              {viewer && <BookmarkButton targetType="book" targetId={book.id} initialSaved={savedInLibrary} />}
+            </div>
           </div>
         </div>
 

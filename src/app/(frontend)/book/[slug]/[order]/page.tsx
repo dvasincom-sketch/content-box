@@ -7,6 +7,7 @@ import { brandVars } from '@/lib/brand'
 import { checkChapterAccess } from '@/lib/chapterAccess'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { ChevronLeft, ChevronRight, List, Lock } from 'lucide-react'
+import { ViewTracker } from '@/components/social/ViewTracker'
 import '../../../styles.css'
 
 export const dynamic = 'force-dynamic'
@@ -62,6 +63,7 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
 
         {access.allowed ? (
           <>
+            <ViewTracker targetType="book" targetId={book.id} chapterId={chapter.id} />
             <article className="reader-body leading-relaxed" style={{ color: 'var(--brand-text)', fontSize: 18, lineHeight: 1.75 }}>
               {chapter.body ? <RichText data={chapter.body} /> : <p style={{ color: 'var(--brand-muted)' }}>Глава пока пуста.</p>}
             </article>

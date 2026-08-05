@@ -17,11 +17,11 @@ async function ctx() {
   return { payload, tenantId, subscriber }
 }
 
-export async function toggleBookmark(input: { targetType: 'publication' | 'video'; targetId: string | number }): Promise<{ ok: boolean; saved?: boolean; error?: string }> {
+export async function toggleBookmark(input: { targetType: 'publication' | 'video' | 'book'; targetId: string | number }): Promise<{ ok: boolean; saved?: boolean; error?: string }> {
   const { payload, tenantId, subscriber } = await ctx()
   if (!tenantId) return { ok: false, error: 'Тенант не определён.' }
   if (!subscriber?.id) return { ok: false, error: 'Войдите, чтобы сохранять.' }
-  const field = input.targetType === 'video' ? 'video' : 'publication'
+  const field = input.targetType // 'publication' | 'video' | 'book' — совпадает с именем колонки
   const tid = Number(input.targetId)
   if (!tid) return { ok: false, error: 'Некорректный объект.' }
   try {
@@ -69,10 +69,11 @@ export async function toggleFollow(input: { handle?: string; targetId?: string |
   }
 }
 
-export async function recordView(input: { targetType: 'publication' | 'video'; targetId: string | number }): Promise<{ ok: boolean }> {
+export async function recordView(input: { targetType: 'publication' | 'video' | 'book'; targetId: string | number; chapterId?: string | number }): Promise<{ ok: boolean }> {
   const { payload, tenantId, subscriber } = await ctx()
   if (!tenantId || !subscriber?.id || subscriber.historyEnabled === false) return { ok: false }
-  const field = input.targetType === 'video' ? 'video' : 'publication'
+  const field = input.targetType // совпадает с именем колонки
+  const chapterId = input.chapterId != null ? Number(input.chapterId) || null : null
   const tid = Number(input.targetId)
   if (!tid) return { ok: false }
   const now = new Date().toISOString()
@@ -83,9 +84,9 @@ export async function recordView(input: { targetType: 'publication' | 'video'; t
       limit: 1, depth: 0, overrideAccess: true,
     })
     if (existing.docs.length > 0) {
-      await payload.update({ collection: 'views', id: (existing.docs[0] as any).id, data: { viewedAt: now } as any, overrideAccess: true })
+      await payload.update({ collection: 'views', id: (existing.docs[0] as any).id, data: { viewedAt: now, ...(input.targetType === 'book' ? { chapter: chapterId } : {}) } as any, overrideAccess: true })
     } else {
-      await payload.create({ collection: 'views', data: { tenant: tenantId, subscriber: subscriber.id, targetType: input.targetType, [field]: tid, viewedAt: now } as any, overrideAccess: true })
+      await payload.create({ collection: 'views', data: { tenant: tenantId, subscriber: subscriber.id, targetType: input.targetType, [field]: tid, viewedAt: now, ...(input.targetType === 'book' ? { chapter: chapterId } : {}) } as any, overrideAccess: true })
     }
     return { ok: true }
   } catch {
