@@ -6,35 +6,42 @@ import fs from 'fs'
 import path from 'path'
 
 /**
- * Пустышки каталога «Маруся Озвучка»: три раздела-контейнера (Слушать / Эфиры /
- * Влоги) и по одной ПУСТОЙ работе-серии (категория videoSeries) на каждую
- * позицию из списка. Без аудио/обложек/тегов — их дозаливаем потом.
+ * Пустышки каталога «Маруся Озвучка» из СТРУКТУРИРОВАННОГО списка.
  *
- * ИСТОЧНИК: data/maru-source.txt — вставь СВОЙ исходный список как есть (та самая
- * нумерованная простыня со ссылками). Скрипт сам вытащит названия из [ ... ],
- * почистит, раскидает по разделам по ключевым словам (влог → Влоги;
- * стрим/концерт/эфир/sowoozoo/столовка → Эфиры; остальное → Слушать).
+ * Три раздела-контейнера (Слушать / Эфиры / Влоги) → подразделы → по одной
+ * ПУСТОЙ работе-серии (категория videoSeries) на каждую позицию. Без аудио/
+ * обложек/тегов — их дозаливаем в Фазе 2.
+ *
+ * ИСТОЧНИК: data/maru-source.txt. Формат (иерархия задаётся строками-маркерами):
+ *   # РАЗДЕЛ: Слушать        ← раздел (афиша в шапке)
+ *   ## Романтика и драма     ← подраздел
+ *   1. [Название](url)        ← работа (станет пустой серией под подразделом)
+ *   ...
+ *   # РАЗДЕЛ: Влоги
+ *   80. [ВЛОГИ ИЗ СЕУЛА](url) ← работа без «##» крепится ПРЯМО к разделу
+ *
+ * Прочие строки на «#» (без «РАЗДЕЛ:») — комментарии, игнорируются.
  *
  * ЗАПУСК (прод-база maruozvuchka):
- *   # 1) DRY-RUN — распарсить и показать, что будет создано (безопасно):
+ *   # 1) DRY-RUN — распарсить и показать дерево (безопасно):
  *   DATABASE_URL="$PROD_DB" PAYLOAD_SECRET="$SECRET" npx tsx src/scripts/seed-maru-stubs.ts
  *
  *   # 2) Создать:
  *   CONFIRM=CREATE DATABASE_URL="$PROD_DB" PAYLOAD_SECRET="$SECRET" npx tsx src/scripts/seed-maru-stubs.ts
  *
- * Идемпотентно: работа с уже существующим slug под своим разделом пропускается,
- * так что повторный запуск безопасен (дозальёт только новое).
+ * Идемпотентно: категория с уже существующим slug под тем же родителем
+ * пропускается, повторный запуск дозальёт только новое.
  */
 
 const SUB = 'maruozvuchka'
 const SOURCE = process.env.SOURCE || 'data/maru-source.txt'
 
-type Section = 'listen' | 'streams' | 'vlogs'
-const SECTION_TITLE: Record<Section, string> = { listen: 'Слушать', streams: 'Эфиры', vlogs: 'Влоги' }
-const SECTION_ORDER: Record<Section, number> = { listen: 1, streams: 2, vlogs: 3 }
+// Порядок разделов в шапке. Ключ — точное название после «# РАЗДЕЛ:».
+const SECTION_ORDER: Record<string, number> = { 'Слушать': 1, 'Эфиры': 2, 'Влоги': 3 }
 
-/** Название работы из строки списка: берём текст первой ссылки [ ... ], иначе
- *  текст после номера. Чистим кавычки/пробелы/мусор по краям. */
+type Work = { title: string; section: string; sub: string | null }
+
+/** Название работы из строки: текст первой ссылки [ ... ], иначе после номера. */
 function parseTitle(line: string): string {
   const m = line.match(/\[([^\]]+)\]/)
   let t = m ? m[1] : line.replace(/^\s*№?\s*\d+\s*[.)]?\s*/, '')
@@ -43,33 +50,67 @@ function parseTitle(line: string): string {
   return t
 }
 
-function classify(title: string): Section {
-  const t = title.toLowerCase()
-  if (/влог/.test(t)) return 'vlogs'
-  if (/стрим|концерт|эфир|sowoozoo|столовка|\(запись/.test(t)) return 'streams'
-  return 'listen'
+/** Разбор структурированного файла в плоский список работ с (раздел, подраздел). */
+function parseSource(raw: string): Work[] {
+  const works: Work[] = []
+  let section: string | null = null
+  let sub: string | null = null
+  for (const rawLine of raw.split('\n')) {
+    const line = rawLine.replace(/﻿/g, '')
+    const secM = line.match(/^\s*#\s*РАЗДЕЛ:\s*(.+?)\s*$/)
+    if (secM) {
+      section = secM[1].trim()
+      sub = null
+      continue
+    }
+    const subM = line.match(/^\s*##\s+(.+?)\s*$/)
+    if (subM) {
+      sub = subM[1].trim()
+      continue
+    }
+    if (/^\s*#/.test(line)) continue // прочий комментарий
+    if (!section) continue
+    if (!/\[[^\]]+\]/.test(line)) continue // строка-работа обязана иметь [ссылку]
+    const title = parseTitle(line)
+    if (!title || title.length < 2) continue
+    works.push({ title, section, sub })
+  }
+  return works
 }
 
-async function ensureRoot(payload: any, tenantId: number, section: Section): Promise<number> {
-  const title = SECTION_TITLE[section]
-  const slug = slugify(title) || section
+async function ensureCategory(
+  payload: any,
+  tenantId: number,
+  opts: { title: string; parent: number | null; order: number; isSection: boolean; isWork: boolean },
+): Promise<number> {
+  const base = slugify(opts.title) || `cat-${Date.now()}`
+  // slug уникален в пределах родителя — ищем именно под этим parent.
+  const parentCond = opts.parent == null ? { parent: { exists: false } } : { parent: { equals: opts.parent } }
   const found = await payload.find({
     collection: 'categories',
-    where: { and: [{ tenant: { equals: tenantId } }, { slug: { equals: slug } }, { parent: { exists: false } }] },
+    where: { and: [{ tenant: { equals: tenantId } }, { slug: { equals: base } }, parentCond] },
     limit: 1, depth: 0, overrideAccess: true,
   })
   if (found.docs.length > 0) return found.docs[0].id as number
+
   const doc = await payload.create({
     collection: 'categories',
     data: {
-      tenant: tenantId, title, slug, parent: null,
-      order: SECTION_ORDER[section],
-      showInHeader: true, showInFooter: false,
-      videoSeries: false, posterLayout: true,
+      tenant: tenantId,
+      title: opts.title,
+      slug: base,
+      parent: opts.parent,
+      order: opts.order,
+      // Разделы — в шапке афишами; подразделы и работы — нет.
+      showInHeader: opts.isSection,
+      showInFooter: false,
+      // Работа = серия (плейлист частей). Раздел/подраздел — обычные категории.
+      videoSeries: opts.isWork,
+      // Плитки-постеры для разделов и подразделов (витрина), у работы — как серия.
+      posterLayout: !opts.isWork,
     } as any,
     depth: 0, overrideAccess: true,
   })
-  console.log(`  + раздел «${title}» (#${doc.id})`)
   return doc.id as number
 }
 
@@ -78,85 +119,99 @@ async function main() {
 
   const srcPath = path.resolve(process.cwd(), SOURCE)
   if (!fs.existsSync(srcPath)) {
-    console.error(`Нет файла со списком: ${SOURCE}. Сохрани туда свой исходный список и запусти снова.`)
+    console.error(`Нет файла со списком: ${SOURCE}. Сохрани туда каталог и запусти снова.`)
     process.exit(1)
   }
-  const raw = fs.readFileSync(srcPath, 'utf-8')
+  const works = parseSource(fs.readFileSync(srcPath, 'utf-8'))
 
-  // Парсим строки, которые начинаются с номера (позиции списка).
-  const seen = new Set<string>()
-  const works: { title: string; section: Section; slug: string }[] = []
-  const slugsBySection: Record<Section, Set<string>> = { listen: new Set(), streams: new Set(), vlogs: new Set() }
-  let skippedEmpty = 0, skippedDup = 0
-
-  for (const line of raw.split('\n')) {
-    if (!/^\s*\d+\s*[.)\]\s\[]/.test(line)) continue // только строки-позиции
-    const title = parseTitle(line)
-    if (!title || title.length < 2) { skippedEmpty++; continue }
-    const norm = title.toLowerCase().replace(/\s+/g, ' ').trim()
-    if (seen.has(norm)) { skippedDup++; continue }
-    seen.add(norm)
-    const section = classify(title)
-    const base = slugify(title) || `work-${works.length + 1}`
-    let slug = base
-    let n = 2
-    while (slugsBySection[section].has(slug)) slug = `${base}-${n++}`
-    slugsBySection[section].add(slug)
-    works.push({ title, section, slug })
+  // Дерево для отчёта: раздел → подраздел(|'—') → [работы]
+  const tree = new Map<string, Map<string, string[]>>()
+  const seenPerParent = new Map<string, Set<string>>() // ключ "section|sub" → set slug (дедуп)
+  let dup = 0
+  for (const w of works) {
+    const subKey = w.sub ?? '—'
+    if (!tree.has(w.section)) tree.set(w.section, new Map())
+    const subs = tree.get(w.section)!
+    if (!subs.has(subKey)) subs.set(subKey, [])
+    const pkey = `${w.section}|${subKey}`
+    if (!seenPerParent.has(pkey)) seenPerParent.set(pkey, new Set())
+    const slug = slugify(w.title) || w.title
+    if (seenPerParent.get(pkey)!.has(slug)) { dup++; continue }
+    seenPerParent.get(pkey)!.add(slug)
+    subs.get(subKey)!.push(w.title)
   }
 
-  const counts = { listen: 0, streams: 0, vlogs: 0 } as Record<Section, number>
-  for (const w of works) counts[w.section]++
-
-  console.log(`Распознано работ: ${works.length}  (пропущено: пустых ${skippedEmpty}, дублей ${skippedDup})`)
-  console.log(`  Слушать: ${counts.listen} · Эфиры: ${counts.streams} · Влоги: ${counts.vlogs}`)
-  console.log('')
+  let total = 0
+  console.log(`Разобрано работ: ${works.length} (дублей пропущено: ${dup})\n`)
+  for (const [section, subs] of tree) {
+    let secCount = 0
+    for (const list of subs.values()) secCount += list.length
+    total += secCount
+    console.log(`# ${section}  (${secCount})`)
+    for (const [sub, list] of subs) {
+      console.log(`  ## ${sub}  (${list.length})`)
+      if (!doWrite) for (const t of list) console.log(`      • ${t}`)
+    }
+  }
+  console.log(`\nВсего работ к созданию: ${total}`)
 
   if (!doWrite) {
-    console.log('DRY-RUN — ничего не создано. Список (раздел · название):')
-    for (const w of works) console.log(`  [${SECTION_TITLE[w.section]}] ${w.title}`)
-    console.log('')
-    console.log('Проверь классификацию/названия (правь data/maru-source.txt при необходимости).')
+    console.log('\nDRY-RUN — ничего не создано. Проверь дерево (правь data/maru-source.txt).')
     console.log('Создать: CONFIRM=CREATE ... npx tsx src/scripts/seed-maru-stubs.ts')
     process.exit(0)
   }
 
+  console.log('Подключаюсь к базе… (первый запрос может занять время)')
   const payload = await getPayload({ config })
   const t = await payload.find({ collection: 'tenants', where: { subdomain: { equals: SUB } }, limit: 1, depth: 0, overrideAccess: true })
   if (t.docs.length === 0) { console.error(`Тенант "${SUB}" не найден.`); process.exit(1) }
   const tenantId = t.docs[0].id as number
+  console.log(`Тенант «${SUB}» #${tenantId}. Начинаю создание (по сети к прод-базе — идёт последовательно).\n`)
 
-  const rootId: Record<Section, number> = {
-    listen: await ensureRoot(payload, tenantId, 'listen'),
-    streams: await ensureRoot(payload, tenantId, 'streams'),
-    vlogs: await ensureRoot(payload, tenantId, 'vlogs'),
+  const t0 = Date.now()
+  let created = 0, skipped = 0, done = 0
+  for (const [section, subs] of tree) {
+    const rootId = await ensureCategory(payload, tenantId, {
+      title: section, parent: null, order: SECTION_ORDER[section] ?? 99, isSection: true, isWork: false,
+    })
+    console.log(`# ${section}  → #${rootId}`)
+    let subOrder = 1
+    for (const [sub, list] of subs) {
+      // '—' означает «прямо под разделом» (влоги): родитель работ = сам раздел.
+      const parentId = sub === '—'
+        ? rootId
+        : await ensureCategory(payload, tenantId, {
+            title: sub, parent: rootId, order: subOrder++, isSection: false, isWork: false,
+          })
+      if (sub !== '—') console.log(`  ## ${sub}  → #${parentId}`)
+      let workOrder = 1
+      const beforeSlugs = new Set<string>()
+      for (const title of list) {
+        const slug = slugify(title) || title
+        if (beforeSlugs.has(slug)) { skipped++; done++; continue }
+        beforeSlugs.add(slug)
+        const existing = await payload.find({
+          collection: 'categories',
+          where: { and: [{ tenant: { equals: tenantId } }, { slug: { equals: slug } }, { parent: { equals: parentId } }] },
+          limit: 1, depth: 0, overrideAccess: true,
+        })
+        if (existing.docs.length > 0) { skipped++; done++; continue }
+        await ensureCategory(payload, tenantId, {
+          title, parent: parentId, order: workOrder++, isSection: false, isWork: true,
+        })
+        created++; done++
+        // Живой прогресс: строка каждые 5 работ, чтобы было видно движение.
+        if (done % 5 === 0 || done === total) {
+          const sec = Math.round((Date.now() - t0) / 1000)
+          process.stdout.write(`\r    прогресс: ${done}/${total} (создано ${created}, пропущено ${skipped}) · ${sec}s   `)
+        }
+      }
+    }
+    process.stdout.write('\n')
+    console.log(`  ✓ раздел «${section}» готов`)
   }
 
-  let created = 0, skipped = 0
-  for (const w of works) {
-    const parent = rootId[w.section]
-    const exists = await payload.find({
-      collection: 'categories',
-      where: { and: [{ tenant: { equals: tenantId } }, { slug: { equals: w.slug } }, { parent: { equals: parent } }] },
-      limit: 1, depth: 0, overrideAccess: true,
-    })
-    if (exists.docs.length > 0) { skipped++; continue }
-    await payload.create({
-      collection: 'categories',
-      data: {
-        tenant: tenantId, title: w.title, slug: w.slug, parent: parent as any,
-        order: 0, showInHeader: false, showInFooter: false,
-        videoSeries: true, posterLayout: false,
-      } as any,
-      depth: 0, overrideAccess: true,
-    })
-    created++
-    if (created % 25 === 0) console.log(`   … создано ${created}`)
-  }
-
-  console.log('')
-  console.log(`✓ Готово. Создано работ-пустышек: ${created}, пропущено (уже были): ${skipped}.`)
-  console.log('  Разделы Слушать/Эфиры/Влоги в шапке; работы — пустые серии, дозаливай аудио в студии (Медиа → Аудио, поле «Категория»).')
+  console.log(`\nГотово. Создано работ: ${created}, пропущено (уже были): ${skipped}.`)
   process.exit(0)
 }
 
