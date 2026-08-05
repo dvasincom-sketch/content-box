@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
+import { StudioUpsell } from '../../_ui/StudioUpsell'
 import { lexicalToHtml } from '@/lib/lexical'
 import { BookEditor } from './BookEditor'
 
@@ -13,6 +15,8 @@ export default async function BookEditPage({ params }: { params: Promise<{ id: s
   const { id } = await params
   const author = await getCurrentAuthor()
   const payload = await getPayload({ config: await config })
+  const ent = await loadEntitlements(payload, author!.tenantId)
+  if (!canUse(ent, 'books')) return <StudioUpsell cap="books" />
 
   const book: any = await payload.findByID({ collection: 'books' as any, id, depth: 2, overrideAccess: true }).catch(() => null)
   if (!book) notFound()

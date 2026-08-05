@@ -67,6 +67,35 @@ export const Tenants: CollectionConfig = {
         { label: 'Pro', value: 'pro' },
       ],
     },
+    // --- Права студии (задел под тарифы). Дефолты открыты — ограничения точечно. ---
+    {
+      name: 'capBooks',
+      type: 'select',
+      defaultValue: 'active',
+      label: 'Книги (доступ)',
+      options: [
+        { label: 'Нет', value: 'none' },
+        { label: 'Триал', value: 'trial' },
+        { label: 'Открыто', value: 'active' },
+      ],
+      admin: { description: 'Раздел «Книги». Триал — до даты ниже.' },
+    },
+    { name: 'capBooksUntil', type: 'date', label: 'Книги: триал до', admin: { condition: (d: any) => d?.capBooks === 'trial' } },
+    {
+      name: 'capMedia',
+      type: 'select',
+      defaultValue: 'active',
+      label: 'Медиа (доступ)',
+      options: [
+        { label: 'Нет', value: 'none' },
+        { label: 'Триал', value: 'trial' },
+        { label: 'Открыто', value: 'active' },
+      ],
+      admin: { description: 'Видео/Аудио/Файлы/Галерея. Триал — до даты ниже.' },
+    },
+    { name: 'capMediaUntil', type: 'date', label: 'Медиа: триал до', admin: { condition: (d: any) => d?.capMedia === 'trial' } },
+    { name: 'capCustomDomain', type: 'checkbox', defaultValue: true, label: 'Свой домен (платно)' },
+    { name: 'studioFrozen', type: 'checkbox', defaultValue: false, label: 'Студия заморожена' },
     // --- Онбординг автора (заполняется мастером в /studio/onboarding) ---
     {
       name: 'subdomain',

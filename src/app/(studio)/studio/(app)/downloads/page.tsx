@@ -2,6 +2,8 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
+import { StudioUpsell } from '../_ui/StudioUpsell'
 import { DownloadsManager } from './DownloadsManager'
 
 /** Раздел «Файлы» студии (Медиа) — цифровые товары для скачивания по подписке. */
@@ -10,6 +12,8 @@ export const dynamic = 'force-dynamic'
 export default async function DownloadsPage() {
   const author = await getCurrentAuthor()
   const payload = await getPayload({ config: await config })
+  const ent = await loadEntitlements(payload, author!.tenantId)
+  if (!canUse(ent, 'media')) return <StudioUpsell cap="media" />
 
   const res = await payload.find({
     collection: 'downloads' as any,

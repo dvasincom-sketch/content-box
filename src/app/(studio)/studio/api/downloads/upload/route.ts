@@ -1,4 +1,4 @@
-import { withAuthor, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, apiError, apiOk, belongsToTenant, hasCapability } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -44,6 +44,7 @@ function numOrNull(v: unknown): number | null {
 }
 
 export const POST = withAuthor(async ({ req, payload, tenantId }) => {
+  if (!(await hasCapability(payload, tenantId, 'media'))) return apiError('Раздел медиа недоступен на текущем тарифе. Оформите пакет в студии.', 403)
   let form: FormData
   try {
     form = await req.formData()

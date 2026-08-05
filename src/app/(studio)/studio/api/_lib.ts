@@ -3,6 +3,7 @@ import { getPayload, type Payload, type CollectionSlug } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { isSameOrigin, isMutating } from '@/lib/sameOrigin'
+import { loadEntitlements, canUse, type Capability } from '@/lib/studioEntitlements'
 
 /**
  * Общая обвязка серверных роутов студии (`(studio)/studio/api/**`).
@@ -108,4 +109,13 @@ export async function findTenantSettings(payload: Payload, tenantId: number) {
     overrideAccess: true,
   })
   return res.docs[0] ?? null
+}
+
+/**
+ * Есть ли у тенанта право на возможность студии (гейтинг тарифом). Fail-open:
+ * при отсутствии данных о правах — true (как и дефолты миграции).
+ */
+export async function hasCapability(payload: Payload, tenantId: number, cap: Capability): Promise<boolean> {
+  const ent = await loadEntitlements(payload, tenantId)
+  return canUse(ent, cap)
 }

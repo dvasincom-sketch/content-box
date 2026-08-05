@@ -3,9 +3,9 @@
 import React from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock } from 'lucide-react'
 
-type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean }
+type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media' }
 
 // Меню сгруппировано: «Медиа» объединяет видео и аудио (позже — галерея).
 type NavGroup = { label?: string; items: NavItem[] }
@@ -22,11 +22,11 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Медиа',
     items: [
-      { href: '/studio/books', label: 'Книги', icon: <BookOpen size={18} /> },
-      { href: '/studio/videos', label: 'Видео', icon: <Video size={18} /> },
-      { href: '/studio/audio', label: 'Аудио', icon: <Headphones size={18} /> },
-      { href: '/studio/downloads', label: 'Файлы', icon: <FileDown size={18} /> },
-      { href: '/studio/gallery', label: 'Галерея', icon: <Images size={18} /> },
+      { href: '/studio/books', label: 'Книги', icon: <BookOpen size={18} />, cap: 'books' },
+      { href: '/studio/videos', label: 'Видео', icon: <Video size={18} /> , cap: 'media' },
+      { href: '/studio/audio', label: 'Аудио', icon: <Headphones size={18} /> , cap: 'media' },
+      { href: '/studio/downloads', label: 'Файлы', icon: <FileDown size={18} /> , cap: 'media' },
+      { href: '/studio/gallery', label: 'Галерея', icon: <Images size={18} /> , cap: 'media' },
     ],
   },
 ]
@@ -36,7 +36,7 @@ function isActive(pathname: string, item: NavItem): boolean {
   return pathname === item.href || pathname.startsWith(item.href + '/')
 }
 
-export function StudioNav({ authorEmail, brandName }: { authorEmail: string; brandName: string }) {
+export function StudioNav({ authorEmail, brandName, nav }: { authorEmail: string; brandName: string; nav?: { books: boolean; media: boolean; frozen: boolean } }) {
   const pathname = usePathname()
 
   return (
@@ -90,6 +90,22 @@ export function StudioNav({ authorEmail, brandName }: { authorEmail: string; bra
             )}
             {group.items.map((item) => {
               const active = isActive(pathname, item)
+              const locked = nav ? ((item.cap === 'books' && !nav.books) || (item.cap === 'media' && !nav.media)) : false
+              if (locked) {
+                return (
+                  <Link
+                    key={item.href}
+                    href="/studio/upgrade"
+                    className="studio-nav__item"
+                    style={{ opacity: 0.6 }}
+                    title="Недоступно на текущем тарифе — оформить"
+                  >
+                    <span className="studio-nav__icon">{item.icon}</span>
+                    <span>{item.label}</span>
+                    <Lock size={13} style={{ marginLeft: 'auto', opacity: 0.7 }} />
+                  </Link>
+                )
+              }
               return (
                 <Link
                   key={item.href}

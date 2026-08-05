@@ -2,6 +2,8 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
+import { StudioUpsell } from '../_ui/StudioUpsell'
 import { BooksManager } from './BooksManager'
 
 /** Раздел «Книги» студии — авторские текстовые произведения. */
@@ -13,6 +15,8 @@ const TYPE_LABEL: Record<string, string> = { novel: 'Роман', story: 'Рас
 export default async function BooksPage() {
   const author = await getCurrentAuthor()
   const payload = await getPayload({ config: await config })
+  const ent = await loadEntitlements(payload, author!.tenantId)
+  if (!canUse(ent, 'books')) return <StudioUpsell cap="books" />
 
   const booksRes = await payload.find({
     collection: 'books' as any,
