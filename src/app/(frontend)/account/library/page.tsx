@@ -24,10 +24,15 @@ export default async function LibraryPage() {
   const payload = await getPayload({ config: await config })
   if (!tid) return <p style={{ color: 'var(--brand-muted)' }}>Тенант не определён.</p>
 
-  const [bmRes, pvRes] = await Promise.all([
+  const [bmRes, pvRes, bfRes] = await Promise.all([
     payload.find({ collection: 'bookmarks', where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }, { targetType: { equals: 'book' } }] }, limit: 500, depth: 2, overrideAccess: true }),
     payload.find({ collection: 'views', where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }, { targetType: { equals: 'book' } }] }, limit: 500, depth: 2, overrideAccess: true }),
+    payload.find({ collection: 'book-follows' as any, where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }] }, limit: 500, depth: 2, overrideAccess: true }),
   ])
+  const following: Row[] = (bfRes.docs as any[]).map((f) => {
+    const b = f.book && typeof f.book === 'object' ? f.book : null
+    return b ? { bookId: String(b.id), slug: b.slug || String(b.id), title: b.title || 'Без названия', coverUrl: b.cover && typeof b.cover === 'object' ? (b.cover.url || null) : null, lastOrder: null, maxOrder: null, bookmarked: false } : null
+  }).filter((x): x is Row => !!x)
 
   const byId = new Map<string, Row>()
   const ensure = (b: any): Row | null => {
@@ -70,13 +75,14 @@ export default async function LibraryPage() {
   return (
     <>
       <h1 style={{ fontSize: 26, color: 'var(--brand-text)', margin: '0 0 20px' }}>Моя библиотека</h1>
-      {rows.length === 0 ? (
+      {rows.length === 0 && following.length === 0 ? (
         <p style={{ color: 'var(--brand-muted)' }}>Здесь появятся книги, которые вы читаете или добавили в библиотеку.</p>
       ) : (
         <>
           <Section title="Читаю" rows={reading} showContinue />
           <Section title="Хочу прочитать" rows={want} />
           <Section title="Прочитано" rows={finished} />
+          <Section title="Отслеживаю обновления" rows={following} />
         </>
       )}
     </>

@@ -115,3 +115,27 @@ export async function setHistoryEnabled(enabled: boolean): Promise<{ ok: boolean
     return { ok: false }
   }
 }
+
+
+export async function toggleBookFollow(input: { bookId: string | number }): Promise<{ ok: boolean; following?: boolean; error?: string }> {
+  const { payload, tenantId, subscriber } = await ctx()
+  if (!tenantId) return { ok: false, error: 'Тенант не определён.' }
+  if (!subscriber?.id) return { ok: false, error: 'Войдите, чтобы следить за книгой.' }
+  const bookId = Number(input.bookId)
+  if (!bookId) return { ok: false, error: 'Некорректная книга.' }
+  try {
+    const existing = await payload.find({
+      collection: 'book-follows' as any,
+      where: { and: [{ subscriber: { equals: subscriber.id } }, { book: { equals: bookId } }, { tenant: { equals: tenantId } }] },
+      limit: 1, depth: 0, overrideAccess: true,
+    })
+    if ((existing as any).docs.length > 0) {
+      await payload.delete({ collection: 'book-follows' as any, id: (existing as any).docs[0].id, overrideAccess: true })
+      return { ok: true, following: false }
+    }
+    await payload.create({ collection: 'book-follows' as any, data: { tenant: tenantId, subscriber: subscriber.id, book: bookId } as any, overrideAccess: true })
+    return { ok: true, following: true }
+  } catch (e: unknown) {
+    return { ok: false, error: errorMessage(e, 'Ошибка') }
+  }
+}

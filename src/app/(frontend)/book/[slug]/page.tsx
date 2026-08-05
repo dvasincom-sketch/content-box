@@ -10,6 +10,7 @@ import { tierWeight } from '@/lib/tierWeight'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { BookOpen, Lock, Play } from 'lucide-react'
 import { BookmarkButton } from '@/components/social/BookmarkButton'
+import { FollowBookButton } from '@/components/social/FollowBookButton'
 import { parseVideoEmbed } from '@/lib/videoEmbed'
 import type { Metadata } from 'next'
 import '../../styles.css'
@@ -83,6 +84,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
 
   // Библиотека читателя + прогресс.
   let savedInLibrary = false
+  let followingBook = false
   let continueOrder: number | null = null
   if (viewer) {
     const bm = await payload.find({
@@ -91,6 +93,12 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
       limit: 1, depth: 0, overrideAccess: true,
     })
     savedInLibrary = bm.docs.length > 0
+    const fl = await payload.find({
+      collection: 'book-follows' as any,
+      where: { and: [{ subscriber: { equals: viewer.id } }, { tenant: { equals: tenant.id } }, { book: { equals: book.id } }] },
+      limit: 1, depth: 0, overrideAccess: true,
+    })
+    followingBook = (fl as any).docs.length > 0
     const pv = await payload.find({
       collection: 'views',
       where: { and: [{ subscriber: { equals: viewer.id } }, { tenant: { equals: tenant.id } }, { book: { equals: book.id } }] },
@@ -149,6 +157,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
                 </Link>
               ) : null}
               {viewer && <BookmarkButton targetType="book" targetId={book.id} initialSaved={savedInLibrary} />}
+              {viewer && <FollowBookButton bookId={book.id} initialFollowing={followingBook} />}
             </div>
           </div>
         </div>

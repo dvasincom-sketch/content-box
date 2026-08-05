@@ -115,11 +115,45 @@ export async function POST(req: NextRequest) {
         category: d.category && typeof d.category === 'object' ? d.category.title : null,
       }))
 
+    // Новые главы книг с момента метки — для читателей, следящих за книгой.
+    const chRes = await payload.find({
+      collection: 'chapters' as any,
+      where: { and: [{ tenant: { equals: tenantId } }, { publishedAt: { greater_than: since.toISOString() } }] },
+      sort: '-publishedAt', limit: 200, depth: 1, overrideAccess: true,
+    })
+    const chapterItemsByBook = new Map<string, DigestItem[]>()
+    for (const ch of chRes.docs as any[]) {
+      const b = ch.book && typeof ch.book === 'object' ? ch.book : null
+      if (!b?.slug) continue
+      const bid = String(b.id)
+      if (!chapterItemsByBook.has(bid)) chapterItemsByBook.set(bid, [])
+      chapterItemsByBook.get(bid)!.push({
+        title: `«${b.title || 'Книга'}»: ${ch.title || 'Новая глава'}`,
+        url: `https://${domain}/book/${b.slug}/${Number(ch.order) || 1}`,
+        category: 'Новая глава',
+      })
+    }
+    // Подписки читателей на книги (subscriberId → set bookId).
+    const followsBySub = new Map<string, Set<string>>()
+    if (chapterItemsByBook.size > 0) {
+      const bfRes = await payload.find({
+        collection: 'book-follows' as any,
+        where: { tenant: { equals: tenantId } },
+        limit: 20000, depth: 0, overrideAccess: true,
+      })
+      for (const f of bfRes.docs as any[]) {
+        const sid = String(typeof f.subscriber === 'object' ? f.subscriber.id : f.subscriber)
+        const bid = String(typeof f.book === 'object' ? f.book.id : f.book)
+        if (!followsBySub.has(sid)) followsBySub.set(sid, new Set())
+        followsBySub.get(sid)!.add(bid)
+      }
+    }
+
     let recipients = 0
     let sent = 0
     let failed = 0
 
-    if (items.length > 0) {
+    if (items.length > 0 || chapterItemsByBook.size > 0) {
       const subsRes = await payload.find({
         collection: 'subscribers',
         where: {
@@ -139,6 +173,13 @@ export async function POST(req: NextRequest) {
 
       for (const sub of subsRes.docs as any[]) {
         if (!sub.email) continue
+        // Персональные позиции: общие публикации + новые главы книг, за которыми
+        // следит этот читатель.
+        let chItems: DigestItem[] = []
+        const followed = followsBySub.get(String(sub.id))
+        if (followed) for (const bid of followed) { const arr = chapterItemsByBook.get(bid); if (arr) chItems = chItems.concat(arr) }
+        const personalItems = items.concat(chItems)
+        if (personalItems.length === 0) continue
         let token = sub.unsubscribeToken as string | undefined
         if (!token) {
           token = makeToken()
@@ -158,7 +199,7 @@ export async function POST(req: NextRequest) {
         const mail = digestEmail({
           brand,
           siteUrl,
-          items,
+          items: personalItems,
           unsubscribeUrl: `${siteUrl}/unsubscribe?token=${encodeURIComponent(token)}`,
         })
         if (dryRun) {

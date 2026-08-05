@@ -29,6 +29,7 @@ import { GalleryFolders } from './collections/GalleryFolders'
 import { Downloads } from './collections/Downloads'
 import { Books } from './collections/Books'
 import { Chapters } from './collections/Chapters'
+import { BookFollows } from './collections/BookFollows'
 import { Comments } from './collections/Comments'
 import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
@@ -155,6 +156,7 @@ export default buildConfig({
     Downloads,
     Books,
     Chapters,
+    BookFollows,
     Comments,
     Reactions,
     ActivityEvents,
@@ -300,6 +302,7 @@ export default buildConfig({
         downloads: { useTenantAccess: false },
         books: { useTenantAccess: false },
         chapters: { useTenantAccess: false },
+        'book-follows': { useTenantAccess: false },
         comments: { useTenantAccess: false },
         reactions: { useTenantAccess: false },
         'activity-events': { useTenantAccess: false },
