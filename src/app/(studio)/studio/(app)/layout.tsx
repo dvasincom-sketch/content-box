@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { authenticatedUser } from '@/lib/currentUser'
+import type { User } from '@/payload-types'
 import { StudioNav } from './StudioNav'
 import { SessionGuard } from './SessionGuard'
 import { BugReportWidget } from '@/components/BugReportWidget'
@@ -12,10 +14,19 @@ import { canUse, type Entitlements } from '@/lib/studioEntitlements'
  * Layout приватной части студии. Guard: нет автора → на /studio/login.
  * Подписчик (collection subscribers) сюда не пройдёт — getCurrentAuthor
  * возвращает null для всех, кроме users с tenant.
+ *
+ * Особый случай — superadmin: он «автор» только выбрав активный тенант
+ * (переключатель /studio/select-tenant). Залогинен, но тенант не выбран →
+ * getCurrentAuthor === null; тогда уводим его на пикер, а не на форму входа.
  */
 export default async function StudioAppLayout({ children }: { children: React.ReactNode }) {
   const author = await getCurrentAuthor()
   if (!author) {
+    // Различаем «не залогинен» и «superadmin без выбранного проекта».
+    const u = await authenticatedUser()
+    if (u && u.collection === 'users' && (u as User).platformRole === 'superadmin') {
+      redirect('/studio/select-tenant')
+    }
     redirect('/studio/login')
   }
 
@@ -48,13 +59,21 @@ export default async function StudioAppLayout({ children }: { children: React.Re
   const isOwner = (author.user as { tenantRole?: string | null }).tenantRole !== 'contributor'
 
   // Незавершённый онбординг → в мастер (вне try, чтобы redirect не проглотился).
-  if (!onboardingComplete) {
+  // Для superadmin онбординг тенанта пропускаем: он не владелец, а обслуживает
+  // чужой проект через переключатель — мастер настройки ему не нужен.
+  if (!onboardingComplete && !author.isSuperadmin) {
     redirect('/studio/onboarding')
   }
 
   return (
     <div className="studio-shell">
-      <StudioNav authorEmail={author.user.email} brandName={brandName} nav={nav} isOwner={isOwner} />
+      <StudioNav
+        authorEmail={author.user.email}
+        brandName={brandName}
+        nav={nav}
+        isOwner={isOwner}
+        isSuperadmin={author.isSuperadmin}
+      />
       <main className="studio-main">
         {nav.frozen && (
           <div style={{ margin: '0 0 16px', padding: '12px 16px', borderRadius: 12, background: 'color-mix(in srgb, var(--st-warning, #d97706) 18%, transparent)', color: 'var(--st-text)', fontSize: 14 }}>

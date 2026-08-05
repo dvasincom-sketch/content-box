@@ -42,32 +42,33 @@ export function AcceptInviteForm({ token, email }: { token: string; email: strin
           <p>{email} — придумайте пароль для входа.</p>
         </div>
         {done ? (
-          <div className="studio-login__ok">Пароль сохранён. Открываем страницу входа…</div>
+          <div className="studio-login__form" style={{ color: 'var(--st-text-muted)' }}>Пароль сохранён. Открываем страницу входа…</div>
         ) : (
-          <>
+          <div className="studio-login__form">
             <label className="studio-field">
               <span className="studio-field__label">Пароль</span>
               <input
                 className="studio-input"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') submit() }}
                 placeholder="Не короче 8 символов"
                 autoFocus
+                disabled={loading}
               />
             </label>
             {error && <div className="studio-login__error">{error}</div>}
             <button
               type="button"
-              className="studio-btn studio-btn--primary"
-              style={{ justifyContent: 'center' }}
+              className="studio-btn studio-btn--primary studio-login__submit"
               onClick={submit}
               disabled={loading}
             >
               {loading ? 'Сохраняем…' : 'Войти в студию'}
             </button>
-          </>
+          </div>
         )}
       </div>
     </div>

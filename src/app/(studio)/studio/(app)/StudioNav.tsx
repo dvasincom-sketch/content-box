@@ -3,7 +3,7 @@
 import React from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock } from 'lucide-react'
+import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock, Repeat } from 'lucide-react'
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media'; ownerOnly?: boolean }
 
@@ -36,7 +36,7 @@ function isActive(pathname: string, item: NavItem): boolean {
   return pathname === item.href || pathname.startsWith(item.href + '/')
 }
 
-export function StudioNav({ authorEmail, brandName, nav, isOwner = true }: { authorEmail: string; brandName: string; nav?: { books: boolean; media: boolean; frozen: boolean }; isOwner?: boolean }) {
+export function StudioNav({ authorEmail, brandName, nav, isOwner = true, isSuperadmin = false }: { authorEmail: string; brandName: string; nav?: { books: boolean; media: boolean; frozen: boolean }; isOwner?: boolean; isSuperadmin?: boolean }) {
   const pathname = usePathname()
 
   return (
@@ -76,6 +76,20 @@ export function StudioNav({ authorEmail, brandName, nav, isOwner = true }: { aut
           <span className="studio-nav__brand-sub">Студия</span>
         </div>
       </div>
+
+      {/* Платформенный администратор (superadmin): текущий проект выбран через
+          переключатель — даём быстрый доступ сменить его. */}
+      {isSuperadmin && (
+        <Link
+          href="/studio/select-tenant"
+          className="studio-nav__item"
+          style={{ margin: '0 0 8px' }}
+          title="Сменить проект (платформенный доступ)"
+        >
+          <span className="studio-nav__icon"><Repeat size={16} /></span>
+          <span>Сменить проект</span>
+        </Link>
+      )}
 
       <nav className="studio-nav__list">
         {NAV_GROUPS.map((group, gi) => (

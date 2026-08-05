@@ -122,6 +122,7 @@ export function AccessPanel({ members }: { members: Member[] }) {
                 <div className="access__row-name">{m.name || m.email}{m.isSelf && ' (вы)'}</div>
                 {m.name && <div className="access__row-email">{m.email}</div>}
               </div>
+              <div className="access__row-actions">
               <span className={`access__status ${st.cls}`}>{st.label}</span>
               {!m.isSelf && m.status !== 'owner' && (
                 m.status === 'disabled' ? (
@@ -136,6 +137,7 @@ export function AccessPanel({ members }: { members: Member[] }) {
                   </button>
                 )
               )}
+              </div>
             </div>
           )
         })}
