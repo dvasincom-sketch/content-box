@@ -14,7 +14,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/studio', label: 'Дашборд', icon: <LayoutDashboard size={18} />, exact: true },
       { href: '/studio/posts', label: 'Публикации', icon: <FileText size={18} /> },
-      { href: '/studio/books', label: 'Книги', icon: <BookOpen size={18} /> },
       { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} /> },
       { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} /> },
       { href: '/studio/settings', label: 'Настройки', icon: <Settings size={18} /> },
@@ -23,6 +22,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Медиа',
     items: [
+      { href: '/studio/books', label: 'Книги', icon: <BookOpen size={18} /> },
       { href: '/studio/videos', label: 'Видео', icon: <Video size={18} /> },
       { href: '/studio/audio', label: 'Аудио', icon: <Headphones size={18} /> },
       { href: '/studio/downloads', label: 'Файлы', icon: <FileDown size={18} /> },
