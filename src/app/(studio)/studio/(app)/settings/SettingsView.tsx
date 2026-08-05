@@ -9,6 +9,7 @@ import { MenuBuilder } from './MenuBuilder'
 import { PagesPanel } from './PagesPanel'
 import { HomeBuilder } from './HomeBuilder'
 import { PresetPicker } from './PresetPicker'
+import { PacksPanel } from './PacksPanel'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
 
@@ -94,6 +95,7 @@ export function SettingsView({
             <LogoBlock initialUrl={logoUrl} />
           </>
         )}
+        {tab === 'home' && <PacksBlock />}
         {tab === 'home' && <HomeBlock homeSections={homeSections} />}
         {tab === 'socials' && <SocialsBlock initial={initialSocials} />}
         {tab === 'menu' && <MenuBlock />}
@@ -108,6 +110,18 @@ export function SettingsView({
 /* -------------------------------------------------------------------------- */
 /* Конструктор главной страницы                                                */
 /* -------------------------------------------------------------------------- */
+function PacksBlock() {
+  return (
+    <section className="settings__block">
+      <div className="settings__block-head">
+        <h2>Шаблоны (готовые преднастройки)</h2>
+        <p>Быстрый старт под нишу: пак задаёт тему, набор и порядок секций и стартовые тексты. Ниже в конструкторе можно вручную поменять состав, порядок и видимость секций.</p>
+      </div>
+      <PacksPanel />
+    </section>
+  )
+}
+
 function HomeBlock({ homeSections }: { homeSections: HomeSectionConfig[] }) {
   return (
     <section className="settings__block">
