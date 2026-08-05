@@ -29,10 +29,12 @@ export default async function LibraryPage() {
     payload.find({ collection: 'views', where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }, { targetType: { equals: 'book' } }] }, limit: 500, depth: 2, overrideAccess: true }),
     payload.find({ collection: 'book-follows' as any, where: { and: [{ tenant: { equals: tid } }, { subscriber: { equals: sub.id } }] }, limit: 500, depth: 2, overrideAccess: true }),
   ])
-  const following: Row[] = (bfRes.docs as any[]).map((f) => {
+  const following: Row[] = []
+  for (const f of bfRes.docs as any[]) {
     const b = f.book && typeof f.book === 'object' ? f.book : null
-    return b ? { bookId: String(b.id), slug: b.slug || String(b.id), title: b.title || 'Без названия', coverUrl: b.cover && typeof b.cover === 'object' ? (b.cover.url || null) : null, lastOrder: null, maxOrder: null, bookmarked: false } : null
-  }).filter((x): x is Row => !!x)
+    if (!b) continue
+    following.push({ bookId: String(b.id), slug: b.slug || String(b.id), title: b.title || 'Без названия', coverUrl: b.cover && typeof b.cover === 'object' ? (b.cover.url || null) : null, lastOrder: null, maxOrder: null, bookmarked: false })
+  }
 
   const byId = new Map<string, Row>()
   const ensure = (b: any): Row | null => {
