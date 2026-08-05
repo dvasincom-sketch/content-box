@@ -73,6 +73,7 @@ export function VideoSeriesBlock({
 
   const [seasonKey, setSeasonKey] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [autoplay, setAutoplay] = useState(false)
 
   if (episodes.length === 0) {
     return (
@@ -87,13 +88,24 @@ export function VideoSeriesBlock({
   const selectSeason = (s: Season) => {
     setSeasonKey(s.key)
     setSelectedId(String(s.episodes[0].id))
+    setAutoplay(false)
+  }
+
+  // Авто-переход к следующей серии активного сезона (по окончании текущей).
+  const goNext = () => {
+    const list = activeSeason.episodes
+    const idx = list.findIndex((e) => String(e.id) === String(selected.id))
+    if (idx >= 0 && idx < list.length - 1) {
+      setSelectedId(String(list[idx + 1].id))
+      setAutoplay(true)
+    }
   }
 
   return (
     <div className="vseries">
       <div className="vseries__main">
         {/* key заставляет плеер перемонтироваться и заново запросить токен */}
-        <VideoPlayer key={String(selected.id)} videoId={selected.id} />
+        <VideoPlayer key={String(selected.id)} videoId={selected.id} onEnded={goNext} autoPlay={autoplay} />
 
         <h2 className="vseries__now-title">{selected.title}</h2>
         <div className="vseries__now-meta">
@@ -144,7 +156,7 @@ export function VideoSeriesBlock({
                 <button
                   type="button"
                   className={`vseries__ep${isActive ? ' is-active' : ''}`}
-                  onClick={() => setSelectedId(String(ep.id))}
+                  onClick={() => { setSelectedId(String(ep.id)); setAutoplay(true) }}
                 >
                   <span className="vseries__ep-thumb">
                     {thumb ? (

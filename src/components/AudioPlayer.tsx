@@ -53,7 +53,7 @@ function buildWave(seed: number): number[] {
  * форма требует скачать и декодировать весь файл — неприемлемо для многочасовых
  * озвучек). Стили — брендовые токены, светлая/тёмная тема.
  */
-export function AudioPlayer({ src, onEnded }: { src: string; onEnded?: () => void }) {
+export function AudioPlayer({ src, onEnded, autoPlay }: { src: string; onEnded?: () => void; autoPlay?: boolean }) {
   const ref = useRef<HTMLAudioElement>(null)
   const waveRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -72,6 +72,18 @@ export function AudioPlayer({ src, onEnded }: { src: string; onEnded?: () => voi
     setPlaying(false)
     setHover(null)
   }, [src])
+
+  // Авто-старт при смене трека (в плейлисте): играет только если родитель
+  // попросил autoPlay. Браузер разрешает play() после клика пользователя
+  // (sticky activation), поэтому в плейлисте после первого запуска работает.
+  useEffect(() => {
+    if (!autoPlay) return
+    const a = ref.current
+    if (a) {
+      const p = a.play()
+      if (p) p.catch(() => {})
+    }
+  }, [src, autoPlay])
 
   const progress = dur > 0 ? cur / dur : 0
 

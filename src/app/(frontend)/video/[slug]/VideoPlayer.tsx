@@ -21,6 +21,8 @@ import { AudioPlayer } from '@/components/AudioPlayer'
 export function VideoPlayer({
   videoId,
   initialAspect = '16:9',
+  onEnded,
+  autoPlay,
 }: {
   videoId: string | number
   /**
@@ -29,6 +31,10 @@ export function VideoPlayer({
    * перестраивается после ответа /api/video-token.
    */
   initialAspect?: '16:9' | '9:16'
+  /** Аудио: колбэк по окончании (для авто-перехода в плейлисте). */
+  onEnded?: () => void
+  /** Аудио: авто-старт при монтировании (следующая серия в плейлисте). */
+  autoPlay?: boolean
 }) {
   const [src, setSrc] = useState<string | null>(null)
   const [aspect, setAspect] = useState<'16:9' | '9:16'>(initialAspect)
@@ -134,7 +140,7 @@ export function VideoPlayer({
           ) : !src ? (
             <div style={{ color: 'var(--brand-muted)', textAlign: 'center', padding: '16px 8px' }}>Загрузка плеера…</div>
           ) : (
-            <AudioPlayer src={src} />
+            <AudioPlayer src={src} onEnded={onEnded} autoPlay={autoPlay} />
           )}
         </div>
       </div>
