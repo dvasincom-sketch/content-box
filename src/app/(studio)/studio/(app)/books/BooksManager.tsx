@@ -111,7 +111,7 @@ export function BooksManager({ initialBooks }: { initialBooks: Book[] }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {shown.map((b) => (
             <div key={b.id} className="c-card" style={{ padding: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ flex: 'none', width: 46, height: 62, borderRadius: 6, overflow: 'hidden', background: 'var(--st-surface, #eee)', display: 'grid', placeItems: 'center' }}>
+              <div style={{ flex: 'none', width: 46, height: 62, borderRadius: 6, overflow: 'hidden', background: 'var(--st-surface)', display: 'grid', placeItems: 'center' }}>
                 {b.coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={b.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -120,7 +120,7 @@ export function BooksManager({ initialBooks }: { initialBooks: Book[] }) {
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontWeight: 600 }}>{b.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--st-text-muted)', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 2 }}>
-                  <span style={{ padding: '1px 8px', borderRadius: 999, background: 'color-mix(in srgb, var(--st-primary,#7b4dff) 14%, transparent)' }}>{b.typeLabel}</span>
+                  <span style={{ padding: '1px 8px', borderRadius: 999, background: 'var(--st-surface-hover)', color: 'var(--st-text-muted)' }}>{b.typeLabel}</span>
                   <span style={{ padding: '1px 8px', borderRadius: 999, background: STATUS_COLOR[b.status] || 'transparent' }}>{b.statusLabel}</span>
                   <span>{b.chapters} глав</span>
                 </div>

@@ -86,7 +86,7 @@ export function ChaptersManager({
               onDragEnd={() => setDragIdx(null)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10,
-                border: '1px solid var(--st-border, #e5e5e5)', background: dragIdx === i ? 'color-mix(in srgb, var(--st-primary,#7b4dff) 8%, transparent)' : 'var(--st-surface, #fff)',
+                border: '1px solid var(--st-border)', background: dragIdx === i ? 'var(--st-surface-hover)' : 'var(--st-surface)',
               }}
             >
               <span style={{ cursor: 'grab', color: 'var(--st-text-muted)' }} title="Перетащите для порядка"><GripVertical size={16} /></span>

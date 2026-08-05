@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2, ImagePlus, X, ArrowLeft, Save } from 'lucide-react'
+import { Loader2, ImagePlus, X, ArrowLeft, Save, BookOpen } from 'lucide-react'
 import { StudioSelect } from '../../_ui/StudioSelect'
 import { TiptapEditor } from '../../posts/new/TiptapEditor'
 import { ChaptersManager, type ChapterItem } from './ChaptersManager'
@@ -50,7 +50,8 @@ function categoryOptions(cats: Cat[]): { value: string; label: string; depth: nu
   return out
 }
 
-/** Редактор книги: метаданные (обложка/аннотация/статус/теги/гейтинг) + главы. */
+/** Редактор произведения: метаданные (сайдбар) + текст + главы. Раскладка — как
+ *  у композера публикаций (composer__grid), в стиле студии (моно-акцент). */
 export function BookEditor({
   book, chapters, tiers, categories, cycles,
 }: {
@@ -69,9 +70,9 @@ export function BookEditor({
   const [allowDownload, setAllowDownload] = useState(book.allowDownload)
   const [cycleId, setCycleId] = useState(book.cycleId)
   const [cycleOrder, setCycleOrder] = useState(book.cycleOrder)
-  const [freeChapters, setFreeChapters] = useState(String(book.freeChapters))
   const [categoryId, setCategoryId] = useState(book.categoryId)
   const [minTierId, setMinTierId] = useState(book.minTierId)
+  const [freeChapters, setFreeChapters] = useState(String(book.freeChapters))
   const [coverId, setCoverId] = useState<number | null>(book.coverId)
   const [coverUrl, setCoverUrl] = useState<string | null>(book.coverUrl)
   const [annotationHtml, setAnnotationHtml] = useState(book.annotationHtml)
@@ -125,118 +126,121 @@ export function BookEditor({
   }
 
   return (
-    <div className="studio-page">
-      <div className="studio-page-head" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Link href="/studio/books" className="studio-btn studio-btn--ghost"><ArrowLeft size={16} /> К книгам</Link>
-        <h1 style={{ margin: 0 }}>Книга</h1>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
-          {savedAt && <span style={{ fontSize: 12, color: 'var(--st-text-muted)' }}>Сохранено {savedAt}</span>}
+    <div className="composer">
+      <div className="composer__head">
+        <Link href="/studio/books" className="studio-btn studio-btn--ghost"><ArrowLeft size={16} /> К произведениям</Link>
+        <div className="composer__actions" style={{ alignItems: 'center' }}>
+          {savedAt && <span style={{ fontSize: 'var(--st-text-sm)', color: 'var(--st-text-muted)' }}>Сохранено {savedAt}</span>}
           <button className="studio-btn studio-btn--primary" onClick={save} disabled={saving}>
             {saving ? <Loader2 size={16} className="spin" /> : <Save size={16} />} Сохранить
           </button>
         </div>
       </div>
 
-      {error && <div className="studio-login__error" style={{ marginBottom: 12 }}>{error}</div>}
+      {error && <div className="studio-login__error composer__error">{error}</div>}
 
-      <div className="c-card" style={{ padding: 20, marginBottom: 20, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-        {/* Обложка */}
-        <div style={{ flex: 'none', width: 160 }}>
-          <div style={{ width: 160, height: 214, borderRadius: 10, overflow: 'hidden', background: 'var(--st-surface, #eee)', display: 'grid', placeItems: 'center', marginBottom: 8 }}>
-            {coverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverUrl} alt="Обложка" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : <ImagePlus size={26} style={{ color: 'var(--st-text-muted)' }} />}
+      <div className="composer__grid">
+        {/* Центр: название + аннотация */}
+        <div className="composer__main">
+          <input className="composer__title" placeholder="Название произведения" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <div className="studio-field">
+            <div className="studio-field__label">Аннотация</div>
+            <TiptapEditor initialHtml={book.annotationHtml} onChange={setAnnotationHtml} placeholder="О чём произведение…" allowImages={false} />
           </div>
-          <label className="studio-btn studio-btn--ghost" style={{ cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
-            {uploading ? <Loader2 size={15} className="spin" /> : <ImagePlus size={15} />} {coverUrl ? 'Заменить' : 'Обложка'}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadCover} />
-          </label>
-          {coverUrl && (
-            <button className="studio-btn studio-btn--ghost" style={{ width: '100%', justifyContent: 'center', marginTop: 6 }} onClick={() => { setCoverId(null); setCoverUrl(null) }}>
-              <X size={14} /> Убрать
-            </button>
-          )}
         </div>
 
-        {/* Метаданные */}
-        <div style={{ flex: 1, minWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <input className="studio-input" placeholder="Название книги" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <div>
-            <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Аннотация</div>
-            <TiptapEditor initialHtml={book.annotationHtml} onChange={setAnnotationHtml} placeholder="О чём книга…" allowImages={false} />
+        {/* Сайдбар: обложка + метаданные */}
+        <aside className="composer__side">
+          <div className="studio-field">
+            <div className="studio-field__label">Обложка</div>
+            <div style={{ position: 'relative', width: '100%', aspectRatio: '3 / 4', borderRadius: 'var(--st-radius)', overflow: 'hidden', border: '1px solid var(--st-border)', background: 'var(--st-surface)', display: 'grid', placeItems: 'center' }}>
+              {coverUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={coverUrl} alt="Обложка" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : <BookOpen size={30} style={{ color: 'var(--st-text-faint)' }} />}
+              {coverUrl && (
+                <button className="composer__cover-remove" onClick={() => { setCoverId(null); setCoverUrl(null) }} title="Убрать"><X size={15} /></button>
+              )}
+            </div>
+            <label className="studio-btn studio-btn--ghost" style={{ cursor: 'pointer', justifyContent: 'center' }}>
+              {uploading ? <Loader2 size={15} className="spin" /> : <ImagePlus size={15} />} {coverUrl ? 'Заменить' : 'Загрузить'}
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadCover} />
+            </label>
           </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 160, flex: 1 }}>
-              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Статус</div>
-              <StudioSelect value={status} onChange={setStatus} ariaLabel="Статус"
-                options={[{ value: 'ongoing', label: 'В процессе' }, { value: 'finished', label: 'Завершено' }, { value: 'frozen', label: 'Заморожено' }]} />
-            </div>
-            <div style={{ minWidth: 160, flex: 1 }}>
-              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Категория</div>
-              <StudioSelect value={categoryId} onChange={setCategoryId} ariaLabel="Категория"
-                options={[{ value: '', label: '— без категории —' }, ...catOptions]} />
-            </div>
+
+          <div className="studio-field">
+            <div className="studio-field__label">Тип</div>
+            <StudioSelect value={type} onChange={setType} ariaLabel="Тип произведения"
+              options={[{ value: 'novel', label: 'Роман' }, { value: 'story', label: 'Рассказ' }, { value: 'mini', label: 'Миниатюра' }, { value: 'cycle', label: 'Цикл' }]} />
           </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div style={{ minWidth: 150, flex: 1 }}>
-              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Тип</div>
-              <StudioSelect value={type} onChange={setType} ariaLabel="Тип произведения"
-                options={[{ value: 'novel', label: 'Роман' }, { value: 'story', label: 'Рассказ' }, { value: 'mini', label: 'Миниатюра' }, { value: 'cycle', label: 'Цикл' }]} />
-            </div>
-            <div style={{ minWidth: 150, flex: 1 }}>
-              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Цикл</div>
+          <div className="studio-field">
+            <div className="studio-field__label">Статус</div>
+            <StudioSelect value={status} onChange={setStatus} ariaLabel="Статус"
+              options={[{ value: 'ongoing', label: 'В процессе' }, { value: 'finished', label: 'Завершено' }, { value: 'frozen', label: 'Заморожено' }]} />
+          </div>
+          <div className="studio-field">
+            <div className="studio-field__label">Категория</div>
+            <StudioSelect value={categoryId} onChange={setCategoryId} ariaLabel="Категория"
+              options={[{ value: '', label: '— без категории —' }, ...catOptions]} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 'var(--st-space-3)' }}>
+            <div className="studio-field" style={{ flex: 1, minWidth: 0 }}>
+              <div className="studio-field__label">Цикл</div>
               <StudioSelect value={cycleId} onChange={setCycleId} ariaLabel="Цикл"
                 options={[{ value: '', label: '— вне цикла —' }, ...cycles.map((c) => ({ value: String(c.id), label: c.title }))]} />
             </div>
-            <div style={{ width: 110 }}>
-              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>№ в цикле</div>
+            <div className="studio-field" style={{ width: 72 }}>
+              <div className="studio-field__label">№</div>
               <input className="studio-input" type="number" min={0} value={cycleOrder} onChange={(e) => setCycleOrder(e.target.value)} />
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-            <div style={{ minWidth: 160, flex: 1 }}>
-              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Уровень для платных глав</div>
-              <StudioSelect value={minTierId} onChange={setMinTierId} ariaLabel="Уровень подписки"
-                options={[{ value: '', label: 'Вся книга бесплатна' }, ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` }))]} />
-            </div>
-            <div style={{ width: 150 }}>
-              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Бесплатных глав</div>
+
+          <div className="studio-field">
+            <div className="studio-field__label">Уровень для платных глав</div>
+            <StudioSelect value={minTierId} onChange={setMinTierId} ariaLabel="Уровень подписки"
+              options={[{ value: '', label: 'Вся книга бесплатна' }, ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` }))]} />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--st-space-3)' }}>
+            <div className="studio-field" style={{ flex: 1, minWidth: 0 }}>
+              <div className="studio-field__label">Бесплатных глав</div>
               <input className="studio-input" type="number" min={0} value={freeChapters} onChange={(e) => setFreeChapters(e.target.value)} />
             </div>
-            <div style={{ width: 130 }}>
-              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Возраст</div>
+            <div className="studio-field" style={{ width: 96 }}>
+              <div className="studio-field__label">Возраст</div>
               <StudioSelect value={ageRating} onChange={setAgeRating} ariaLabel="Возрастной рейтинг"
                 options={[{ value: '12', label: '12+' }, { value: '16', label: '16+' }, { value: '18', label: '18+' }]} />
             </div>
           </div>
-          {/* Теги */}
-          <div>
-            <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Теги</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-              {tags.map((t) => (
-                <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 999, background: 'color-mix(in srgb, var(--st-primary, #7b4dff) 14%, transparent)', fontSize: 13 }}>
-                  {t}
-                  <button onClick={() => setTags(tags.filter((x) => x !== t))} style={{ border: 0, background: 'transparent', cursor: 'pointer', display: 'grid', placeItems: 'center' }}><X size={12} /></button>
-                </span>
-              ))}
-            </div>
+
+          <div className="studio-field">
+            <div className="studio-field__label">Теги</div>
+            {tags.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {tags.map((t) => (
+                  <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 'var(--st-radius-sm)', background: 'var(--st-surface-hover)', color: 'var(--st-text)', fontSize: 'var(--st-text-sm)' }}>
+                    {t}
+                    <button onClick={() => setTags(tags.filter((x) => x !== t))} style={{ border: 0, background: 'transparent', color: 'var(--st-text-muted)', cursor: 'pointer', display: 'grid', placeItems: 'center' }}><X size={12} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
             <input className="studio-input" placeholder="Добавить тег и Enter" value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} />
           </div>
-          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-              <input type="checkbox" checked={allowComments} onChange={(e) => setAllowComments(e.target.checked)} /> Разрешить комментарии
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-              <input type="checkbox" checked={allowDownload} onChange={(e) => setAllowDownload(e.target.checked)} /> Разрешить скачивание
-            </label>
+
+          <div className="composer__flags">
+            <button type="button" className={`composer__flag${allowComments ? ' is-on' : ''}`} onClick={() => setAllowComments((v) => !v)}>Комментарии</button>
+            <button type="button" className={`composer__flag${allowDownload ? ' is-on' : ''}`} onClick={() => setAllowDownload((v) => !v)}>Скачивание</button>
           </div>
-        </div>
+        </aside>
       </div>
 
-      <ChaptersManager bookId={book.id} initialChapters={chapters} tiers={tiers} />
+      {/* Главы — на всю ширину под сеткой */}
+      <div style={{ marginTop: 'var(--st-space-6)' }}>
+        <ChaptersManager bookId={book.id} initialChapters={chapters} tiers={tiers} />
+      </div>
     </div>
   )
 }
