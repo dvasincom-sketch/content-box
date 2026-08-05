@@ -313,7 +313,7 @@ export function GalleryComposer({
    Использует готовые роуты gallery-folders/{create,update,delete}.
    Паттерн — как foldermgr у видео.
    ============================================================================ */
-function GalleryFolderManager({
+export function GalleryFolderManager({
   folders,
   onChanged,
 }: {
