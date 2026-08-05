@@ -46,9 +46,27 @@ function categoryOptions(cats: Cat[]): { value: string; label: string; depth: nu
 }
 
 /**
- * Раздел «Аудио» студии: загрузка MP3 (в S3 через роут audio-upload) и список
- * аудио-записей. Редактирование/удаление — тем же окном, что у видео
- * (VideoEditModal): у аудио правятся название, уровень, категория, теги.
+ * Прямая загрузка файла в S3 по presigned-URL с прогрессом (XHR — fetch не даёт
+ * upload-прогресса). Content-Type обязан совпасть с тем, под который выдана подпись.
+ */
+function putWithProgress(url: string, file: File, contentType: string, onProgress: (p: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', url)
+    xhr.setRequestHeader('Content-Type', contentType)
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100))
+    }
+    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error('S3 ' + xhr.status)))
+    xhr.onerror = () => reject(new Error('network'))
+    xhr.send(file)
+  })
+}
+
+/**
+ * Раздел «Аудио» студии: загрузка MP3 напрямую в S3 (presigned: presign →
+ * PUT в бакет → finalize) и список аудио-записей. Файл через приложение не идёт
+ * и в памяти сервера не буферится. Редактирование/удаление — окном VideoEditModal.
  */
 export function AudioManager({
   initialAudios,
@@ -66,6 +84,7 @@ export function AudioManager({
   const [isPreview, setIsPreview] = useState(false)
   const [categoryId, setCategoryId] = useState('')
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<EditableVideo | null>(null)
   const catOptions = useMemo(() => categoryOptions(categories), [categories])
@@ -77,21 +96,40 @@ export function AudioManager({
       return
     }
     setBusy(true)
+    setProgress(0)
     try {
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('title', title.trim() || file.name)
-      if (minTierId) fd.append('minTierId', minTierId)
-      if (isPreview) fd.append('isPreview', '1')
-      if (categoryId) fd.append('categoryId', categoryId)
-      const res = await fetch('/studio/api/videos/audio-upload', {
+      const ct = file.type || 'audio/mpeg'
+      // 1) presign — подписанный URL на прямую заливку
+      const pres = await fetch('/studio/api/videos/audio-presign', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: fd,
+        body: JSON.stringify({ filename: file.name, contentType: ct, size: file.size }),
       })
-      const json = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(json.error || 'Не удалось загрузить аудио')
+      const pj = await pres.json().catch(() => ({}))
+      if (!pres.ok) {
+        setError(pj.error || 'Не удалось начать загрузку')
+        setBusy(false)
+        return
+      }
+      // 2) прямая загрузка в S3 (браузер → бакет), с прогрессом
+      await putWithProgress(pj.uploadUrl, file, pj.contentType || ct, setProgress)
+      // 3) finalize — создать запись по уже загруженному объекту
+      const fin = await fetch('/studio/api/videos/audio-finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          key: pj.key,
+          title: title.trim() || file.name,
+          minTierId: minTierId || null,
+          isPreview,
+          categoryId: categoryId || null,
+        }),
+      })
+      const fj = await fin.json().catch(() => ({}))
+      if (!fin.ok) {
+        setError(fj.error || 'Не удалось сохранить аудио')
         setBusy(false)
         return
       }
@@ -100,9 +138,10 @@ export function AudioManager({
       setMinTierId('')
       setIsPreview(false)
       setCategoryId('')
+      setProgress(0)
       router.refresh()
     } catch {
-      setError('Ошибка соединения')
+      setError('Не удалось загрузить в хранилище. Если это первый запуск presigned — проверьте, что на бакете настроен CORS (PUT с домена студии).')
     } finally {
       setBusy(false)
     }
@@ -171,13 +210,21 @@ export function AudioManager({
           <input type="checkbox" checked={isPreview} onChange={(e) => setIsPreview(e.target.checked)} />
           Бесплатное превью (открыто всем, перебивает уровень)
         </label>
+
+        {busy && (
+          <div style={{ height: 6, borderRadius: 999, background: 'var(--st-border, rgba(255,255,255,0.12))', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: 'var(--st-accent, #7c3aed)', transition: 'width .2s ease' }} />
+          </div>
+        )}
+
         {error && <div className="studio-login__error">{error}</div>}
         <div style={{ fontSize: 12, color: 'var(--st-text-muted)' }}>
-          Для архива из сотен файлов будет отдельный массовый импорт — здесь удобно добавлять по одному.
+          Файл грузится напрямую в хранилище, минуя сервер — можно большие MP3 (до 200 МБ). Для архива из сотен файлов будет отдельный массовый импорт.
         </div>
         <div>
           <button className="studio-btn studio-btn--primary" onClick={upload} disabled={busy}>
-            {busy ? <Loader2 size={16} className="spin" /> : <Upload size={16} />} Загрузить
+            {busy ? <Loader2 size={16} className="spin" /> : <Upload size={16} />}{' '}
+            {busy ? (progress < 100 ? `Загрузка… ${progress}%` : 'Сохранение…') : 'Загрузить'}
           </button>
         </div>
       </div>
