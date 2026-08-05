@@ -21,6 +21,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       data: {
         title, slug, tenant: tenantId, status: 'ongoing', freeChapters: 0,
         type: ['novel', 'story', 'mini', 'cycle'].includes(data.type) ? data.type : 'novel',
+        publishedAt: new Date().toISOString(),
       } as any,
       overrideAccess: true,
     })
