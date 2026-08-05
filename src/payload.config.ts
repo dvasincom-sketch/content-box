@@ -27,6 +27,8 @@ import { VideoFolders } from './collections/VideoFolders'
 import { GalleryImages } from './collections/GalleryImages'
 import { GalleryFolders } from './collections/GalleryFolders'
 import { Downloads } from './collections/Downloads'
+import { Books } from './collections/Books'
+import { Chapters } from './collections/Chapters'
 import { Comments } from './collections/Comments'
 import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
@@ -151,6 +153,8 @@ export default buildConfig({
     GalleryImages,
     GalleryFolders,
     Downloads,
+    Books,
+    Chapters,
     Comments,
     Reactions,
     ActivityEvents,
@@ -294,6 +298,8 @@ export default buildConfig({
         'gallery-images': { useTenantAccess: false },
         'gallery-folders': { useTenantAccess: false },
         downloads: { useTenantAccess: false },
+        books: { useTenantAccess: false },
+        chapters: { useTenantAccess: false },
         comments: { useTenantAccess: false },
         reactions: { useTenantAccess: false },
         'activity-events': { useTenantAccess: false },
