@@ -18,7 +18,10 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   try {
     const doc = await payload.create({
       collection: 'books' as any,
-      data: { title, slug, tenant: tenantId, status: 'ongoing', freeChapters: 0 } as any,
+      data: {
+        title, slug, tenant: tenantId, status: 'ongoing', freeChapters: 0,
+        type: ['novel', 'story', 'mini', 'cycle'].includes(data.type) ? data.type : 'novel',
+      } as any,
       overrideAccess: true,
     })
     return apiOk({ id: (doc as any).id, slug })

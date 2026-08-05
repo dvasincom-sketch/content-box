@@ -8,6 +8,7 @@ import { BooksManager } from './BooksManager'
 export const dynamic = 'force-dynamic'
 
 const STATUS_LABEL: Record<string, string> = { ongoing: 'В процессе', finished: 'Завершено', frozen: 'Заморожено' }
+const TYPE_LABEL: Record<string, string> = { novel: 'Роман', story: 'Рассказ', mini: 'Миниатюра', cycle: 'Цикл' }
 
 export default async function BooksPage() {
   const author = await getCurrentAuthor()
@@ -36,6 +37,8 @@ export default async function BooksPage() {
     title: b.title || 'Без названия',
     status: b.status || 'ongoing',
     statusLabel: STATUS_LABEL[b.status || 'ongoing'] || '—',
+    type: b.type || 'novel',
+    typeLabel: TYPE_LABEL[b.type || 'novel'] || 'Роман',
     coverUrl: b.cover && typeof b.cover === 'object' ? (b.cover.url || null) : null,
     chapters: counts.get(String(b.id)) || 0,
     updatedAt: b.updatedAt || null,

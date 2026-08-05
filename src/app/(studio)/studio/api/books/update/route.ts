@@ -5,8 +5,9 @@ import { errorMessage } from '@/lib/errorMessage'
 
 /**
  * Обновление метаданных книги.
- * Body: { id, title, slug?, annotation(html)?, status?, isAdult?, categoryId?,
- *         minTierId?, freeChapters?, coverId?, tags?: string[] }
+ * Body: { id, title, slug?, annotation(html)?, status?, type?, ageRating?, categoryId?,
+ *         minTierId?, freeChapters?, coverId?, tags?, cycleId?, cycleOrder?,
+ *         allowComments?, allowDownload? }
  */
 export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   const data = await readJson(req)
@@ -22,7 +23,18 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   if (typeof data.slug === 'string' && data.slug.trim()) patch.slug = slugify(data.slug) || undefined
   if ('annotation' in data) patch.annotation = htmlToLexical(String(data.annotation || ''))
   if (['ongoing', 'finished', 'frozen'].includes(data.status)) patch.status = data.status
-  patch.isAdult = data.isAdult === true || data.isAdult === '1' || data.isAdult === 'true'
+  if (['novel', 'story', 'mini', 'cycle'].includes(data.type)) patch.type = data.type
+  if (['12', '16', '18'].includes(String(data.ageRating))) patch.ageRating = String(data.ageRating)
+  patch.allowComments = data.allowComments !== false && data.allowComments !== '0' && data.allowComments !== 'false'
+  patch.allowDownload = data.allowDownload === true || data.allowDownload === '1' || data.allowDownload === 'true'
+  if ('cycleOrder' in data) {
+    const n = Number(data.cycleOrder)
+    patch.cycleOrder = Number.isFinite(n) && n >= 0 ? n : null
+  }
+  if ('cycleId' in data) {
+    patch.cycle = data.cycleId && Number(data.cycleId) !== Number(id) && (await belongsToTenant(payload, 'books' as any, data.cycleId, tenantId))
+      ? Number(data.cycleId) : null
+  }
   if ('freeChapters' in data) {
     const n = Number(data.freeChapters)
     patch.freeChapters = Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0

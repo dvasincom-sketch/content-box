@@ -40,6 +40,32 @@ export const Books: CollectionConfig = {
       label: 'Слаг (адрес)',
       admin: { description: 'Заполняется автоматически из названия; можно поправить.' },
     },
+    {
+      name: 'type',
+      type: 'select',
+      label: 'Тип произведения',
+      defaultValue: 'novel',
+      options: [
+        { label: 'Роман', value: 'novel' },
+        { label: 'Рассказ', value: 'story' },
+        { label: 'Миниатюра', value: 'mini' },
+        { label: 'Цикл', value: 'cycle' },
+      ],
+      admin: { description: 'Единая сущность: тип выбирается здесь, отдельных разделов нет.' },
+    },
+    {
+      name: 'cycle',
+      type: 'relationship',
+      relationTo: 'books',
+      label: 'Цикл',
+      admin: { description: 'Привязать к циклу (произведению типа «Цикл»).' },
+    },
+    {
+      name: 'cycleOrder',
+      type: 'number',
+      label: '№ в цикле',
+      min: 0,
+    },
     { name: 'cover', type: 'upload', relationTo: 'media', label: 'Обложка' },
     { name: 'annotation', type: 'richText', label: 'Аннотация' },
     {
@@ -54,11 +80,27 @@ export const Books: CollectionConfig = {
       ],
     },
     {
-      name: 'isAdult',
+      name: 'ageRating',
+      type: 'select',
+      label: 'Возрастной рейтинг',
+      defaultValue: '16',
+      options: [
+        { label: '12+', value: '12' },
+        { label: '16+', value: '16' },
+        { label: '18+', value: '18' },
+      ],
+    },
+    {
+      name: 'allowComments',
+      type: 'checkbox',
+      defaultValue: true,
+      label: 'Разрешить комментарии',
+    },
+    {
+      name: 'allowDownload',
       type: 'checkbox',
       defaultValue: false,
-      label: '18+',
-      admin: { description: 'Материал для совершеннолетней аудитории.' },
+      label: 'Разрешить скачивание',
     },
     { name: 'category', type: 'relationship', relationTo: 'categories', label: 'Категория' },
     {

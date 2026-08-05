@@ -15,7 +15,12 @@ type BookData = {
   title: string
   slug: string
   status: string
-  isAdult: boolean
+  type: string
+  ageRating: string
+  allowComments: boolean
+  allowDownload: boolean
+  cycleId: string
+  cycleOrder: string
   freeChapters: number
   categoryId: string
   minTierId: string
@@ -47,17 +52,23 @@ function categoryOptions(cats: Cat[]): { value: string; label: string; depth: nu
 
 /** Редактор книги: метаданные (обложка/аннотация/статус/теги/гейтинг) + главы. */
 export function BookEditor({
-  book, chapters, tiers, categories,
+  book, chapters, tiers, categories, cycles,
 }: {
   book: BookData
   chapters: ChapterItem[]
   tiers: Tier[]
   categories: Cat[]
+  cycles: { id: number | string; title: string }[]
 }) {
   const router = useRouter()
   const [title, setTitle] = useState(book.title)
   const [status, setStatus] = useState(book.status)
-  const [isAdult, setIsAdult] = useState(book.isAdult)
+  const [type, setType] = useState(book.type)
+  const [ageRating, setAgeRating] = useState(book.ageRating)
+  const [allowComments, setAllowComments] = useState(book.allowComments)
+  const [allowDownload, setAllowDownload] = useState(book.allowDownload)
+  const [cycleId, setCycleId] = useState(book.cycleId)
+  const [cycleOrder, setCycleOrder] = useState(book.cycleOrder)
   const [freeChapters, setFreeChapters] = useState(String(book.freeChapters))
   const [categoryId, setCategoryId] = useState(book.categoryId)
   const [minTierId, setMinTierId] = useState(book.minTierId)
@@ -100,7 +111,8 @@ export function BookEditor({
       const res = await fetch('/studio/api/books/update', {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: book.id, title: title.trim(), annotation: annotationHtml, status, isAdult,
+          id: book.id, title: title.trim(), annotation: annotationHtml, status, type, ageRating,
+          allowComments, allowDownload, cycleId: cycleId || '', cycleOrder: cycleOrder || '',
           freeChapters: Number(freeChapters) || 0, categoryId: categoryId || '', minTierId: minTierId || '',
           coverId: coverId ?? null, tags,
         }),
@@ -167,6 +179,22 @@ export function BookEditor({
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div style={{ minWidth: 150, flex: 1 }}>
+              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Тип</div>
+              <StudioSelect value={type} onChange={setType} ariaLabel="Тип произведения"
+                options={[{ value: 'novel', label: 'Роман' }, { value: 'story', label: 'Рассказ' }, { value: 'mini', label: 'Миниатюра' }, { value: 'cycle', label: 'Цикл' }]} />
+            </div>
+            <div style={{ minWidth: 150, flex: 1 }}>
+              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Цикл</div>
+              <StudioSelect value={cycleId} onChange={setCycleId} ariaLabel="Цикл"
+                options={[{ value: '', label: '— вне цикла —' }, ...cycles.map((c) => ({ value: String(c.id), label: c.title }))]} />
+            </div>
+            <div style={{ width: 110 }}>
+              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>№ в цикле</div>
+              <input className="studio-input" type="number" min={0} value={cycleOrder} onChange={(e) => setCycleOrder(e.target.value)} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ minWidth: 160, flex: 1 }}>
               <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Уровень для платных глав</div>
               <StudioSelect value={minTierId} onChange={setMinTierId} ariaLabel="Уровень подписки"
@@ -176,9 +204,11 @@ export function BookEditor({
               <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Бесплатных глав</div>
               <input className="studio-input" type="number" min={0} value={freeChapters} onChange={(e) => setFreeChapters(e.target.value)} />
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, paddingBottom: 8 }}>
-              <input type="checkbox" checked={isAdult} onChange={(e) => setIsAdult(e.target.checked)} /> 18+
-            </label>
+            <div style={{ width: 130 }}>
+              <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Возраст</div>
+              <StudioSelect value={ageRating} onChange={setAgeRating} ariaLabel="Возрастной рейтинг"
+                options={[{ value: '12', label: '12+' }, { value: '16', label: '16+' }, { value: '18', label: '18+' }]} />
+            </div>
           </div>
           {/* Теги */}
           <div>
@@ -194,6 +224,14 @@ export function BookEditor({
             <input className="studio-input" placeholder="Добавить тег и Enter" value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} />
+          </div>
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+              <input type="checkbox" checked={allowComments} onChange={(e) => setAllowComments(e.target.checked)} /> Разрешить комментарии
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+              <input type="checkbox" checked={allowDownload} onChange={(e) => setAllowDownload(e.target.checked)} /> Разрешить скачивание
+            </label>
           </div>
         </div>
       </div>

@@ -48,6 +48,7 @@ import * as migration_20260802_120000_add_perk_excluded from './20260802_120000_
 import * as migration_20260802_140000_add_video_audio from './20260802_140000_add_video_audio';
 import * as migration_20260805_120000_add_downloads from './20260805_120000_add_downloads';
 import * as migration_20260805_130000_add_books_chapters from './20260805_130000_add_books_chapters';
+import * as migration_20260805_140000_add_book_type_cycle from './20260805_140000_add_book_type_cycle';
 
 export const migrations = [
   {
@@ -299,5 +300,10 @@ export const migrations = [
     up: migration_20260805_130000_add_books_chapters.up,
     down: migration_20260805_130000_add_books_chapters.down,
     name: '20260805_130000_add_books_chapters',
+  },
+  {
+    up: migration_20260805_140000_add_book_type_cycle.up,
+    down: migration_20260805_140000_add_book_type_cycle.down,
+    name: '20260805_140000_add_book_type_cycle',
   },
 ];

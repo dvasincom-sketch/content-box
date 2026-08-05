@@ -49,12 +49,26 @@ export default async function BookEditPage({ params }: { params: Promise<{ id: s
     parentId: c.parent ? (typeof c.parent === 'object' ? Number(c.parent.id) : Number(c.parent)) : null,
   }))
 
+  const cyclesRes = await payload.find({
+    collection: 'books' as any,
+    where: { and: [{ tenant: { equals: author!.tenantId } }, { type: { equals: 'cycle' } }] },
+    sort: 'title', limit: 500, depth: 0, overrideAccess: true,
+  })
+  const cycles = (cyclesRes.docs as any[])
+    .filter((c) => String(c.id) !== String(book.id))
+    .map((c) => ({ id: c.id, title: c.title || 'Без названия' }))
+
   const bookData = {
     id: book.id,
     title: book.title || '',
     slug: book.slug || '',
     status: book.status || 'ongoing',
-    isAdult: Boolean(book.isAdult),
+    type: book.type || 'novel',
+    ageRating: String(book.ageRating || '16'),
+    allowComments: book.allowComments !== false,
+    allowDownload: Boolean(book.allowDownload),
+    cycleId: book.cycle ? String(typeof book.cycle === 'object' ? book.cycle.id : book.cycle) : '',
+    cycleOrder: book.cycleOrder != null ? String(book.cycleOrder) : '',
     freeChapters: Number(book.freeChapters) || 0,
     categoryId: book.category ? String(typeof book.category === 'object' ? book.category.id : book.category) : '',
     minTierId: book.minTier ? String(typeof book.minTier === 'object' ? book.minTier.id : book.minTier) : '',
@@ -64,5 +78,5 @@ export default async function BookEditPage({ params }: { params: Promise<{ id: s
     tags: Array.isArray(book.tags) ? (book.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0) : [],
   }
 
-  return <BookEditor book={bookData} chapters={chapters} tiers={tiers} categories={categories} />
+  return <BookEditor book={bookData} chapters={chapters} tiers={tiers} categories={categories} cycles={cycles} />
 }
