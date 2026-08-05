@@ -65,7 +65,11 @@ export default async function AudioPage() {
     where: { tenant: { equals: author!.tenantId } },
     sort: 'title', limit: 1000, depth: 0, overrideAccess: true,
   })
-  const categories = (catsRes.docs as any[]).map((c) => ({ id: c.id, title: c.title || 'Без названия' }))
+  const categories = (catsRes.docs as any[]).map((c) => ({
+    id: c.id,
+    title: c.title || 'Без названия',
+    parentId: c.parent ? (typeof c.parent === 'object' ? Number(c.parent.id) : Number(c.parent)) : null,
+  }))
 
   return <AudioManager initialAudios={audios} tiers={tiers} categories={categories} />
 }

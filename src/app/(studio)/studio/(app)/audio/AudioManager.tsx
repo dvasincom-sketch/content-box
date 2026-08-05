@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, Upload, Pencil, Play, Lock, Unlock, Headphones } from 'lucide-react'
@@ -8,7 +8,7 @@ import { StudioSelect } from '../_ui/StudioSelect'
 import { VideoEditModal, type EditableVideo } from '../videos/VideoEditModal'
 
 type Tier = { id: number | string; name: string }
-type Cat = { id: number | string; title: string }
+type Cat = { id: number | string; title: string; parentId: number | null }
 type AudioItem = {
   id: number | string
   title: string
@@ -22,6 +22,27 @@ type AudioItem = {
   categoryId: string
   tags: string[]
   usedIn: { id: number | string; title: string }[]
+}
+
+/** Категории в порядке дерева + depth (StudioSelect делает отступ по depth). */
+function categoryOptions(cats: Cat[]): { value: string; label: string; depth: number }[] {
+  const present = new Set(cats.map((c) => Number(c.id)))
+  const byParent = new Map<number | null, Cat[]>()
+  for (const c of cats) {
+    const pid = c.parentId != null && present.has(c.parentId) ? c.parentId : null
+    if (!byParent.has(pid)) byParent.set(pid, [])
+    byParent.get(pid)!.push(c)
+  }
+  for (const list of byParent.values()) list.sort((a, b) => String(a.title).localeCompare(String(b.title), 'ru'))
+  const out: { value: string; label: string; depth: number }[] = []
+  const walk = (parent: number | null, depth: number) => {
+    for (const c of byParent.get(parent) ?? []) {
+      out.push({ value: String(c.id), label: c.title, depth })
+      walk(Number(c.id), depth + 1)
+    }
+  }
+  walk(null, 0)
+  return out
 }
 
 /**
@@ -47,6 +68,7 @@ export function AudioManager({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState<EditableVideo | null>(null)
+  const catOptions = useMemo(() => categoryOptions(categories), [categories])
 
   async function upload() {
     setError(null)
@@ -95,11 +117,29 @@ export function AudioManager({
       {/* Загрузка */}
       <div className="c-card" style={{ padding: 20, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ fontWeight: 700 }}>Загрузить аудио (MP3)</div>
-        <input
-          type="file"
-          accept="audio/*,.mp3"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <label className="studio-btn studio-btn--ghost" style={{ cursor: 'pointer' }}>
+            <Upload size={16} /> Выбрать MP3
+            <input
+              type="file"
+              accept="audio/*,.mp3"
+              style={{ display: 'none' }}
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
+          </label>
+          <span
+            style={{
+              fontSize: 13,
+              color: file ? 'var(--st-text)' : 'var(--st-text-muted)',
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {file ? file.name : 'Файл не выбран'}
+          </span>
+        </div>
         <input
           className="studio-input"
           placeholder="Название"
@@ -122,10 +162,7 @@ export function AudioManager({
             <StudioSelect
               value={categoryId}
               onChange={setCategoryId}
-              options={[
-                { value: '', label: '— без категории —' },
-                ...categories.map((c) => ({ value: String(c.id), label: c.title })),
-              ]}
+              options={[{ value: '', label: '— без категории —' }, ...catOptions]}
               ariaLabel="Категория"
             />
           </div>
