@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Lock } from 'lucide-react'
+import { AudioPlayer } from '@/components/AudioPlayer'
 
 /**
  * Клиентский плеер для публичной страницы видео. Запрашивает данные с публичного
@@ -133,7 +134,7 @@ export function VideoPlayer({
           ) : !src ? (
             <div style={{ color: 'var(--brand-muted)', textAlign: 'center', padding: '16px 8px' }}>Загрузка плеера…</div>
           ) : (
-            <audio controls preload="metadata" src={src} style={{ width: '100%' }} />
+            <AudioPlayer src={src} />
           )}
         </div>
       </div>
