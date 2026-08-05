@@ -7,6 +7,7 @@ import { Loader2, ImagePlus, X, ArrowLeft, Save, BookOpen } from 'lucide-react'
 import { StudioSelect } from '../../_ui/StudioSelect'
 import { TiptapEditor } from '../../posts/new/TiptapEditor'
 import { ChaptersManager, type ChapterItem } from './ChaptersManager'
+import { BOOK_GENRE_OPTIONS } from '@/lib/bookGenres'
 
 type Tier = { id: number | string; name: string }
 type Cat = { id: number | string; title: string; parentId: number | null }
@@ -28,6 +29,12 @@ type BookData = {
   coverUrl: string | null
   annotationHtml: string
   tags: string[]
+  genre1: string
+  genre2: string
+  quote1: string
+  quote2: string
+  quote3: string
+  booktrailer: string
 }
 
 function categoryOptions(cats: Cat[]): { value: string; label: string; depth: number }[] {
@@ -78,6 +85,12 @@ export function BookEditor({
   const [annotationHtml, setAnnotationHtml] = useState(book.annotationHtml)
   const [tags, setTags] = useState<string[]>(book.tags)
   const [tagInput, setTagInput] = useState('')
+  const [genre1, setGenre1] = useState(book.genre1)
+  const [genre2, setGenre2] = useState(book.genre2)
+  const [quote1, setQuote1] = useState(book.quote1)
+  const [quote2, setQuote2] = useState(book.quote2)
+  const [quote3, setQuote3] = useState(book.quote3)
+  const [booktrailer, setBooktrailer] = useState(book.booktrailer)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -115,7 +128,7 @@ export function BookEditor({
           id: book.id, title: title.trim(), annotation: annotationHtml, status, type, ageRating,
           allowComments, allowDownload, cycleId: cycleId || '', cycleOrder: cycleOrder || '',
           freeChapters: Number(freeChapters) || 0, categoryId: categoryId || '', minTierId: minTierId || '',
-          coverId: coverId ?? null, tags,
+          coverId: coverId ?? null, tags, genre1, genre2, quote1, quote2, quote3, booktrailer,
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -146,6 +159,16 @@ export function BookEditor({
           <div className="studio-field">
             <div className="studio-field__label">Аннотация</div>
             <TiptapEditor initialHtml={book.annotationHtml} onChange={setAnnotationHtml} placeholder="О чём произведение…" allowImages={false} />
+          </div>
+          <div className="studio-field" style={{ marginTop: 'var(--st-space-4)' }}>
+            <div className="studio-field__label">Буктрейлер (ссылка на видео)</div>
+            <input className="studio-input" placeholder="YouTube, Rutube, VK, Дзен…" value={booktrailer} onChange={(e) => setBooktrailer(e.target.value)} />
+          </div>
+          <div className="studio-field" style={{ marginTop: 'var(--st-space-4)' }}>
+            <div className="studio-field__label">Цитаты (видны читателям)</div>
+            <textarea className="studio-input" rows={2} placeholder="Цитата 1" value={quote1} onChange={(e) => setQuote1(e.target.value)} style={{ resize: 'vertical' }} />
+            <textarea className="studio-input" rows={2} placeholder="Цитата 2" value={quote2} onChange={(e) => setQuote2(e.target.value)} style={{ resize: 'vertical' }} />
+            <textarea className="studio-input" rows={2} placeholder="Цитата 3" value={quote3} onChange={(e) => setQuote3(e.target.value)} style={{ resize: 'vertical' }} />
           </div>
         </div>
 
@@ -182,6 +205,18 @@ export function BookEditor({
             <div className="studio-field__label">Категория</div>
             <StudioSelect value={categoryId} onChange={setCategoryId} ariaLabel="Категория"
               options={[{ value: '', label: '— без категории —' }, ...catOptions]} />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--st-space-3)' }}>
+            <div className="studio-field" style={{ flex: 1, minWidth: 0 }}>
+              <div className="studio-field__label">Жанр 1</div>
+              <StudioSelect value={genre1} onChange={setGenre1} ariaLabel="Жанр 1"
+                options={[{ value: '', label: '— не выбрано —' }, ...BOOK_GENRE_OPTIONS]} />
+            </div>
+            <div className="studio-field" style={{ flex: 1, minWidth: 0 }}>
+              <div className="studio-field__label">Жанр 2</div>
+              <StudioSelect value={genre2} onChange={setGenre2} ariaLabel="Жанр 2"
+                options={[{ value: '', label: '— не выбрано —' }, ...BOOK_GENRE_OPTIONS]} />
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: 'var(--st-space-3)' }}>

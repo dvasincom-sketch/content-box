@@ -76,6 +76,12 @@ export default async function BookEditPage({ params }: { params: Promise<{ id: s
     coverUrl: book.cover && typeof book.cover === 'object' ? (book.cover.url || null) : null,
     annotationHtml: lexicalToHtml(book.annotation),
     tags: Array.isArray(book.tags) ? (book.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0) : [],
+    genre1: book.genre1 || '',
+    genre2: book.genre2 || '',
+    quote1: book.quote1 || '',
+    quote2: book.quote2 || '',
+    quote3: book.quote3 || '',
+    booktrailer: book.booktrailer || '',
   }
 
   return <BookEditor book={bookData} chapters={chapters} tiers={tiers} categories={categories} cycles={cycles} />

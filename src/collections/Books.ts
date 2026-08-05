@@ -128,6 +128,12 @@ export const Books: CollectionConfig = {
       min: 0,
       admin: { description: 'Сколько первых глав открыты всем (0 — по флагу главы/подписке).' },
     },
+    { name: 'genre1', type: 'text', label: 'Жанр 1' },
+    { name: 'genre2', type: 'text', label: 'Жанр 2' },
+    { name: 'quote1', type: 'textarea', label: 'Цитата 1', admin: { description: 'Видна читателям на странице книги.' } },
+    { name: 'quote2', type: 'textarea', label: 'Цитата 2' },
+    { name: 'quote3', type: 'textarea', label: 'Цитата 3' },
+    { name: 'booktrailer', type: 'text', label: 'Буктрейлер (ссылка на видео)', admin: { description: 'YouTube, Rutube, VK, Дзен и др.' } },
     {
       name: 'publishedAt',
       type: 'date',

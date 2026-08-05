@@ -10,6 +10,7 @@ import { tierWeight } from '@/lib/tierWeight'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { BookOpen, Lock, Play } from 'lucide-react'
 import { BookmarkButton } from '@/components/social/BookmarkButton'
+import { parseVideoEmbed } from '@/lib/videoEmbed'
 import type { Metadata } from 'next'
 import '../../styles.css'
 
@@ -100,6 +101,9 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
   }
   const coverUrl = book.cover && typeof book.cover === 'object' ? (book.cover.url || null) : null
   const tags = Array.isArray(book.tags) ? (book.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0) : []
+  const genres = [book.genre1, book.genre2].filter((g): g is string => typeof g === 'string' && g.trim().length > 0)
+  const quotes = [book.quote1, book.quote2, book.quote3].filter((q): q is string => typeof q === 'string' && q.trim().length > 0)
+  const trailer = book.booktrailer ? parseVideoEmbed(String(book.booktrailer)) : null
 
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
@@ -124,6 +128,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
               <span className="px-2 py-1 rounded-full" style={{ background: 'color-mix(in srgb, var(--brand-primary) 16%, transparent)' }}>{TYPE_LABEL[book.type || 'novel']}</span>
               <span className="px-2 py-1 rounded-full" style={{ background: 'color-mix(in srgb, var(--brand-text) 8%, transparent)' }}>{STATUS_LABEL[book.status || 'ongoing']}</span>
               {book.ageRating && <span className="px-2 py-1 rounded-full" style={{ background: 'color-mix(in srgb, var(--brand-text) 8%, transparent)' }}>{book.ageRating}+</span>}
+              {genres.map((g) => (<span key={g} className="px-2 py-1 rounded-full" style={{ background: 'color-mix(in srgb, var(--brand-primary) 16%, transparent)' }}>{g}</span>))}
               <span>{chapters.length} глав</span>
             </div>
             {tags.length > 0 && (
@@ -151,6 +156,20 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
         {book.annotation && (
           <div className="mb-8 leading-relaxed" style={{ color: 'var(--brand-text)' }}>
             <RichText data={book.annotation} />
+          </div>
+        )}
+
+        {quotes.length > 0 && (
+          <div className="mb-8 flex flex-col gap-3">
+            {quotes.map((q, i) => (
+              <blockquote key={i} className="pl-4 italic" style={{ borderLeft: '3px solid var(--brand-primary)', color: 'var(--brand-text)', opacity: 0.9 }}>{q}</blockquote>
+            ))}
+          </div>
+        )}
+
+        {trailer && (
+          <div className="mb-8 rounded-2xl overflow-hidden" style={{ aspectRatio: trailer.aspect === '9:16' ? '9 / 16' : '16 / 9', maxWidth: trailer.aspect === '9:16' ? 340 : '100%', background: '#000' }}>
+            <iframe src={trailer.src} title="Буктрейлер" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen style={{ width: '100%', height: '100%', border: 0 }} />
           </div>
         )}
 
