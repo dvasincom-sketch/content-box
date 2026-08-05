@@ -60,7 +60,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   const strField = (k: string) => {
     if (k in data) patch[k] = typeof data[k] === 'string' && data[k].trim() ? data[k].trim() : null
   }
-  ;['genre1', 'genre2', 'quote1', 'quote2', 'quote3', 'booktrailer'].forEach(strField)
+  ;['genre1', 'genre2', 'quote1', 'quote2', 'quote3'].forEach(strField)
+  if ('booktrailerVideoId' in data) {
+    patch.booktrailerVideo = data.booktrailerVideoId && (await belongsToTenant(payload, 'videos', data.booktrailerVideoId, tenantId))
+      ? Number(data.booktrailerVideoId) : null
+  }
 
   try {
     await payload.update({ collection: 'books' as any, id, data: patch as any, overrideAccess: true })

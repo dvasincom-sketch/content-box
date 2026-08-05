@@ -53,6 +53,13 @@ export default async function BookEditPage({ params }: { params: Promise<{ id: s
     parentId: c.parent ? (typeof c.parent === 'object' ? Number(c.parent.id) : Number(c.parent)) : null,
   }))
 
+  const vidsRes = await payload.find({
+    collection: 'videos',
+    where: { and: [{ tenant: { equals: author!.tenantId } }, { provider: { not_equals: 'audio' } }] },
+    sort: '-createdAt', limit: 500, depth: 0, overrideAccess: true,
+  })
+  const videos = (vidsRes.docs as any[]).map((v) => ({ id: v.id, title: v.title || 'Без названия' }))
+
   const cyclesRes = await payload.find({
     collection: 'books' as any,
     where: { and: [{ tenant: { equals: author!.tenantId } }, { type: { equals: 'cycle' } }] },
@@ -85,8 +92,8 @@ export default async function BookEditPage({ params }: { params: Promise<{ id: s
     quote1: book.quote1 || '',
     quote2: book.quote2 || '',
     quote3: book.quote3 || '',
-    booktrailer: book.booktrailer || '',
+    booktrailerVideoId: book.booktrailerVideo ? String(typeof book.booktrailerVideo === 'object' ? book.booktrailerVideo.id : book.booktrailerVideo) : '',
   }
 
-  return <BookEditor book={bookData} chapters={chapters} tiers={tiers} categories={categories} cycles={cycles} />
+  return <BookEditor book={bookData} chapters={chapters} tiers={tiers} categories={categories} cycles={cycles} videos={videos} />
 }

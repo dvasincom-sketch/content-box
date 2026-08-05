@@ -11,7 +11,7 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import { BookOpen, Lock, Play } from 'lucide-react'
 import { BookmarkButton } from '@/components/social/BookmarkButton'
 import { FollowBookButton } from '@/components/social/FollowBookButton'
-import { parseVideoEmbed } from '@/lib/videoEmbed'
+import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
 import type { Metadata } from 'next'
 import '../../styles.css'
 
@@ -111,7 +111,7 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
   const tags = Array.isArray(book.tags) ? (book.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0) : []
   const genres = [book.genre1, book.genre2].filter((g): g is string => typeof g === 'string' && g.trim().length > 0)
   const quotes = [book.quote1, book.quote2, book.quote3].filter((q): q is string => typeof q === 'string' && q.trim().length > 0)
-  const trailer = book.booktrailer ? parseVideoEmbed(String(book.booktrailer)) : null
+  const trailerVideo = book.booktrailerVideo && typeof book.booktrailerVideo === 'object' ? book.booktrailerVideo : null
 
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
@@ -176,9 +176,10 @@ export default async function BookPage({ params }: { params: Promise<{ slug: str
           </div>
         )}
 
-        {trailer && (
-          <div className="mb-8 rounded-2xl overflow-hidden" style={{ aspectRatio: trailer.aspect === '9:16' ? '9 / 16' : '16 / 9', maxWidth: trailer.aspect === '9:16' ? 340 : '100%', background: '#000' }}>
-            <iframe src={trailer.src} title="Буктрейлер" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowFullScreen style={{ width: '100%', height: '100%', border: 0 }} />
+        {trailerVideo && (
+          <div className="mb-8">
+            <div className="text-sm font-semibold mb-2" style={{ color: 'var(--brand-muted)' }}>Буктрейлер</div>
+            <VideoPlayer videoId={trailerVideo.id} initialAspect={trailerVideo.embedAspect === '9:16' ? '9:16' : '16:9'} />
           </div>
         )}
 

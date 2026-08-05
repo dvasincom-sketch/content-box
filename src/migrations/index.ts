@@ -54,6 +54,7 @@ import * as migration_20260805_160000_add_chapter_comments from './20260805_1600
 import * as migration_20260805_170000_add_book_genres_quotes from './20260805_170000_add_book_genres_quotes';
 import * as migration_20260805_180000_add_book_follows from './20260805_180000_add_book_follows';
 import * as migration_20260805_190000_add_studio_entitlements from './20260805_190000_add_studio_entitlements';
+import * as migration_20260805_200000_add_booktrailer_video from './20260805_200000_add_booktrailer_video';
 
 export const migrations = [
   {
@@ -335,5 +336,10 @@ export const migrations = [
     up: migration_20260805_190000_add_studio_entitlements.up,
     down: migration_20260805_190000_add_studio_entitlements.down,
     name: '20260805_190000_add_studio_entitlements',
+  },
+  {
+    up: migration_20260805_200000_add_booktrailer_video.up,
+    down: migration_20260805_200000_add_booktrailer_video.down,
+    name: '20260805_200000_add_booktrailer_video',
   },
 ];

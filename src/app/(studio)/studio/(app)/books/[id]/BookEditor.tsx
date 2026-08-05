@@ -34,7 +34,7 @@ type BookData = {
   quote1: string
   quote2: string
   quote3: string
-  booktrailer: string
+  booktrailerVideoId: string
 }
 
 function categoryOptions(cats: Cat[]): { value: string; label: string; depth: number }[] {
@@ -60,13 +60,14 @@ function categoryOptions(cats: Cat[]): { value: string; label: string; depth: nu
 /** Редактор произведения: метаданные (сайдбар) + текст + главы. Раскладка — как
  *  у композера публикаций (composer__grid), в стиле студии (моно-акцент). */
 export function BookEditor({
-  book, chapters, tiers, categories, cycles,
+  book, chapters, tiers, categories, cycles, videos,
 }: {
   book: BookData
   chapters: ChapterItem[]
   tiers: Tier[]
   categories: Cat[]
   cycles: { id: number | string; title: string }[]
+  videos: { id: number | string; title: string }[]
 }) {
   const router = useRouter()
   const [title, setTitle] = useState(book.title)
@@ -90,7 +91,7 @@ export function BookEditor({
   const [quote1, setQuote1] = useState(book.quote1)
   const [quote2, setQuote2] = useState(book.quote2)
   const [quote3, setQuote3] = useState(book.quote3)
-  const [booktrailer, setBooktrailer] = useState(book.booktrailer)
+  const [booktrailerVideoId, setBooktrailerVideoId] = useState(book.booktrailerVideoId)
   const [quoteCount, setQuoteCount] = useState(Math.max(1, [book.quote1, book.quote2, book.quote3].filter((q) => q && q.trim()).length))
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -129,7 +130,7 @@ export function BookEditor({
           id: book.id, title: title.trim(), annotation: annotationHtml, status, type, ageRating,
           allowComments, allowDownload, cycleId: cycleId || '', cycleOrder: cycleOrder || '',
           freeChapters: Number(freeChapters) || 0, categoryId: categoryId || '', minTierId: minTierId || '',
-          coverId: coverId ?? null, tags, genre1, genre2, quote1, quote2, quote3, booktrailer,
+          coverId: coverId ?? null, tags, genre1, genre2, quote1, quote2, quote3, booktrailerVideoId,
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -162,8 +163,10 @@ export function BookEditor({
             <TiptapEditor initialHtml={book.annotationHtml} onChange={setAnnotationHtml} placeholder="О чём произведение…" allowImages={false} />
           </div>
           <div className="studio-field" style={{ marginTop: 'var(--st-space-4)' }}>
-            <div className="studio-field__label">Буктрейлер (ссылка на видео)</div>
-            <input className="studio-input" placeholder="YouTube, Rutube, VK, Дзен…" value={booktrailer} onChange={(e) => setBooktrailer(e.target.value)} />
+            <div className="studio-field__label">Буктрейлер (видео из раздела «Видео»)</div>
+            <StudioSelect value={booktrailerVideoId} onChange={setBooktrailerVideoId} ariaLabel="Буктрейлер"
+              options={[{ value: '', label: '— нет —' }, ...videos.map((v) => ({ value: String(v.id), label: v.title }))]} />
+            <div style={{ fontSize: 12, color: 'var(--st-text-muted)', marginTop: 4 }}>Сначала добавьте видео в разделе «Видео», затем выберите его здесь.</div>
           </div>
           <div className="studio-field" style={{ marginTop: 'var(--st-space-4)' }}>
             <div className="studio-field__label">Цитаты (видны читателям)</div>
