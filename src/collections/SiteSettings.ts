@@ -244,6 +244,15 @@ export const SiteSettings: CollectionConfig = {
           label: 'Показывать',
           defaultValue: true,
         },
+        {
+          name: 'config',
+          type: 'json',
+          label: 'Настройки секции',
+          admin: {
+            description:
+              'Заголовок, вариант вёрстки, тема и источник контента секции. Редактируется в студии.',
+          },
+        },
       ],
     },
     {

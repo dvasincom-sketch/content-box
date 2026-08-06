@@ -61,6 +61,7 @@ import * as migration_20260805_221000_add_content_owner from './20260805_221000_
 import * as migration_20260805_230000_add_user_invites from './20260805_230000_add_user_invites';
 import * as migration_20260805_240000_add_user_disabled from './20260805_240000_add_user_disabled';
 import * as migration_20260805_250000_add_frost_preset from './20260805_250000_add_frost_preset';
+import * as migration_20260806_120000_home_sections_deep from './20260806_120000_home_sections_deep';
 
 export const migrations = [
   {
@@ -377,5 +378,10 @@ export const migrations = [
     up: migration_20260805_250000_add_frost_preset.up,
     down: migration_20260805_250000_add_frost_preset.down,
     name: '20260805_250000_add_frost_preset',
+  },
+  {
+    up: migration_20260806_120000_home_sections_deep.up,
+    down: migration_20260806_120000_home_sections_deep.down,
+    name: '20260806_120000_home_sections_deep',
   },
 ];

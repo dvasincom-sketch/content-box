@@ -4055,6 +4055,19 @@ a.studio-btn--danger { color: #fff; }
   color: var(--st-text-muted);
 }
 
+/* Экземпляр секции с заданным заголовком (home-builder-config-v1). */
+.homebld__label-note {
+  color: var(--st-text-muted);
+  font-size: var(--st-text-sm);
+}
+/* Активная кнопка «настройки секции» (раскрыта панель config). */
+.homebld__edit.is-active {
+  color: var(--st-accent);
+  background: color-mix(in srgb, var(--st-accent) 14%, transparent);
+}
+/* Панель пер-секционных настроек убирает внешние отступы у полей. */
+.homebld__config .studio-field { margin: 0; }
+
 /* Тумблер-свитч: скрытый чекбокс + трек/бегунок. */
 .homebld__toggle {
   display: inline-flex;

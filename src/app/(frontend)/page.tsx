@@ -17,7 +17,8 @@ import { AuthorSpotlightBlock } from '@/blocks/AuthorSpotlightBlock'
 import { buildMetadata } from '@/lib/seo'
 import { categoryHref } from '@/lib/categoryHref'
 import { publishedWhere } from '@/lib/published'
-import { normalizeHomeSections, type HomeSectionType } from '@/lib/homeSections'
+import { getPublicationCardStats } from '@/lib/publicationCardStats'
+import { normalizeHomeSections, type HomeSectionType, type HomeSectionConfig, type HomeSectionSource } from '@/lib/homeSections'
 import type { Metadata } from 'next'
 import { Fragment, type ReactNode } from 'react'
 import './styles.css'
@@ -157,6 +158,62 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 
+function mapPubCard(p: any, stats?: { comments: number; reactions: number }) {
+  return {
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
+    publishedAt: p.publishedAt,
+    minTierName: p.minTier && typeof p.minTier === 'object' ? (p.minTier.name || p.minTier.slug || null) : null,
+    cover: p.cover,
+    commentCount: stats?.comments ?? 0,
+    reactionCount: stats?.reactions ?? 0,
+    hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
+    hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
+  }
+}
+
+/** Данные списочной секции по источнику. auto/нет → слот общей ленты; иначе —
+ * публикации по категории/тегу/ручному списку. Ошибка источника → fallback. */
+async function resolveListItems(
+  payload: Payload,
+  tenantId: number,
+  source: HomeSectionSource | undefined,
+  fallback: any[],
+): Promise<any[]> {
+  if (!source || source.kind === 'auto') return fallback
+  const limit = source.limit && source.limit > 0 ? Math.min(source.limit, 50) : 12
+  let where: any = null
+  if (source.kind === 'category' && source.categoryId) {
+    where = { or: [{ category: { equals: source.categoryId } }, { extraCategories: { in: [source.categoryId] } }] }
+  } else if (source.kind === 'tag' && source.tagId) {
+    where = { tags: { in: [source.tagId] } }
+  } else if (source.kind === 'manual' && source.manualIds && source.manualIds.length) {
+    where = { id: { in: source.manualIds } }
+  } else {
+    return fallback
+  }
+  try {
+    const res = await payload.find({
+      collection: 'publications',
+      where: { and: [{ tenant: { equals: tenantId } }, publishedWhere(), where] },
+      sort: '-publishedAt',
+      depth: 1,
+      limit,
+      overrideAccess: true,
+    })
+    let docs = res.docs as any[]
+    if (source.kind === 'manual' && source.manualIds) {
+      const order = new Map(source.manualIds.map((id, i) => [Number(id), i]))
+      docs = [...docs].sort((a, b) => (order.get(Number(a.id)) ?? 999) - (order.get(Number(b.id)) ?? 999))
+    }
+    const stats = await getPublicationCardStats(docs.map((d) => d.id), tenantId)
+    return docs.map((d) => mapPubCard(d, stats.get(String(d.id))))
+  } catch {
+    return fallback
+  }
+}
+
 export default async function HomePage() {
   const ctx = await getTenantFromHeaders()
   if (!ctx) {
@@ -204,7 +261,7 @@ export default async function HomePage() {
 
   // Маппинг type → рендер секции. Пропсы собраны ровно как в прежнем JSX;
   // авто-скрытие при пустых данных остаётся внутри блок-компонентов.
-  const renderers: Record<HomeSectionType, () => ReactNode> = {
+  const renderers: Partial<Record<HomeSectionType, (inst: HomeSectionConfig) => ReactNode>> = {
     hero: () => (
       <HeroBlock
         eyebrow={settings?.hero?.eyebrow || undefined}
@@ -219,8 +276,6 @@ export default async function HomePage() {
         avatarSize={settings?.heroTeam?.avatarSize}
       />
     ),
-    news: () => <LatestPublicationsBlock heading="Новости" items={feed.news} />,
-    latest: () => <LatestPublicationsBlock heading="Последние публикации" items={feed.latest} />,
     search: () => {
       // Быстрые чипсы: популярные разделы (авто); если их нет — фолбэк на
       // hero-чипсы тенанта, чтобы ряд не пропадал.
@@ -232,8 +287,6 @@ export default async function HomePage() {
         .map((c) => ({ title: c.title, href: categoryHref(c) }))
       return <SearchBlock chips={popular.length ? popular : heroChipList} />
     },
-    popular: () => <LatestPublicationsBlock heading="Сейчас популярно" items={feed.popular} />,
-    discussed: () => <LatestPublicationsBlock heading="Обсуждаемое" items={feed.discussed} />,
     posterRows: () => (
       <>
         {feed.posterRows.map((row) => (
@@ -241,9 +294,9 @@ export default async function HomePage() {
         ))}
       </>
     ),
-    popularCategories: () => (
+    popularCategories: (inst) => (
       <CategoriesGridBlock
-        heading="Популярные разделы"
+        heading={inst.config?.heading || 'Популярные разделы'}
         items={feed.popularCategories.map((c) => ({
           id: c.id,
           title: c.title,
@@ -280,13 +333,38 @@ export default async function HomePage() {
     ),
   }
 
+  const LIST_HEADINGS: Record<'news' | 'latest' | 'popular' | 'discussed', string> = {
+    news: 'Новости',
+    latest: 'Последние публикации',
+    popular: 'Сейчас популярно',
+    discussed: 'Обсуждаемое',
+  }
+  const FEED_SLOT: Record<'news' | 'latest' | 'popular' | 'discussed', any[]> = {
+    news: feed.news,
+    latest: feed.latest,
+    popular: feed.popular,
+    discussed: feed.discussed,
+  }
+
+  // Каждая секция — по своему экземпляру: заголовок/источник из config, ключ по
+  // id (дубли). Списочные секции тянут данные из источника (resolveListItems).
+  const enabledSections = sections.filter((s) => s.enabled)
+  const nodes = await Promise.all(
+    enabledSections.map(async (s, i) => {
+      const key = s.id != null ? String(s.id) : s.type + '-' + i
+      if (s.type === 'news' || s.type === 'latest' || s.type === 'popular' || s.type === 'discussed') {
+        const heading = s.config?.heading || LIST_HEADINGS[s.type]
+        const items = await resolveListItems(payload, tenant.id as number, s.config?.source, FEED_SLOT[s.type])
+        return <Fragment key={key}><LatestPublicationsBlock heading={heading} items={items} /></Fragment>
+      }
+      const r = renderers[s.type]
+      return <Fragment key={key}>{r ? r(s) : null}</Fragment>
+    }),
+  )
+
   return (
     <main className="page-canvas page-canvas--home" style={{ ...brandVars(settings), minHeight: '100vh' }}>
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {sections
-          .filter((s) => s.enabled)
-          .map((s) => <Fragment key={s.type}>{renderers[s.type]()}</Fragment>)}
-      </div>
+      <div className="max-w-6xl mx-auto px-4 py-8">{nodes}</div>
     </main>
   )
 }

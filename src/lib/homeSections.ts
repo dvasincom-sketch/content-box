@@ -43,10 +43,34 @@ export type HomeSectionType = (typeof HOME_SECTION_DEFS)[number]['type']
 /** Определение одного типа секции: машинный type + человекочитаемый label. */
 export type HomeSectionDef = (typeof HOME_SECTION_DEFS)[number]
 
+/** Вид источника контента секции. */
+export type HomeSourceKind = 'auto' | 'category' | 'tag' | 'manual'
+export const HOME_SOURCE_KINDS: readonly HomeSourceKind[] = ['auto', 'category', 'tag', 'manual']
+
+/** Источник контента секции (для source-driven секций). */
+export interface HomeSectionSource {
+  kind: HomeSourceKind
+  categoryId?: number | null
+  tagId?: number | null
+  manualIds?: number[]
+  limit?: number | null
+}
+
+/** Пер-секционные настройки (хранятся в поле `config` строки массива). */
+export interface HomeSectionSettings {
+  heading?: string | null
+  variant?: string | null
+  sectionTheme?: string | null
+  source?: HomeSectionSource
+}
+
 /** Одна запись конфигурации главной (элемент массива homeSections). */
 export interface HomeSectionConfig {
+  /** Стабильный id строки массива (Payload) — ключ для дублей и редактирования. */
+  id?: string | number
   type: HomeSectionType
   enabled: boolean
+  config?: HomeSectionSettings
 }
 
 /** Все типы секций в дефолтном порядке (для options селекта и валидации). */
@@ -75,26 +99,58 @@ export function isHomeSectionType(value: unknown): value is HomeSectionType {
  * Нормализует сырой `homeSections` из настроек в валидный конфиг:
  *  - пусто/не массив/нет валидных записей → DEFAULT_HOME_SECTIONS (обратная совместимость);
  *  - отбрасывает записи с неизвестным type (напр. удалённый тип секции);
- *  - дедуплицирует по type (первое вхождение выигрывает);
+ *  - сохраняет порядок и ДУБЛИ (несколько секций одного типа допускаются);
  *  - НЕ дописывает недостающие секции автоматически — если владелец
  *    сохранил частичный набор, показываем ровно его выбор.
  *
  * enabled приводится к boolean (undefined → true, чтобы старые записи без
  * флага считались включёнными).
  */
+/** Санитизация сырого `config` строки секции в HomeSectionSettings (или undefined). */
+export function sanitizeSectionConfig(raw: unknown): HomeSectionSettings | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as Record<string, unknown>
+  const out: HomeSectionSettings = {}
+  if (typeof r.heading === 'string' && r.heading.trim()) out.heading = r.heading
+  if (typeof r.variant === 'string' && r.variant) out.variant = r.variant
+  if (typeof r.sectionTheme === 'string' && r.sectionTheme) out.sectionTheme = r.sectionTheme
+  const src = r.source as Record<string, unknown> | undefined
+  if (src && typeof src === 'object') {
+    const kind = src.kind
+    if (typeof kind === 'string' && (HOME_SOURCE_KINDS as readonly string[]).includes(kind)) {
+      const source: HomeSectionSource = { kind: kind as HomeSourceKind }
+      const cat = Number(src.categoryId)
+      if (Number.isFinite(cat) && cat > 0) source.categoryId = cat
+      const tag = Number(src.tagId)
+      if (Number.isFinite(tag) && tag > 0) source.tagId = tag
+      if (Array.isArray(src.manualIds)) {
+        const ids = src.manualIds.map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)
+        if (ids.length) source.manualIds = ids
+      }
+      const lim = Number(src.limit)
+      if (Number.isFinite(lim) && lim > 0) source.limit = lim
+      out.source = source
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
 export function normalizeHomeSections(raw: unknown): HomeSectionConfig[] {
   if (!Array.isArray(raw)) return DEFAULT_HOME_SECTIONS
 
-  const seen = new Set<HomeSectionType>()
   const result: HomeSectionConfig[] = []
-
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue
     const type = (item as { type?: unknown }).type
-    if (!isHomeSectionType(type) || seen.has(type)) continue
-    seen.add(type)
+    if (!isHomeSectionType(type)) continue
     const enabledRaw = (item as { enabled?: unknown }).enabled
-    result.push({ type, enabled: enabledRaw === undefined ? true : Boolean(enabledRaw) })
+    const idRaw = (item as { id?: unknown }).id
+    result.push({
+      id: typeof idRaw === 'string' || typeof idRaw === 'number' ? idRaw : undefined,
+      type,
+      enabled: enabledRaw === undefined ? true : Boolean(enabledRaw),
+      config: sanitizeSectionConfig((item as { config?: unknown }).config),
+    })
   }
 
   return result.length > 0 ? result : DEFAULT_HOME_SECTIONS

@@ -374,6 +374,18 @@ export interface SiteSetting {
           | 'socials'
           | 'broadcast';
         enabled?: boolean | null;
+        /**
+         * Заголовок, вариант вёрстки, тема и источник контента секции. Редактируется в студии.
+         */
+        config?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -511,7 +523,7 @@ export interface Category {
    */
   showInFooter?: boolean | null;
   /**
-   * Категория выводится как видео-плейлист: плеер + список серий по сезонам (YouTube-подобно). Видео этой категории получают номер сезона и порядок эпизода.
+   * Категория выводится как медиа-плейлист: плеер + список серий по сезонам (YouTube-подобно). Аудио/видео этой категории получают номер сезона и порядок эпизода.
    */
   videoSeries?: boolean | null;
   /**
@@ -1701,6 +1713,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
     | {
         type?: T;
         enabled?: T;
+        config?: T;
         id?: T;
       };
   banner?:
