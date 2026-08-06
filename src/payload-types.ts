@@ -372,7 +372,9 @@ export interface SiteSetting {
           | 'whyUs'
           | 'authorSpotlight'
           | 'socials'
-          | 'broadcast';
+          | 'broadcast'
+          | 'carousel'
+          | 'posterGrid';
         enabled?: boolean | null;
         /**
          * Заголовок, вариант вёрстки, тема и источник контента секции. Редактируется в студии.

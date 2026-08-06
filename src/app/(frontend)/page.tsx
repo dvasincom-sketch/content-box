@@ -14,6 +14,8 @@ import { WhyUsBlock } from '@/blocks/WhyUsBlock'
 import { SocialLinksBlock } from '@/blocks/SocialLinksBlock'
 import { BroadcastBannerBlock } from '@/blocks/BroadcastBannerBlock'
 import { AuthorSpotlightBlock } from '@/blocks/AuthorSpotlightBlock'
+import { CarouselBlock } from '@/blocks/CarouselBlock'
+import { PosterGridBlock } from '@/blocks/PosterGridBlock'
 import { buildMetadata } from '@/lib/seo'
 import { categoryHref } from '@/lib/categoryHref'
 import { publishedWhere } from '@/lib/published'
@@ -237,7 +239,9 @@ export default async function HomePage() {
     activeTypes.has('popular') ||
     activeTypes.has('discussed') ||
     activeTypes.has('popularCategories') ||
-    activeTypes.has('posterRows')
+    activeTypes.has('posterRows') ||
+    activeTypes.has('carousel') ||
+    activeTypes.has('posterGrid')
 
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
@@ -333,29 +337,31 @@ export default async function HomePage() {
     ),
   }
 
-  const LIST_HEADINGS: Record<'news' | 'latest' | 'popular' | 'discussed', string> = {
-    news: 'Новости',
-    latest: 'Последние публикации',
-    popular: 'Сейчас популярно',
-    discussed: 'Обсуждаемое',
-  }
-  const FEED_SLOT: Record<'news' | 'latest' | 'popular' | 'discussed', any[]> = {
-    news: feed.news,
-    latest: feed.latest,
-    popular: feed.popular,
-    discussed: feed.discussed,
+  // Source-driven секции: заголовок + источник берутся из config экземпляра,
+  // данные — через resolveListItems (fallback — слот общей ленты). Один список
+  // задаёт дефолтный заголовок, запасные данные и компонент рендера.
+  const SOURCE_SECTIONS: Partial<
+    Record<HomeSectionType, { heading: string; fallback: any[]; render: (heading: string, items: any[]) => ReactNode }>
+  > = {
+    news: { heading: 'Новости', fallback: feed.news, render: (h, i) => <LatestPublicationsBlock heading={h} items={i} /> },
+    latest: { heading: 'Последние публикации', fallback: feed.latest, render: (h, i) => <LatestPublicationsBlock heading={h} items={i} /> },
+    popular: { heading: 'Сейчас популярно', fallback: feed.popular, render: (h, i) => <LatestPublicationsBlock heading={h} items={i} /> },
+    discussed: { heading: 'Обсуждаемое', fallback: feed.discussed, render: (h, i) => <LatestPublicationsBlock heading={h} items={i} /> },
+    carousel: { heading: 'Подборка', fallback: feed.latest, render: (h, i) => <CarouselBlock heading={h} items={i} /> },
+    posterGrid: { heading: 'Афиша', fallback: feed.latest, render: (h, i) => <PosterGridBlock heading={h} items={i} /> },
   }
 
   // Каждая секция — по своему экземпляру: заголовок/источник из config, ключ по
-  // id (дубли). Списочные секции тянут данные из источника (resolveListItems).
+  // id (дубли). Source-driven секции тянут данные из источника (resolveListItems).
   const enabledSections = sections.filter((s) => s.enabled)
   const nodes = await Promise.all(
     enabledSections.map(async (s, i) => {
       const key = s.id != null ? String(s.id) : s.type + '-' + i
-      if (s.type === 'news' || s.type === 'latest' || s.type === 'popular' || s.type === 'discussed') {
-        const heading = s.config?.heading || LIST_HEADINGS[s.type]
-        const items = await resolveListItems(payload, tenant.id as number, s.config?.source, FEED_SLOT[s.type])
-        return <Fragment key={key}><LatestPublicationsBlock heading={heading} items={items} /></Fragment>
+      const sd = SOURCE_SECTIONS[s.type]
+      if (sd) {
+        const heading = s.config?.heading || sd.heading
+        const items = await resolveListItems(payload, tenant.id as number, s.config?.source, sd.fallback)
+        return <Fragment key={key}>{sd.render(heading, items)}</Fragment>
       }
       const r = renderers[s.type]
       return <Fragment key={key}>{r ? r(s) : null}</Fragment>

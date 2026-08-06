@@ -35,6 +35,8 @@ export const HOME_SECTION_DEFS = [
   { type: 'authorSpotlight', label: 'Об авторе и подписка' },
   { type: 'socials', label: 'Соцсети' },
   { type: 'broadcast', label: 'Баннер «ON AIR»' },
+  { type: 'carousel', label: 'Карусель-подборка', default: false },
+  { type: 'posterGrid', label: 'Сетка афиш', default: false },
 ] as const
 
 /** Union всех допустимых типов секций: 'hero' | 'heroTeam' | ... */
@@ -85,10 +87,15 @@ export const HOME_SECTION_OPTIONS: { label: string; value: HomeSectionType }[] =
  * Используется, когда `homeSections` в SiteSettings пуст/не сохранён —
  * и на фронте (page.tsx), и в UI при первом открытии вкладки.
  */
-export const DEFAULT_HOME_SECTIONS: HomeSectionConfig[] = HOME_SECTION_DEFS.map((d) => ({
-  type: d.type,
-  enabled: true,
-}))
+export const DEFAULT_HOME_SECTIONS: HomeSectionConfig[] = HOME_SECTION_DEFS
+  // Секции с `default: false` (напр. carousel/posterGrid) НЕ входят в дефолтный
+  // набор — их добавляют осознанно через конструктор, у существующих сайтов
+  // главная не меняется. `'default' in d` сужает union к записи с флагом.
+  .filter((d) => !('default' in d) || d.default !== false)
+  .map((d) => ({
+    type: d.type,
+    enabled: true,
+  }))
 
 /** Type guard: строка — валидный тип секции (для фильтрации мусора из БД). */
 export function isHomeSectionType(value: unknown): value is HomeSectionType {

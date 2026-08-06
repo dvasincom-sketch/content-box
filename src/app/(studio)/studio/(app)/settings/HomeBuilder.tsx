@@ -37,6 +37,8 @@ const DEFAULT_HEADINGS: Partial<Record<HomeSectionType, string>> = {
   popular: 'Сейчас популярно',
   discussed: 'Обсуждаемое',
   popularCategories: 'Популярные разделы',
+  carousel: 'Подборка',
+  posterGrid: 'Афиша',
 }
 
 /**
@@ -51,13 +53,15 @@ const CONFIGURABLE: Partial<Record<HomeSectionType, { source: boolean }>> = {
   popular: { source: true },
   discussed: { source: true },
   popularCategories: { source: false },
+  carousel: { source: true },
+  posterGrid: { source: true },
 }
 
 /**
  * Секции, которые можно добавлять несколько раз (напр. две ленты «Последние
  * публикации» из разных категорий). Остальные — синглтоны (один Hero и т.п.).
  */
-const DUPLICABLE = new Set<HomeSectionType>(['news', 'latest', 'popular', 'discussed'])
+const DUPLICABLE = new Set<HomeSectionType>(['news', 'latest', 'popular', 'discussed', 'carousel', 'posterGrid'])
 
 /** Варианты источника контента для списочных секций (UI-лейблы). */
 const SOURCE_KIND_LABELS: { value: HomeSourceKind; label: string }[] = [
