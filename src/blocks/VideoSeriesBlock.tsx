@@ -85,27 +85,38 @@ export function VideoSeriesBlock({
   const selected =
     episodes.find((e) => String(e.id) === selectedId) ?? activeSeason.episodes[0]
 
-  const selectSeason = (s: Season) => {
-    setSeasonKey(s.key)
-    setSelectedId(String(s.episodes[0].id))
-    setAutoplay(false)
+  // Плоский порядок всех серий (сезоны по порядку, внутри — по эпизодам) —
+  // для сквозного перехода и кнопок «предыдущая/следующая», в т.ч. между сезонами.
+  const flat = seasons.flatMap((s) => s.episodes)
+  const curIdx = flat.findIndex((e) => String(e.id) === String(selected.id))
+  const hasPrev = curIdx > 0
+  const hasNext = curIdx >= 0 && curIdx < flat.length - 1
+
+  // Выбрать серию: подсвечиваем её сезон (таб/список переключаются сами).
+  const selectEpisode = (ep: SeriesEpisode, auto: boolean) => {
+    setSelectedId(String(ep.id))
+    setSeasonKey(ep.season == null ? 'none' : `s${ep.season}`)
+    setAutoplay(auto)
   }
 
-  // Авто-переход к следующей серии активного сезона (по окончании текущей).
-  const goNext = () => {
-    const list = activeSeason.episodes
-    const idx = list.findIndex((e) => String(e.id) === String(selected.id))
-    if (idx >= 0 && idx < list.length - 1) {
-      setSelectedId(String(list[idx + 1].id))
-      setAutoplay(true)
-    }
-  }
+  const selectSeason = (s: Season) => selectEpisode(s.episodes[0], false)
+  const goNext = () => { if (hasNext) selectEpisode(flat[curIdx + 1], true) }
+  const goPrev = () => { if (hasPrev) selectEpisode(flat[curIdx - 1], true) }
 
   return (
     <div className="vseries">
       <div className="vseries__main">
         {/* key заставляет плеер перемонтироваться и заново запросить токен */}
-        <VideoPlayer key={String(selected.id)} videoId={selected.id} onEnded={goNext} autoPlay={autoplay} />
+        <VideoPlayer
+          key={String(selected.id)}
+          videoId={selected.id}
+          onEnded={goNext}
+          autoPlay={autoplay}
+          onPrev={goPrev}
+          onNext={goNext}
+          hasPrev={hasPrev}
+          hasNext={hasNext}
+        />
 
         <h2 className="vseries__now-title">{selected.title}</h2>
         <div className="vseries__now-meta">
@@ -156,7 +167,7 @@ export function VideoSeriesBlock({
                 <button
                   type="button"
                   className={`vseries__ep${isActive ? ' is-active' : ''}`}
-                  onClick={() => { setSelectedId(String(ep.id)); setAutoplay(true) }}
+                  onClick={() => selectEpisode(ep, true)}
                 >
                   <span className="vseries__ep-thumb">
                     {thumb ? (

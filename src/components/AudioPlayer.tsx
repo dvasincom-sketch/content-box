@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Play, Pause, RotateCcw, RotateCw, Volume2, VolumeX } from 'lucide-react'
+import { Play, Pause, RotateCcw, RotateCw, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react'
 
 const RATES = [1, 1.25, 1.5, 1.75, 2]
 
@@ -50,7 +50,7 @@ function buildWave(seed: number, count: number): number[] {
  * ширине (ResizeObserver) — на мобильном не распирает вёрстку. Форма —
  * синтетическая, стабильная на трек. Стили — брендовые токены, обе темы.
  */
-export function AudioPlayer({ src, onEnded, autoPlay }: { src: string; onEnded?: () => void; autoPlay?: boolean }) {
+export function AudioPlayer({ src, onEnded, autoPlay, onPrev, onNext, hasPrev, hasNext }: { src: string; onEnded?: () => void; autoPlay?: boolean; onPrev?: () => void; onNext?: () => void; hasPrev?: boolean; hasNext?: boolean }) {
   const ref = useRef<HTMLAudioElement>(null)
   const waveRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -174,6 +174,16 @@ export function AudioPlayer({ src, onEnded, autoPlay }: { src: string; onEnded?:
       />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+        {onPrev && (
+          <button
+            onClick={onPrev}
+            disabled={!hasPrev}
+            title="Предыдущая"
+            style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 999, border: '1px solid var(--brand-border)', background: 'transparent', color: 'var(--brand-text)', cursor: hasPrev ? 'pointer' : 'default', opacity: hasPrev ? 1 : 0.4 }}
+          >
+            <SkipBack size={18} fill="currentColor" />
+          </button>
+        )}
         <button
           onClick={toggle}
           title={playing ? 'Пауза' : 'Играть'}
@@ -181,6 +191,16 @@ export function AudioPlayer({ src, onEnded, autoPlay }: { src: string; onEnded?:
         >
           {playing ? <Pause size={23} fill="currentColor" /> : <Play size={23} fill="currentColor" style={{ marginLeft: 3 }} />}
         </button>
+        {onNext && (
+          <button
+            onClick={onNext}
+            disabled={!hasNext}
+            title="Следующая"
+            style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, borderRadius: 999, border: '1px solid var(--brand-border)', background: 'transparent', color: 'var(--brand-text)', cursor: hasNext ? 'pointer' : 'default', opacity: hasNext ? 1 : 0.4 }}
+          >
+            <SkipForward size={18} fill="currentColor" />
+          </button>
+        )}
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div

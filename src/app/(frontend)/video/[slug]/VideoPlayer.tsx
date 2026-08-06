@@ -23,6 +23,10 @@ export function VideoPlayer({
   initialAspect = '16:9',
   onEnded,
   autoPlay,
+  onPrev,
+  onNext,
+  hasPrev,
+  hasNext,
 }: {
   videoId: string | number
   /**
@@ -35,6 +39,11 @@ export function VideoPlayer({
   onEnded?: () => void
   /** Аудио: авто-старт при монтировании (следующая серия в плейлисте). */
   autoPlay?: boolean
+  /** Плейлист: переход к предыдущей/следующей серии + доступность. */
+  onPrev?: () => void
+  onNext?: () => void
+  hasPrev?: boolean
+  hasNext?: boolean
 }) {
   const [src, setSrc] = useState<string | null>(null)
   const [aspect, setAspect] = useState<'16:9' | '9:16'>(initialAspect)
@@ -140,7 +149,7 @@ export function VideoPlayer({
           ) : !src ? (
             <div style={{ color: 'var(--brand-muted)', textAlign: 'center', padding: '16px 8px' }}>Загрузка плеера…</div>
           ) : (
-            <AudioPlayer src={src} onEnded={onEnded} autoPlay={autoPlay} />
+            <AudioPlayer src={src} onEnded={onEnded} autoPlay={autoPlay} onPrev={onPrev} onNext={onNext} hasPrev={hasPrev} hasNext={hasNext} />
           )}
         </div>
       </div>
