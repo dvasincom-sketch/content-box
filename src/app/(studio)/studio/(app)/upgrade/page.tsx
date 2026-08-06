@@ -1,7 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { requireAuthor } from '@/lib/currentAuthor'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { Check, Lock } from 'lucide-react'
 
@@ -10,7 +10,7 @@ import { Check, Lock } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export default async function UpgradePage() {
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   const payload = await getPayload({ config: await config })
   const ent = await loadEntitlements(payload, author!.tenantId)
 

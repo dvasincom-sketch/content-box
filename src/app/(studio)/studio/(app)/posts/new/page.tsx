@@ -1,7 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { Composer } from './Composer'
 
@@ -16,7 +16,7 @@ import { Composer } from './Composer'
 export const dynamic = 'force-dynamic'
 
 export default async function NewPostPage() {
-  const author = await getCurrentAuthor() // guard в (app)/layout гарантирует
+  const author = await requireAuthor() // guard в (app)/layout гарантирует
   const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
 

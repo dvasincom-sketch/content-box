@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withAuthor, readJson, apiError, apiOk, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
+import { deleteObject, keyFromPublicUrl } from '@/lib/s3'
 
 /**
  * Удаление видео из студии.
@@ -57,6 +58,12 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     await payload
       .delete({ collection: 'views', where: { video: { equals: videoId } }, overrideAccess: true })
       .catch(() => {})
+    // Аудио, загруженное presigned, лежит объектом в S3 (media-записи нет) —
+    // чистим объект, чтобы не копить сирот в бакете. Best-effort, не блокирует.
+    if (video.provider === 'audio' && typeof video.audioSrc === 'string') {
+      const key = keyFromPublicUrl(video.audioSrc)
+      if (key) await deleteObject(key).catch(() => {})
+    }
     await payload.delete({ collection: 'videos', id: videoId, overrideAccess: true })
     return apiOk()
   } catch (e: unknown) {

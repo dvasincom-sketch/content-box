@@ -2,7 +2,7 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { lexicalToHtml } from '@/lib/lexical'
 import { Composer, type PostInitial } from '../new/Composer'
@@ -20,7 +20,7 @@ export default async function EditPostPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
 

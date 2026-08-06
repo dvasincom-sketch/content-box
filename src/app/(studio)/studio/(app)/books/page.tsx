@@ -1,7 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { BooksManager } from './BooksManager'
@@ -13,7 +13,7 @@ const STATUS_LABEL: Record<string, string> = { ongoing: 'В процессе', f
 const TYPE_LABEL: Record<string, string> = { novel: 'Роман', story: 'Рассказ', mini: 'Миниатюра', cycle: 'Цикл' }
 
 export default async function BooksPage() {
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
   const ent = await loadEntitlements(payload, author!.tenantId)

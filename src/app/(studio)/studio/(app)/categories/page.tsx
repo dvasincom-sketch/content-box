@@ -2,7 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { redirect } from 'next/navigation'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { requireAuthor } from '@/lib/currentAuthor'
 import { lexicalToHtml } from '@/lib/lexical'
 import { CategoriesManager } from './CategoriesManager'
 
@@ -15,7 +15,7 @@ import { CategoriesManager } from './CategoriesManager'
 export const dynamic = 'force-dynamic'
 
 export default async function CategoriesPage() {
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   if ((author!.user as { tenantRole?: string | null }).tenantRole === 'contributor') redirect('/studio')
   const payload = await getPayload({ config: await config })
 

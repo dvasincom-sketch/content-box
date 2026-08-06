@@ -1,7 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { VideosManager } from './VideosManager'
@@ -13,7 +13,7 @@ import { VideosManager } from './VideosManager'
 export const dynamic = 'force-dynamic'
 
 export default async function VideosPage() {
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
   const ent = await loadEntitlements(payload, author!.tenantId)

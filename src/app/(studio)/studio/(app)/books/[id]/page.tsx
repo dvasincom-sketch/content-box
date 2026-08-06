@@ -2,7 +2,7 @@ import React from 'react'
 import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { requireAuthor } from '@/lib/currentAuthor'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../../_ui/StudioUpsell'
 import { lexicalToHtml } from '@/lib/lexical'
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function BookEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   const payload = await getPayload({ config: await config })
   const ent = await loadEntitlements(payload, author!.tenantId)
   if (!canUse(ent, 'books')) return <StudioUpsell cap="books" />

@@ -1,5 +1,6 @@
 import { authenticatedUser } from '@/lib/currentUser'
 import { cookies } from 'next/headers.js'
+import { redirect } from 'next/navigation'
 import type { User } from '@/payload-types'
 
 /**
@@ -53,6 +54,23 @@ export async function getCurrentAuthor(): Promise<{
   if (!tenantId) return null
 
   return { user, tenantId }
+}
+
+/**
+ * Как getCurrentAuthor, но ГАРАНТИРУЕТ автора: если его нет — редиректит
+ * (superadmin без выбранного проекта → пикер, иначе → форма входа) и не
+ * возвращает null. Использовать в серверных страницах студии вместо
+ * `getCurrentAuthor()` + `author!`, чтобы страница не падала на null при
+ * конкурентном рендере с layout (SSR-краш `author!.tenantId`).
+ */
+export async function requireAuthor(): Promise<{ user: User; tenantId: number; isSuperadmin?: boolean }> {
+  const author = await getCurrentAuthor()
+  if (author) return author
+  const u = await authenticatedUser()
+  if (u && u.collection === 'users' && (u as User).platformRole === 'superadmin') {
+    redirect('/studio/select-tenant')
+  }
+  redirect('/studio/login')
 }
 
 /** where-фрагмент «только своё» для участника (contributor); иначе null. */

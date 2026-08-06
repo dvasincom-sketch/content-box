@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Plus, FolderTree, FileText, FileEdit, ArrowRight } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { requireAuthor } from '@/lib/currentAuthor'
 
 /**
  * Дашборд студии (витрина, референс Patreon Creator Studio):
@@ -40,7 +40,7 @@ function fmtDate(iso?: string | null): string {
 }
 
 export default async function StudioDashboard() {
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   const payload = await getPayload({ config: await config })
   const tenantId = author!.tenantId
 

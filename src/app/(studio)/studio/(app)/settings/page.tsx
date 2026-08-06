@@ -13,7 +13,7 @@ import '@/app/(frontend)/pt-serif.css'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { redirect } from 'next/navigation'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { requireAuthor } from '@/lib/currentAuthor'
 import { normalizeHomeSections } from '@/lib/homeSections'
 import { SettingsView } from './SettingsView'
 import { DEFAULT_PRESET_ID } from '@/lib/themePresets'
@@ -26,7 +26,7 @@ import { DEFAULT_PRESET_ID } from '@/lib/themePresets'
 export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   if ((author!.user as { tenantRole?: string | null }).tenantRole === 'contributor') redirect('/studio')
   const payload = await getPayload({ config: await config })
 

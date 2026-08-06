@@ -3,13 +3,13 @@ import Link from 'next/link'
 import { Plus, FileText } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { PostRow } from './PostRow'
 
 /**
  * Лента публикаций автора (Шаг 2). Список постов ТОЛЬКО своего тенанта.
  *
- * Безопасность: тенант берётся из сессии автора (getCurrentAuthor), НЕ из
+ * Безопасность: тенант берётся из сессии автора (requireAuthor), НЕ из
  * заголовка x-tenant-id (на /api/* и серверных чтениях он не ставится).
  * overrideAccess:true в связке с явным фильтром tenant — стандартный приём
  * для scoped-чтения из Local API.
@@ -29,7 +29,7 @@ type PubDoc = {
 }
 
 export default async function StudioPostsPage() {
-  const author = await getCurrentAuthor() // guard в (app)/layout гарантирует наличие
+  const author = await requireAuthor() // guard в (app)/layout гарантирует наличие
   const ownFilter = contributorOwnerFilter(author!)
   const payload = await getPayload({ config: await config })
 

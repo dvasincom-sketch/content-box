@@ -1,4 +1,4 @@
-import { S3Client, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, HeadObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 /**
@@ -47,4 +47,16 @@ export async function headObject(key: string): Promise<{ size: number; contentTy
   } catch {
     return null
   }
+}
+
+/** Удалить объект из S3 (при удалении аудио/файла, чтобы не копить сирот). */
+export async function deleteObject(key: string): Promise<void> {
+  await s3().send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }))
+}
+
+/** Ключ объекта из публичного URL (обратное к publicUrl). null, если не наш URL. */
+export function keyFromPublicUrl(url: string): string | null {
+  if (!url) return null
+  const base = PUBLIC_BASE ? PUBLIC_BASE + '/' : ''
+  return base && url.startsWith(base) ? url.slice(base.length) : null
 }

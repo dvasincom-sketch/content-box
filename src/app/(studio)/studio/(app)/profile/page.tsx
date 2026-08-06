@@ -1,7 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { requireAuthor } from '@/lib/currentAuthor'
 import { ProfileView } from './ProfileView'
 
 /**
@@ -18,7 +18,7 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 export default async function ProfilePage() {
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   const payload = await getPayload({ config: await config })
 
   let tenantName = ''

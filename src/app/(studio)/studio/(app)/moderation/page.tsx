@@ -2,14 +2,14 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { redirect } from 'next/navigation'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { requireAuthor } from '@/lib/currentAuthor'
 import { ModerationView } from './ModerationView'
 
 /** Модерация UGC: очередь присланных участниками публикаций (Фаза 4). */
 export const dynamic = 'force-dynamic'
 
 export default async function ModerationPage() {
-  const author = await getCurrentAuthor()
+  const author = await requireAuthor()
   if ((author!.user as { tenantRole?: string | null }).tenantRole === 'contributor') redirect('/studio')
   const payload = await getPayload({ config: await config })
 
