@@ -52,7 +52,15 @@ function isTransientNavError(e: unknown): boolean {
   )
 }
 
-export function RouteError({ error }: { error: Error & { digest?: string } }) {
+export function RouteError({ error, palette }: { error: Error & { digest?: string }; palette?: { text: string; primary: string; primaryText: string; border: string } }) {
+  // Палитра: по умолчанию бренд фан-сайта; студия передаёт свои --st-* токены,
+  // иначе брендовые фолбэки (#F5F3FF) невидимы на светлом фоне студии.
+  const pal = palette ?? {
+    text: 'var(--brand-text, #F5F3FF)',
+    primary: 'var(--brand-primary, #7C3AED)',
+    primaryText: '#fff',
+    border: 'var(--brand-border, rgba(124,58,237,.3))',
+  }
   const chunk = isChunkLoadError(error) || isTransientNavError(error)
   const [reloading, setReloading] = useState(chunk)
 
@@ -85,7 +93,7 @@ export function RouteError({ error }: { error: Error & { digest?: string } }) {
     justifyContent: 'center',
     padding: '24px',
     textAlign: 'center',
-    color: 'var(--brand-text, #F5F3FF)',
+    color: pal.text,
     fontFamily: 'var(--font-body, system-ui, sans-serif)',
   }
 
@@ -118,8 +126,8 @@ export function RouteError({ error }: { error: Error & { digest?: string } }) {
               borderRadius: 10,
               padding: '10px 20px',
               fontWeight: 600,
-              color: '#fff',
-              background: 'var(--brand-primary, #7C3AED)',
+              color: pal.primaryText,
+              background: pal.primary,
             }}
           >
             Обновить страницу
@@ -133,8 +141,8 @@ export function RouteError({ error }: { error: Error & { digest?: string } }) {
               padding: '10px 18px',
               fontWeight: 600,
               background: 'transparent',
-              color: 'var(--brand-text, #F5F3FF)',
-              border: '1px solid var(--brand-border, rgba(124,58,237,.3))',
+              color: pal.text,
+              border: `1px solid ${pal.border}`,
             }}
           >
             На главную

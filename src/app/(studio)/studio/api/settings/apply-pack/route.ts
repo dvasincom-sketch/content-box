@@ -1,7 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { getHomePack } from '@/lib/homePacks'
 import { PRESET_IDS } from '@/lib/themePresets'
-import { isHomeSectionType, normalizeHomeSections, type HomeSectionType } from '@/lib/homeSections'
+import { isHomeSectionType, normalizeHomeSections, sanitizeSectionConfig, type HomeSectionType, type HomeSectionSettings } from '@/lib/homeSections'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -18,23 +18,35 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const pack = getHomePack(String(data.packId || ''))
   if (!pack) return apiError('Неизвестный шаблон')
   const mode: 'overwrite' | 'merge' = data.mode === 'merge' ? 'merge' : 'overwrite'
+  // Тема, выбранная в окне шаблона (переопределяет рекомендованную паком).
+  const themeOverride = typeof data.themePreset === 'string' ? data.themePreset : null
 
   const settings = await findTenantSettings(payload, tenantId)
   if (!settings) return apiError('Настройки сайта не найдены', 404)
 
   // Секции пака: валидируем типы + дедуп.
-  const packSections: { type: HomeSectionType; enabled: boolean }[] = []
+  const packSections: { type: HomeSectionType; enabled: boolean; config?: HomeSectionSettings }[] = []
   const seenPack = new Set<HomeSectionType>()
   for (const s of pack.sections) {
     if (!isHomeSectionType(s.type) || seenPack.has(s.type)) continue
     seenPack.add(s.type)
-    packSections.push({ type: s.type, enabled: s.enabled !== false })
+    const row: { type: HomeSectionType; enabled: boolean; config?: HomeSectionSettings } = {
+      type: s.type,
+      enabled: s.enabled !== false,
+    }
+    const cfg = sanitizeSectionConfig(s.config)
+    if (cfg) row.config = cfg
+    packSections.push(row)
   }
 
   const patch: Record<string, unknown> = {}
 
   if (mode === 'overwrite') {
-    if (PRESET_IDS.includes(pack.themePreset)) patch.themePreset = pack.themePreset
+    const theme = themeOverride && PRESET_IDS.includes(themeOverride)
+      ? themeOverride
+      : (PRESET_IDS.includes(pack.themePreset) ? pack.themePreset : null)
+    if (theme) patch.themePreset = theme
+    patch.appliedTemplate = pack.id
     patch.homeSections = packSections
     if (pack.content?.hero) {
       const cur = ((settings as { hero?: Record<string, unknown> }).hero) ?? {}

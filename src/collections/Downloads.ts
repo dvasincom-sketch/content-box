@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { ownerScopedCollection, ownerField, stampOwner } from '../access'
+import { activityAfterChange, activityAfterDelete } from '../lib/logActivity'
 
 /**
  * Downloads («Файлы») — цифровые товары под подписку: книги, PDF, архивы,
@@ -36,6 +37,8 @@ export const Downloads: CollectionConfig = {
   access: ownerScopedCollection,
   hooks: {
     beforeChange: [stampOwner],
+    afterChange: [activityAfterChange('download')],
+    afterDelete: [activityAfterDelete('download')],
   },
   fields: [
     // `tenant` добавляет multi-tenant плагин.

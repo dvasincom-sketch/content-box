@@ -3,7 +3,7 @@
 import React from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock, Repeat } from 'lucide-react'
+import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock, Repeat, Moon, Sun } from 'lucide-react'
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media'; ownerOnly?: boolean }
 
@@ -137,14 +137,59 @@ export function StudioNav({ authorEmail, brandName, nav, isOwner = true, isSuper
       </nav>
 
       <div className="studio-nav__footer">
-        <Link href="/studio/profile" className="studio-nav__user" title="Профиль">
+        <Link href="/studio/profile" className="studio-nav__user" title={authorEmail}>
           <div className="studio-nav__avatar">{authorEmail.charAt(0).toUpperCase()}</div>
-          <span className="studio-nav__email">{authorEmail}</span>
         </Link>
+        <ThemeToggle />
         <a href="/studio/logout" className="studio-nav__logout" title="Выйти">
           <LogOut size={16} />
         </a>
       </div>
     </aside>
+  )
+}
+
+/** Переключатель темы студии (свет/тьма) — только оформление панели, не фан-сайт. */
+function ThemeToggle() {
+  const [theme, setTheme] = React.useState<'dark' | 'light'>('dark')
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem('theme')
+      setTheme(saved === 'light' ? 'light' : 'dark')
+    } catch {}
+  }, [])
+  function toggle() {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    try {
+      localStorage.setItem('theme', next)
+      const el = document.documentElement
+      el.classList.remove('theme-dark', 'theme-light')
+      el.classList.add('theme-' + next)
+      el.style.colorScheme = next
+    } catch {}
+  }
+  const isLight = theme === 'light'
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={isLight}
+      className={'studio-theme-switch' + (isLight ? ' is-light' : '')}
+      style={{ marginLeft: 'auto' }}
+      onClick={toggle}
+      title={isLight ? 'Тёмная тема' : 'Светлая тема'}
+      aria-label="Сменить тему студии"
+    >
+      <span className="studio-theme-switch__icon studio-theme-switch__icon--moon" aria-hidden>
+        <Moon size={12} />
+      </span>
+      <span className="studio-theme-switch__icon studio-theme-switch__icon--sun" aria-hidden>
+        <Sun size={12} />
+      </span>
+      <span className="studio-theme-switch__thumb" aria-hidden>
+        {isLight ? <Sun size={12} /> : <Moon size={12} />}
+      </span>
+    </button>
   )
 }

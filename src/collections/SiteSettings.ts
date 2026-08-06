@@ -33,6 +33,13 @@ export const SiteSettings: CollectionConfig = {
     // `tenant` added by the multi-tenant plugin.
     { name: 'logo', type: 'upload', relationTo: 'media', label: 'Логотип' },
     {
+      name: 'appIcon',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Иконка приложения (квадрат)',
+      admin: { description: 'Квадратная иконка для PWA, favicon и apple-touch. Лучше 512×512+.' },
+    },
+    {
       name: 'themePreset',
       type: 'select',
       label: 'Тема оформления',
@@ -42,6 +49,21 @@ export const SiteSettings: CollectionConfig = {
         description:
           'Готовый пресет: палитра (светлая + тёмная версии) и пара шрифтов уже подобраны под нишу. Выбирается в Студии.',
       },
+    },
+    {
+      // Сохранённые пер-тенантные шаблоны главной («Мои шаблоны»): массив
+      // { id, name, themePreset, sections[{type,enabled,config}], content }.
+      // Хранится одним jsonb-блобом (без под-таблицы/enum) — правится из студии.
+      name: 'savedTemplates',
+      type: 'json',
+      admin: { hidden: true },
+    },
+    {
+      // id последнего применённого шаблона (базового packId или id своего) —
+      // для подсветки активного и подсказки «сохранить изменённый как свой».
+      name: 'appliedTemplate',
+      type: 'text',
+      admin: { hidden: true },
     },
     {
       name: 'theme',

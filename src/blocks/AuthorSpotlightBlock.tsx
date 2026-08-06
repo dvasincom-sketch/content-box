@@ -64,7 +64,7 @@ export function AuthorSpotlightBlock({
 
   return (
     <section className="mt-10">
-      <div className="c-card p-6 lg:p-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-start">
+      <div className="c-card p-6 lg:p-8 grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-center">
         {/* Автор */}
         <div className="flex flex-col">
           <div className="flex items-start gap-4">
@@ -102,7 +102,7 @@ export function AuthorSpotlightBlock({
           </div>
 
           {stats.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-x-8 gap-y-4">
+            <div className="mt-6 flex flex-wrap gap-x-6 sm:gap-x-8 gap-y-4">
               {stats.map((s, i) => (
                 <div key={i}>
                   <div className="text-2xl font-bold leading-none" style={{ color: 'var(--brand-text)', fontVariantNumeric: 'tabular-nums' }}>
@@ -141,13 +141,16 @@ export function AuthorSpotlightBlock({
           </div>
 
           {tiers.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tiers.slice(0, 3).map((t, i) => {
                 const featured = i === featIdx
                 return (
                   <div
                     key={i}
-                    className="rounded-2xl p-4 flex flex-col"
+                    className={
+                      'relative rounded-2xl p-5 flex flex-col h-full' +
+                      (featured ? ' order-first sm:order-none' : '')
+                    }
                     style={{
                       background: featured
                         ? 'color-mix(in srgb, var(--brand-primary) 6%, var(--glass-2))'
@@ -155,16 +158,25 @@ export function AuthorSpotlightBlock({
                       border: featured
                         ? '1px solid color-mix(in srgb, var(--brand-primary) 55%, var(--brand-border))'
                         : '1px solid var(--brand-border)',
+                      boxShadow: featured ? 'var(--elev-2)' : undefined,
                     }}
                   >
-                    <div className="text-sm font-semibold" style={{ color: 'var(--brand-text)' }}>
+                    {featured && (
+                      <span
+                        className="absolute top-4 right-4 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                        style={{ background: 'var(--brand-primary)', color: '#fff', letterSpacing: '0.04em' }}
+                      >
+                        Популярно
+                      </span>
+                    )}
+                    <div className="text-sm font-semibold uppercase tracking-wide" style={{ color: 'var(--brand-text)', letterSpacing: '0.03em' }}>
                       {t.name}
                     </div>
-                    <div className="mt-1 mb-3 text-lg font-bold" style={{ color: 'var(--brand-text)', fontVariantNumeric: 'tabular-nums' }}>
+                    <div className="mt-1 mb-4 text-xl font-bold" style={{ color: 'var(--brand-text)', fontVariantNumeric: 'tabular-nums' }}>
                       {price(t.priceRub)}
                     </div>
                     {t.perks.length > 0 && (
-                      <ul className="flex flex-col gap-1.5 mb-4">
+                      <ul className="flex flex-col gap-2 mb-5 flex-1">
                         {t.perks.map((p, j) => (
                           <li key={j} className="flex items-start gap-1.5 text-xs" style={{ color: 'var(--brand-muted)' }}>
                             <Check size={13} style={{ color: 'var(--brand-primary)', marginTop: 2, flexShrink: 0 }} />

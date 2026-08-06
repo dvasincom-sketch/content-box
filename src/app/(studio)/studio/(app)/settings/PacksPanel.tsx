@@ -5,14 +5,11 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Check, LayoutTemplate, Palette, Layers } from 'lucide-react'
 import { HOME_PACKS } from '@/lib/homePacks'
 import { THEME_PRESETS } from '@/lib/themePresets'
-import { HOME_SECTION_DEFS } from '@/lib/homeSections'
 
 type Mode = 'overwrite' | 'merge'
 
 /** id пресета → человекочитаемое имя (для карточки). */
 const PRESET_NAME: Record<string, string> = Object.fromEntries(THEME_PRESETS.map((p) => [p.id, p.name]))
-/** тип секции → лейбл (для списка «что входит»). */
-const SECTION_LABEL: Record<string, string> = Object.fromEntries(HOME_SECTION_DEFS.map((d) => [d.type, d.label]))
 
 /**
  * Панель «Шаблоны»: карточки паков главной. Каждая карточка показывает, ЧТО пак
@@ -59,14 +56,14 @@ export function PacksPanel() {
     <div className="packs">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
         {HOME_PACKS.map((p) => {
-          const sectionLabels = p.sections.filter((s) => s.enabled).map((s) => SECTION_LABEL[s.type] || s.type)
+          const sectionCount = p.sections.filter((s) => s.enabled).length
           return (
             <div
               key={p.id}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                padding: 16,
+                padding: 14,
                 borderRadius: 14,
                 border: '1px solid var(--st-border, rgba(255,255,255,0.12))',
                 background: 'var(--st-surface, #16161a)',
@@ -76,17 +73,26 @@ export function PacksPanel() {
                 <LayoutTemplate size={18} />
                 <span style={{ fontWeight: 600, fontSize: 15 }}>{p.name}</span>
               </div>
-              <p style={{ fontSize: 13, color: 'var(--st-text-muted)', margin: '0 0 12px' }}>{p.description}</p>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: 'var(--st-text-muted)',
+                  margin: '6px 0 12px',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {p.description}
+              </p>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--st-text-muted)', marginBottom: 8 }}>
-                <Palette size={14} />
-                <span>Тема: <span style={{ color: 'var(--st-text)' }}>{PRESET_NAME[p.themePreset] || p.themePreset}</span></span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, color: 'var(--st-text-muted)', marginBottom: 12 }}>
-                <Layers size={14} style={{ marginTop: 2, flexShrink: 0 }} />
-                <span>
-                  Секции ({sectionLabels.length}): <span style={{ color: 'var(--st-text)' }}>{sectionLabels.join(' · ')}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12, color: 'var(--st-text-muted)', marginBottom: 14 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 999, border: '1px solid var(--st-border)', color: 'var(--st-text)' }}>
+                  <Palette size={13} /> {PRESET_NAME[p.themePreset] || p.themePreset}
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Layers size={13} /> {sectionCount} секций
                 </span>
               </div>
 

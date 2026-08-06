@@ -16,7 +16,6 @@ import { redirect } from 'next/navigation'
 import { requireAuthor } from '@/lib/currentAuthor'
 import { normalizeHomeSections } from '@/lib/homeSections'
 import { SettingsView } from './SettingsView'
-import { DEFAULT_PRESET_ID } from '@/lib/themePresets'
 
 /**
  * Экран «Настройки» (студия): логотип, соцсети, уровни подписки, тема студии.
@@ -51,6 +50,10 @@ export default async function SettingsPage() {
   const settings = settingsRes.docs[0] as any
   const logo = settings?.logo
   const logoUrl = logo && typeof logo === 'object' ? logo.url : null
+  const appIcon = settings?.appIcon
+  const appIconUrl = appIcon && typeof appIcon === 'object' ? appIcon.url : null
+  const ogImg = settings?.seoDefaults?.ogImage
+  const ogImageUrl = ogImg && typeof ogImg === 'object' ? ogImg.url : null
 
   const socials = Array.isArray(settings?.socials)
     ? settings.socials.map((s: any) => ({ platform: s.platform, url: s.url }))
@@ -59,6 +62,8 @@ export default async function SettingsPage() {
   // Конфиг секций главной: порядок + видимость. Нормализуем здесь, чтобы вкладка
   // всегда получала валидный набор (пустой/битый → дефолт из всех секций).
   const homeSections = normalizeHomeSections(settings?.homeSections)
+  const savedTemplates = Array.isArray(settings?.savedTemplates) ? (settings.savedTemplates as any[]) : []
+  const appliedTemplate = (settings?.appliedTemplate as string | null) ?? null
 
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     id: t.id,
@@ -91,10 +96,13 @@ export default async function SettingsPage() {
   return (
     <SettingsView
       logoUrl={logoUrl}
+      appIconUrl={appIconUrl}
+      ogImageUrl={ogImageUrl}
       socials={socials}
       tiers={tiers}
       homeSections={homeSections}
-      themePreset={settings?.themePreset ?? DEFAULT_PRESET_ID}
+      savedTemplates={savedTemplates}
+      appliedTemplate={appliedTemplate}
       members={members}
       isOwner={isOwner}
     />

@@ -1,15 +1,16 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ImagePlus, Loader2, Plus, Trash2, Check, Sun, Moon, ChevronDown } from 'lucide-react'
+import { Loader2, Plus, Trash2, Check, ChevronDown } from 'lucide-react'
 import { PerkIcon, PERK_TYPES, type PerkType } from '@/components/studio/PerkIcon'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { MenuBuilder } from './MenuBuilder'
 import { PagesPanel } from './PagesPanel'
 import { HomeBuilder } from './HomeBuilder'
-import { PresetPicker } from './PresetPicker'
-import { PacksPanel } from './PacksPanel'
+import { TemplatesPanel } from './TemplatesPanel'
+import { ImageUploadField } from './ImageUploadField'
+import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
 
@@ -51,15 +52,21 @@ export function SettingsView({
   socials: initialSocials,
   tiers: initialTiers,
   homeSections,
-  themePreset,
+  appIconUrl,
+  ogImageUrl,
+  savedTemplates,
+  appliedTemplate,
   members,
   isOwner,
 }: {
   logoUrl: string | null
+  appIconUrl: string | null
+  ogImageUrl: string | null
   socials: Social[]
   tiers: Tier[]
   homeSections: HomeSectionConfig[]
-  themePreset: string
+  savedTemplates: HomeSavedTemplate[]
+  appliedTemplate: string | null
   members: Member[]
   isOwner: boolean
 }) {
@@ -90,12 +97,20 @@ export function SettingsView({
       <div className="settings">
         {tab === 'appearance' && (
           <>
-            <PresetBlock initial={themePreset} />
-            <ThemeBlock />
-            <LogoBlock initialUrl={logoUrl} />
+            <TemplatesBlock savedTemplates={savedTemplates} appliedTemplate={appliedTemplate} />
+            <section className="settings__block">
+              <div className="settings__block-head">
+                <h2>Изображения</h2>
+                <p>Логотип, иконка приложения и превью для соцсетей.</p>
+              </div>
+              <div className="imgfield-list">
+                <ImageUploadField field="logo" title="Логотип" hint="Отображается в шапке сайта." initialUrl={logoUrl} compact />
+                <ImageUploadField field="appIcon" title="Иконка приложения" hint="Квадрат ≥512×512. Из неё — favicon, apple-touch и иконка при установке PWA." initialUrl={appIconUrl} square compact />
+                <ImageUploadField field="ogImage" title="Картинка для соцсетей (OG)" hint="Рекомендуется 1200×630. Показывается при отправке ссылки в мессенджерах." initialUrl={ogImageUrl} compact />
+              </div>
+            </section>
           </>
         )}
-        {tab === 'home' && <PacksBlock />}
         {tab === 'home' && <HomeBlock homeSections={homeSections} />}
         {tab === 'socials' && <SocialsBlock initial={initialSocials} />}
         {tab === 'menu' && <MenuBlock />}
@@ -110,18 +125,6 @@ export function SettingsView({
 /* -------------------------------------------------------------------------- */
 /* Конструктор главной страницы                                                */
 /* -------------------------------------------------------------------------- */
-function PacksBlock() {
-  return (
-    <section className="settings__block">
-      <div className="settings__block-head">
-        <h2>Шаблоны (готовые преднастройки)</h2>
-        <p>Быстрый старт под нишу: пак задаёт тему, набор и порядок секций и стартовые тексты. Ниже в конструкторе можно вручную поменять состав, порядок и видимость секций.</p>
-      </div>
-      <PacksPanel />
-    </section>
-  )
-}
-
 function HomeBlock({ homeSections }: { homeSections: HomeSectionConfig[] }) {
   return (
     <section className="settings__block">
@@ -171,141 +174,21 @@ function PagesBlock() {
 /* -------------------------------------------------------------------------- */
 /* Тема сайта — выбор готового пресета (палитра свет+тьма + шрифты)             */
 /* -------------------------------------------------------------------------- */
-function PresetBlock({ initial }: { initial: string }) {
+function TemplatesBlock({ savedTemplates, appliedTemplate }: { savedTemplates: HomeSavedTemplate[]; appliedTemplate: string | null }) {
   return (
     <section className="settings__block">
       <div className="settings__block-head">
-        <h2>Тема сайта</h2>
-        <p>
-          Готовый пресет: палитра (светлая и тёмная версии) и пара шрифтов уже подобраны под нишу.
-          Переключатель света/тьмы в шапке сайта продолжает работать — он меняет вариант выбранного пресета.
-        </p>
+        <h2>Шаблоны</h2>
+        <p>Готовые преднастройки под нишу: тема + набор и порядок секций + стартовые тексты. Откройте шаблон, при желании смените тему и примените. Свою главную можно сохранить как шаблон.</p>
       </div>
-      <PresetPicker initial={initial} />
-    </section>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/* Тема студии (клиентская, localStorage — как на фронтенде)                    */
-/* -------------------------------------------------------------------------- */
-function ThemeBlock() {
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
-
-  useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('theme') : null
-    setTheme(saved === 'light' ? 'light' : 'dark')
-  }, [])
-
-  function apply(next: 'dark' | 'light') {
-    setTheme(next)
-    try {
-      localStorage.setItem('theme', next)
-      const el = document.documentElement
-      el.classList.remove('theme-dark', 'theme-light')
-      el.classList.add('theme-' + next)
-      el.style.colorScheme = next
-    } catch {
-      /* noop */
-    }
-  }
-
-  return (
-    <section className="settings__block">
-      <div className="settings__block-head">
-        <h2>Тема студии</h2>
-        <p>Оформление этой панели. На публичный сайт не влияет.</p>
-      </div>
-      <div className="settings__theme">
-        <button
-          className={`settings__theme-opt${theme === 'dark' ? ' is-active' : ''}`}
-          onClick={() => apply('dark')}
-        >
-          <Moon size={16} />
-          Тёмная
-        </button>
-        <button
-          className={`settings__theme-opt${theme === 'light' ? ' is-active' : ''}`}
-          onClick={() => apply('light')}
-        >
-          <Sun size={16} />
-          Светлая
-        </button>
-      </div>
+      <TemplatesPanel savedTemplates={savedTemplates} appliedTemplate={appliedTemplate} />
     </section>
   )
 }
 
 /* -------------------------------------------------------------------------- */
 /* Логотип                                                                     */
-/* -------------------------------------------------------------------------- */
-function LogoBlock({ initialUrl }: { initialUrl: string | null }) {
-  const [url, setUrl] = useState<string | null>(initialUrl)
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const fileInput = useRef<HTMLInputElement>(null)
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setError(null)
-    setUploading(true)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/studio/api/settings/logo', {
-        method: 'POST',
-        body: fd,
-        credentials: 'include',
-      })
-      const json = await res.json()
-      if (!res.ok) setError(json.error || 'Не удалось загрузить')
-      else setUrl(json.url)
-    } catch {
-      setError('Ошибка загрузки')
-    } finally {
-      setUploading(false)
-      if (fileInput.current) fileInput.current.value = ''
-    }
-  }
-
-  return (
-    <section className="settings__block">
-      <div className="settings__block-head">
-        <h2>Логотип</h2>
-        <p>Отображается в шапке сайта.</p>
-      </div>
-      <div className="settings__logo">
-        {url ? (
-          <div className="settings__logo-preview">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt="Логотип" />
-          </div>
-        ) : (
-          <div className="settings__logo-empty">Нет логотипа</div>
-        )}
-        <div>
-          <button
-            className="studio-btn studio-btn--ghost"
-            onClick={() => fileInput.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? <Loader2 size={16} className="spin" /> : <ImagePlus size={16} />}
-            {url ? 'Заменить' : 'Загрузить'}
-          </button>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/*"
-            onChange={handleFile}
-            style={{ display: 'none' }}
-          />
-          {error && <div className="settings__err">{error}</div>}
-        </div>
-      </div>
-    </section>
-  )
-}
 
 /* -------------------------------------------------------------------------- */
 /* Соцсети                                                                     */

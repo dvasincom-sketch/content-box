@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserPlus, Copy, Check, Loader2, X } from 'lucide-react'
+import { UserPlus, Copy, Check, Loader2, Trash2 } from 'lucide-react'
 import type { Member } from './SettingsView'
+import { ActivityFeed } from './ActivityFeed'
+import { ConfirmDialog } from './ConfirmDialog'
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   owner: { label: 'Владелец', cls: 'is-owner' },
@@ -25,10 +27,12 @@ export function AccessPanel({ members }: { members: Member[] }) {
   const [error, setError] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [reactivated, setReactivated] = useState(false)
   const [revoking, setRevoking] = useState<string | number | null>(null)
+  const [confirm, setConfirm] = useState<{ message: string; onYes: () => void } | null>(null)
 
   async function invite() {
-    setError(null); setLink(null)
+    setError(null); setLink(null); setReactivated(false)
     if (!email.trim()) { setError('Укажите email'); return }
     setBusy(true)
     try {
@@ -39,6 +43,7 @@ export function AccessPanel({ members }: { members: Member[] }) {
       const json = await res.json().catch(() => ({}))
       if (!res.ok) { setError(json.error || 'Не удалось пригласить'); setBusy(false); return }
       setLink(json.inviteUrl)
+      setReactivated(!!json.reactivated)
       setEmail(''); setName(''); setBusy(false)
       router.refresh()
     } catch {
@@ -51,28 +56,51 @@ export function AccessPanel({ members }: { members: Member[] }) {
     try { await navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch {}
   }
 
-  async function setActive(m: Member, active: boolean) {
-    const msg = active
-      ? `Вернуть доступ у ${m.email}?`
-      : `Отключить доступ у ${m.email}? Он не сможет войти в студию. Аккаунт и его публикации сохранятся — доступ можно вернуть.`
-    if (!window.confirm(msg)) return
+  // Тумблер доступа: вкл → restore, выкл → revoke. Без подтверждения (обратимо).
+  async function toggle(m: Member, next: boolean) {
     setRevoking(m.id)
     try {
-      const res = await fetch(active ? '/studio/api/access/restore' : '/studio/api/access/revoke', {
+      const res = await fetch(next ? '/studio/api/access/restore' : '/studio/api/access/revoke', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify({ id: m.id }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) { alert(json.error || 'Не удалось изменить доступ'); setRevoking(null); return }
+      if (!res.ok) { setError(json.error || 'Не удалось изменить доступ'); setRevoking(null); return }
       router.refresh()
     } catch {
-      alert('Ошибка соединения')
+      setError('Ошибка соединения')
+    } finally {
+      setRevoking(null)
+    }
+  }
+
+  // Жёсткое удаление аккаунта участника: открываем студийное подтверждение.
+  function del(m: Member) {
+    setConfirm({
+      message: `Удалить участника ${m.email} НАВСЕГДА? Аккаунт удалится без восстановления; его публикации останутся у проекта. Чтобы просто закрыть доступ — используйте тумблер.`,
+      onYes: () => doDelete(m),
+    })
+  }
+  async function doDelete(m: Member) {
+    setError(null)
+    setRevoking(m.id)
+    try {
+      const res = await fetch('/studio/api/access/delete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ id: m.id }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(json.error || 'Не удалось удалить'); setRevoking(null); return }
+      router.refresh()
+    } catch {
+      setError('Ошибка соединения')
     } finally {
       setRevoking(null)
     }
   }
 
   return (
+    <>
     <div className="settings__block">
       <h2>Доступ к студии</h2>
       <p className="settings__hint">
@@ -100,8 +128,9 @@ export function AccessPanel({ members }: { members: Member[] }) {
         {link && (
           <div className="access__link">
             <div className="access__link-note">
-              Ссылка-приглашение готова. Скопируйте и передайте её участнику любым способом —
-              по ней он задаст пароль и войдёт. Действует 7 дней.
+              {reactivated
+                ? 'Доступ возвращён. Новая ссылка-приглашение готова — по ней участник снова задаст пароль и войдёт. Действует 7 дней.'
+                : 'Ссылка-приглашение готова. Скопируйте и передайте её участнику любым способом — по ней он задаст пароль и войдёт. Действует 7 дней.'}
             </div>
             <div className="access__link-row">
               <input className="studio-input" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
@@ -123,25 +152,47 @@ export function AccessPanel({ members }: { members: Member[] }) {
                 {m.name && <div className="access__row-email">{m.email}</div>}
               </div>
               <div className="access__row-actions">
-              <span className={`access__status ${st.cls}`}>{st.label}</span>
-              {!m.isSelf && m.status !== 'owner' && (
-                m.status === 'disabled' ? (
-                  <button type="button" className="studio-btn studio-btn--ghost access__revoke"
-                    onClick={() => setActive(m, true)} disabled={revoking === m.id} title="Вернуть доступ">
-                    {revoking === m.id ? <Loader2 size={14} className="spin" /> : <Check size={14} />} Включить
-                  </button>
-                ) : (
-                  <button type="button" className="studio-btn studio-btn--ghost access__revoke"
-                    onClick={() => setActive(m, false)} disabled={revoking === m.id} title="Отключить доступ">
-                    {revoking === m.id ? <Loader2 size={14} className="spin" /> : <X size={14} />} Отключить
-                  </button>
-                )
-              )}
+                <span className={`access__status ${st.cls}`}>{st.label}</span>
+                {!m.isSelf && m.status !== 'owner' && (
+                  <>
+                    <label className="access__switch" title={m.status === 'disabled' ? 'Включить доступ' : 'Отключить доступ'}>
+                      <input
+                        type="checkbox"
+                        checked={m.status !== 'disabled'}
+                        disabled={revoking === m.id}
+                        onChange={() => toggle(m, m.status === 'disabled')}
+                      />
+                      <span className="access__switch-track" aria-hidden="true"><span className="access__switch-thumb" /></span>
+                    </label>
+                    <button
+                      type="button"
+                      className="catmgr__icon-btn catmgr__icon-btn--danger access__del"
+                      onClick={() => del(m)}
+                      disabled={revoking === m.id}
+                      title="Удалить навсегда"
+                      aria-label="Удалить навсегда"
+                    >
+                      {revoking === m.id ? <Loader2 size={14} className="spin" /> : <Trash2 size={15} />}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )
         })}
       </div>
     </div>
+    <ActivityFeed />
+    {confirm && (
+      <ConfirmDialog
+        title="Удалить навсегда"
+        message={confirm.message}
+        confirmLabel="Удалить"
+        busy={revoking !== null}
+        onConfirm={() => { confirm.onYes(); setConfirm(null) }}
+        onCancel={() => setConfirm(null)}
+      />
+    )}
+    </>
   )
 }

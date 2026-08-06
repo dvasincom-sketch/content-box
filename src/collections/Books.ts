@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { ownerScopedCollection, ownerField, stampOwner } from '../access'
+import { activityAfterChange, activityAfterDelete } from '../lib/logActivity'
 import { slugify } from '../lib/slugify'
 
 /**
@@ -31,6 +32,8 @@ export const Books: CollectionConfig = {
       },
     ],
     beforeChange: [stampOwner],
+    afterChange: [activityAfterChange('book')],
+    afterDelete: [activityAfterDelete('book')],
   },
   fields: [
     // `tenant` добавляет multi-tenant плагин.

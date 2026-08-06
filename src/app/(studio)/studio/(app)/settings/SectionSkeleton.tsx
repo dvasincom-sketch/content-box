@@ -36,7 +36,7 @@ export function SectionSkeleton({ kind }: { kind: SectionPreview }) {
           <div style={{ flex: 1 }}>
             <div className="skel-row">
               <div className="skel-circle" style={{ width: 30, height: 30 }} />
-              <div style={{ flex: 1 }}>{lines(2)}</div>
+              <div className="skel-col" style={{ flex: 1 }}>{lines(2)}</div>
             </div>
           </div>
           <div className="skel-row" style={{ flex: 1.4, gap: 6, alignItems: 'stretch' }}>
@@ -105,7 +105,7 @@ export function SectionSkeleton({ kind }: { kind: SectionPreview }) {
           {Array.from({ length: 3 }, (_, i) => (
             <div key={i} className="skel-row" style={{ flex: 1 }}>
               <div className="skel-b" style={{ width: 34, height: '100%' }} />
-              <div style={{ flex: 1 }}>{lines(2)}</div>
+              <div className="skel-col" style={{ flex: 1 }}>{lines(2)}</div>
             </div>
           ))}
         </div>
@@ -233,7 +233,7 @@ export function SectionSkeleton({ kind }: { kind: SectionPreview }) {
           {Array.from({ length: 3 }, (_, i) => (
             <div key={i} className="skel-row" style={{ flex: 1 }}>
               <div className="skel-circle" style={{ width: 18, height: 18 }} />
-              <div style={{ flex: 1 }}>{lines(2)}</div>
+              <div className="skel-col" style={{ flex: 1 }}>{lines(2)}</div>
             </div>
           ))}
         </div>

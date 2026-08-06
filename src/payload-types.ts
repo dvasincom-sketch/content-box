@@ -89,6 +89,8 @@ export interface Config {
     comments: Comment;
     reactions: Reaction;
     'activity-events': ActivityEvent;
+    'studio-activity': StudioActivity;
+    'subscription-events': SubscriptionEvent;
     submissions: Submission;
     'bug-reports': BugReport;
     bookmarks: Bookmark;
@@ -122,6 +124,8 @@ export interface Config {
     comments: CommentsSelect<false> | CommentsSelect<true>;
     reactions: ReactionsSelect<false> | ReactionsSelect<true>;
     'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
+    'studio-activity': StudioActivitySelect<false> | StudioActivitySelect<true>;
+    'subscription-events': SubscriptionEventsSelect<false> | SubscriptionEventsSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'bug-reports': BugReportsSelect<false> | BugReportsSelect<true>;
     bookmarks: BookmarksSelect<false> | BookmarksSelect<true>;
@@ -288,9 +292,23 @@ export interface SiteSetting {
   tenant?: (number | null) | Tenant;
   logo?: (number | null) | Media;
   /**
+   * Квадратная иконка для PWA, favicon и apple-touch. Лучше 512×512+.
+   */
+  appIcon?: (number | null) | Media;
+  /**
    * Готовый пресет: палитра (светлая + тёмная версии) и пара шрифтов уже подобраны под нишу. Выбирается в Студии.
    */
   themePreset?: ('neon-dawn' | 'warm-earth' | 'digital-monolith' | 'velvet-resonance' | 'amber-pulse' | 'frost') | null;
+  savedTemplates?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  appliedTemplate?: string | null;
   theme?: {
     /**
      * напр. #7C3AED
@@ -1307,6 +1325,39 @@ export interface ActivityEvent {
   createdAt: string;
 }
 /**
+ * Журнал действий участников студии.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "studio-activity".
+ */
+export interface StudioActivity {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  user?: (number | null) | User;
+  action?: ('login' | 'create' | 'update' | 'delete') | null;
+  entity?: string | null;
+  title?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Журнал оформлений и продлений подписок (для аналитики).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscription-events".
+ */
+export interface SubscriptionEvent {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  subscriber?: (number | null) | Subscriber;
+  tier?: (number | null) | SubscriptionTier;
+  tierName?: string | null;
+  priceRub?: number | null;
+  action?: ('started' | 'renewed' | 'changed' | 'canceled') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Публикации от участников на модерации.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1530,6 +1581,14 @@ export interface PayloadLockedDocument {
         value: number | ActivityEvent;
       } | null)
     | ({
+        relationTo: 'studio-activity';
+        value: number | StudioActivity;
+      } | null)
+    | ({
+        relationTo: 'subscription-events';
+        value: number | SubscriptionEvent;
+      } | null)
+    | ({
         relationTo: 'submissions';
         value: number | Submission;
       } | null)
@@ -1669,7 +1728,10 @@ export interface UsersSelect<T extends boolean = true> {
 export interface SiteSettingsSelect<T extends boolean = true> {
   tenant?: T;
   logo?: T;
+  appIcon?: T;
   themePreset?: T;
+  savedTemplates?: T;
+  appliedTemplate?: T;
   theme?:
     | T
     | {
@@ -2257,6 +2319,33 @@ export interface ActivityEventsSelect<T extends boolean = true> {
   points?: T;
   refType?: T;
   refId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "studio-activity_select".
+ */
+export interface StudioActivitySelect<T extends boolean = true> {
+  tenant?: T;
+  user?: T;
+  action?: T;
+  entity?: T;
+  title?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscription-events_select".
+ */
+export interface SubscriptionEventsSelect<T extends boolean = true> {
+  tenant?: T;
+  subscriber?: T;
+  tier?: T;
+  tierName?: T;
+  priceRub?: T;
+  action?: T;
   updatedAt?: T;
   createdAt?: T;
 }

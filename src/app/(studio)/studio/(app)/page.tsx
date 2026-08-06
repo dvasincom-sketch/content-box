@@ -1,9 +1,12 @@
 import React from 'react'
 import Link from 'next/link'
-import { Plus, FolderTree, FileText, FileEdit, ArrowRight } from 'lucide-react'
+import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, Users, CreditCard, TrendingUp, Wallet } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor } from '@/lib/currentAuthor'
+import { getMediaStats, formatBytes } from '@/lib/mediaStats'
+import { getCommerceStats, formatRub } from '@/lib/commerceStats'
+import { DashChart } from './DashChart'
 
 /**
  * Дашборд студии (витрина, референс Patreon Creator Studio):
@@ -93,6 +96,10 @@ export default async function StudioDashboard() {
   const drafts = draftsRes.docs as Pub[]
   const recent = recentRes.docs as Pub[]
 
+  // Медиа-статистика (файлы + фактический объём на диске) отдельным SQL-агрегатом.
+  const media = await getMediaStats(payload, tenantId)
+  const commerce = await getCommerceStats(payload, tenantId)
+
   const email = author!.user.email
 
   return (
@@ -108,21 +115,105 @@ export default async function StudioDashboard() {
         </Link>
       </div>
 
-      {/* Статистика */}
-      <div className="dash__stats">
-        <div className="dash__stat">
-          <div className="dash__stat-value">{totalPubs}</div>
-          <div className="dash__stat-label">Публикаций</div>
+      {/* Первый экран: ключевые коммерческие метрики + динамика */}
+      {commerce ? (
+        <>
+          <div className="dash__kpis">
+            <div className="dash__kpi">
+              <div className="dash__kpi-icon"><Users size={16} /></div>
+              <div className="dash__kpi-body">
+                <div className="dash__kpi-value">{commerce.registered}</div>
+                <div className="dash__kpi-label">Зарегистрировано</div>
+              </div>
+              {commerce.registered7d > 0 && (
+                <div className="dash__kpi-delta">+{commerce.registered7d} за 7 дн.</div>
+              )}
+            </div>
+            <div className="dash__kpi">
+              <div className="dash__kpi-icon"><CreditCard size={16} /></div>
+              <div className="dash__kpi-body">
+                <div className="dash__kpi-value">{commerce.paid}</div>
+                <div className="dash__kpi-label">Платных</div>
+              </div>
+            </div>
+            <div className="dash__kpi">
+              <div className="dash__kpi-icon"><TrendingUp size={16} /></div>
+              <div className="dash__kpi-body">
+                <div className="dash__kpi-value">{commerce.conversion}%</div>
+                <div className="dash__kpi-label">Конверсия</div>
+              </div>
+            </div>
+            <div className="dash__kpi">
+              <div className="dash__kpi-icon"><Wallet size={16} /></div>
+              <div className="dash__kpi-body">
+                <div className="dash__kpi-value">{formatRub(commerce.mrr)}</div>
+                <div className="dash__kpi-label">Выручка в мес.</div>
+              </div>
+            </div>
+          </div>
+          <div className="dash__chart-card">
+            <DashChart series={commerce.series} />
+          </div>
+        </>
+      ) : (
+        <div className="dash__stats">
+          <div className="dash__stat">
+            <div className="dash__stat-value">{totalPubs}</div>
+            <div className="dash__stat-label">Публикаций</div>
+          </div>
+          <div className="dash__stat">
+            <div className="dash__stat-value">{totalDrafts}</div>
+            <div className="dash__stat-label">Черновиков</div>
+          </div>
+          <div className="dash__stat">
+            <div className="dash__stat-value">{totalCats}</div>
+            <div className="dash__stat-label">Категорий</div>
+          </div>
         </div>
-        <div className="dash__stat">
-          <div className="dash__stat-value">{totalDrafts}</div>
-          <div className="dash__stat-label">Черновиков</div>
-        </div>
-        <div className="dash__stat">
-          <div className="dash__stat-value">{totalCats}</div>
-          <div className="dash__stat-label">Категорий</div>
-        </div>
+      )}
+
+      {/* Вторичные показатели контента (ниже первого экрана) */}
+      <div className="dash__substats">
+        <span className="dash__substat"><FileText size={14} /> {totalPubs} публикаций</span>
+        <span className="dash__substat"><FileEdit size={14} /> {totalDrafts} черновиков</span>
+        <span className="dash__substat"><FolderTree size={14} /> {totalCats} категорий</span>
       </div>
+
+      {/* Медиа: файлы + объём на диске */}
+      {media && (
+        <section className="dash__section">
+          <div className="dash__section-head">
+            <h2><HardDrive size={16} /> Медиа</h2>
+            <Link href="/studio/gallery" className="dash__section-link">
+              Галерея <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="dash__stats dash__stats--2">
+            <div className="dash__stat">
+              <div className="dash__stat-value">{media.files}</div>
+              <div className="dash__stat-label">Файлов загружено</div>
+            </div>
+            <div className="dash__stat">
+              <div className="dash__stat-value">{formatBytes(media.bytes)}</div>
+              <div className="dash__stat-label">Занято на диске</div>
+            </div>
+          </div>
+          {media.files > 0 && (
+            <div className="dash__mediabreak">
+              {media.sources.filter((sMedia) => sMedia.files > 0).map((sMedia) => (
+                <div key={sMedia.key} className="dash__mediabreak-row">
+                  <span className="dash__mediabreak-icon">
+                    {sMedia.key === 'gallery' ? <Images size={15} /> : sMedia.key === 'downloads' ? <FileDown size={15} /> : <ImageIcon size={15} />}
+                  </span>
+                  <span className="dash__mediabreak-label">{sMedia.label}</span>
+                  <span className="dash__mediabreak-count">{sMedia.files} файл.</span>
+                  <span className="dash__mediabreak-size">{formatBytes(sMedia.bytes)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Быстрые действия */}
       <div className="dash__actions">

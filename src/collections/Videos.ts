@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID, ownerScoped, ownerField, stampOwner } from '../access'
+import { activityAfterChange, activityAfterDelete } from '../lib/logActivity'
 import { tagsField, normalizeTags } from '../fields/tags'
 
 /**
@@ -220,6 +221,8 @@ export const Videos: CollectionConfig = {
   hooks: {
     // Свободные теги: тримим label и считаем slug (slugify), убираем дубли.
     beforeChange: [stampOwner, ({ data }) => normalizeTags(data)],
+    afterChange: [activityAfterChange('video')],
+    afterDelete: [activityAfterDelete('video')],
   },
   timestamps: true,
 }

@@ -59,7 +59,11 @@ export async function GET(req: NextRequest): Promise<Response> {
     const preset = getPreset(settings?.themePreset)
     bg = preset.light.bg
     fg = preset.light.primary
-    logoUrl = settings?.logo && typeof settings.logo === 'object' ? (settings.logo.url as string) : null
+    // Иконку берём в приоритете из appIcon (квадрат), иначе из логотипа.
+    const iconMedia =
+      (settings?.appIcon && typeof settings.appIcon === 'object' ? settings.appIcon : null) ||
+      (settings?.logo && typeof settings.logo === 'object' ? settings.logo : null)
+    logoUrl = iconMedia && typeof iconMedia.url === 'string' ? (iconMedia.url as string) : null
     letter = ((tenant?.name as string) || 'C').trim().charAt(0).toUpperCase() || 'C'
   } catch {
     /* дефолты выше */

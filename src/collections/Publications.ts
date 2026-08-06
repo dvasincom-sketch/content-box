@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { ownerScopedCollection, ownerField, stampOwner, getUserTenantID } from '../access'
+import { activityAfterChange, activityAfterDelete } from '../lib/logActivity'
 import { revalidateHomeFeed } from '../lib/revalidateHome'
 import { tagsField, normalizeTags } from '../fields/tags'
 
@@ -311,8 +312,8 @@ export const Publications: CollectionConfig = {
     ],
     // Состав секций главной зависит от публикаций — сбрасываем кэш ленты
     // тенанта. Тег точечный, соседние сайты не затрагиваются.
-    afterChange: [async ({ doc, req }) => { await revalidateHomeFeed(doc?.tenant ?? getUserTenantID(req.user as any)) }],
-    afterDelete: [async ({ doc }) => { await revalidateHomeFeed(doc?.tenant) }],
+    afterChange: [async ({ doc, req }) => { await revalidateHomeFeed(doc?.tenant ?? getUserTenantID(req.user as any)) }, activityAfterChange('publication')],
+    afterDelete: [async ({ doc }) => { await revalidateHomeFeed(doc?.tenant) }, activityAfterDelete('publication')],
   },
   timestamps: true,
 }

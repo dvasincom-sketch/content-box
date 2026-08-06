@@ -1,6 +1,7 @@
 import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID, superAdminFieldAccess, isSubscriber } from '../access'
 import { subscriberResetSubject, subscriberResetHTML } from '../emails/authEmails'
+import { subscriptionAfterChange } from '../lib/logSubscriptionEvent'
 
 /**
  * Subscribers — зрители сайта (auth-коллекция), ОТДЕЛЬНО от CMS-users.
@@ -65,7 +66,7 @@ export const Subscribers: CollectionConfig = {
       generateEmailHTML: (args) => subscriberResetHTML(args),
     },
   },
-  hooks: { beforeLogin: beforeLoginTenantGuard },
+  hooks: { beforeLogin: beforeLoginTenantGuard, afterChange: [subscriptionAfterChange] },
   labels: { singular: 'Подписчик', plural: 'Пользователи' },
   admin: {
     useAsTitle: 'email',

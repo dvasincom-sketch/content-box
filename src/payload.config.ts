@@ -33,6 +33,8 @@ import { BookFollows } from './collections/BookFollows'
 import { Comments } from './collections/Comments'
 import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
+import { Activity } from './collections/Activity'
+import { SubscriptionEvents } from './collections/SubscriptionEvents'
 import { Submissions } from './collections/Submissions'
 import { BugReports } from './collections/BugReports'
 import { Bookmarks } from './collections/Bookmarks'
@@ -160,6 +162,8 @@ export default buildConfig({
     Comments,
     Reactions,
     ActivityEvents,
+    Activity,
+    SubscriptionEvents,
     Submissions,
     BugReports,
     Bookmarks,

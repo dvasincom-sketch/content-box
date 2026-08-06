@@ -1,5 +1,6 @@
 import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID, superAdminFieldAccess } from '../access'
+import { logActivity } from '../lib/logActivity'
 import { authorResetSubject, authorResetHTML } from '../emails/authEmails'
 
 /**
@@ -123,6 +124,17 @@ export const Users: CollectionConfig = {
         if ((user as { disabled?: boolean } | null)?.disabled) {
           throw new Error('Доступ отключён владельцем студии.')
         }
+        return user
+      },
+    ],
+    afterLogin: [
+      async ({ user, req }: any) => {
+        // Журналируем вход участника студии (у платформенного superadmin нет tenant).
+        try {
+          if (user?.tenant && user?.id) {
+            await logActivity(req.payload, { tenant: user.tenant, user: user.id, action: 'login', entity: 'studio', title: '' })
+          }
+        } catch {}
         return user
       },
     ],
