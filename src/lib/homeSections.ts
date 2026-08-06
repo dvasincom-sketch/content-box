@@ -29,6 +29,7 @@ export const HOME_SECTION_DEFS = [
   { type: 'popular', label: 'Сейчас популярно' },
   { type: 'discussed', label: 'Обсуждаемое' },
   { type: 'posterRows', label: 'Киноблоки (постеры)' },
+  { type: 'photoShowcase', label: 'Фото на весь экран (галерея)' },
   { type: 'categories', label: 'Категории (плитки)' },
   { type: 'popularCategories', label: 'Популярные разделы' },
   { type: 'whyUs', label: '«Почему мы»' },
@@ -64,6 +65,8 @@ export interface HomeSectionSettings {
   variant?: string | null
   sectionTheme?: string | null
   source?: HomeSectionSource
+  /** Папка галереи для секции «Фото на весь экран» (photoShowcase). */
+  galleryFolderId?: number | null
 }
 
 /** Одна запись конфигурации главной (элемент массива homeSections). */
@@ -121,6 +124,8 @@ export function sanitizeSectionConfig(raw: unknown): HomeSectionSettings | undef
   if (typeof r.heading === 'string' && r.heading.trim()) out.heading = r.heading
   if (typeof r.variant === 'string' && r.variant) out.variant = r.variant
   if (typeof r.sectionTheme === 'string' && r.sectionTheme) out.sectionTheme = r.sectionTheme
+  const folder = Number(r.galleryFolderId)
+  if (Number.isFinite(folder) && folder > 0) out.galleryFolderId = folder
   const src = r.source as Record<string, unknown> | undefined
   if (src && typeof src === 'object') {
     const kind = src.kind

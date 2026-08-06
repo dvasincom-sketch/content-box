@@ -101,4 +101,25 @@ export const subscriptionAfterChange = async ({ doc, previousDoc, req, operation
     tier,
     action,
   })
+
+  // Дублируем оформление/апгрейд платной подписки в общую ленту активности
+  // студии (studio-activity) — чтобы «кто оформил платную подписку» было видно
+  // владельцу в «Доступе». Actor — подписчик (не users), поэтому имя кладём в title.
+  if ((action === 'started' || action === 'changed') && tier) {
+    try {
+      const tenantId = relId(doc?.tenant)
+      if (tenantId) {
+        const t = (await payload.findByID({ collection: 'subscription-tiers', id: tier, depth: 0, overrideAccess: true })) as { name?: string } | null
+        const subName = doc?.displayName || doc?.email || 'Подписчик'
+        const tierName = t?.name || 'подписка'
+        await payload.create({
+          collection: 'studio-activity',
+          data: { tenant: tenantId, action: 'create', entity: 'subscription', title: `${subName} · ${tierName}` },
+          overrideAccess: true,
+        } as any)
+      }
+    } catch {
+      /* аналитика вторична */
+    }
+  }
 }

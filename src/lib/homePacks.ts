@@ -99,7 +99,7 @@ export const HOME_PACKS: HomePack[] = [
     verb: 'Читать',
     description:
       'Для писателей и авторов текстов: каталог книг и циклов, новинки и разделы. Читателям — тёплая витрина и удобная навигация.',
-    themePreset: 'velvet-resonance',
+    themePreset: 'tropic-sunset',
     sections: [
       { type: 'hero', enabled: true },
       { type: 'search', enabled: true },

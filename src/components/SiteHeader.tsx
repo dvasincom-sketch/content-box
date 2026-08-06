@@ -60,7 +60,7 @@ export function SiteHeader({
     <header
       className="sticky top-0 z-50 backdrop-blur border-b"
       style={{
-        background: 'color-mix(in srgb, var(--brand-bg) 85%, transparent)',
+        background: 'var(--brand-header, color-mix(in srgb, var(--brand-bg) 85%, transparent))',
         borderColor: borderSoft,
       }}
     >
@@ -100,7 +100,7 @@ export function SiteHeader({
               <Link
                 href="/search"
                 aria-label="Поиск"
-                className="c-btn c-btn--surface c-btn--icon c-spotlight"
+                className="c-btn c-btn--ghost c-btn--icon c-spotlight"
               >
                 <Search size={18} />
               </Link>
@@ -171,10 +171,9 @@ export function SiteHeader({
                 )}
               </div>
             ) : (
-              <div className="c-segment hidden sm:inline-flex">
-                <Link href="/login" className="c-segment__item">Войти</Link>
-                <span className="c-segment__divider" />
-                <Link href="/register" className="c-segment__item c-segment__item--primary">Регистрация</Link>
+              <div className="hidden sm:flex items-center gap-1">
+                <Link href="/login" className="c-btn c-btn--ghost c-btn--pill c-btn--sm">Войти</Link>
+                <Link href="/register" className="c-btn c-btn--ghost c-btn--pill c-btn--sm">Регистрация</Link>
               </div>
             )}
 
@@ -189,7 +188,7 @@ export function SiteHeader({
             <button
               type="button"
               aria-label="Меню"
-              className="c-btn c-btn--surface c-btn--icon lg:hidden"
+              className="c-btn c-btn--ghost c-btn--icon lg:hidden"
               onClick={() => setOpen((v) => !v)}
             >
               {open ? <X size={20} /> : <Menu size={20} />}

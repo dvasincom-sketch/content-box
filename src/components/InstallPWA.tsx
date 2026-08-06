@@ -12,7 +12,7 @@ import { Download, Share, X } from 'lucide-react'
  *    «Поделиться → На экран „Домой“».
  *  • Уже установлено (standalone) или установка недоступна → компонент ничего
  *    не рендерит (не засоряет интерфейс).
- * Стиль совпадает с иконками-кнопками хедера (.c-btn c-btn--surface c-btn--icon).
+ * Стиль совпадает с иконками-кнопками хедера (.c-btn c-btn--ghost c-btn--icon).
  */
 type BIPEvent = Event & {
   prompt: () => Promise<void>
@@ -90,7 +90,7 @@ export function InstallPWA() {
       <button
         type="button"
         aria-label="Установить приложение"
-        className="c-btn c-btn--surface c-btn--icon c-spotlight"
+        className="c-btn c-btn--ghost c-btn--icon c-spotlight"
         onClick={onClick}
       >
         <Download size={18} />
@@ -127,7 +127,7 @@ export function InstallPWA() {
               type="button"
               aria-label="Закрыть"
               onClick={() => setHint(false)}
-              className="c-btn c-btn--surface c-btn--icon c-btn--sm"
+              className="c-btn c-btn--ghost c-btn--icon c-btn--sm"
               style={{ position: 'absolute', top: 12, right: 12 }}
             >
               <X size={16} />

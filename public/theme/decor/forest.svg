@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 180"><g fill="#111">
+<g transform="translate(40 0)"><path d="M0 150 L-26 150 L0 100 L-18 100 L0 60 L18 100 L26 100 Z"/><rect x="-5" y="150" width="10" height="20"/></g>
+<g transform="translate(110 12) scale(1.15)"><path d="M0 150 L-26 150 L0 100 L-18 100 L0 60 L18 100 L26 100 Z"/><rect x="-5" y="150" width="10" height="20"/></g>
+<g transform="translate(185 4) scale(.9)"><path d="M0 150 L-26 150 L0 100 L-18 100 L0 60 L18 100 L26 100 Z"/><rect x="-5" y="150" width="10" height="20"/></g>
+<g transform="translate(250 10)"><path d="M0 150 L-26 150 L0 100 L-18 100 L0 60 L18 100 L26 100 Z"/><rect x="-5" y="150" width="10" height="20"/></g>
+</g></svg>

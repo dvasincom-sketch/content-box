@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { logActivity } from '@/lib/logActivity'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -31,5 +32,6 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось удалить участника. Попробуйте «Отключить» вместо удаления.'), 500)
   }
+  await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'delete', entity: 'участника', title: 'Участник удалён' })
   return apiOk()
 })

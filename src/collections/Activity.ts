@@ -38,6 +38,7 @@ export const Activity: CollectionConfig = {
       options: [
         { label: 'Вход', value: 'login' },
         { label: 'Создание', value: 'create' },
+        { label: 'Приглашение', value: 'invite' },
         { label: 'Изменение', value: 'update' },
         { label: 'Удаление', value: 'delete' },
       ],

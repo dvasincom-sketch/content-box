@@ -66,6 +66,10 @@ import * as migration_20260806_130000_home_saved_templates from './20260806_1300
 import * as migration_20260806_140000_studio_activity from './20260806_140000_studio_activity';
 import * as migration_20260806_150000_site_settings_app_icon from './20260806_150000_site_settings_app_icon';
 import * as migration_20260806_160000_subscription_events from './20260806_160000_subscription_events';
+import * as migration_20260806_170000_add_tropic_sunset_preset from './20260806_170000_add_tropic_sunset_preset';
+import * as migration_20260806_180000_add_bg_decor from './20260806_180000_add_bg_decor';
+import * as migration_20260806_190000_add_photo_showcase_section from './20260806_190000_add_photo_showcase_section';
+import * as migration_20260806_200000_add_activity_invite_action from './20260806_200000_add_activity_invite_action';
 
 export const migrations = [
   {
@@ -407,5 +411,25 @@ export const migrations = [
     up: migration_20260806_160000_subscription_events.up,
     down: migration_20260806_160000_subscription_events.down,
     name: '20260806_160000_subscription_events',
+  },
+  {
+    up: migration_20260806_170000_add_tropic_sunset_preset.up,
+    down: migration_20260806_170000_add_tropic_sunset_preset.down,
+    name: '20260806_170000_add_tropic_sunset_preset',
+  },
+  {
+    up: migration_20260806_180000_add_bg_decor.up,
+    down: migration_20260806_180000_add_bg_decor.down,
+    name: '20260806_180000_add_bg_decor',
+  },
+  {
+    up: migration_20260806_190000_add_photo_showcase_section.up,
+    down: migration_20260806_190000_add_photo_showcase_section.down,
+    name: '20260806_190000_add_photo_showcase_section',
+  },
+  {
+    up: migration_20260806_200000_add_activity_invite_action.up,
+    down: migration_20260806_200000_add_activity_invite_action.down,
+    name: '20260806_200000_add_activity_invite_action',
   },
 ];

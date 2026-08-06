@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { logActivity } from '@/lib/logActivity'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -75,6 +76,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       data: patch,
       overrideAccess: true,
     })
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'update', entity: 'тариф', title: 'Тариф подписки' })
     return apiOk()
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось сохранить'))

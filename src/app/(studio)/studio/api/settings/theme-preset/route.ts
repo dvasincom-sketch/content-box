@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { logActivity } from '@/lib/logActivity'
 import { PRESET_IDS } from '@/lib/themePresets'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -29,6 +30,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       data: { themePreset: preset } as any,
       overrideAccess: true,
     })
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'update', entity: 'оформление', title: 'Тема сайта' })
     return apiOk()
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось сохранить'))

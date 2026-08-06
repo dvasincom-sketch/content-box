@@ -1,16 +1,17 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Loader2, LogIn, FilePlus2, PencilLine, Trash2, Activity as ActivityIcon } from 'lucide-react'
+import { Loader2, LogIn, FilePlus2, PencilLine, Trash2, Activity as ActivityIcon, UserPlus, CreditCard } from 'lucide-react'
 
 type Item = { id: number | string; action: string; entity: string; title: string; at: string; user: string }
 
-const ENTITY: Record<string, string> = { publication: 'публикацию', video: 'видео', book: 'книгу', download: 'файл', studio: '' }
-const VERB: Record<string, string> = { login: 'вошёл в студию', create: 'создал', update: 'изменил', delete: 'удалил' }
+const ENTITY: Record<string, string> = { publication: 'публикацию', video: 'видео', book: 'книгу', download: 'файл', homepage: 'главную страницу', 'оформление': 'оформление', 'тариф': 'тариф', 'доступ': 'доступ', 'участника': 'участника', studio: '' }
+const VERB: Record<string, string> = { login: 'вошёл в студию', create: 'создал', update: 'изменил', delete: 'удалил', invite: 'пригласил' }
 
 function ActionIcon({ action }: { action: string }) {
   const p = { size: 15, style: { flexShrink: 0, color: 'var(--st-text-muted)' } }
   if (action === 'login') return <LogIn {...p} />
+  if (action === 'invite') return <UserPlus {...p} />
   if (action === 'create') return <FilePlus2 {...p} />
   if (action === 'delete') return <Trash2 {...p} />
   return <PencilLine {...p} />
@@ -65,7 +66,7 @@ export function ActivityFeed() {
     <div className="settings__block" style={{ marginTop: 8 }}>
       <div className="settings__block-head">
         <h2 style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ActivityIcon size={18} /> Активность</h2>
-        <p>Последние действия участников: вход в студию, создание, изменение и удаление контента.</p>
+        <p>Последние действия: вход, контент, оформление, тарифы, доступ и новые платные подписки.</p>
       </div>
 
       {items === null && !error ? (
@@ -78,10 +79,14 @@ export function ActivityFeed() {
         <div className="actlog">
           {items!.map((it) => (
             <div key={it.id} className="actlog__row">
-              <ActionIcon action={it.action} />
+              {it.entity === 'subscription' ? <CreditCard size={15} style={{ flexShrink: 0, color: 'var(--st-text-muted)' }} /> : <ActionIcon action={it.action} />}
               <div className="actlog__body">
                 <span className="actlog__text">
-                  <b>{it.user}</b> {phrase(it)}
+                  {it.entity === 'subscription' ? (
+                    <>Новая подписка: <b>{it.title}</b></>
+                  ) : (
+                    <><b>{it.user}</b> {phrase(it)}</>
+                  )}
                 </span>
                 <span className="actlog__time">{rel(it.at)}</span>
               </div>

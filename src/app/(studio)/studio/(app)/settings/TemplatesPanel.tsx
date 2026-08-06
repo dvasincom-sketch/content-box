@@ -218,6 +218,7 @@ function NamePromptModal({
   const val = v.trim()
   const body = (
     <div
+      className="studio-portal"
       onClick={() => !busy && onCancel()}
       style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
     >

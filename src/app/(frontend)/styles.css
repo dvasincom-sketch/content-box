@@ -2602,3 +2602,128 @@ svg {
 .poster-grid__item:hover .poster-grid__title {
   opacity: 0.7;
 }
+
+/* --- Библиотека фоновых объектов (bgDecor). Слой под контентом (z-index:-1),
+   не перехватывает клики, приглушён; цвет объектов = --brand-primary через
+   CSS-маску, поэтому подхватывает тему. Режимы: corner (в углах), bottom (полоса
+   по низу), tile (мелкий паттерн). --decor-img приходит инлайном из реестра. --- */
+.bg-decor { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.bg-decor span { position: absolute; background-color: var(--brand-primary); }
+.bg-decor--corner span {
+  bottom: -24px; width: min(34vw, 380px); height: min(52vh, 560px);
+  -webkit-mask: var(--decor-img) no-repeat bottom center; mask: var(--decor-img) no-repeat bottom center;
+  -webkit-mask-size: contain; mask-size: contain; opacity: 0.16;
+}
+.bg-decor--corner .bg-decor__a { left: -30px; }
+.bg-decor--corner .bg-decor__b { right: -30px; transform: scaleX(-1); }
+.bg-decor--bottom .bg-decor__a {
+  left: 0; right: 0; bottom: 0; width: 100%; height: min(30vh, 260px);
+  -webkit-mask: var(--decor-img) repeat-x bottom; mask: var(--decor-img) repeat-x bottom;
+  -webkit-mask-size: auto 100%; mask-size: auto 100%; opacity: 0.13;
+}
+.bg-decor--bottom .bg-decor__b { display: none; }
+.bg-decor--tile .bg-decor__a {
+  inset: 0; width: 100%; height: 100%;
+  -webkit-mask: var(--decor-img); mask: var(--decor-img);
+  -webkit-mask-size: 150px; mask-size: 150px; -webkit-mask-repeat: repeat; mask-repeat: repeat;
+  opacity: 0.07;
+}
+.bg-decor--tile .bg-decor__b { display: none; }
+.theme-light .bg-decor--corner span { opacity: 0.20; }
+.theme-light .bg-decor--bottom .bg-decor__a { opacity: 0.16; }
+.theme-light .bg-decor--tile .bg-decor__a { opacity: 0.09; }
+@media (max-width: 1024px) {
+  .bg-decor--corner span { width: 52vw; opacity: 0.10; }
+  .bg-decor--tile .bg-decor__a { -webkit-mask-size: 120px; mask-size: 120px; }
+}
+
+/* Оранжевое тепло фона пресета «Тропический закат» — независимо от выбранного декора. */
+body.preset-tropic-sunset::before {
+  content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(55% 45% at 100% 100%, rgba(249, 115, 22, 0.16), transparent 70%),
+    radial-gradient(50% 42% at 0% 100%, rgba(249, 115, 22, 0.12), transparent 70%),
+    radial-gradient(60% 40% at 50% 0%, rgba(167, 139, 250, 0.10), transparent 70%);
+}
+
+/* --- Правки темы «Тропический закат» (по ревью) --- */
+/* 1. Пальмы заметнее и немного выше в кадре. */
+.bg-decor--corner span { opacity: 0.22; bottom: -10px; width: min(36vw, 420px); }
+.theme-light .bg-decor--corner span { opacity: 0.26; }
+@media (max-width: 1024px) {
+  .bg-decor--corner span { width: 54vw; opacity: 0.14; }
+}
+
+/* 2. Оранжевая шапка: единая система — все второстепенные контролы ghost с
+   тёмными глифами, одна заметная CTA (Поддержать) тёмной заливкой. Контраст
+   поверх оранжевого (по умолчанию ghost брал --brand-text и терялся). */
+body.preset-tropic-sunset header a[href="/"] span { color: #1A0E29 !important; }
+body.preset-tropic-sunset header .c-navlink { color: #1A0E29; }
+body.preset-tropic-sunset header .c-navlink:hover { color: #000; }
+body.preset-tropic-sunset header .c-btn--ghost { color: #1A0E29; }
+body.preset-tropic-sunset header .c-btn--ghost:hover { background: rgba(0, 0, 0, 0.10); }
+body.preset-tropic-sunset header .c-btn--primary { background: #1A0E29; color: #fff; border-color: transparent; }
+body.preset-tropic-sunset header .c-btn--primary:hover { filter: none; background: #0E0819; }
+
+/* --- Секция «Фото на весь экран» (photoShowcase) --- */
+/* Full-bleed: выходит за пределы центрированного контейнера главной. */
+.photoshow {
+  position: relative;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  height: 86svh;
+  min-height: 560px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+.photoshow__img {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+}
+.photoshow__grad {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.78), rgba(0,0,0,0.25) 42%, rgba(0,0,0,0) 68%);
+}
+.photoshow__inner {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 72rem;
+  margin: 0 auto; padding: 0 24px 48px;
+}
+.photoshow__title {
+  color: #fff;
+  font-family: var(--font-heading);
+  font-weight: var(--heading-weight);
+  font-size: clamp(28px, 5vw, 56px);
+  line-height: 1.05;
+  margin: 0 0 18px;
+  text-shadow: 0 2px 18px rgba(0,0,0,0.4);
+}
+.photoshow__btn { gap: 8px; }
+.photoshow__count {
+  background: rgba(255,255,255,0.22);
+  border-radius: 999px; padding: 1px 8px; font-size: 12px; font-weight: 700;
+}
+@media (max-width: 640px) { .photoshow { height: 70svh; min-height: 440px; } }
+
+/* --- Публичная страница галереи папки --- */
+.gallery-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--brand-muted); font-size: 14px; text-decoration: none; margin-bottom: 12px;
+}
+.gallery-back:hover { color: var(--brand-text); }
+.gallery-title {
+  color: var(--brand-text); font-family: var(--font-heading); font-weight: var(--heading-weight);
+  font-size: clamp(26px, 4vw, 40px); margin: 0 0 4px;
+}
+.gallery-sub { color: var(--brand-muted); font-size: 14px; margin: 0 0 24px; }
+.gallery-empty { color: var(--brand-muted); }
+.gallery-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;
+}
+.gallery-cell { display: block; border-radius: 12px; overflow: hidden; background: var(--brand-surface); }
+.gallery-cell img {
+  width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block;
+  transition: transform 0.3s ease;
+}
+.gallery-cell:hover img { transform: scale(1.04); }

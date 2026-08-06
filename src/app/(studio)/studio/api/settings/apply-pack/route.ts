@@ -3,6 +3,7 @@ import { getHomePack } from '@/lib/homePacks'
 import { PRESET_IDS } from '@/lib/themePresets'
 import { isHomeSectionType, normalizeHomeSections, sanitizeSectionConfig, type HomeSectionType, type HomeSectionSettings } from '@/lib/homeSections'
 import { errorMessage } from '@/lib/errorMessage'
+import { logActivity } from '@/lib/logActivity'
 
 /**
  * Применение пака (шаблона) главной. SiteSettings — одна запись на тенант.
@@ -78,6 +79,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       data: patch as any,
       overrideAccess: true,
     })
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'update', entity: 'homepage', title: `Шаблон: ${pack.name}` })
     return apiOk()
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось применить шаблон'))

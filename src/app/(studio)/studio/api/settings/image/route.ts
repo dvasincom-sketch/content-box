@@ -1,4 +1,5 @@
 import { withAuthor, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { logActivity } from '@/lib/logActivity'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -65,6 +66,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       })
     }
 
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'update', entity: 'оформление', title: 'Изображение сайта' })
     return apiOk({ id: media.id, url: (media as any).url || null })
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось загрузить изображение'), 500)

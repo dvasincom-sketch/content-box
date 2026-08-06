@@ -74,7 +74,7 @@ export function DesktopMenu({ nodes }: { nodes: MenuNode[] }) {
               aria-haspopup={hasChildren || undefined}
             >
               {node.title}
-              {hasChildren && <ChevronDown size={14} style={{ color: 'var(--brand-muted)' }} />}
+              {hasChildren && <ChevronDown size={14} style={{ color: 'currentColor', opacity: 0.7 }} />}
             </Link>
 
             {hasChildren && openID === node.id && (

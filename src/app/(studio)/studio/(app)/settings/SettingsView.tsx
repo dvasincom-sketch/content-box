@@ -10,6 +10,7 @@ import { PagesPanel } from './PagesPanel'
 import { HomeBuilder } from './HomeBuilder'
 import { TemplatesPanel } from './TemplatesPanel'
 import { ImageUploadField } from './ImageUploadField'
+import { BgDecorPicker } from './BgDecorPicker'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
@@ -56,6 +57,7 @@ export function SettingsView({
   ogImageUrl,
   savedTemplates,
   appliedTemplate,
+  bgDecor,
   members,
   isOwner,
 }: {
@@ -67,6 +69,7 @@ export function SettingsView({
   homeSections: HomeSectionConfig[]
   savedTemplates: HomeSavedTemplate[]
   appliedTemplate: string | null
+  bgDecor: string | null
   members: Member[]
   isOwner: boolean
 }) {
@@ -109,6 +112,7 @@ export function SettingsView({
                 <ImageUploadField field="ogImage" title="Картинка для соцсетей (OG)" hint="Рекомендуется 1200×630. Показывается при отправке ссылки в мессенджерах." initialUrl={ogImageUrl} compact />
               </div>
             </section>
+            <BgDecorPicker initial={bgDecor} />
           </>
         )}
         {tab === 'home' && <HomeBlock homeSections={homeSections} />}

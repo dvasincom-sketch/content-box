@@ -16,6 +16,7 @@ import { BroadcastBannerBlock } from '@/blocks/BroadcastBannerBlock'
 import { AuthorSpotlightBlock } from '@/blocks/AuthorSpotlightBlock'
 import { CarouselBlock } from '@/blocks/CarouselBlock'
 import { PosterGridBlock } from '@/blocks/PosterGridBlock'
+import { PhotoShowcaseBlock } from '@/blocks/PhotoShowcaseBlock'
 import { buildMetadata } from '@/lib/seo'
 import { categoryHref } from '@/lib/categoryHref'
 import { publishedWhere } from '@/lib/published'
@@ -362,6 +363,32 @@ export default async function HomePage() {
         const heading = s.config?.heading || sd.heading
         const items = await resolveListItems(payload, tenant.id as number, s.config?.source, sd.fallback)
         return <Fragment key={key}>{sd.render(heading, items)}</Fragment>
+      }
+      if (s.type === 'photoShowcase') {
+        const fid = s.config?.galleryFolderId
+        if (!fid) return null
+        const [folderRes, imgRes] = await Promise.all([
+          payload.find({ collection: 'gallery-folders', where: { and: [{ tenant: { equals: tenant.id } }, { id: { equals: fid } }] }, limit: 1, depth: 0, overrideAccess: true }),
+          payload.find({ collection: 'gallery-images', where: { and: [{ tenant: { equals: tenant.id } }, { folder: { equals: fid } }] }, limit: 24, depth: 0, overrideAccess: true }),
+        ])
+        const folder = folderRes.docs[0] as any
+        const imgs = imgRes.docs as any[]
+        if (!folder || imgs.length === 0) return null
+        const pick = imgs[Math.floor(Math.random() * imgs.length)] as any
+        const url = pick?.sizes?.large?.url || pick?.url || null
+        if (!url) return null
+        return (
+          <Fragment key={key}>
+            <PhotoShowcaseBlock
+              imageUrl={url}
+              alt={pick.alt || ''}
+              folderTitle={folder.title || 'Галерея'}
+              folderSlug={folder.slug || String(fid)}
+              heading={s.config?.heading}
+              count={imgRes.totalDocs}
+            />
+          </Fragment>
+        )
       }
       const r = renderers[s.type]
       return <Fragment key={key}>{r ? r(s) : null}</Fragment>

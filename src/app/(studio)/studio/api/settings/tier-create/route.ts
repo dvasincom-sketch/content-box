@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { logActivity } from '@/lib/logActivity'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -41,6 +42,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       } as any,
       overrideAccess: true,
     })
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'create', entity: 'тариф', title: 'Тариф подписки' })
     return apiOk({ id: doc.id })
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось создать уровень'))

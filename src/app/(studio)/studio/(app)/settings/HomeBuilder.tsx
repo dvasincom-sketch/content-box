@@ -55,13 +55,14 @@ const CONFIGURABLE: Partial<Record<HomeSectionType, { source: boolean }>> = {
   popularCategories: { source: false },
   carousel: { source: true },
   posterGrid: { source: true },
+  photoShowcase: { source: false },
 }
 
 /**
  * Секции, которые можно добавлять несколько раз (напр. две ленты «Последние
  * публикации» из разных категорий). Остальные — синглтоны (один Hero и т.п.).
  */
-const DUPLICABLE = new Set<HomeSectionType>(['news', 'latest', 'popular', 'discussed', 'carousel', 'posterGrid'])
+const DUPLICABLE = new Set<HomeSectionType>(['news', 'latest', 'popular', 'discussed', 'carousel', 'posterGrid', 'photoShowcase'])
 
 /** Варианты источника контента для списочных секций (UI-лейблы). */
 const SOURCE_KIND_LABELS: { value: HomeSourceKind; label: string }[] = [
@@ -147,6 +148,8 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
   // панели настроек списочной секции.
   const [cats, setCats] = useState<CatItem[] | null>(null)
   const [catsLoading, setCatsLoading] = useState(false)
+  const [folders, setFolders] = useState<{ id: number; title: string }[] | null>(null)
+  const [foldersLoading, setFoldersLoading] = useState(false)
   const flatCats = useMemo(() => (cats ? flattenCats(cats) : []), [cats])
 
   const EditorPanel = editingType ? SECTION_EDITORS[editingType] : undefined
@@ -164,6 +167,16 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
       })
       .catch(() => setCats([]))
       .finally(() => setCatsLoading(false))
+  }
+
+  function loadFolders() {
+    if (folders || foldersLoading) return
+    setFoldersLoading(true)
+    fetch('/studio/api/settings/gallery-folders-list', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((res) => setFolders(Array.isArray(res?.folders) ? res.folders : []))
+      .catch(() => setFolders([]))
+      .finally(() => setFoldersLoading(false))
   }
 
   function toggle(i: number) {
@@ -293,6 +306,7 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
                       const next = isOpen ? null : row._uid
                       setConfigUid(next)
                       if (next && conf.source) loadCats()
+                      if (next && row.type === 'photoShowcase') loadFolders()
                     }}
                     title="Настройки секции (заголовок, источник)"
                     aria-expanded={isOpen}
@@ -352,6 +366,25 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
                       onChange={(e) => patchConfig(row._uid, { heading: e.target.value })}
                     />
                   </label>
+
+                  {row.type === 'photoShowcase' && (
+                    <label className="studio-field">
+                      <span className="studio-field__label">Папка галереи</span>
+                      <select
+                        className="studio-input"
+                        value={row.config?.galleryFolderId != null ? String(row.config.galleryFolderId) : ''}
+                        onChange={(ev) => patchConfig(row._uid, { galleryFolderId: ev.target.value ? Number(ev.target.value) : null })}
+                      >
+                        <option value="">{foldersLoading ? 'Загрузка…' : '— выберите папку —'}</option>
+                        {(folders ?? []).map((f) => (
+                          <option key={f.id} value={String(f.id)}>{f.title}</option>
+                        ))}
+                      </select>
+                      <span style={{ fontSize: 12, color: 'var(--st-text-muted)', marginTop: 4 }}>
+                        Случайное фото из папки на весь экран + кнопка «Смотреть галерею».
+                      </span>
+                    </label>
+                  )}
 
                   {conf.source && (
                     <>

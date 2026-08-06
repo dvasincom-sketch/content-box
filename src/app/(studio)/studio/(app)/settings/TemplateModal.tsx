@@ -87,6 +87,7 @@ export function TemplateModal({
 
   const panel = (
     <div
+      className="studio-portal"
       onClick={() => !busy && onClose()}
       style={{
         position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)',

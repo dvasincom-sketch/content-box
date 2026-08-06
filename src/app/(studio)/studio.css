@@ -5160,3 +5160,39 @@ a.session-expired__btn {
 .actlog__text { font-size: var(--st-text-sm); color: var(--st-text); }
 .actlog__text b { font-weight: 600; }
 .actlog__time { font-size: var(--st-text-xs); color: var(--st-text-faint); white-space: nowrap; flex-shrink: 0; }
+
+/* Выбор фонового декора (Оформление) */
+.bgdecor__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--st-space-3); }
+.bgdecor__card {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: var(--st-space-3);
+  background: var(--st-surface-2);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  cursor: pointer;
+  transition: border-color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease);
+}
+.bgdecor__card:hover { border-color: var(--st-border-strong); }
+.bgdecor__card.is-active { border-color: var(--st-accent); background: var(--st-surface-hover); }
+.bgdecor__thumb {
+  width: 100%; height: 54px; border-radius: 6px;
+  background-color: var(--st-text-muted);
+  -webkit-mask-repeat: repeat; mask-repeat: repeat;
+  -webkit-mask-size: 34px; mask-size: 34px;
+  -webkit-mask-position: center; mask-position: center;
+}
+.bgdecor__thumb--none {
+  display: grid; place-items: center;
+  background: transparent; color: var(--st-text-faint);
+  border: 1px dashed var(--st-border-strong);
+  -webkit-mask: none; mask: none;
+}
+.bgdecor__label { font-size: var(--st-text-xs); color: var(--st-text); text-align: center; }
+.bgdecor__check {
+  position: absolute; top: 6px; right: 6px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--st-accent); color: var(--st-accent-text);
+  display: grid; place-items: center;
+}
+@media (max-width: 640px) { .bgdecor__grid { grid-template-columns: repeat(3, 1fr); } }

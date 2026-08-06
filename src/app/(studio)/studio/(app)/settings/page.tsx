@@ -64,6 +64,7 @@ export default async function SettingsPage() {
   const homeSections = normalizeHomeSections(settings?.homeSections)
   const savedTemplates = Array.isArray(settings?.savedTemplates) ? (settings.savedTemplates as any[]) : []
   const appliedTemplate = (settings?.appliedTemplate as string | null) ?? null
+  const bgDecor = ((settings as { bgDecor?: string } | null)?.bgDecor as string | null) ?? null
 
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     id: t.id,
@@ -103,6 +104,7 @@ export default async function SettingsPage() {
       homeSections={homeSections}
       savedTemplates={savedTemplates}
       appliedTemplate={appliedTemplate}
+      bgDecor={bgDecor}
       members={members}
       isOwner={isOwner}
     />

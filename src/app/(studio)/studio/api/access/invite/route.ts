@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { logActivity } from '@/lib/logActivity'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -71,6 +72,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     } catch (e: unknown) {
       return apiError(errorMessage(e, 'Не удалось обновить приглашение'), 500)
     }
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'invite', entity: 'участника', title: email })
     return apiOk({ inviteUrl, email, expiresAt, reactivated: true })
   }
 
@@ -93,5 +95,6 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     return apiError(errorMessage(e, 'Не удалось создать приглашение'), 500)
   }
 
+  await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'invite', entity: 'участника', title: email })
   return apiOk({ inviteUrl, email, expiresAt })
 })

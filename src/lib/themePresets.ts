@@ -19,6 +19,8 @@ export type PresetColors = {
   primary: string
   accent: string
   text: string
+  /** Необязательный цвет шапки (если пресет хочет шапку, отличную от фона). */
+  header?: string
 }
 
 /** Ключи шрифтов — совпадают с FONT_STACK ниже и с @font-face (fonts.css / pt-serif.css). */
@@ -48,6 +50,8 @@ export type ThemePreset = {
   lightName: string
   dark: PresetColors
   light: PresetColors
+  /** Необязательный фоновый декор пресета (напр. 'palms' — пальмы по бокам). */
+  decor?: 'palms'
 }
 
 /** CSS-стек по ключу шрифта. Семейства совпадают с @font-face (@fontsource + PT Serif). */
@@ -109,15 +113,17 @@ export const THEME_PRESETS: ThemePreset[] = [
     light: { bg: '#F4F6F8', surface: '#FFFFFF', primary: '#00D084', accent: '#0969DA', text: '#1F2328' },
   },
   {
-    id: 'velvet-resonance',
-    name: 'Бархатный резонанс',
-    subtitleEn: 'Deep Plum & Brass',
-    niche: 'вокал, актёрское мастерство, опера, классика/джаз, премиальные мастер-классы',
-    fonts: { heading: 'ptserif', body: 'ptsans' },
-    darkName: 'Закулисье',
-    lightName: 'Утренний бархат',
-    dark: { bg: '#140C1A', surface: '#23152C', primary: '#E5C158', accent: '#B83282', text: '#FAF4FB' },
-    light: { bg: '#F8F5F8', surface: '#EEE6F0', primary: '#D4AF37', accent: '#80235C', text: '#211125' },
+    id: 'tropic-sunset',
+    name: 'Тропический закат',
+    subtitleEn: 'Palm Sunset',
+    niche: 'фандом, музыкальные и летние проекты, тропический/яркий бренд, лайфстайл',
+    fonts: { heading: 'ptserif', body: 'golos' },
+    darkName: 'Пальмовый вечер',
+    lightName: 'Кокосовый рассвет',
+    // Фиолетовый фон + оранжевые акценты и шапка; пальмы по бокам (decor).
+    dark: { bg: '#1A0E29', surface: '#271640', primary: '#F97316', accent: '#A78BFA', text: '#FCF4EC', header: '#F97316' },
+    light: { bg: '#F6F0FA', surface: '#FFFFFF', primary: '#EA6A0D', accent: '#7C3AED', text: '#241033', header: '#FB8C2E' },
+    decor: 'palms',
   },
   {
     id: 'amber-pulse',
@@ -167,6 +173,7 @@ export function getPreset(id?: string | null): ThemePreset {
 export function presetThemeCss(presetId?: string | null): string {
   const p = getPreset(presetId)
   const vars = (c: PresetColors) =>
-    `--brand-bg:${c.bg};--brand-surface:${c.surface};--brand-text:${c.text};--brand-primary:${c.primary};--brand-accent:${c.accent}`
+    `--brand-bg:${c.bg};--brand-surface:${c.surface};--brand-text:${c.text};--brand-primary:${c.primary};--brand-accent:${c.accent}` +
+    (c.header ? `;--brand-header:${c.header}` : '')
   return `.theme-dark{${vars(p.dark)}}.theme-light{${vars(p.light)}}`
 }

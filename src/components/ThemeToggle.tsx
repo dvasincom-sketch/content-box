@@ -30,7 +30,7 @@ export function ThemeToggle() {
         type="button"
         aria-label={label}
         onClick={toggle}
-        className="c-btn c-btn--surface c-btn--icon c-spotlight"
+        className="c-btn c-btn--ghost c-btn--icon c-spotlight"
       >
         {mounted && theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
       </button>

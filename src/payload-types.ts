@@ -298,7 +298,27 @@ export interface SiteSetting {
   /**
    * Готовый пресет: палитра (светлая + тёмная версии) и пара шрифтов уже подобраны под нишу. Выбирается в Студии.
    */
-  themePreset?: ('neon-dawn' | 'warm-earth' | 'digital-monolith' | 'velvet-resonance' | 'amber-pulse' | 'frost') | null;
+  themePreset?: ('neon-dawn' | 'warm-earth' | 'digital-monolith' | 'tropic-sunset' | 'amber-pulse' | 'frost') | null;
+  /**
+   * Фоновые объекты из библиотеки (пальмы, звёзды, горы и т.д.) — приглушённо, в цвете темы, за контентом. Выбирается в Студии.
+   */
+  bgDecor?:
+    | (
+        | 'none'
+        | 'palms'
+        | 'mountains'
+        | 'city'
+        | 'forest'
+        | 'waves'
+        | 'stars'
+        | 'hearts'
+        | 'snowflakes'
+        | 'notes'
+        | 'confetti'
+        | 'sakura'
+        | 'bubbles'
+      )
+    | null;
   savedTemplates?:
     | {
         [k: string]: unknown;
@@ -385,6 +405,7 @@ export interface SiteSetting {
           | 'popular'
           | 'discussed'
           | 'posterRows'
+          | 'photoShowcase'
           | 'categories'
           | 'popularCategories'
           | 'whyUs'
@@ -1334,7 +1355,7 @@ export interface StudioActivity {
   id: number;
   tenant?: (number | null) | Tenant;
   user?: (number | null) | User;
-  action?: ('login' | 'create' | 'update' | 'delete') | null;
+  action?: ('login' | 'create' | 'invite' | 'update' | 'delete') | null;
   entity?: string | null;
   title?: string | null;
   updatedAt: string;
@@ -1730,6 +1751,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   logo?: T;
   appIcon?: T;
   themePreset?: T;
+  bgDecor?: T;
   savedTemplates?: T;
   appliedTemplate?: T;
   theme?:

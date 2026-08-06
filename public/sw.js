@@ -4,7 +4,7 @@
  * API, студию, админку, видео и оптимизацию картинок — НИКОГДА не кэшируем.
  * SW скоупится по origin, поэтому кэш разных тенантов не смешивается.
  */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const STATIC_CACHE = `static-${VERSION}`;
 const OFFLINE_URL = '/offline';
 
@@ -88,15 +88,20 @@ async function handleNavigate(req) {
 function reconnecting() {
   const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Переподключаемся…</title><style>
+<title>Переподключаемся…</title>
+<script>
+(function(){try{var m=localStorage.getItem('theme');if(m!=='light'&&m!=='dark')m='dark';var d={};try{d=JSON.parse(localStorage.getItem('cb-brand')||'{}')||{};}catch(e){}var v=d[m]||{};var st=document.documentElement.style;if(v.bg)st.setProperty('--rbg',v.bg);if(v.text)st.setProperty('--rtext',v.text);if(v.primary)st.setProperty('--racc',v.primary);}catch(e){}})();
+</script>
+<style>
 html,body{height:100%;margin:0}
-body{display:flex;align-items:center;justify-content:center;background:#0F0A1E;color:#EDE9FE;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+:root{--rbg:#0F0A1E;--rtext:#EDE9FE;--racc:#7C3AED}
+body{display:flex;align-items:center;justify-content:center;background:var(--rbg);color:var(--rtext);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 .box{max-width:360px;text-align:center;padding:24px}
-.sp{width:34px;height:34px;margin:0 auto 18px;border:3px solid rgba(255,255,255,.15);border-top-color:#7C3AED;border-radius:50%;animation:s 1s linear infinite}
+.sp{width:34px;height:34px;margin:0 auto 18px;border:3px solid rgba(128,128,128,.28);border-top-color:var(--racc);border-radius:50%;animation:s 1s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}
 h1{font-size:18px;margin:0 0 8px;font-weight:700}
-p{margin:0 0 18px;color:#B5A9D6;font-size:14px;line-height:1.5}
-button{background:#7C3AED;color:#fff;border:0;border-radius:10px;padding:10px 18px;font-size:14px;cursor:pointer}
+p{margin:0 0 18px;color:var(--rtext);opacity:.65;font-size:14px;line-height:1.5}
+button{background:var(--racc);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-size:14px;cursor:pointer}
 </style></head><body><div class="box">
 <div class="sp"></div>
 <h1>Переподключаемся к серверу</h1>

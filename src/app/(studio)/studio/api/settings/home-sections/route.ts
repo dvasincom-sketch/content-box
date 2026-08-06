@@ -1,6 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { isHomeSectionType, sanitizeSectionConfig } from '@/lib/homeSections'
 import { errorMessage } from '@/lib/errorMessage'
+import { logActivity } from '@/lib/logActivity'
 
 /**
  * Сохранение конфигурации секций главной. SiteSettings — одна запись на тенант
@@ -55,6 +56,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       data: { homeSections } as any,
       overrideAccess: true,
     })
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'update', entity: 'homepage', title: 'Секции главной' })
     return apiOk()
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось сохранить'))

@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { logActivity } from '@/lib/logActivity'
 
 /**
  * Удаление уровня подписки. Проверяем принадлежность тенанту.
@@ -26,6 +27,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
   try {
     await payload.delete({ collection: 'subscription-tiers', id, overrideAccess: true })
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'delete', entity: 'тариф', title: 'Тариф подписки' })
     return apiOk()
   } catch {
     return apiError('Не удалось удалить — возможно, на уровень ссылаются видео или подписчики')

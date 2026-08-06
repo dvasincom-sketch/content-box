@@ -32,6 +32,7 @@ export function ConfirmDialog({
 
   const body = (
     <div
+      className="studio-portal"
       onClick={() => !busy && onCancel()}
       style={{ position: 'fixed', inset: 0, zIndex: 1200, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
     >

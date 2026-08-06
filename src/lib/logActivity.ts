@@ -1,7 +1,7 @@
 import type { Payload } from 'payload'
 
 /** Тип действия в журнале студии. */
-export type ActivityAction = 'login' | 'create' | 'update' | 'delete'
+export type ActivityAction = 'login' | 'create' | 'update' | 'delete' | 'invite'
 
 /** id связи независимо от depth (число/строка или populated-объект). */
 function relId(v: unknown): number | null {
@@ -44,11 +44,20 @@ export async function logActivity(
 export function activityAfterChange(entity: string) {
   return async ({ doc, req, operation }: any) => {
     if (operation !== 'create' && operation !== 'update') return
-    const user = req?.user
-    if (!user?.id) return
-    await logActivity(req.payload, {
-      tenant: doc?.tenant ?? user.tenant,
-      user: user.id,
+    const payload = req?.payload
+    if (!payload) return
+    // Действия в студии идут через серверные роуты с overrideAccess БЕЗ req.user,
+    // поэтому актёра берём из req.user, а если его нет — из doc.owner (роуты
+    // штампуют владельца при создании). Так лог наполняется и через кастомные роуты.
+    // Апдейты без реального пользователя (автообновления статуса видео и т.п.)
+    // не логируем — иначе лента засоряется служебными правками.
+    if (operation === 'update' && !req?.user?.id) return
+    const actor = relId(req?.user?.id) ?? relId(doc?.owner)
+    const tenant = relId(doc?.tenant) ?? relId(req?.user?.tenant)
+    if (!actor || !tenant) return
+    await logActivity(payload, {
+      tenant,
+      user: actor,
       action: operation,
       entity,
       title: doc?.title || doc?.name || '',
@@ -59,11 +68,14 @@ export function activityAfterChange(entity: string) {
 /** Хук afterDelete коллекции: логирует удаление контента. */
 export function activityAfterDelete(entity: string) {
   return async ({ doc, req }: any) => {
-    const user = req?.user
-    if (!user?.id) return
-    await logActivity(req.payload, {
-      tenant: doc?.tenant ?? user.tenant,
-      user: user.id,
+    const payload = req?.payload
+    if (!payload) return
+    const actor = relId(req?.user?.id) ?? relId(doc?.owner)
+    const tenant = relId(doc?.tenant) ?? relId(req?.user?.tenant)
+    if (!actor || !tenant) return
+    await logActivity(payload, {
+      tenant,
+      user: actor,
       action: 'delete',
       entity,
       title: doc?.title || doc?.name || '',

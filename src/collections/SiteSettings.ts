@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID, tenantScoped } from '../access'
 import { HOME_SECTION_OPTIONS } from '../lib/homeSections'
 import { PRESET_SELECT_OPTIONS, DEFAULT_PRESET_ID } from '../lib/themePresets'
+import { BG_DECOR_OPTIONS } from '../lib/bgDecors'
 
 /**
  * SiteSettings (ТЗ §3.3) — one record per tenant (branding, theme, SEO
@@ -48,6 +49,17 @@ export const SiteSettings: CollectionConfig = {
       admin: {
         description:
           'Готовый пресет: палитра (светлая + тёмная версии) и пара шрифтов уже подобраны под нишу. Выбирается в Студии.',
+      },
+    },
+    {
+      name: 'bgDecor',
+      type: 'select',
+      label: 'Фоновый декор',
+      defaultValue: 'none',
+      options: BG_DECOR_OPTIONS,
+      admin: {
+        description:
+          'Фоновые объекты из библиотеки (пальмы, звёзды, горы и т.д.) — приглушённо, в цвете темы, за контентом. Выбирается в Студии.',
       },
     },
     {

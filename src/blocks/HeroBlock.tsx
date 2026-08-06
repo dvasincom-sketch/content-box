@@ -52,8 +52,11 @@ export function HeroBlock({ eyebrow, titleLines, chips = [], slides = [] }: Hero
         <HeroFeaturedSlider slides={slides} />
       ) : (
         <div className="relative rounded-[var(--radius-lg)] overflow-hidden min-h-[340px] flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}>
-          <p className="text-white/80">Нет публикаций</p>
+          style={{
+            background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 20%, var(--brand-surface)), color-mix(in srgb, var(--brand-accent) 16%, var(--brand-surface)))',
+            border: '1px solid var(--brand-border)',
+          }}>
+          <p style={{ color: 'var(--brand-text)', opacity: 0.55, fontSize: 14 }}>Нет публикаций</p>
         </div>
       )}
     </section>

@@ -26,7 +26,9 @@ import { SpotlightController } from '@/components/SpotlightController'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { THEME_INIT } from '@/lib/themeInit'
+import { BRAND_CACHE } from '@/lib/brandCache'
 import { presetThemeCss, getPreset } from '@/lib/themePresets'
+import { getBgDecor } from '@/lib/bgDecors'
 import { PWARegister } from '@/components/PWARegister'
 import { BugReportWidget } from '@/components/BugReportWidget'
 
@@ -85,7 +87,11 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const logo = settings?.logo
   const logoUrl = logo && typeof logo === 'object' ? logo.url : null
   const logoAlt = logo && typeof logo === 'object' ? logo.alt : null
-  const themeColor = getPreset(settings?.themePreset).light.bg
+  const preset = getPreset(settings?.themePreset)
+  // Фоновый декор: выбор автора (bgDecor) приоритетнее дефолта пресета (preset.decor).
+  const decorSlug = (settings as { bgDecor?: string } | null)?.bgDecor
+  const decor = getBgDecor(decorSlug && decorSlug !== 'none' ? decorSlug : preset.decor)
+  const themeColor = preset.light.bg
   const legalName = tenant?.name ?? ''
   const year = new Date().getFullYear()
   const copyrightText = legalName
@@ -107,6 +113,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         {/* Цвета выбранного пресета: обе версии (.theme-dark/.theme-light),
             scoped by class. Тумблер темы флипает класс — применяется мгновенно. */}
         <style dangerouslySetInnerHTML={{ __html: presetThemeCss(settings?.themePreset) }} />
+        {/* Кэш бренд-цветов для экрана переподключения из service worker */}
+        <script dangerouslySetInnerHTML={{ __html: BRAND_CACHE }} />
         {/* PWA: динамический манифест на тенанта, иконки и мета для установки */}
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="theme-color" content={themeColor} />
@@ -118,6 +126,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-title" content={tenant?.name ?? 'Content Box'} />
       </head>
       <body
+        className={`preset-${preset.id}`}
         style={{
           ...brandVars(settings),
           background: 'var(--brand-bg)',
@@ -129,6 +138,16 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
           minHeight: '100vh',
         }}
       >
+        {decor && (
+          <div
+            className={`bg-decor bg-decor--${decor.kind}`}
+            style={{ '--decor-img': `url(/theme/decor/${decor.slug}.svg)` } as React.CSSProperties}
+            aria-hidden
+          >
+            <span className="bg-decor__a" />
+            <span className="bg-decor__b" />
+          </div>
+        )}
         <SpotlightController />
         <PWARegister />
         {ctx && (
