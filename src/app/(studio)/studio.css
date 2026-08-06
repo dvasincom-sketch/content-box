@@ -4805,6 +4805,13 @@ a.session-expired__btn {
   padding: var(--st-space-4) var(--st-space-5) var(--st-space-5);
   overflow: auto;
   flex: 1;
+  /* Флекс-ребёнок в колонке .seclib: без min-height:0 сетка не сжимается и не
+     скроллит, а распихивает все карточки в доступную высоту, сжимая строки
+     (prev 118px схлопывался до ~25px, тело обрезалось). align-content:start +
+     grid-auto-rows:max-content держат строки по контенту, overflow:auto скроллит. */
+  min-height: 0;
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 .seclib__card {
   background: var(--st-surface-2);
@@ -4892,18 +4899,18 @@ a.session-expired__btn {
   gap: 6px;
   height: 100%;
 }
-.skel-col { flex-direction: column; }
-.skel-row { flex-direction: row; align-items: center; }
+.skel-col { display: flex; flex-direction: column; gap: 6px; }
+.skel-row { display: flex; flex-direction: row; align-items: center; gap: 6px; }
 .skel-b { background: var(--sk); border-radius: 5px; }
-.skel-b--a { background: linear-gradient(135deg, var(--st-accent), color-mix(in srgb, var(--st-accent) 45%, transparent)); }
+.skel-b--a { background: linear-gradient(135deg, var(--sk2), var(--sk)); }
 .skel-line { height: 7px; border-radius: 4px; background: var(--sk2); }
 .skel-poster { border-radius: 6px; background: var(--sk); }
 .skel-tile { border-radius: 6px; background: var(--sk); }
 .skel-circle { border-radius: 999px; background: var(--sk); }
 .skel-prog { height: 9px; border-radius: 999px; background: var(--sk); overflow: hidden; }
-.skel-prog > i { display: block; height: 100%; background: var(--st-accent); }
-.skel-rank { width: 14px; height: 14px; border-radius: 4px; background: var(--st-accent); flex: none; }
-.skel-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--st-accent); flex: none; }
+.skel-prog > i { display: block; height: 100%; background: var(--sk2); }
+.skel-rank { width: 14px; height: 14px; border-radius: 4px; background: var(--sk2); flex: none; }
+.skel-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--sk2); flex: none; }
 .skel-pill { height: 14px; border-radius: 999px; background: var(--sk); }
 
 @media (max-width: 560px) {

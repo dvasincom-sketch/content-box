@@ -32,7 +32,7 @@ export function SectionSkeleton({ kind }: { kind: SectionPreview }) {
       )
     case 'spotlight':
       return (
-        <div className="skel skel-row" style={{ height: '100%', gap: 10 }}>
+        <div className="skel skel-row" style={{ height: '100%', gap: 10, alignItems: 'stretch' }}>
           <div style={{ flex: 1 }}>
             <div className="skel-row">
               <div className="skel-circle" style={{ width: 30, height: 30 }} />
@@ -160,7 +160,7 @@ export function SectionSkeleton({ kind }: { kind: SectionPreview }) {
       return (
         <div className="skel skel-row" style={{ gap: 6, alignItems: 'stretch' }}>
           {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="skel-col">
+            <div key={i} className="skel-col" style={{ flex: 1 }}>
               <div className="skel-circle" style={{ width: 22, height: 22 }} />
               {lines(2)}
             </div>
@@ -194,7 +194,7 @@ export function SectionSkeleton({ kind }: { kind: SectionPreview }) {
             <div
               key={i}
               className="skel-col"
-              style={{ border: '1px solid var(--st-border)', borderRadius: 8, padding: 8, gap: 6 }}
+              style={{ flex: 1, border: '1px solid var(--st-border)', borderRadius: 8, padding: 8, gap: 6 }}
             >
               <div className="skel-b skel-b--a" style={{ width: 14, height: 14 }} />
               {lines(3)}
@@ -210,7 +210,8 @@ export function SectionSkeleton({ kind }: { kind: SectionPreview }) {
               key={i}
               className="skel-col"
               style={{
-                border: `1px solid ${i === 1 ? 'var(--st-accent)' : 'var(--st-border)'}`,
+                flex: 1,
+                border: `1px solid ${i === 1 ? 'var(--st-border-strong)' : 'var(--st-border)'}`,
                 borderRadius: 8,
                 padding: 8,
                 gap: 6,
@@ -220,7 +221,7 @@ export function SectionSkeleton({ kind }: { kind: SectionPreview }) {
               <div className="skel-b skel-b--a" style={{ width: '45%', height: 10 }} />
               <div
                 className="skel-prog"
-                style={{ marginTop: 'auto', height: 16, background: i === 1 ? 'var(--st-accent)' : 'var(--sk)' }}
+                style={{ marginTop: 'auto', height: 16, background: 'var(--sk2)' }}
               />
             </div>
           ))}
