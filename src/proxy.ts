@@ -155,6 +155,12 @@ export async function proxy(request: NextRequest) {
       // public/ в роутер, rewrite не должен донести клиентский x-tenant-id.
       return NextResponse.rewrite(url, { request: { headers: safeHeaders } })
     }
+    // Журнал обновлений — статическая страница в стиле лендинга, чистый адрес.
+    if (pathname === '/update' || pathname === '/update/') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/update.html'
+      return NextResponse.rewrite(url, { request: { headers: safeHeaders } })
+    }
     // Прочие пути (кроме уже пропущенных /studio, /admin, /api) — как есть.
     return passthrough()
   }

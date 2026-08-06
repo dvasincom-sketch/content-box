@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Обновления — Контент Бокс</title>
+<meta name="description" content="Как развивается Контент Бокс: все возможности платформы для авторов по версиям — от беты до конструктора сайтов.">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="canonical" href="https://contentbox.site/update">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Контент Бокс">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:url" content="https://contentbox.site/update">
+<meta property="og:title" content="Обновления Контент Бокс">
+<meta property="og:description" content="Все возможности платформы для авторов — по версиям. Платформа развивается очень быстро.">
+<meta property="og:image" content="https://contentbox.site/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .theme-dark {
+    --bg:#0a0a0b; --surface:#131316; --surface-2:#1a1a1e; --surface-hover:#202027;
+    --border:#26262c; --border-strong:#35353d;
+    --text:#f4f4f5; --muted:#a1a1aa; --faint:#6b6b74;
+    --accent:#ffffff; --accent-text:#0a0a0b; --accent-hover:#e4e4e7;
+    --success:#4ade80; --danger:#f87171; --warning:#fbbf24;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 20px 50px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+  .theme-light {
+    --bg:#fafafa; --surface:#ffffff; --surface-2:#f4f4f5; --surface-hover:#ececee;
+    --border:#e4e4e7; --border-strong:#d4d4d8;
+    --text:#18181b; --muted:#52525b; --faint:#a1a1aa;
+    --accent:#18181b; --accent-text:#ffffff; --accent-hover:#27272a;
+    --success:#16a34a; --danger:#dc2626; --warning:#d97706;
+    --shadow:0 1px 2px rgba(0,0,0,.06), 0 20px 50px rgba(0,0,0,.10);
+    color-scheme:light;
+  }
+  :root {
+    --sans:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    --ease:cubic-bezier(.4,0,.2,1);
+    --radius-sm:6px; --radius:10px; --radius-lg:14px;
+    --maxw:840px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+  a{color:inherit}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 20px}
+
+  .top{position:sticky; top:0; z-index:20; background:color-mix(in srgb,var(--bg) 82%,transparent); backdrop-filter:blur(20px) saturate(1.4); border-bottom:1px solid var(--border)}
+  .top__in{display:flex; align-items:center; justify-content:space-between; height:60px}
+  .logo{display:inline-flex; align-items:center; gap:9px; font-weight:700; font-size:16px; text-decoration:none; color:var(--text)}
+  .logo__mono{font-family:var(--mono); font-weight:500}
+  .logo__mark{display:inline-flex; width:26px; height:26px; color:var(--text)}
+  .top__right{display:flex; align-items:center; gap:8px}
+  .ghost{display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border:1px solid var(--border-strong); border-radius:var(--radius); background:transparent; color:var(--text); font:inherit; font-size:14px; font-weight:600; text-decoration:none; cursor:pointer; transition:background .15s var(--ease)}
+  .ghost:hover{background:var(--surface-hover)}
+  .icon-btn{width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border-strong); border-radius:var(--radius); background:transparent; color:var(--text); cursor:pointer}
+  .icon-btn svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+
+  .hero{padding:64px 0 44px; border-bottom:1px solid var(--border)}
+  .kicker{font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:14px}
+  .hero h1{font-size:clamp(30px,6vw,46px); line-height:1.05; letter-spacing:-.02em; margin:0 0 16px; font-weight:700}
+  .hero p{font-size:17px; color:var(--muted); max-width:62ch; margin:0}
+
+  .stream{padding:8px 0 40px}
+
+  /* эпоха (крупная веха версий) */
+  .epoch{padding:40px 0 6px}
+  .epoch:first-child{padding-top:34px}
+  .epoch__tag{font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin-bottom:10px}
+  .epoch__title{font-size:clamp(22px,4vw,30px); font-weight:700; letter-spacing:-.02em; margin:0 0 12px}
+  .epoch__lead{font-size:15.5px; color:var(--muted); max-width:66ch; margin:0 0 6px; line-height:1.6}
+  .epoch__rule{height:1px; background:linear-gradient(90deg,var(--border-strong),transparent); margin-top:22px}
+
+  .rel{display:grid; grid-template-columns:120px 1fr; gap:22px; padding:22px 0; border-bottom:1px solid var(--border)}
+  .rel:last-child{border-bottom:none}
+  .rel__ver{font-family:var(--mono); font-size:19px; font-weight:600; letter-spacing:-.01em; color:var(--text); position:sticky; top:76px}
+  .rel__body h3{font-size:18px; margin:0 0 2px; font-weight:700; letter-spacing:-.01em}
+  .tags{display:flex; flex-wrap:wrap; gap:6px; margin:9px 0 12px}
+  .tag{font-family:var(--mono); font-size:10.5px; font-weight:500; padding:2px 8px; border-radius:99px; border:1px solid var(--border-strong); color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+  .tag--feature{color:var(--success); border-color:color-mix(in srgb,var(--success) 45%,var(--border))}
+  .tag--improve{color:var(--warning); border-color:color-mix(in srgb,var(--warning) 45%,var(--border))}
+  .tag--milestone{color:var(--accent-text); background:var(--accent); border-color:transparent; font-weight:600}
+  .changes{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px}
+  .changes li{position:relative; padding-left:20px; font-size:15px; color:var(--text)}
+  .changes li::before{content:""; position:absolute; left:4px; top:9px; width:6px; height:6px; border-radius:2px; background:var(--accent); opacity:.5}
+  .mkt{margin-top:15px; padding:13px 15px; border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border)); border-radius:var(--radius); background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+  .mkt__h{font-size:12px; font-weight:700; letter-spacing:.02em; margin-bottom:5px; display:flex; align-items:center; gap:6px}
+  .mkt__h svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2}
+  .mkt__b{font-size:13.5px; color:var(--muted); line-height:1.55}
+
+  /* альфа-блок */
+  .alpha{margin:38px 0 8px; padding:22px 22px; border:1px dashed var(--border-strong); border-radius:var(--radius-lg); background:var(--surface)}
+  .alpha__tag{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin-bottom:8px}
+  .alpha h3{font-size:17px; margin:0 0 6px; font-weight:700}
+  .alpha p{font-size:14.5px; color:var(--muted); margin:0; max-width:66ch; line-height:1.6}
+
+  @media (max-width:640px){
+    .rel{grid-template-columns:1fr; gap:8px}
+    .rel__ver{position:static; font-size:22px}
+  }
+
+  .foot{border-top:1px solid var(--border); padding:30px 0 44px}
+  .foot__in{display:flex; flex-wrap:wrap; align-items:center; gap:14px; justify-content:space-between}
+  .foot__links{display:flex; flex-wrap:wrap; gap:18px}
+  .foot__links a{color:var(--muted); text-decoration:none; font-size:14px}
+  .foot__links a:hover{color:var(--text)}
+  .foot__copy{color:var(--faint); font-size:13px}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top__in">
+      <a class="logo" href="/">
+        <span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span>
+        Контент&nbsp;<span class="logo__mono">Бокс</span>
+      </a>
+      <div class="top__right">
+        <a class="ghost" href="/">На главную</a>
+        <button class="icon-btn" id="themeBtn" aria-label="Сменить тему"><svg id="themeIcon" viewBox="0 0 24 24"></svg></button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="kicker">Журнал обновлений</div>
+      <h1>Что умеет Контент&nbsp;Бокс</h1>
+      <p>Платформа развивается очень быстро — новые возможности для авторов выходят почти каждый день. Ниже — как менялись функции от версии к версии: от первого запуска до конструктора сайтов.</p>
+    </div>
+  </section>
+
+  <main class="stream">
+    <div class="wrap" id="list"></div>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot__in">
+      <a class="logo" href="/"><span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span>Контент&nbsp;<span class="logo__mono">Бокс</span></a>
+      <div class="foot__links">
+        <a href="/update">Обновления</a><a href="/oferta.html">Оферта</a><a href="/policy.html">Политика</a><a href="mailto:hey@contentbox.site">hey@contentbox.site</a>
+      </div>
+      <div class="foot__copy">© 2026 Контент Бокс</div>
+    </div>
+  </footer>
+
+<script>
+  (function(){ var saved=null; try{ saved=localStorage.getItem('cb-theme2'); }catch(e){}
+    if(saved==='light') document.documentElement.className='theme-light'; })();
+  var icon=document.getElementById('themeIcon'), btn=document.getElementById('themeBtn');
+  var moon='<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+  var sun='<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4l1.4-1.4"/>';
+  function sync(){ if(icon) icon.innerHTML = document.documentElement.className==='theme-light' ? moon : sun; }
+  sync();
+  if(btn) btn.addEventListener('click',function(){ var light=document.documentElement.className==='theme-light'; document.documentElement.className=light?'theme-dark':'theme-light'; try{localStorage.setItem('cb-theme2', light?'dark':'light');}catch(e){} sync(); });
+
+  // ── ЭПОХИ (крупные вехи по мажорной версии). Порядок — новые сверху. ──
+  var EPOCHS = [
+    { major:3, tag:'Версии 3.x', title:'Конструктор и мультиформат',
+      lead:'Платформа выросла из ленты в конструктор сайтов. Автор собирает главную из готовых секций и шаблонов, публикует контент любого формата — видео, аудио, книги, файлы — и работает над проектом командой. Каждый сайт выглядит по-своему.' },
+    { major:2, tag:'Версии 2.x', title:'Бета: живой сайт и сообщество',
+      lead:'Публичная бета. Из статичной витрины платформа превратилась в живой сайт: реальная лента и поиск, личные кабинеты, сообщество с реакциями и подписками, продажа доступа по подписке и авто-рассылки читателям.' }
+  ];
+
+  // ── РЕЛИЗЫ (новые сверху). Добавить релиз = вставить объект в начало. ──
+  // version "ММ.ДД.К"; tags: feature|improve|milestone; changes[]; mkt?{h,b}
+  var RELEASES = [
+    { version:'3.6.4', tags:['feature'], title:'Конструктор главной страницы',
+      changes:[
+        'Готовые шаблоны главной под сценарии «смотреть», «слушать» и «читать»',
+        'Библиотека секций с превью — видно, как выглядит и что умеет каждый блок',
+        'Новые блоки: карусель-подборка, сетка афиш, киноблоки, плитки разделов, витрина автора и подписки',
+        'У каждой секции — свой заголовок, источник (лента или конкретный раздел) и размер; блоки переставляются и повторяются'
+      ],
+      mkt:{ h:'Для авторов', b:'Запускайте сайт быстрее: берите готовый шаблон — в нём уже есть нужные секции, блоки и базовый контент — и собирайте главную под свой проект без верстальщика.' } },
+
+    { version:'3.5.3', tags:['feature'], title:'Команда, книги, аудио и файлы',
+      changes:[
+        'Приглашение соавторов в студию с ролями и правами доступа',
+        'Книги, аудио-плейлисты и раздел файлов для скачивания',
+        'Современный аудиоплеер: волна, плейлист, переходы между сезонами и эпизодами',
+        'Медиа-плейлисты в разделах (сезоны и серии)',
+        'Управление несколькими проектами из одного аккаунта'
+      ],
+      mkt:{ h:'Для авторов', b:'Публикуйте контент любого формата — тексты, книги, подкасты, видео и файлы — под своим брендом и ведите проект командой.' } },
+
+    { version:'3.2.2', tags:['improve'], title:'Оформление и профиль',
+      changes:[
+        'Пресеты оформления — готовые темы бренда для сайта',
+        'Аватар пользователя в шапке',
+        'Наглядная лестница уровней подписки'
+      ] },
+
+    { version:'3.1.5', tags:['feature'], title:'Платный доступ и структура контента',
+      changes:[
+        'Доступ к видео по подписке',
+        'Вложенные разделы, мультикатегории и быстрые подкатегории',
+        'Метка «Новинка» на свежих материалах',
+        'Приём сообщений об ошибках прямо с сайта'
+      ],
+      mkt:{ h:'Для авторов', b:'Продавайте доступ к видео по подписке и раскладывайте контент по разделам так, как удобно вашей аудитории — под любую структуру проекта.' } },
+
+    { version:'2.31.2', tags:['improve'], title:'Стабильность после обновлений',
+      changes:['Сайт не «ломается» после выхода новой версии — страница восстанавливается сама'] },
+
+    { version:'2.30.1', tags:['feature'], title:'Теги',
+      changes:['Свободные теги для публикаций и видео — навигация по темам'] },
+
+    { version:'2.29.2', tags:['feature'], title:'Страницы, меню и онбординг',
+      changes:[
+        'Собственные страницы проекта',
+        'Гибкое меню: разделы как пункты, перестановка по дереву',
+        'Плавный онбординг при регистрации автора'
+      ] },
+
+    { version:'2.27.1', tags:['feature'], title:'Приложение на телефоне',
+      changes:['Установка сайта как приложения — иконка на домашнем экране, подсказка для iOS'],
+      mkt:{ h:'Для авторов', b:'Ваш сайт живёт на телефоне читателя как приложение — аудитория всегда под рукой.' } },
+
+    { version:'2.26.4', tags:['feature'], title:'Сообщество и личный кабинет',
+      changes:[
+        'Комментарии и реакции под материалами',
+        'Сохранёнки, подписки на автора и разделы, история просмотров',
+        'Обновлённые личный кабинет и профиль',
+        'Каталог участников сообщества'
+      ],
+      mkt:{ h:'Для авторов', b:'Читатели возвращаются: сохраняют материалы, подписываются и обсуждают — вокруг проекта складывается живое сообщество.' } },
+
+    { version:'2.25.1', tags:['improve'], title:'Поиск',
+      changes:['Быстрый поиск в шапке с подсказками и быстрыми разделами'] },
+
+    { version:'2.24.1', tags:['feature'], title:'Рассылки подписчикам',
+      changes:['Письма-дайджесты с новинками проекта'],
+      mkt:{ h:'Для авторов', b:'Новинки сами доходят до аудитории — подписчики получают аккуратный дайджест и возвращаются на сайт.' } },
+
+    { version:'2.23.6', tags:['feature'], title:'Единая витрина и лента',
+      changes:[
+        'Единая шапка на сайте и лендинге',
+        'Живая лента материалов и тематические сетки',
+        'Киноблоки — ряды постеров по разделам',
+        'Качественные обложки и читаемые кнопки поверх фото'
+      ] },
+
+    { version:'2.7.1', tags:['milestone','feature'], title:'Переход в бету — запуск платформы',
+      changes:[
+        'Первая публичная версия: свой сайт с подписками на собственном домене',
+        'Публикации с обложками, разделы и видео',
+        'Собственные страницы проекта'
+      ],
+      mkt:{ h:'Для авторов', b:'Своя платформа монетизации контента с подписками на вашем домене: приходите с готовой аудиторией и работайте с ней на новом уровне.' } }
+  ];
+
+  var ALPHA = {
+    tag:'До версии 2.7.1 · Альфа',
+    title:'Закрытое тестирование',
+    body:'До перехода в бету платформа жила в закрытом тестировании: внутренние сборки, обкатка ядра и устранение ошибок. Публичного журнала обновлений на этом этапе не велось.'
+  };
+
+  var TAG_LABEL = { feature:{c:'tag--feature', t:'новое'}, improve:{c:'tag--improve', t:'улучшение'}, milestone:{c:'tag--milestone', t:'веха'} };
+  function esc(s){ return String(s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+  function majorOf(v){ return parseInt(String(v).split('.')[0], 10); }
+
+  function renderRelease(r){
+    var tags = (r.tags||[]).map(function(t){ var x=TAG_LABEL[t]||{c:'',t:t}; return '<span class="tag '+x.c+'">'+esc(x.t)+'</span>'; }).join('');
+    var changes = (r.changes||[]).map(function(c){ return '<li>'+esc(c)+'</li>'; }).join('');
+    var mkt = r.mkt ? '<div class="mkt"><div class="mkt__h"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>'+esc(r.mkt.h)+'</div><div class="mkt__b">'+esc(r.mkt.b)+'</div></div>' : '';
+    return '<article class="rel">'
+      + '<div class="rel__ver">'+esc(r.version)+'</div>'
+      + '<div class="rel__body"><h3>'+esc(r.title)+'</h3>'
+      + '<div class="tags">'+tags+'</div>'
+      + '<ul class="changes">'+changes+'</ul>'
+      + mkt + '</div></article>';
+  }
+
+  var html = '';
+  EPOCHS.forEach(function(ep){
+    var rels = RELEASES.filter(function(r){ return majorOf(r.version) === ep.major; });
+    if(!rels.length) return;
+    html += '<section class="epoch">'
+      + '<div class="epoch__tag">'+esc(ep.tag)+'</div>'
+      + '<h2 class="epoch__title">'+esc(ep.title)+'</h2>'
+      + '<p class="epoch__lead">'+esc(ep.lead)+'</p>'
+      + '<div class="epoch__rule"></div></section>';
+    html += rels.map(renderRelease).join('');
+  });
+  html += '<div class="alpha"><div class="alpha__tag">'+esc(ALPHA.tag)+'</div><h3>'+esc(ALPHA.title)+'</h3><p>'+esc(ALPHA.body)+'</p></div>';
+
+  document.getElementById('list').innerHTML = html;
+</script>
+</body>
+</html>
