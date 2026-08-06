@@ -355,6 +355,7 @@ export default async function HomePage() {
   // Каждая секция — по своему экземпляру: заголовок/источник из config, ключ по
   // id (дубли). Source-driven секции тянут данные из источника (resolveListItems).
   const enabledSections = sections.filter((s) => s.enabled)
+  const flushTop = enabledSections[0]?.type === 'photoShowcase'
   const nodes = await Promise.all(
     enabledSections.map(async (s, i) => {
       const key = s.id != null ? String(s.id) : s.type + '-' + i
@@ -397,7 +398,7 @@ export default async function HomePage() {
 
   return (
     <main className="page-canvas page-canvas--home" style={{ ...brandVars(settings), minHeight: '100vh' }}>
-      <div className="max-w-6xl mx-auto px-4 py-8">{nodes}</div>
+      <div className={`max-w-6xl mx-auto px-4 ${flushTop ? 'pb-8' : 'py-8'}`}>{nodes}</div>
     </main>
   )
 }

@@ -2727,3 +2727,57 @@ body.preset-tropic-sunset header .c-btn--primary:hover { filter: none; backgroun
   transition: transform 0.3s ease;
 }
 .gallery-cell:hover img { transform: scale(1.04); }
+
+/* --- «Об авторе и подписка» v2: автор шапкой + тарифы в ряд --- */
+.spot { display: flex; flex-direction: column; gap: 18px; }
+.spot__head {
+  display: flex; align-items: center; gap: 24px;
+  padding: 24px 28px; flex-wrap: wrap;
+}
+.spot__logo { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; flex-shrink: 0; box-shadow: var(--elev-2); }
+.spot__logo--ph { background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent)); }
+.spot__id { flex: 1 1 240px; min-width: 0; }
+.spot__name { font-family: var(--font-heading); font-weight: var(--heading-weight); font-size: clamp(22px, 3vw, 30px); color: var(--brand-text); line-height: 1.1; margin: 0; }
+.spot__bio { margin: 6px 0 0; color: var(--brand-muted); font-size: 15px; line-height: 1.5; max-width: 52ch; }
+.spot__stats { display: flex; gap: 28px; }
+.spot__stat-n { font-size: 24px; font-weight: 700; color: var(--brand-text); font-variant-numeric: tabular-nums; line-height: 1; }
+.spot__stat-l { margin-top: 3px; font-size: 13px; color: var(--brand-muted); }
+.spot__socials { display: flex; gap: 8px; flex-wrap: wrap; }
+.spot__social { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--brand-border); color: var(--brand-text); font-size: 12px; font-weight: 600; text-decoration: none; }
+.spot__social:hover { background: color-mix(in srgb, var(--brand-text) 6%, transparent); }
+
+.spot__subs-label { font-size: 13px; font-weight: 600; color: var(--brand-muted); margin: 4px 0 12px; }
+.spot__tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+.spot__tiers[data-count="1"] { grid-template-columns: minmax(0, 440px); justify-content: center; }
+.spot__tiers[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 760px; margin: 0 auto; }
+.spot__tier {
+  position: relative; display: flex; flex-direction: column;
+  padding: 26px 24px; border-radius: 18px;
+  background: var(--glass-2); border: 1px solid var(--brand-border);
+}
+.spot__tier.is-feat {
+  border-color: color-mix(in srgb, var(--brand-primary) 55%, var(--brand-border));
+  background: color-mix(in srgb, var(--brand-primary) 6%, var(--glass-2));
+  box-shadow: var(--elev-2);
+}
+.spot__badge {
+  position: absolute; top: 18px; right: 18px;
+  background: var(--brand-primary); color: #fff;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 3px 9px; border-radius: 999px;
+}
+.spot__tier-name { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--brand-text); }
+.spot__tier-price { margin: 6px 0 20px; font-size: 26px; font-weight: 800; color: var(--brand-text); font-variant-numeric: tabular-nums; line-height: 1; }
+.spot__perks { list-style: none; margin: 0 0 22px; padding: 0; display: flex; flex-direction: column; gap: 11px; flex: 1; }
+.spot__perks li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: var(--brand-muted); line-height: 1.45; }
+.spot__check { color: var(--brand-primary); margin-top: 2px; flex-shrink: 0; }
+.spot__btn { margin-top: auto; text-align: center; border-radius: 12px; padding: 12px 16px; font-weight: 700; font-size: 15px; text-decoration: none; border: 1px solid var(--brand-border); color: var(--brand-text); transition: border-color .15s ease, filter .15s ease; }
+.spot__btn.is-feat { background: var(--brand-primary); color: #fff; border-color: transparent; }
+.spot__btn:hover { border-color: var(--brand-primary); }
+.spot__btn.is-feat:hover { filter: brightness(1.06); }
+@media (max-width: 860px) {
+  .spot__tiers, .spot__tiers[data-count="1"], .spot__tiers[data-count="2"] { grid-template-columns: 1fr; max-width: 480px; margin: 0 auto; }
+  .spot__tier.is-feat { order: -1; }
+  .spot__head { gap: 16px; padding: 20px; }
+  .spot__stats { gap: 20px; }
+}

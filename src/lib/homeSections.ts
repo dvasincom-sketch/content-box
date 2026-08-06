@@ -22,7 +22,7 @@
  */
 export const HOME_SECTION_DEFS = [
   { type: 'hero', label: 'Hero — «Новинка»' },
-  { type: 'heroTeam', label: 'Участники' },
+  { type: 'heroTeam', label: 'По участникам' },
   { type: 'news', label: 'Новости' },
   { type: 'search', label: 'Поиск' },
   { type: 'latest', label: 'Последние публикации' },

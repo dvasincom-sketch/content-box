@@ -362,7 +362,7 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
                       className="studio-input"
                       type="text"
                       value={row.config?.heading ?? ''}
-                      placeholder={DEFAULT_HEADINGS[row.type] ?? 'Заголовок'}
+                      placeholder={row.type === 'photoShowcase' ? ((folders ?? []).find((f) => f.id === row.config?.galleryFolderId)?.title || 'Название папки') : (DEFAULT_HEADINGS[row.type] ?? 'Заголовок')}
                       onChange={(e) => patchConfig(row._uid, { heading: e.target.value })}
                     />
                   </label>

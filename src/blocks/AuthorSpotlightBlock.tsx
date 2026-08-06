@@ -16,7 +16,6 @@ export type AuthorSpotlightBlockProps = {
   subscribeHref: string
 }
 
-/** Короткие подписи соцсетей (для чипов). */
 const SOCIAL_LABEL: Record<string, string> = {
   boosty: 'Boosty',
   vk: 'VK',
@@ -25,33 +24,22 @@ const SOCIAL_LABEL: Record<string, string> = {
   instagram: 'Instagram',
 }
 
-/** Число с разделителями тысяч; таб. цифры задаёт стиль. */
 function fmt(n: number): string {
   return new Intl.NumberFormat('ru-RU').format(n)
 }
-
 function price(priceRub: number): string {
   return priceRub > 0 ? `${fmt(priceRub)} ₽/мес` : 'Бесплатно'
 }
 
 /**
- * «Об авторе и подписка» — спотлайт проекта: аватар/лого, bio, статистика,
- * соцсети и уровни подписки с CTA. Данные собираются в page.tsx из тенанта,
- * настроек и коллекции тарифов (пер-тенант). Секция самоскрывается, если нет
- * ни имени, ни контента.
+ * «Об авторе и подписка» — макет «автор шапкой, тарифы в ряд»: сверху компактная
+ * шапка проекта (лого, имя, био, статистика, соцсети в одну строку), ниже —
+ * тарифы равными карточками по центру. Рекомендуемый выделен рамкой/бейджем.
+ * Преимущества показываются полностью; карточки выравниваются по самой высокой.
  */
-export function AuthorSpotlightBlock({
-  name,
-  bio,
-  logoUrl,
-  stats,
-  socials,
-  tiers,
-  subscribeHref,
-}: AuthorSpotlightBlockProps) {
+export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers, subscribeHref }: AuthorSpotlightBlockProps) {
   if (!name && stats.length === 0 && tiers.length === 0) return null
 
-  // Выделяем «рекомендуемый» тариф: первый платный, иначе средний.
   const featIdx =
     tiers.length > 0
       ? (() => {
@@ -59,163 +47,72 @@ export function AuthorSpotlightBlock({
           return paid >= 0 ? paid : Math.min(1, tiers.length - 1)
         })()
       : -1
-
   const validSocials = socials.filter((s) => s && s.url)
 
   return (
-    <section className="mt-10">
-      <div className="c-card p-6 lg:p-8 grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] items-center">
-        {/* Автор */}
-        <div className="flex flex-col">
-          <div className="flex items-start gap-4">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logoUrl}
-                alt={name}
-                className="h-16 w-16 rounded-2xl object-cover shrink-0"
-                style={{ boxShadow: 'var(--elev-2)' }}
-              />
-            ) : (
-              <div
-                className="h-16 w-16 rounded-2xl shrink-0"
-                style={{
-                  background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))',
-                  boxShadow: 'var(--elev-2)',
-                }}
-                aria-hidden="true"
-              />
-            )}
-            <div className="min-w-0">
-              <h2
-                className="text-2xl lg:text-3xl font-bold leading-tight"
-                style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}
-              >
-                {name}
-              </h2>
-              {bio && (
-                <p className="mt-2 text-sm lg:text-base leading-relaxed" style={{ color: 'var(--brand-muted)' }}>
-                  {bio}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {stats.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-x-6 sm:gap-x-8 gap-y-4">
-              {stats.map((s, i) => (
-                <div key={i}>
-                  <div className="text-2xl font-bold leading-none" style={{ color: 'var(--brand-text)', fontVariantNumeric: 'tabular-nums' }}>
-                    {fmt(s.n)}
-                  </div>
-                  <div className="mt-1 text-xs lg:text-sm" style={{ color: 'var(--brand-muted)' }}>
-                    {s.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {validSocials.length > 0 && (
-            <div className="mt-6 flex flex-wrap gap-2">
-              {validSocials.map((s, i) => (
-                <a
-                  key={i}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="c-card--interactive px-3 py-1.5 text-xs font-semibold rounded-full"
-                  style={{ color: 'var(--brand-text)', border: '1px solid var(--brand-border)' }}
-                >
-                  {SOCIAL_LABEL[s.platform] ?? s.platform}
-                </a>
-              ))}
-            </div>
-          )}
+    <section className="mt-10 spot">
+      <div className="spot__head c-card">
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt={name} className="spot__logo" />
+        ) : (
+          <div className="spot__logo spot__logo--ph" aria-hidden />
+        )}
+        <div className="spot__id">
+          <h2 className="spot__name">{name}</h2>
+          {bio && <p className="spot__bio">{bio}</p>}
         </div>
-
-        {/* Подписка */}
-        <div className="flex flex-col">
-          <div className="text-sm font-semibold mb-3" style={{ color: 'var(--brand-muted)' }}>
-            Подписка
+        {stats.length > 0 && (
+          <div className="spot__stats">
+            {stats.map((s, i) => (
+              <div key={i} className="spot__stat">
+                <div className="spot__stat-n">{fmt(s.n)}</div>
+                <div className="spot__stat-l">{s.label}</div>
+              </div>
+            ))}
           </div>
-
-          {tiers.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {tiers.slice(0, 3).map((t, i) => {
-                const featured = i === featIdx
-                return (
-                  <div
-                    key={i}
-                    className={
-                      'relative rounded-2xl p-5 flex flex-col h-full' +
-                      (featured ? ' order-first sm:order-none' : '')
-                    }
-                    style={{
-                      background: featured
-                        ? 'color-mix(in srgb, var(--brand-primary) 6%, var(--glass-2))'
-                        : 'var(--glass-2)',
-                      border: featured
-                        ? '1px solid color-mix(in srgb, var(--brand-primary) 55%, var(--brand-border))'
-                        : '1px solid var(--brand-border)',
-                      boxShadow: featured ? 'var(--elev-2)' : undefined,
-                    }}
-                  >
-                    {featured && (
-                      <span
-                        className="absolute top-4 right-4 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
-                        style={{ background: 'var(--brand-primary)', color: '#fff', letterSpacing: '0.04em' }}
-                      >
-                        Популярно
-                      </span>
-                    )}
-                    <div className="text-sm font-semibold uppercase tracking-wide" style={{ color: 'var(--brand-text)', letterSpacing: '0.03em' }}>
-                      {t.name}
-                    </div>
-                    <div className="mt-1 mb-4 text-xl font-bold" style={{ color: 'var(--brand-text)', fontVariantNumeric: 'tabular-nums' }}>
-                      {price(t.priceRub)}
-                    </div>
-                    {t.perks.length > 0 && (
-                      <ul className="flex flex-col gap-2 mb-5 flex-1">
-                        {t.perks.map((p, j) => (
-                          <li key={j} className="flex items-start gap-1.5 text-xs" style={{ color: 'var(--brand-muted)' }}>
-                            <Check size={13} style={{ color: 'var(--brand-primary)', marginTop: 2, flexShrink: 0 }} />
-                            <span>{p}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <AppLink
-                      href={subscribeHref}
-                      className="mt-auto text-center text-sm font-semibold rounded-xl px-3 py-2"
-                      style={
-                        featured
-                          ? { background: 'var(--brand-primary)', color: '#fff' }
-                          : { border: '1px solid var(--brand-border)', color: 'var(--brand-text)' }
-                      }
-                    >
-                      Оформить
-                    </AppLink>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="c-card p-5 flex flex-col items-start gap-3">
-              <p className="text-sm" style={{ color: 'var(--brand-muted)' }}>
-                Открой полный доступ к материалам проекта.
-              </p>
-              <AppLink
-                href={subscribeHref}
-                className="text-center text-sm font-semibold rounded-xl px-4 py-2"
-                style={{ background: 'var(--brand-primary)', color: '#fff' }}
-              >
-                Оформить подписку
-              </AppLink>
-            </div>
-          )}
-        </div>
+        )}
+        {validSocials.length > 0 && (
+          <div className="spot__socials">
+            {validSocials.map((s, i) => (
+              <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="spot__social">
+                {SOCIAL_LABEL[s.platform] ?? s.platform}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
+
+      {tiers.length > 0 && (
+        <div className="spot__subs">
+          <div className="spot__subs-label">Подписка</div>
+          <div className="spot__tiers" data-count={Math.min(tiers.length, 3)}>
+            {tiers.slice(0, 3).map((t, i) => {
+              const featured = i === featIdx
+              return (
+                <div key={i} className={'spot__tier' + (featured ? ' is-feat' : '')}>
+                  {featured && <span className="spot__badge">Популярно</span>}
+                  <div className="spot__tier-name">{t.name}</div>
+                  <div className="spot__tier-price">{price(t.priceRub)}</div>
+                  {t.perks.length > 0 && (
+                    <ul className="spot__perks">
+                      {t.perks.map((p, j) => (
+                        <li key={j}>
+                          <Check size={15} className="spot__check" />
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <AppLink href={subscribeHref} className={'spot__btn' + (featured ? ' is-feat' : '')}>
+                    Оформить
+                  </AppLink>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </section>
   )
 }
