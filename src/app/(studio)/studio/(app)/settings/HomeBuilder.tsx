@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Check, GripVertical, Pencil, Plus, X, Sliders, ChevronDown } from 'lucide-react'
+import { Loader2, Check, GripVertical, Pencil, Plus, X, Sliders, ChevronDown, LayoutGrid } from 'lucide-react'
 import {
   DEFAULT_HOME_SECTIONS,
   HOME_SECTION_DEFS,
@@ -14,6 +14,7 @@ import { HeroTeamEditPanel } from './HeroTeamEditPanel'
 import { HomeCategoriesEditPanel } from './HomeCategoriesEditPanel'
 import { HeroEditPanel } from './HeroEditPanel'
 import { BannerEditPanel } from './BannerEditPanel'
+import { SectionLibrary } from './SectionLibrary'
 import type { CatItem } from './CategoryMultiPicker'
 
 /** type → человекочитаемый лейбл (из единого источника). */
@@ -135,6 +136,8 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
   const [editingType, setEditingType] = useState<HomeSectionType | null>(null)
   // _uid строки, чья панель НАСТРОЕК (заголовок/источник) раскрыта (null — все свёрнуты)
   const [configUid, setConfigUid] = useState<string | null>(null)
+  // открыта ли «Библиотека секций» (окно каталога с превью)
+  const [libOpen, setLibOpen] = useState(false)
 
   // Категории тенанта для селекта источника — грузим лениво при первом открытии
   // панели настроек списочной секции.
@@ -464,6 +467,17 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
         })}
       </div>
 
+      <div className="homebld__lib-row">
+        <button
+          type="button"
+          className="homebld__lib-btn"
+          onClick={() => setLibOpen(true)}
+        >
+          <LayoutGrid size={15} /> Библиотека секций
+        </button>
+        <span className="homebld__lib-hint">Каталог с превью — посмотреть, что умеет каждая, и добавить</span>
+      </div>
+
       {availableToAdd.length > 0 && (
         <div className="homebld__add">
           <span className="homebld__add-label">Добавить секцию:</span>
@@ -511,6 +525,15 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
             // освежить возможные превью во вкладке и публичную главную
             router.refresh()
           }}
+        />
+      )}
+
+      {libOpen && (
+        <SectionLibrary
+          present={new Set(rows.map((r) => r.type))}
+          duplicable={DUPLICABLE}
+          onAdd={(type) => addSection(type)}
+          onClose={() => setLibOpen(false)}
         />
       )}
     </div>
