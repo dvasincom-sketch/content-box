@@ -5337,3 +5337,64 @@ a.session-expired__btn {
 .uk-tl__link:hover { text-decoration: underline; }
 .uk-tl__preview { font-size: var(--st-text-xs); color: var(--st-text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .uk-tl__time { flex-shrink: 0; font-size: var(--st-text-xs); color: var(--st-text-faint); font-variant-numeric: tabular-nums; margin-top: 3px; }
+
+/* ── Раздел «Аналитика» (Umami) ─────────────────────────────────────────── */
+/* Переключатель периода в шапке — как .dashchart__ranges, но ссылками. */
+.an__ranges {
+  display: inline-flex; background: var(--st-surface-2);
+  border: 1px solid var(--st-border); border-radius: var(--st-radius-sm); padding: 2px;
+}
+.an__range {
+  border: none; background: transparent; color: var(--st-text-muted);
+  font-size: var(--st-text-xs); padding: 4px 10px; text-decoration: none;
+  border-radius: calc(var(--st-radius-sm) - 2px); cursor: pointer;
+  transition: background var(--st-dur) var(--st-ease), color var(--st-dur) var(--st-ease);
+}
+.an__range:hover { color: var(--st-text); }
+.an__range.is-active { background: var(--st-surface); color: var(--st-text); box-shadow: 0 1px 2px rgba(0,0,0,0.25); }
+
+/* Дельта вниз — красным (базовая .dash__kpi-delta зелёная). */
+.dash__kpi-delta { display: inline-flex; align-items: center; gap: 2px; }
+.dash__kpi-delta.is-down { color: #ef4444; }
+
+/* Две колонки: топ страниц / источники. */
+.an__grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--st-space-4);
+  max-width: 720px; margin-bottom: var(--st-space-5);
+}
+@media (max-width: 640px) { .an__grid { grid-template-columns: 1fr; } }
+
+.an__list { padding: var(--st-space-4); }
+.an__list-head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: var(--st-text-sm); font-weight: 600; color: var(--st-text);
+  margin-bottom: var(--st-space-3);
+}
+.an__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.an__row {
+  position: relative; display: flex; align-items: center; gap: var(--st-space-3);
+  padding: 6px 8px; border-radius: var(--st-radius-sm); overflow: hidden;
+}
+.an__row-bar {
+  position: absolute; left: 0; top: 0; bottom: 0; z-index: 0;
+  background: color-mix(in srgb, var(--st-accent) 14%, transparent);
+  border-radius: var(--st-radius-sm);
+}
+.an__row-label {
+  position: relative; z-index: 1; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: var(--st-text-sm); color: var(--st-text);
+}
+.an__row-count {
+  position: relative; z-index: 1; flex-shrink: 0;
+  font-size: var(--st-text-sm); font-weight: 600; color: var(--st-text); font-variant-numeric: tabular-nums;
+}
+
+.an__empty { color: var(--st-text-muted); font-size: var(--st-text-sm); padding: var(--st-space-3) 0; }
+.an__empty--sm { padding: var(--st-space-2) 0; }
+
+/* Информационная карточка (не настроено / нет данных). */
+.an__notice { display: flex; gap: var(--st-space-3); align-items: flex-start; max-width: 720px; }
+.an__notice-icon { color: var(--st-text-muted); flex-shrink: 0; margin-top: 1px; }
+.an__notice-title { font-weight: 600; color: var(--st-text); margin-bottom: 2px; }
+.an__notice-text { margin: 0; color: var(--st-text-muted); font-size: var(--st-text-sm); line-height: 1.5; }

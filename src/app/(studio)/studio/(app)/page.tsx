@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet } from 'lucide-react'
+import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet, BarChart3 } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor } from '@/lib/currentAuthor'
@@ -9,6 +9,8 @@ import { capabilitiesOf } from '@/access'
 import { hasCap, SETTINGS_MANAGE_KEYS, CONTENT_ENTITIES } from '@/lib/permissions'
 import { getMediaStats, formatBytes } from '@/lib/mediaStats'
 import { getCommerceStats, formatRub } from '@/lib/commerceStats'
+import { umamiApiEnabled } from '@/lib/umami'
+import { getUmamiDashKpis } from '@/lib/umamiStats'
 import { DashChart } from './DashChart'
 import { UsersKpiCard } from './UsersKpiCard'
 
@@ -125,6 +127,17 @@ export default async function StudioDashboard() {
   const media = await getMediaStats(payload, tenantId)
   const commerce = await getCommerceStats(payload, tenantId)
 
+  // Веб-аналитика (Umami): пара агрегатов на дашборд — только владельцу и только
+  // когда платформа подключила аналитику и у проекта задан website.
+  let umamiKpis: { visitors: number; pageviews: number; days: number } | null = null
+  if (isOwner && umamiApiEnabled()) {
+    const t = await payload
+      .findByID({ collection: 'tenants', id: tenantId, depth: 0, overrideAccess: true })
+      .catch(() => null)
+    const wid = ((t as { umamiWebsiteId?: string | null } | null)?.umamiWebsiteId ?? '').trim()
+    if (wid) umamiKpis = await getUmamiDashKpis(wid, 7)
+  }
+
   const email = author!.user.email
 
   return (
@@ -228,6 +241,31 @@ export default async function StudioDashboard() {
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {/* Веб-аналитика: краткая сводка (полное — в разделе «Аналитика») */}
+      {umamiKpis && (
+        <section className="dash__section">
+          <div className="dash__section-head">
+            <h2>
+              <BarChart3 size={16} /> Посещаемость{' '}
+              <span style={{ color: 'var(--st-text-muted)', fontWeight: 400, fontSize: 'var(--st-text-xs)' }}>за 7 дней</span>
+            </h2>
+            <Link href="/studio/analytics" className="dash__section-link">
+              Аналитика <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="dash__stats dash__stats--2">
+            <div className="dash__stat">
+              <div className="dash__stat-value">{umamiKpis.visitors.toLocaleString('ru-RU')}</div>
+              <div className="dash__stat-label">Посетителей</div>
+            </div>
+            <div className="dash__stat">
+              <div className="dash__stat-value">{umamiKpis.pageviews.toLocaleString('ru-RU')}</div>
+              <div className="dash__stat-label">Просмотров</div>
+            </div>
+          </div>
         </section>
       )}
 

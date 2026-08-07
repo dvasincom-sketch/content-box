@@ -224,6 +224,10 @@ export interface Tenant {
   capCustomDomain?: boolean | null;
   studioFrozen?: boolean | null;
   /**
+   * UUID website из Umami для этого проекта. Пусто — аналитика не собирается.
+   */
+  umamiWebsiteId?: string | null;
+  /**
    * Часть до .contentbox.site. `domain` = <subdomain>.contentbox.site.
    */
   subdomain?: string | null;
@@ -1817,6 +1821,7 @@ export interface TenantsSelect<T extends boolean = true> {
   capMediaUntil?: T;
   capCustomDomain?: T;
   studioFrozen?: T;
+  umamiWebsiteId?: T;
   subdomain?: T;
   category?: T;
   description?: T;

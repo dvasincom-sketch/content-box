@@ -75,6 +75,7 @@ import * as migration_20260807_120000_support from './20260807_120000_support';
 import * as migration_20260807_140000_studio_permissions from './20260807_140000_studio_permissions';
 import * as migration_20260807_150000_subscriber_last_seen from './20260807_150000_subscriber_last_seen';
 import * as migration_20260807_160000_subscriber_activity from './20260807_160000_subscriber_activity';
+import * as migration_20260807_170000_tenant_umami from './20260807_170000_tenant_umami';
 
 export const migrations = [
   {
@@ -461,5 +462,10 @@ export const migrations = [
     up: migration_20260807_160000_subscriber_activity.up,
     down: migration_20260807_160000_subscriber_activity.down,
     name: '20260807_160000_subscriber_activity',
+  },
+  {
+    up: migration_20260807_170000_tenant_umami.up,
+    down: migration_20260807_170000_tenant_umami.down,
+    name: '20260807_170000_tenant_umami',
   },
 ];

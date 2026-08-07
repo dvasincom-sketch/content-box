@@ -31,6 +31,7 @@ import { presetThemeCss, getPreset } from '@/lib/themePresets'
 import { getBgDecor } from '@/lib/bgDecors'
 import { PWARegister } from '@/components/PWARegister'
 import { BugReportWidget } from '@/components/BugReportWidget'
+import { UmamiTracker } from '@/components/UmamiTracker'
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
@@ -124,6 +125,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content={tenant?.name ?? 'Content Box'} />
+        {/* Веб-аналитика Umami: подключается только если задан UMAMI_SCRIPT_URL и
+            у тенанта заполнен umamiWebsiteId. Иначе ничего не рендерит. */}
+        <UmamiTracker websiteId={tenant?.umamiWebsiteId} />
       </head>
       <body
         className={`preset-${preset.id}`}

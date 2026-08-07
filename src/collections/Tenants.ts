@@ -96,6 +96,15 @@ export const Tenants: CollectionConfig = {
     { name: 'capMediaUntil', type: 'date', label: 'Медиа: триал до', admin: { condition: (d: any) => d?.capMedia === 'trial' } },
     { name: 'capCustomDomain', type: 'checkbox', defaultValue: true, label: 'Свой домен (платно)' },
     { name: 'studioFrozen', type: 'checkbox', defaultValue: false, label: 'Студия заморожена' },
+    {
+      // Веб-аналитика (self-hosted Umami). «website» в Umami = один тенант.
+      // Пусто → трекер не подключается (см. <UmamiTracker> в layout). Секреты
+      // Umami (script/api url, токен) живут в env, здесь только id website.
+      name: 'umamiWebsiteId',
+      type: 'text',
+      label: 'Umami website ID',
+      admin: { description: 'UUID website из Umami для этого проекта. Пусто — аналитика не собирается.' },
+    },
     // --- Онбординг автора (заполняется мастером в /studio/onboarding) ---
     {
       name: 'subdomain',
