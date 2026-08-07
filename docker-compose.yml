@@ -52,11 +52,11 @@ services:
       # UMAMI_SCRIPT_URL — трекер во фронт-layout; UMAMI_API_URL + токен/логин —
       # чтение агрегатов в /studio/analytics. Сам реверс-прокси домена на
       # http://umami:3000 задан в next.config (rewrites), env для него не нужен.
-      UMAMI_SCRIPT_URL: ${UMAMI_SCRIPT_URL}
-      UMAMI_API_URL: ${UMAMI_API_URL}
-      UMAMI_API_TOKEN: ${UMAMI_API_TOKEN}
-      UMAMI_API_USER: ${UMAMI_API_USER}
-      UMAMI_API_PASSWORD: ${UMAMI_API_PASSWORD}
+      UMAMI_SCRIPT_URL: ${UMAMI_SCRIPT_URL:-}
+      UMAMI_API_URL: ${UMAMI_API_URL:-}
+      UMAMI_API_TOKEN: ${UMAMI_API_TOKEN:-}
+      UMAMI_API_USER: ${UMAMI_API_USER:-}
+      UMAMI_API_PASSWORD: ${UMAMI_API_PASSWORD:-}
     depends_on:
       # service_started, а НЕ service_healthy — сознательно.
       #
