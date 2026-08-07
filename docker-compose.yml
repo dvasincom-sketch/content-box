@@ -48,6 +48,15 @@ services:
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
       CRON_SECRET: ${CRON_SECRET}
+      # Веб-аналитика Umami (runtime). Читаются серверным кодом при рендере:
+      # UMAMI_SCRIPT_URL — трекер во фронт-layout; UMAMI_API_URL + токен/логин —
+      # чтение агрегатов в /studio/analytics. Сам реверс-прокси домена на
+      # http://umami:3000 задан в next.config (rewrites), env для него не нужен.
+      UMAMI_SCRIPT_URL: ${UMAMI_SCRIPT_URL}
+      UMAMI_API_URL: ${UMAMI_API_URL}
+      UMAMI_API_TOKEN: ${UMAMI_API_TOKEN}
+      UMAMI_API_USER: ${UMAMI_API_USER}
+      UMAMI_API_PASSWORD: ${UMAMI_API_PASSWORD}
     depends_on:
       # service_started, а НЕ service_healthy — сознательно.
       #
@@ -91,7 +100,8 @@ services:
   # привязать поддомен к umami нельзя. Поэтому наружу umami НЕ публикуем (порт не
   # маппим) — трафик analytics.contentbox.site заворачивает сам `app` реверс-
   # прокси во внутренний http://umami:3000 (см. next.config.ts rewrites +
-  # src/proxy.ts, env UMAMI_PROXY_HOST/UMAMI_UPSTREAM). По внутренней сети compose
+  # src/proxy.ts — хост/апстрим захардкожены, т.к. rewrites() Next вычисляется на
+  # сборке, где runtime-env недоступен). По внутренней сети compose
   # umami доступен по имени сервиса и без публикации порта (как meilisearch).
   # Переменные ${...} задаются в панели Timeweb «Переменные».
   umami:

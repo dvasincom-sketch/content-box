@@ -97,9 +97,12 @@ const nextConfig: NextConfig = {
    * не уводить на /domain-not-found до срабатывания rewrite.
    */
   async rewrites() {
-    const host = process.env.UMAMI_PROXY_HOST
-    const upstream = process.env.UMAMI_UPSTREAM
-    if (!host || !upstream) return []
+    // ВАЖНО: rewrites() Next вычисляет на СБОРКЕ (`next build`) и запекает в
+    // routes-manifest.json — runtime-env здесь НЕ читается, а на сборке Timeweb
+    // доступны только build.args. Поэтому хост/апстрим — константы по умолчанию
+    // (не секреты). env-override оставлен на случай проброса через build.args.
+    const host = process.env.UMAMI_PROXY_HOST || 'analytics.contentbox.site'
+    const upstream = process.env.UMAMI_UPSTREAM || 'http://umami:3000'
     return {
       beforeFiles: [
         {
