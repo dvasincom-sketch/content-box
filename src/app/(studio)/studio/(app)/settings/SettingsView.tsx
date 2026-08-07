@@ -31,7 +31,7 @@ type Tier = {
 }
 
 type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers' | 'access'
-export type Member = { id: number | string; email: string; name: string; status: string; isSelf: boolean }
+export type Member = { id: number | string; email: string; name: string; status: string; isSelf: boolean; studioRole?: string | null; capabilities?: import('@/lib/permissions').CapMatrix | null }
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'appearance', label: 'Оформление' },

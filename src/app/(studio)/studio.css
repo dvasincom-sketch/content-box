@@ -5207,3 +5207,53 @@ a.session-expired__btn {
 .settings__block-head--row > div { min-width: 0; }
 .studio-field--check { flex-direction: row; align-items: center; gap: var(--st-space-2); cursor: pointer; }
 .studio-field--check input { width: 18px; height: 18px; }
+
+/* ── Редактор прав участника (матрица) ───────────────────────────────────── */
+.perm { width: min(760px, 96vw); }
+.perm__roles { display: flex; flex-wrap: wrap; align-items: center; gap: var(--st-space-2); }
+.perm__roles-label { font-weight: 600; color: var(--st-text); margin-right: var(--st-space-1); }
+.perm__role { border: 1.5px solid var(--st-border); background: transparent; color: var(--st-text); border-radius: 999px; padding: .35rem .8rem; font-size: var(--st-text-sm); font-weight: 600; cursor: pointer; }
+.perm__role.is-active { border-color: var(--st-accent, #6d28d9); color: var(--st-accent, #6d28d9); background: color-mix(in srgb, var(--st-accent, #6d28d9) 10%, transparent); }
+.perm__role--custom { cursor: default; }
+.perm__hint { color: var(--st-text-muted); font-size: var(--st-text-sm); margin: var(--st-space-2) 0 var(--st-space-4); }
+
+.perm__group { margin-bottom: var(--st-space-5); }
+.perm__group-title { font-weight: 700; color: var(--st-text); font-size: var(--st-text-sm); text-transform: uppercase; letter-spacing: .03em; margin-bottom: var(--st-space-2); opacity: .8; }
+
+.perm__table { overflow-x: auto; }
+.perm__thead, .perm__trow { display: grid; grid-template-columns: minmax(110px, 1.3fr) repeat(6, minmax(56px, 1fr)); align-items: center; }
+.perm__thead { border-bottom: 1px solid var(--st-border); padding-bottom: var(--st-space-2); margin-bottom: var(--st-space-1); }
+.perm__col { font-size: 11px; line-height: 1.2; color: var(--st-text-muted); text-align: center; }
+.perm__trow { padding: .3rem 0; }
+.perm__trow:not(:last-child) { border-bottom: 1px solid color-mix(in srgb, var(--st-border) 55%, transparent); }
+.perm__ent { font-size: var(--st-text-sm); color: var(--st-text); font-weight: 500; }
+.perm__cell { display: flex; justify-content: center; align-items: center; }
+.perm__cell input, .perm__single input { width: 17px; height: 17px; cursor: pointer; }
+
+.perm__single { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .5rem 0; }
+.perm__single:not(:last-child) { border-bottom: 1px solid color-mix(in srgb, var(--st-border) 55%, transparent); }
+.perm__single-right { display: inline-flex; align-items: center; gap: .5rem; }
+.perm__single-act { font-size: var(--st-text-sm); color: var(--st-text-muted); }
+
+/* Роль-бейдж и кнопка «Права» в строке участника */
+.access__role { font-size: 12px; font-weight: 600; color: var(--st-text-muted); background: color-mix(in srgb, var(--st-text) 6%, transparent); border-radius: 999px; padding: .15rem .6rem; white-space: nowrap; }
+.access__perm-btn { padding: .35rem .7rem; font-size: var(--st-text-sm); }
+@media (max-width: 640px) { .access__role { display: none; } }
+
+/* Ширина дровера прав (перекрываем .catedit max-width) + кастомный чекбокс */
+.perm { max-width: 720px; }
+.perm-check {
+  appearance: none; -webkit-appearance: none;
+  width: 18px; height: 18px; margin: 0; flex-shrink: 0;
+  border: 1.5px solid var(--st-border-strong); border-radius: 5px;
+  background: var(--st-bg); cursor: pointer; position: relative;
+  transition: background var(--st-dur) var(--st-ease), border-color var(--st-dur) var(--st-ease);
+}
+.perm-check:hover { border-color: var(--st-accent); }
+.perm-check:checked { background: var(--st-accent); border-color: var(--st-accent); }
+.perm-check:checked::after {
+  content: ''; position: absolute; left: 5px; top: 1.5px;
+  width: 4px; height: 9px; border: solid var(--st-accent-text);
+  border-width: 0 2px 2px 0; transform: rotate(45deg);
+}
+.perm-check:focus-visible { outline: 2px solid var(--st-accent); outline-offset: 2px; }

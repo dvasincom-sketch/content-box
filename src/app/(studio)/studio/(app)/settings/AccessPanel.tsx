@@ -2,10 +2,12 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { UserPlus, Copy, Check, Loader2, Trash2 } from 'lucide-react'
+import { UserPlus, Copy, Check, Loader2, Trash2, SlidersHorizontal } from 'lucide-react'
 import type { Member } from './SettingsView'
 import { ActivityFeed } from './ActivityFeed'
 import { ConfirmDialog } from './ConfirmDialog'
+import { PermissionsModal } from './PermissionsModal'
+import { matchPreset, PRESET_LABELS } from '@/lib/permissions'
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   owner: { label: 'Владелец', cls: 'is-owner' },
@@ -30,6 +32,7 @@ export function AccessPanel({ members }: { members: Member[] }) {
   const [reactivated, setReactivated] = useState(false)
   const [revoking, setRevoking] = useState<string | number | null>(null)
   const [confirm, setConfirm] = useState<{ message: string; onYes: () => void } | null>(null)
+  const [permMember, setPermMember] = useState<Member | null>(null)
 
   async function invite() {
     setError(null); setLink(null); setReactivated(false)
@@ -155,6 +158,17 @@ export function AccessPanel({ members }: { members: Member[] }) {
                 <span className={`access__status ${st.cls}`}>{st.label}</span>
                 {!m.isSelf && m.status !== 'owner' && (
                   <>
+                    <span className="access__role" title="Текущая роль">
+                      {PRESET_LABELS[(m.studioRole && m.studioRole !== 'owner' && m.studioRole) || (m.capabilities ? matchPreset(m.capabilities) : 'author')] || 'Автор'}
+                    </span>
+                    <button
+                      type="button"
+                      className="studio-btn studio-btn--ghost access__perm-btn"
+                      onClick={() => setPermMember(m)}
+                      title="Настроить права"
+                    >
+                      <SlidersHorizontal size={15} /> Права
+                    </button>
                     <label className="access__switch" title={m.status === 'disabled' ? 'Включить доступ' : 'Отключить доступ'}>
                       <input
                         type="checkbox"
@@ -183,6 +197,9 @@ export function AccessPanel({ members }: { members: Member[] }) {
       </div>
     </div>
     <ActivityFeed />
+    {permMember && (
+      <PermissionsModal member={permMember} onClose={() => { setPermMember(null); router.refresh() }} />
+    )}
     {confirm && (
       <ConfirmDialog
         title="Удалить навсегда"

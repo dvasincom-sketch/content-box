@@ -254,6 +254,22 @@ export interface User {
    */
   platformRole?: 'superadmin' | null;
   tenantRole?: ('editor' | 'contributor' | 'admin' | 'viewer') | null;
+  /**
+   * owner | admin | editor | author | moderator | viewer | custom. Пресет прав; фактическая матрица — в поле capabilities. У владельца (editor/admin) игнорируется.
+   */
+  studioRole?: string | null;
+  /**
+   * Тонкие права участника (сущность × действие). Пусто = берётся пресет по роли. У владельца игнорируется.
+   */
+  capabilities?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   invitedBy?: (number | null) | User;
   inviteTokenHash?: string | null;
   inviteExpiresAt?: string | null;
@@ -1773,6 +1789,8 @@ export interface UsersSelect<T extends boolean = true> {
   tenant?: T;
   platformRole?: T;
   tenantRole?: T;
+  studioRole?: T;
+  capabilities?: T;
   invitedBy?: T;
   inviteTokenHash?: T;
   inviteExpiresAt?: T;

@@ -72,6 +72,7 @@ import * as migration_20260806_190000_add_photo_showcase_section from './2026080
 import * as migration_20260806_200000_add_activity_invite_action from './20260806_200000_add_activity_invite_action';
 import * as migration_20260807_100000_add_author_stats from './20260807_100000_add_author_stats';
 import * as migration_20260807_120000_support from './20260807_120000_support';
+import * as migration_20260807_140000_studio_permissions from './20260807_140000_studio_permissions';
 
 export const migrations = [
   {
@@ -443,5 +444,10 @@ export const migrations = [
     up: migration_20260807_120000_support.up,
     down: migration_20260807_120000_support.down,
     name: '20260807_120000_support',
+  },
+  {
+    up: migration_20260807_140000_studio_permissions.up,
+    down: migration_20260807_140000_studio_permissions.down,
+    name: '20260807_140000_studio_permissions',
   },
 ];

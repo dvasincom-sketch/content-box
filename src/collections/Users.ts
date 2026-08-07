@@ -1,5 +1,5 @@
 import type { Access, CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID, superAdminFieldAccess } from '../access'
+import { isSuperAdmin, getUserTenantID, superAdminFieldAccess, fullStaffFieldAccess } from '../access'
 import { logActivity } from '../lib/logActivity'
 import { authorResetSubject, authorResetHTML } from '../emails/authEmails'
 
@@ -93,6 +93,28 @@ export const Users: CollectionConfig = {
         { label: 'Viewer (задел)', value: 'viewer' },
       ],
       admin: { condition: (data) => data?.platformRole !== 'superadmin' },
+    },
+    // ── Тонкие права (Фаза «Права доступа») ────────────────────────────────
+    {
+      name: 'studioRole',
+      type: 'text',
+      label: 'Роль в студии (пресет прав)',
+      admin: {
+        description:
+          'owner | admin | editor | author | moderator | viewer | custom. Пресет прав; фактическая матрица — в поле capabilities. У владельца (editor/admin) игнорируется.',
+        condition: (data) => data?.platformRole !== 'superadmin',
+      },
+    },
+    {
+      name: 'capabilities',
+      type: 'json',
+      label: 'Матрица прав',
+      admin: {
+        description:
+          'Тонкие права участника (сущность × действие). Пусто = берётся пресет по роли. У владельца игнорируется.',
+        condition: (data) => data?.platformRole !== 'superadmin',
+      },
+      access: { update: fullStaffFieldAccess },
     },
     // ── Приглашение участника (Фаза «Доступ») ──────────────────────────────
     {

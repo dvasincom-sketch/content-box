@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { ownerScopedCollection, ownerField, stampOwner } from '../access'
+import { contentAccess, ownerField, stampOwner } from '../access'
 
 /**
  * Chapters («Главы») — главы книги (коллекция `books`). Текст в Lexical.
@@ -20,7 +20,7 @@ export const Chapters: CollectionConfig = {
     group: 'Контент',
     description: 'Главы книг (текст).',
   },
-  access: ownerScopedCollection,
+  access: contentAccess('books'),
   hooks: {
     beforeChange: [stampOwner],
   },

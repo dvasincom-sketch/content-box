@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { ownerScopedCollection, ownerField, stampOwner } from '../access'
+import { contentAccess, ownerField, stampOwner } from '../access'
 import { activityAfterChange, activityAfterDelete } from '../lib/logActivity'
 
 /**
@@ -34,7 +34,7 @@ export const Downloads: CollectionConfig = {
     group: 'Контент',
     description: 'Цифровые товары для скачивания по подписке (книги, PDF и др.).',
   },
-  access: ownerScopedCollection,
+  access: contentAccess('downloads'),
   hooks: {
     beforeChange: [stampOwner],
     afterChange: [activityAfterChange('download')],

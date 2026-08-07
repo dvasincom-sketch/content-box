@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isSuperAdmin, getUserTenantID, ownerScoped, ownerField, stampOwner } from '../access'
+import { contentAccess, ownerField, stampOwner } from '../access'
 import { activityAfterChange, activityAfterDelete } from '../lib/logActivity'
 import { tagsField, normalizeTags } from '../fields/tags'
 
@@ -28,13 +28,7 @@ export const Videos: CollectionConfig = {
     group: 'Контент',
     description: 'Видеоконтент с доступом по уровню подписки.',
   },
-  access: {
-    read: ownerScoped,
-    create: ({ req: { user } }) =>
-      isSuperAdmin(user) || Boolean(getUserTenantID(user)),
-    update: ownerScoped,
-    delete: ownerScoped,
-  },
+  access: contentAccess('videos'),
   fields: [
     ownerField,
     { name: 'title', type: 'text', required: true, label: 'Название' },

@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { ownerScopedCollection, ownerField, stampOwner } from '../access'
+import { contentAccess, ownerField, stampOwner } from '../access'
 
 /**
  * GalleryImages — изображения для галерей публикаций (задача «Галерея»).
@@ -45,7 +45,7 @@ export const GalleryImages: CollectionConfig = {
     group: 'Контент',
     description: 'Фото для галерей публикаций.',
   },
-  access: ownerScopedCollection,
+  access: contentAccess('gallery'),
   hooks: {
     beforeChange: [stampOwner],
   },

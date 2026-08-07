@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { ownerScopedCollection, ownerField, stampOwner } from '../access'
+import { contentAccess, ownerField, stampOwner } from '../access'
 import { activityAfterChange, activityAfterDelete } from '../lib/logActivity'
 import { slugify } from '../lib/slugify'
 
@@ -23,7 +23,7 @@ export const Books: CollectionConfig = {
     group: 'Контент',
     description: 'Авторские произведения (книги, рассказы) с главами.',
   },
-  access: ownerScopedCollection,
+  access: contentAccess('books'),
   hooks: {
     beforeValidate: [
       ({ data }) => {

@@ -119,7 +119,7 @@ export default async function SettingsPage() {
     const pending = !!u.inviteTokenHash && !u.inviteAcceptedAt
     const expired = pending && u.inviteExpiresAt ? new Date(u.inviteExpiresAt).getTime() < Date.now() : false
     const status = u.tenantRole !== 'contributor' ? 'owner' : u.disabled ? 'disabled' : expired ? 'expired' : pending ? 'pending' : 'active'
-    return { id: u.id, email: u.email as string, name: (u.name as string) || '', status, isSelf: Number(u.id) === Number(selfId) }
+    return { id: u.id, email: u.email as string, name: (u.name as string) || '', status, isSelf: Number(u.id) === Number(selfId), studioRole: (u.studioRole as string) || null, capabilities: (u.capabilities as any) || null }
   })
 
   return (

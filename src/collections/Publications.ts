@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { ownerScopedCollection, ownerField, stampOwner, getUserTenantID } from '../access'
+import { contentAccess, ownerField, stampOwner, getUserTenantID } from '../access'
 import { activityAfterChange, activityAfterDelete } from '../lib/logActivity'
 import { revalidateHomeFeed } from '../lib/revalidateHome'
 import { tagsField, normalizeTags } from '../fields/tags'
@@ -20,7 +20,7 @@ export const Publications: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'category', 'publishedAt', 'featured', 'isNews'],
   },
-  access: ownerScopedCollection,
+  access: contentAccess('posts'),
   fields: [
     // `tenant` added by the multi-tenant plugin.
     ownerField,

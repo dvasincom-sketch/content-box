@@ -1,4 +1,6 @@
 import type { Access, FieldAccess, Where, CollectionBeforeChangeHook } from 'payload'
+import { PRESETS } from '../lib/permissions'
+import type { CapMatrix, ContentCaps, ContentAction, ContentEntity } from '../lib/permissions'
 
 /**
  * Shared access-control helpers.
@@ -205,4 +207,107 @@ export const stampOwner: CollectionBeforeChangeHook = ({ operation, data, req })
     if (u && isStaff(u)) (data as { owner?: unknown }).owner = userIdOf(u)
   }
   return data
+}
+
+/* ============================================================================
+   ТОНКИЕ ПРАВА (capabilities) — Фаза 1
+   ----------------------------------------------------------------------------
+   Права участника = матрица `сущность × действие`. Владелец студии
+   (isFullStaff: суперадмин или tenantRole editor/admin) короткозамкнут на
+   «всё разрешено» — его capabilities игнорируются. Остальные участники
+   (tenantRole 'contributor') управляются полем users.capabilities; при пустом
+   поле берётся пресет по users.studioRole (или маппинг с tenantRole).
+   Контент: create/viewAny/editOwn/editAny/deleteOwn/deleteAny (владение — поле
+   owner). Структура/витрина: manage. Сообщество: moderate/manage.
+   ============================================================================ */
+
+
+const mapTenantToStudio = (tenantRole?: string | null): string => {
+  switch (tenantRole) {
+    case 'editor':
+    case 'admin':
+      return 'owner'
+    case 'viewer':
+      return 'viewer'
+    case 'contributor':
+    default:
+      return 'author'
+  }
+}
+
+/** Эффективная матрица прав участника (без короткого замыкания владельца). */
+export const capabilitiesOf = (user: MaybeUser): CapMatrix => {
+  const u = user as (MaybeUser & { capabilities?: unknown; studioRole?: string | null; tenantRole?: string | null }) | null
+  if (!u) return {}
+  const raw = u.capabilities
+  if (raw && typeof raw === 'object') return raw as CapMatrix
+  const role = (u.studioRole && String(u.studioRole)) || mapTenantToStudio(u.tenantRole)
+  return PRESETS[role] ?? {}
+}
+
+/** Может ли пользователь выполнить действие над сущностью. Владелец/суперадмин — всегда. */
+export const can = (
+  user: MaybeUser,
+  entity: keyof CapMatrix,
+  action: ContentAction | 'manage' | 'moderate',
+): boolean => {
+  if (isFullStaff(user)) return true
+  const node = capabilitiesOf(user)[entity] as Record<string, boolean> | undefined
+  return Boolean(node && node[action])
+}
+
+/**
+ * Access-набор для контентной коллекции с владельцем, управляемый правами.
+ * Владелец/суперадмин — весь тенант; участник — по своей матрице (any → весь
+ * тенант, own → только owner==self). Поведение «Автора» совпадает с прежним
+ * ownerScoped, поэтому апгрейд не меняет доступ существующих участников.
+ */
+export const contentAccess = (entity: ContentEntity) => {
+  const tenantWhere = (tid: string | number): Where => ({ tenant: { equals: tid } })
+  const ownWhere = (tid: string | number, uid: string | number): Where => ({
+    and: [{ tenant: { equals: tid } }, { owner: { equals: uid } }],
+  })
+
+  const read: Access = ({ req: { user } }) => {
+    const u = user as MaybeUser
+    if (isSuperAdmin(u)) return true
+    const tid = getUserTenantID(u)
+    if (!tid) return false
+    if (isFullStaff(u)) return tenantWhere(tid)
+    const c = (capabilitiesOf(u)[entity] ?? {}) as ContentCaps
+    if (c.viewAny || c.editAny || c.deleteAny) return tenantWhere(tid)
+    if (c.create || c.editOwn || c.deleteOwn) {
+      const uid = userIdOf(u)
+      return uid == null ? false : ownWhere(tid, uid)
+    }
+    return false
+  }
+
+  const create: Access = ({ req: { user } }) => {
+    const u = user as MaybeUser
+    if (isSuperAdmin(u)) return true
+    const tid = getUserTenantID(u)
+    if (!tid) return false
+    const c = (capabilitiesOf(u)[entity] ?? {}) as ContentCaps
+    if (isFullStaff(u) || c.create) return tenantWhere(tid)
+    return false
+  }
+
+  const mutate = (own: 'editOwn' | 'deleteOwn', any: 'editAny' | 'deleteAny'): Access =>
+    ({ req: { user } }) => {
+      const u = user as MaybeUser
+      if (isSuperAdmin(u)) return true
+      const tid = getUserTenantID(u)
+      if (!tid) return false
+      if (isFullStaff(u)) return tenantWhere(tid)
+      const c = (capabilitiesOf(u)[entity] ?? {}) as ContentCaps
+      if (c[any]) return tenantWhere(tid)
+      if (c[own]) {
+        const uid = userIdOf(u)
+        return uid == null ? false : ownWhere(tid, uid)
+      }
+      return false
+    }
+
+  return { read, create, update: mutate('editOwn', 'editAny'), delete: mutate('deleteOwn', 'deleteAny') }
 }
