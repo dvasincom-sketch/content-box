@@ -190,6 +190,7 @@ export function DonateView(props: DonateViewProps) {
               <h3 className="dn-h3"><Users size={16} /> Другой способ помочь</h3>
               <p className="dn-muted">Оформите подписку — регулярная поддержка и доступ к эксклюзиву.</p>
               <Link href={subscribeHref} className="dn-btn dn-btn--ghost dn-btn--block">Смотреть подписки</Link>
+              <Link href="/gift" className="dn-btn dn-btn--ghost dn-btn--block" style={{ marginTop: '.6rem' }}>🎁 Подарить подписку</Link>
             </div>
           </aside>
         </section>

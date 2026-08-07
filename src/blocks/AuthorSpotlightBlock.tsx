@@ -117,6 +117,7 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
               )
             })}
           </div>
+          <AppLink href="/gift" className="spot__gift">🎁 Подарить подписку другу</AppLink>
         </div>
       )}
     </section>

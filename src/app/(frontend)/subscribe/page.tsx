@@ -6,6 +6,7 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import { PerkIcon, type PerkType } from '@/components/studio/PerkIcon'
+import { GiftWidget } from '@/components/GiftWidget'
 import type { Metadata } from 'next'
 import '../styles.css'
 
@@ -93,6 +94,11 @@ export default async function SubscribePage() {
             Выберите уровень доступа. Высший уровень открывает весь контент уровней ниже.
           </p>
         </header>
+
+        <div className="gift-cta">
+          <GiftWidget mode="segment" tiers={tiers.map((t) => ({ id: t.id, name: t.name, priceRub: t.priceRub, description: t.description }))} selfHref="/subscribe" />
+          <span className="gift-cta__hint">Можно оформить подписку себе или подарить её другу</span>
+        </div>
 
         {tiers.length === 0 ? (
           <div
