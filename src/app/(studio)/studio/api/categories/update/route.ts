@@ -2,6 +2,7 @@ import { withAuthor, readJson, apiError, apiOk, belongsToTenant, authorCan } fro
 import { slugify } from '@/lib/slugify'
 import { htmlToLexical } from '@/lib/lexical'
 import { errorMessage } from '@/lib/errorMessage'
+import { logActivity } from '@/lib/logActivity'
 import type { Payload } from 'payload'
 
 /**
@@ -94,6 +95,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       data: patch,
       overrideAccess: true,
     })
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'update', entity: 'категория', title: '' })
     return apiOk()
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось сохранить изменения'))

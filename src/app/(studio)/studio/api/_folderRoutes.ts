@@ -2,6 +2,7 @@ import type { CollectionSlug, Payload } from 'payload'
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant, tenantIdOf, authorCan } from './_lib'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
+import { logActivity } from '@/lib/logActivity'
 
 /**
  * Общие роуты древовидных папок (nestedDocs, tenant-scoped).
@@ -63,6 +64,7 @@ export function makeFolderCreateRoute(cfg: FolderRoutesConfig) {
         } as any,
         overrideAccess: true,
       })
+      await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'create', entity: cfg.folders === 'video-folders' ? 'раздел видео' : 'раздел галереи', title })
       return apiOk({ id: doc.id, title, slug })
     } catch (e: unknown) {
       return apiError(errorMessage(e, 'Не удалось создать папку'), 500)
@@ -113,6 +115,7 @@ export function makeFolderUpdateRoute(cfg: FolderRoutesConfig) {
 
     try {
       await payload.update({ collection: cfg.folders, id, data: patch, overrideAccess: true })
+      await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'update', entity: cfg.folders === 'video-folders' ? 'раздел видео' : 'раздел галереи', title: '' })
       return apiOk()
     } catch (e: unknown) {
       return apiError(errorMessage(e, 'Не удалось сохранить папку'))
@@ -172,6 +175,7 @@ export function makeFolderDeleteRoute(cfg: FolderRoutesConfig) {
     // 3) Удаляем саму папку
     try {
       await payload.delete({ collection: cfg.folders, id, overrideAccess: true })
+      await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'delete', entity: cfg.folders === 'video-folders' ? 'раздел видео' : 'раздел галереи', title: '' })
       return apiOk()
     } catch (e: unknown) {
       return apiError(errorMessage(e, 'Не удалось удалить папку'), 500)

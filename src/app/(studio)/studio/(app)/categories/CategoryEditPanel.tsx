@@ -243,8 +243,8 @@ export function CategoryEditPanel({
             <div className="catedit__poster-toggle">
               <button
                 type="button"
-                className={`catedit__poster-opt${!posterLayout && !videoSeries ? ' is-on' : ''}`}
-                onClick={() => { setPosterLayout(false); setVideoSeries(false) }}
+                className={`catedit__poster-opt${!posterLayout ? ' is-on' : ''}`}
+                onClick={() => setPosterLayout(false)}
               >
                 Обычный раздел
               </button>
@@ -255,22 +255,40 @@ export function CategoryEditPanel({
               >
                 Контейнер афиш
               </button>
-              <button
-                type="button"
-                className={`catedit__poster-opt${videoSeries ? ' is-on' : ''}`}
-                onClick={() => { setVideoSeries(true); setPosterLayout(false) }}
-              >
-                Медиа-плейлист
-              </button>
             </div>
             <div className="catedit__hint">
-              {videoSeries
-                ? 'Медиа-плейлист — раздел выводится как плеер со списком серий по сезонам (YouTube-подобно). Номер сезона и порядок эпизода задаются у каждого аудио/видео этой категории.'
-                : posterLayout
-                  ? 'Контейнер афиш — дочерние категории этого раздела выводятся вертикальными постерами 2:3 (афишами): рядом на главной и сеткой на странице раздела. Клик по афише ведёт в дочерний раздел с эпизодами. Вертикальную обложку загружайте в КАЖДУЮ дочернюю категорию.'
-                  : 'Обычный раздел — публикации выводятся списком, а подразделы — плитками. Подходит для текстовых разделов.'}
+              {posterLayout
+                ? 'Контейнер афиш — дочерние категории этого раздела выводятся вертикальными постерами 2:3 (афишами): рядом на главной и сеткой на странице раздела. Клик по афише ведёт в дочерний раздел с эпизодами. Вертикальную обложку загружайте в КАЖДУЮ дочернюю категорию.'
+                : 'Обычный раздел — видео, публикации и подразделы. Ниже выберите, как показывать видео этого раздела.'}
             </div>
           </div>
+
+          {!posterLayout && (
+            <div className="studio-field">
+              <span className="studio-field__label">Видео в разделе</span>
+              <div className="catedit__poster-toggle">
+                <button
+                  type="button"
+                  className={`catedit__poster-opt${!videoSeries ? ' is-on' : ''}`}
+                  onClick={() => setVideoSeries(false)}
+                >
+                  Одиночные
+                </button>
+                <button
+                  type="button"
+                  className={`catedit__poster-opt${videoSeries ? ' is-on' : ''}`}
+                  onClick={() => setVideoSeries(true)}
+                >
+                  Плейлист
+                </button>
+              </div>
+              <div className="catedit__hint">
+                {videoSeries
+                  ? 'Плейлист — плеер со списком серий по сезонам (YouTube-подобно). Номер сезона и порядок эпизода задаются у каждого видео этого раздела.'
+                  : 'Одиночные — видео раздела выводятся горизонтальными карточками 16:9 (одно видео — крупнее). Публикации показываются как обычно.'}
+              </div>
+            </div>
+          )}
 
           <div className="studio-field">
             <span className="studio-field__label">Обложка</span>

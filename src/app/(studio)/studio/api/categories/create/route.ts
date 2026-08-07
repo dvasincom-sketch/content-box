@@ -1,6 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
+import { logActivity } from '@/lib/logActivity'
 
 /**
  * Создание категории. Серверный роут + Local API, тенант из сессии автора.
@@ -41,6 +42,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       } as any,
       overrideAccess: true,
     })
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'create', entity: 'категория', title })
     return apiOk({ id: doc.id })
   } catch (e: unknown) {
     // Коллизия slug в пределах родителя (из beforeValidate) — читаемое сообщение

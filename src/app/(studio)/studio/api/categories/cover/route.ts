@@ -1,5 +1,6 @@
 import { withAuthor, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
+import { logActivity } from '@/lib/logActivity'
 
 /**
  * Загрузка обложки категории в media (R2). Возвращает { id, url } — привязка к
@@ -66,6 +67,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       }
     }
 
+    await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'update', entity: 'категория', title: 'обложка' })
     return apiOk({ id: media.id, url: (media as any).url || null })
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось загрузить'), 500)

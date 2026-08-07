@@ -11,6 +11,7 @@ import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { RichText } from '@/components/RichText'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
+import { VideoCardsBlock } from '@/blocks/VideoCardsBlock'
 import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { categoryHref } from '@/lib/categoryHref'
 import { CrossLinkCard } from '@/components/CrossLinkCard'
@@ -170,7 +171,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
   // Видео-плейлист: эпизоды — видео, назначенные прямо этой категории.
   // Группировку/сортировку по сезону и порядку делает блок (клиент).
   let seriesEpisodes: SeriesEpisode[] = []
-  if (isVideoSeries) {
+  if (!isPosterContainer) {
     const vidsRes = await payload.find({
       collection: 'videos',
       where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: category.id } }] },
@@ -247,6 +248,13 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
           </div>
         )}
 
+        {!isVideoSeries && !isPosterContainer && seriesEpisodes.length > 0 && (
+          <>
+            <VpnVideoNotice />
+            <VideoCardsBlock episodes={seriesEpisodes} />
+          </>
+        )}
+
         {isVideoSeries ? (
           <>
             <VpnVideoNotice />
@@ -294,9 +302,9 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
           )
         ) : pubs.length === 0 ? (
           // Если есть статья или подкатегории — раздел не пустой.
-          category.description || children.length > 0 ? null : (
+          category.description || children.length > 0 || seriesEpisodes.length > 0 ? null : (
             <p style={{ color: 'var(--brand-muted)' }}>
-              В этой категории пока нет публикаций.
+              В этой категории пока нет материалов.
             </p>
           )
         ) : (
