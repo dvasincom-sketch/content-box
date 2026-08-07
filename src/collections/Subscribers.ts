@@ -2,6 +2,7 @@ import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID, superAdminFieldAccess, isSubscriber } from '../access'
 import { subscriberResetSubject, subscriberResetHTML } from '../emails/authEmails'
 import { subscriptionAfterChange } from '../lib/logSubscriptionEvent'
+import { logSubscriberActivity } from '../lib/logSubscriberActivity'
 
 /**
  * Subscribers — зрители сайта (auth-коллекция), ОТДЕЛЬНО от CMS-users.
@@ -57,6 +58,56 @@ const beforeLoginTenantGuard: NonNullable<CollectionConfig['hooks']>['beforeLogi
   },
 ]
 
+/**
+ * afterLogin — фиксируем момент входа зрителя (lastSeenAt) для дашборда.
+ *
+ * ВАЖНО: fire-and-forget. Логин не должен ждать запись в БД (иначе при
+ * нагрузке пул соединений голодает и форма входа «висит» — та же причина, что
+ * чинили для CMS-users). Ошибки глотаем: аналитика входа вторична. context-флаг
+ * гасит лишний afterChange-проход subscriptionAfterChange (тариф не меняется —
+ * события всё равно не будет, но и лишнюю работу не делаем).
+ */
+const touchLastSeen: NonNullable<CollectionConfig['hooks']>['afterLogin'] = [
+  ({ req, user }) => {
+    const payload = req?.payload
+    const id = (user as { id?: number | string })?.id
+    if (payload && id != null) {
+      void payload
+        .update({
+          collection: 'subscribers',
+          id,
+          data: { lastSeenAt: new Date().toISOString() },
+          overrideAccess: true,
+          context: { skipSubscriptionEvent: true },
+        })
+        .catch(() => {})
+      void logSubscriberActivity(payload, {
+        tenant: (user as { tenant?: unknown })?.tenant,
+        subscriber: id,
+        action: 'login',
+      })
+    }
+    return user
+  },
+]
+
+/** afterChange: одноразовое событие «регистрация» при создании зрителя. */
+const logSubscriberRegister: NonNullable<NonNullable<CollectionConfig['hooks']>['afterChange']>[number] = ({
+  doc,
+  req,
+  operation,
+}) => {
+  if (operation !== 'create') return
+  const payload = req?.payload
+  if (payload && doc?.id != null) {
+    void logSubscriberActivity(payload, {
+      tenant: (doc as { tenant?: unknown })?.tenant,
+      subscriber: doc.id,
+      action: 'register',
+    })
+  }
+}
+
 export const Subscribers: CollectionConfig = {
   slug: 'subscribers',
   auth: {
@@ -66,7 +117,7 @@ export const Subscribers: CollectionConfig = {
       generateEmailHTML: (args) => subscriberResetHTML(args),
     },
   },
-  hooks: { beforeLogin: beforeLoginTenantGuard, afterChange: [subscriptionAfterChange] },
+  hooks: { beforeLogin: beforeLoginTenantGuard, afterLogin: touchLastSeen, afterChange: [subscriptionAfterChange, logSubscriberRegister] },
   labels: { singular: 'Подписчик', plural: 'Пользователи' },
   admin: {
     useAsTitle: 'email',
@@ -168,6 +219,13 @@ export const Subscribers: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       label: 'Заблокирован',
+    },
+    {
+      name: 'lastSeenAt',
+      type: 'date',
+      label: 'Последний вход',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Момент последнего входа. Ставит сервер (afterLogin).' },
     },
     // ── Подтверждение email (мягкое) ──────────────────────────────────────
     // «Мягкое»: НЕ блокирует вход. Регистрация и логин работают как раньше,

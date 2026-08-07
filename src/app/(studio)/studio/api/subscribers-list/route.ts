@@ -27,6 +27,7 @@ export const GET = withAuthor(async ({ payload, tenantId, author }) => {
       isBlocked: Boolean(u.isBlocked),
       subscriptionUntil: u.subscriptionUntil || null,
       createdAt: u.createdAt || null,
+      lastSeenAt: u.lastSeenAt || null,
     }
   })
   return apiOk({ users, total: res.totalDocs })

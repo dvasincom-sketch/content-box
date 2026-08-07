@@ -2,6 +2,7 @@ import type { Access, CollectionConfig } from 'payload'
 import { isSuperAdmin, getUserTenantID, isSubscriber } from '../access'
 import { awardActivity, reverseActivity } from '../lib/reputation'
 import { revalidateHomeFeed } from '../lib/revalidateHome'
+import { logSubscriberActivity } from '../lib/logSubscriberActivity'
 
 /**
  * Comments — комментарии зрителей под публикациями.
@@ -145,6 +146,21 @@ export const Comments: CollectionConfig = {
         // Комментарии влияют на счётчики карточек и секции «популярное»
         // и «обсуждаемое» — лента тенанта устарела.
         await revalidateHomeFeed(doc?.tenant)
+      },
+      // Журнал действий зрителя: новый опубликованный комментарий.
+      ({ doc, req, operation }) => {
+        if (operation !== 'create' || doc?.status !== 'published') return
+        const authorId = doc?.author && typeof doc.author === 'object' ? doc.author.id : doc?.author
+        const targetId = doc?.publication && typeof doc.publication === 'object' ? doc.publication.id : doc?.publication
+        const text = typeof doc?.text === 'string' ? doc.text.slice(0, 120) : null
+        void logSubscriberActivity(req.payload, {
+          tenant: doc?.tenant,
+          subscriber: authorId,
+          action: 'comment',
+          targetType: targetId ? 'publication' : (doc?.chapter ? 'chapter' : null),
+          targetId: targetId ?? (doc?.chapter && typeof doc.chapter === 'object' ? doc.chapter.id : doc?.chapter),
+          meta: text ? { preview: text } : null,
+        })
       },
     ],
     afterDelete: [

@@ -5,6 +5,7 @@ import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { errorMessage } from '@/lib/errorMessage'
+import { logSubscriberActivity } from '@/lib/logSubscriberActivity'
 
 /* Соцфункции (Фаза 5): закладки, подписки на аккаунты, история просмотров.
    Все мутации — под текущим подписчиком, tenant из заголовков. */
@@ -35,6 +36,7 @@ export async function toggleBookmark(input: { targetType: 'publication' | 'video
       return { ok: true, saved: false }
     }
     await payload.create({ collection: 'bookmarks', data: { tenant: tenantId, subscriber: subscriber.id, targetType: input.targetType, [field]: tid } as any, overrideAccess: true })
+    void logSubscriberActivity(payload, { tenant: tenantId, subscriber: subscriber.id, action: 'bookmark', targetType: input.targetType, targetId: tid })
     return { ok: true, saved: true }
   } catch (e: unknown) {
     return { ok: false, error: errorMessage(e, 'Ошибка') }
@@ -63,6 +65,7 @@ export async function toggleFollow(input: { handle?: string; targetId?: string |
       return { ok: true, following: false }
     }
     await payload.create({ collection: 'follows', data: { tenant: tenantId, follower: subscriber.id, following: targetId } as any, overrideAccess: true })
+    void logSubscriberActivity(payload, { tenant: tenantId, subscriber: subscriber.id, action: 'follow', targetType: 'subscriber', targetId: targetId })
     return { ok: true, following: true }
   } catch (e: unknown) {
     return { ok: false, error: errorMessage(e, 'Ошибка') }
@@ -88,6 +91,7 @@ export async function recordView(input: { targetType: 'publication' | 'video' | 
     } else {
       await payload.create({ collection: 'views', data: { tenant: tenantId, subscriber: subscriber.id, targetType: input.targetType, [field]: tid, viewedAt: now, ...(input.targetType === 'book' ? { chapter: chapterId } : {}) } as any, overrideAccess: true })
     }
+    void logSubscriberActivity(payload, { tenant: tenantId, subscriber: subscriber.id, action: 'view', targetType: input.targetType, targetId: tid, meta: chapterId ? { chapter: chapterId } : null })
     return { ok: true }
   } catch {
     return { ok: false }

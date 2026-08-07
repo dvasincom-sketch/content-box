@@ -91,6 +91,7 @@ export interface Config {
     'activity-events': ActivityEvent;
     'studio-activity': StudioActivity;
     'subscription-events': SubscriptionEvent;
+    'subscriber-activity': SubscriberActivity;
     'support-goals': SupportGoal;
     'support-payments': SupportPayment;
     submissions: Submission;
@@ -128,6 +129,7 @@ export interface Config {
     'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
     'studio-activity': StudioActivitySelect<false> | StudioActivitySelect<true>;
     'subscription-events': SubscriptionEventsSelect<false> | SubscriptionEventsSelect<true>;
+    'subscriber-activity': SubscriberActivitySelect<false> | SubscriberActivitySelect<true>;
     'support-goals': SupportGoalsSelect<false> | SupportGoalsSelect<true>;
     'support-payments': SupportPaymentsSelect<false> | SupportPaymentsSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
@@ -777,6 +779,10 @@ export interface Subscriber {
    */
   subscriptionUntil?: string | null;
   isBlocked?: boolean | null;
+  /**
+   * Момент последнего входа. Ставит сервер (afterLogin).
+   */
+  lastSeenAt?: string | null;
   emailVerified?: boolean | null;
   emailVerifyToken?: string | null;
   emailVerifyExpiry?: string | null;
@@ -1408,6 +1414,41 @@ export interface SubscriptionEvent {
   createdAt: string;
 }
 /**
+ * Журнал действий зрителей (служебное, только чтение).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriber-activity".
+ */
+export interface SubscriberActivity {
+  id: number;
+  subscriber: number | Subscriber;
+  action:
+    | 'login'
+    | 'register'
+    | 'view'
+    | 'comment'
+    | 'reaction'
+    | 'bookmark'
+    | 'follow'
+    | 'subscribe'
+    | 'unsubscribe'
+    | 'subscription_change';
+  targetType?: string | null;
+  targetId?: string | null;
+  meta?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  tenant?: (number | null) | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Цели для страницы «Поддержать проект».
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1675,6 +1716,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subscription-events';
         value: number | SubscriptionEvent;
+      } | null)
+    | ({
+        relationTo: 'subscriber-activity';
+        value: number | SubscriberActivity;
       } | null)
     | ({
         relationTo: 'support-goals';
@@ -2152,6 +2197,7 @@ export interface SubscribersSelect<T extends boolean = true> {
   activeTier?: T;
   subscriptionUntil?: T;
   isBlocked?: T;
+  lastSeenAt?: T;
   emailVerified?: T;
   emailVerifyToken?: T;
   emailVerifyExpiry?: T;
@@ -2453,6 +2499,20 @@ export interface SubscriptionEventsSelect<T extends boolean = true> {
   tierName?: T;
   priceRub?: T;
   action?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscriber-activity_select".
+ */
+export interface SubscriberActivitySelect<T extends boolean = true> {
+  subscriber?: T;
+  action?: T;
+  targetType?: T;
+  targetId?: T;
+  meta?: T;
+  tenant?: T;
   updatedAt?: T;
   createdAt?: T;
 }

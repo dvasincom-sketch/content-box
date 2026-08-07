@@ -1,4 +1,5 @@
 import type { Payload } from 'payload'
+import { logSubscriberActivity } from './logSubscriberActivity'
 
 /** Тип коммерческого события подписки. */
 export type SubscriptionAction = 'started' | 'renewed' | 'changed' | 'canceled'
@@ -69,8 +70,10 @@ export async function logSubscriptionEvent(
  *  - тот же тариф, дата продлена позже = renewed
  * Прочие изменения подписчика (очки, уровень, вход) событий не создают.
  */
-export const subscriptionAfterChange = async ({ doc, previousDoc, req, operation }: any): Promise<void> => {
+export const subscriptionAfterChange = async ({ doc, previousDoc, req, context, operation }: any): Promise<void> => {
   if (operation !== 'create' && operation !== 'update') return
+  // Служебные апдейты (например, отметка входа lastSeenAt) не порождают событий.
+  if (context?.skipSubscriptionEvent || req?.context?.skipSubscriptionEvent) return
   const payload = req?.payload
   if (!payload) return
 
@@ -100,6 +103,15 @@ export const subscriptionAfterChange = async ({ doc, previousDoc, req, operation
     subscriber: doc?.id,
     tier,
     action,
+  })
+
+  // Журнал действий зрителя (таймлайн в дашборде).
+  void logSubscriberActivity(payload, {
+    tenant: doc?.tenant,
+    subscriber: doc?.id,
+    action: action === 'started' ? 'subscribe' : action === 'canceled' ? 'unsubscribe' : 'subscription_change',
+    targetType: 'tier',
+    targetId: tier,
   })
 
   // Дублируем оформление/апгрейд платной подписки в общую ленту активности

@@ -2,6 +2,7 @@ import type { Access, CollectionConfig } from 'payload'
 import { awardActivity, reverseActivity } from '../lib/reputation'
 import { revalidateHomeFeed } from '../lib/revalidateHome'
 import { isSuperAdmin, getUserTenantID, isSubscriber } from '../access'
+import { logSubscriberActivity } from '../lib/logSubscriberActivity'
 
 /**
  * Reactions — эмодзи-реакции зрителей. Одна коллекция для двух типов целей:
@@ -142,6 +143,22 @@ export const Reactions: CollectionConfig = {
             : (comment as any)?.author
         if (!recipientId || Number(recipientId) === Number(reactorId)) return
         await awardActivity(req.payload, { subscriberId: recipientId, type: 'reaction_received', refType: 'reaction', refId: doc.id })
+      },
+      // Журнал действий зрителя: поставленная реакция.
+      ({ doc, req, operation }) => {
+        if (operation !== 'create') return
+        const reactorId = doc?.subscriber && typeof doc.subscriber === 'object' ? doc.subscriber.id : doc?.subscriber
+        const isComment = doc?.targetType === 'comment'
+        const targetRaw = isComment ? doc?.comment : doc?.publication
+        const targetId = targetRaw && typeof targetRaw === 'object' ? targetRaw.id : targetRaw
+        void logSubscriberActivity(req.payload, {
+          tenant: doc?.tenant,
+          subscriber: reactorId,
+          action: 'reaction',
+          targetType: isComment ? 'comment' : 'publication',
+          targetId,
+          meta: doc?.emoji ? { emoji: doc.emoji } : null,
+        })
       },
     ],
     afterDelete: [
