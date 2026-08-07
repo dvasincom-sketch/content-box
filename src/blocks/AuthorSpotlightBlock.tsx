@@ -1,8 +1,8 @@
 import React from 'react'
 import AppLink from '@/components/AppLink'
-import { Check } from 'lucide-react'
+import { Check, Play, Camera, Send, Zap, Users } from 'lucide-react'
 
-export type SpotlightStat = { n: number; label: string }
+export type SpotlightStat = { value: string; label: string }
 export type SpotlightSocial = { platform: string; url: string }
 export type SpotlightTier = { name: string; priceRub: number; perks: string[] }
 
@@ -16,6 +16,9 @@ export type AuthorSpotlightBlockProps = {
   subscribeHref: string
 }
 
+const SOCIAL_ICON: Record<string, React.ComponentType<{ size?: number }>> = {
+  boosty: Zap, telegram: Send, vk: Users, youtube: Play, instagram: Camera,
+}
 const SOCIAL_LABEL: Record<string, string> = {
   boosty: 'Boosty',
   vk: 'VK',
@@ -59,14 +62,13 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
           <div className="spot__logo spot__logo--ph" aria-hidden />
         )}
         <div className="spot__id">
-          <h2 className="spot__name">{name}</h2>
           {bio && <p className="spot__bio">{bio}</p>}
         </div>
         {stats.length > 0 && (
           <div className="spot__stats">
             {stats.map((s, i) => (
               <div key={i} className="spot__stat">
-                <div className="spot__stat-n">{fmt(s.n)}</div>
+                <div className="spot__stat-n">{s.value}</div>
                 <div className="spot__stat-l">{s.label}</div>
               </div>
             ))}
@@ -74,11 +76,15 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
         )}
         {validSocials.length > 0 && (
           <div className="spot__socials">
-            {validSocials.map((s, i) => (
-              <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="spot__social">
-                {SOCIAL_LABEL[s.platform] ?? s.platform}
-              </a>
-            ))}
+            {validSocials.map((s, i) => {
+              const Icon = SOCIAL_ICON[s.platform]
+              const label = SOCIAL_LABEL[s.platform] ?? s.platform
+              return (
+                <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="spot__social" aria-label={label} title={label}>
+                  {Icon ? <Icon size={18} /> : label}
+                </a>
+              )
+            })}
           </div>
         )}
       </div>

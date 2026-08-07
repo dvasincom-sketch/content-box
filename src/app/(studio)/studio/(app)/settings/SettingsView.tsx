@@ -11,6 +11,7 @@ import { HomeBuilder } from './HomeBuilder'
 import { TemplatesPanel } from './TemplatesPanel'
 import { ImageUploadField } from './ImageUploadField'
 import { BgDecorPicker } from './BgDecorPicker'
+import { AuthorStatsPanel, type AuthorStats } from './AuthorStatsPanel'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
@@ -58,6 +59,7 @@ export function SettingsView({
   savedTemplates,
   appliedTemplate,
   bgDecor,
+  authorStats,
   members,
   isOwner,
 }: {
@@ -70,6 +72,7 @@ export function SettingsView({
   savedTemplates: HomeSavedTemplate[]
   appliedTemplate: string | null
   bgDecor: string | null
+  authorStats: AuthorStats
   members: Member[]
   isOwner: boolean
 }) {
@@ -113,6 +116,7 @@ export function SettingsView({
               </div>
             </section>
             <BgDecorPicker initial={bgDecor} />
+            <AuthorStatsPanel initial={authorStats} />
           </>
         )}
         {tab === 'home' && <HomeBlock homeSections={homeSections} />}

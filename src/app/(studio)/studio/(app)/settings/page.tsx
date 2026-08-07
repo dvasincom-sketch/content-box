@@ -66,6 +66,14 @@ export default async function SettingsPage() {
   const appliedTemplate = (settings?.appliedTemplate as string | null) ?? null
   const bgDecor = ((settings as { bgDecor?: string } | null)?.bgDecor as string | null) ?? null
 
+  const aStats = (settings?.authorStats ?? {}) as Record<string, string | undefined>
+  const authorStats = {
+    videosValue: aStats.videosValue ?? '',
+    videosLabel: aStats.videosLabel ?? '',
+    membersValue: aStats.membersValue ?? '',
+    membersLabel: aStats.membersLabel ?? '',
+  }
+
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     id: t.id,
     name: t.name,
@@ -105,6 +113,7 @@ export default async function SettingsPage() {
       savedTemplates={savedTemplates}
       appliedTemplate={appliedTemplate}
       bgDecor={bgDecor}
+      authorStats={authorStats}
       members={members}
       isOwner={isOwner}
     />

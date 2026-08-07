@@ -63,6 +63,18 @@ export const SiteSettings: CollectionConfig = {
       },
     },
     {
+      name: 'authorStats',
+      type: 'group',
+      label: 'Витрина «Об авторе» — счётчики',
+      admin: { description: 'Числа в блоке «Об авторе» на главной. Значение — строка (можно «800+», «100 тыс+»). Пусто = реальные данные.' },
+      fields: [
+        { name: 'videosValue', type: 'text', label: 'Видео — значение (напр. 800+)' },
+        { name: 'videosLabel', type: 'text', label: 'Видео — подпись', defaultValue: 'озвученных видео' },
+        { name: 'membersValue', type: 'text', label: 'Участники — значение (напр. 100 тыс+)' },
+        { name: 'membersLabel', type: 'text', label: 'Участники — подпись', defaultValue: 'участников' },
+      ],
+    },
+    {
       // Сохранённые пер-тенантные шаблоны главной («Мои шаблоны»): массив
       // { id, name, themePreset, sections[{type,enabled,config}], content }.
       // Хранится одним jsonb-блобом (без под-таблицы/enum) — правится из студии.

@@ -2743,8 +2743,8 @@ body.preset-tropic-sunset header .c-btn--primary:hover { filter: none; backgroun
 .spot__stat-n { font-size: 24px; font-weight: 700; color: var(--brand-text); font-variant-numeric: tabular-nums; line-height: 1; }
 .spot__stat-l { margin-top: 3px; font-size: 13px; color: var(--brand-muted); }
 .spot__socials { display: flex; gap: 8px; flex-wrap: wrap; }
-.spot__social { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--brand-border); color: var(--brand-text); font-size: 12px; font-weight: 600; text-decoration: none; }
-.spot__social:hover { background: color-mix(in srgb, var(--brand-text) 6%, transparent); }
+.spot__social { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; border: 1px solid var(--brand-border); color: var(--brand-text); text-decoration: none; transition: background .15s ease, border-color .15s ease, color .15s ease; }
+.spot__social:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
 
 .spot__subs-label { font-size: 13px; font-weight: 600; color: var(--brand-muted); margin: 4px 0 12px; }
 .spot__tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }

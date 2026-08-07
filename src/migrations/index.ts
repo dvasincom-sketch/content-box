@@ -70,6 +70,7 @@ import * as migration_20260806_170000_add_tropic_sunset_preset from './20260806_
 import * as migration_20260806_180000_add_bg_decor from './20260806_180000_add_bg_decor';
 import * as migration_20260806_190000_add_photo_showcase_section from './20260806_190000_add_photo_showcase_section';
 import * as migration_20260806_200000_add_activity_invite_action from './20260806_200000_add_activity_invite_action';
+import * as migration_20260807_100000_add_author_stats from './20260807_100000_add_author_stats';
 
 export const migrations = [
   {
@@ -431,5 +432,10 @@ export const migrations = [
     up: migration_20260806_200000_add_activity_invite_action.up,
     down: migration_20260806_200000_add_activity_invite_action.down,
     name: '20260806_200000_add_activity_invite_action',
+  },
+  {
+    up: migration_20260807_100000_add_author_stats.up,
+    down: migration_20260807_100000_add_author_stats.down,
+    name: '20260807_100000_add_author_stats',
   },
 ];

@@ -319,6 +319,15 @@ export interface SiteSetting {
         | 'bubbles'
       )
     | null;
+  /**
+   * Числа в блоке «Об авторе» на главной. Значение — строка (можно «800+», «100 тыс+»). Пусто = реальные данные.
+   */
+  authorStats?: {
+    videosValue?: string | null;
+    videosLabel?: string | null;
+    membersValue?: string | null;
+    membersLabel?: string | null;
+  };
   savedTemplates?:
     | {
         [k: string]: unknown;
@@ -1752,6 +1761,14 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   appIcon?: T;
   themePreset?: T;
   bgDecor?: T;
+  authorStats?:
+    | T
+    | {
+        videosValue?: T;
+        videosLabel?: T;
+        membersValue?: T;
+        membersLabel?: T;
+      };
   savedTemplates?: T;
   appliedTemplate?: T;
   theme?:

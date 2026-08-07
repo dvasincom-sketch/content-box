@@ -51,6 +51,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   let bg = '#0F0A1E'
   let fg = '#7C3AED'
   let logoUrl: string | null = null
+  let iconIsAppIcon = false
   let letter = 'C'
   try {
     const ctx = await getTenantFromHeaders()
@@ -60,10 +61,12 @@ export async function GET(req: NextRequest): Promise<Response> {
     bg = preset.light.bg
     fg = preset.light.primary
     // Иконку берём в приоритете из appIcon (квадрат), иначе из логотипа.
-    const iconMedia =
-      (settings?.appIcon && typeof settings.appIcon === 'object' ? settings.appIcon : null) ||
-      (settings?.logo && typeof settings.logo === 'object' ? settings.logo : null)
+    const appIconMedia = settings?.appIcon && typeof settings.appIcon === 'object' ? settings.appIcon : null
+    const logoMedia = settings?.logo && typeof settings.logo === 'object' ? settings.logo : null
+    const iconMedia = appIconMedia || logoMedia
     logoUrl = iconMedia && typeof iconMedia.url === 'string' ? (iconMedia.url as string) : null
+    // appIcon — готовая квадратная иконка: рисуем «в край», без рамки и фона.
+    iconIsAppIcon = Boolean(appIconMedia && logoUrl && iconMedia === appIconMedia)
     letter = ((tenant?.name as string) || 'C').trim().charAt(0).toUpperCase() || 'C'
   } catch {
     /* дефолты выше */
@@ -75,6 +78,21 @@ export async function GET(req: NextRequest): Promise<Response> {
   // Основной путь: логотип тенанта или буквенный знак на брендовом фоне.
   // Любая ошибка sharp/загрузки → фолбэк ниже, но НЕ 502.
   try {
+    // Готовая квадратная иконка приложения — заполняем весь холст (cover),
+    // без отступа и брендового фона, иначе получается белая/цветная рамка.
+    if (logoUrl && iconIsAppIcon) {
+      try {
+        const res = await fetch(logoUrl)
+        if (res.ok) {
+          const buf = Buffer.from(await res.arrayBuffer())
+          const out = await sharp(buf).resize(size, size, { fit: 'cover' }).png().toBuffer()
+          return png(out)
+        }
+      } catch {
+        /* упадём на общий путь ниже */
+      }
+    }
+
     let content: Buffer | null = null
     if (logoUrl) {
       try {

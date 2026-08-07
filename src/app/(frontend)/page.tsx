@@ -111,17 +111,19 @@ async function getHeroSlides(payload: Payload, tenantId: number): Promise<HeroSl
  */
 async function getAuthorSpotlight(payload: Payload, tenant: any, settings: any) {
   const tenantId = tenant.id as number
-  const published = publishedWhere()
-  const [pubs, media, subs, tiersRes] = await Promise.all([
-    payload.find({ collection: 'publications', where: { and: [{ tenant: { equals: tenantId } }, published] }, limit: 0, depth: 0, overrideAccess: true }),
+  const [media, subs, tiersRes] = await Promise.all([
     payload.find({ collection: 'videos', where: { tenant: { equals: tenantId } }, limit: 0, depth: 0, overrideAccess: true }),
     payload.find({ collection: 'subscribers', where: { tenant: { equals: tenantId } }, limit: 0, depth: 0, overrideAccess: true }),
     payload.find({ collection: 'subscription-tiers', where: { and: [{ tenant: { equals: tenantId } }, { isActive: { equals: true } }] }, sort: 'weight', depth: 0, limit: 10, overrideAccess: true }),
   ])
-  const stats: { n: number; label: string }[] = []
-  if (pubs.totalDocs > 0) stats.push({ n: pubs.totalDocs, label: 'публикаций' })
-  if (media.totalDocs > 0) stats.push({ n: media.totalDocs, label: 'видео и аудио' })
-  if (subs.totalDocs > 0) stats.push({ n: subs.totalDocs, label: 'подписчиков' })
+  // Счётчики витрины — управляемые (settings.authorStats), с фолбэком на реальные
+  // числа. Значение — строка (можно «800+», «100 тыс+»).
+  const st = (settings?.authorStats ?? {}) as { videosValue?: string; videosLabel?: string; membersValue?: string; membersLabel?: string }
+  const stats: { value: string; label: string }[] = []
+  const videosVal = (st.videosValue && st.videosValue.trim()) || (media.totalDocs > 0 ? String(media.totalDocs) : '')
+  if (videosVal) stats.push({ value: videosVal, label: (st.videosLabel && st.videosLabel.trim()) || 'озвученных видео' })
+  const membersVal = (st.membersValue && st.membersValue.trim()) || (subs.totalDocs > 0 ? String(subs.totalDocs) : '')
+  if (membersVal) stats.push({ value: membersVal, label: (st.membersLabel && st.membersLabel.trim()) || 'участников' })
 
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     name: t.name as string,
@@ -131,7 +133,9 @@ async function getAuthorSpotlight(payload: Payload, tenant: any, settings: any) 
       : [],
   }))
 
-  const logoUrl = settings?.logo && typeof settings.logo === 'object' ? (settings.logo.url ?? null) : null
+  const appIconM = settings?.appIcon && typeof settings.appIcon === 'object' ? settings.appIcon : null
+  const logoM = settings?.logo && typeof settings.logo === 'object' ? settings.logo : null
+  const logoUrl = (appIconM?.url as string | undefined) ?? (logoM?.url as string | undefined) ?? null
   const bio = typeof tenant.description === 'string' && tenant.description.trim() ? tenant.description : null
 
   return {

@@ -5196,3 +5196,8 @@ a.session-expired__btn {
   display: grid; place-items: center;
 }
 @media (max-width: 640px) { .bgdecor__grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* Счётчики витрины «Об авторе» (Оформление) */
+.astats__grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--st-space-3) var(--st-space-4); }
+.astats__foot { margin-top: var(--st-space-4); display: flex; justify-content: flex-end; }
+@media (max-width: 640px) { .astats__grid { grid-template-columns: 1fr; } }
