@@ -151,10 +151,12 @@ export const Users: CollectionConfig = {
     ],
     afterLogin: [
       async ({ user, req }: any) => {
-        // Журналируем вход участника студии (у платформенного superadmin нет tenant).
+        // Журнал входа — ФОНОМ, не блокируя ответ логина. Раньше здесь был
+        // await: отдельный payload.create во время самого логина мог подвесить
+        // ответ при нехватке свободных соединений в пуле (вход «висел»).
         try {
           if (user?.tenant && user?.id) {
-            await logActivity(req.payload, { tenant: user.tenant, user: user.id, action: 'login', entity: 'studio', title: '' })
+            void logActivity(req.payload, { tenant: user.tenant, user: user.id, action: 'login', entity: 'studio', title: '' }).catch(() => {})
           }
         } catch {}
         return user

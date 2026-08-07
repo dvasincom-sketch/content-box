@@ -114,6 +114,9 @@ export const rusenderEmailAdapter = (opts: RusenderAdapterOptions = {}): EmailAd
       for (const to of recipients) {
         const res = await fetch(url, {
           method: 'POST',
+          // Таймаут: без него зависший ответ RuSender подвешивал бы весь запрос
+          // (напр. восстановление пароля «висело» бесконечно).
+          signal: AbortSignal.timeout(12000),
           headers: {
             Authorization: `Bearer ${apiToken}`,
             'Content-Type': 'application/json',
