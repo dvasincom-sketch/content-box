@@ -13,7 +13,7 @@ type NavGroup = { label?: string; items: NavItem[] }
 const NAV_GROUPS: NavGroup[] = [
   {
     items: [
-      { href: '/studio', label: 'Дашборд', icon: <LayoutDashboard size={18} />, exact: true },
+      { href: '/studio', label: 'Дашборд', icon: <LayoutDashboard size={18} />, exact: true, need: ['dashboard', 'view'] },
       { href: '/studio/posts', label: 'Публикации', icon: <FileText size={18} /> },
       { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} />, need: ['taxonomy', 'manage'] },
       { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} />, need: ['commentsModeration', 'moderate'] },

@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Lock } from 'lucide-react'
+import { Lock, ExternalLink } from 'lucide-react'
 
 /**
  * Строка публикации в ленте. Статус выводим из publishedAt:
@@ -48,6 +48,7 @@ export function PostRow({ doc }: { doc: PubDoc }) {
       : null
 
   return (
+    <div className="studio-row-wrap">
     <Link href={`/studio/posts/${doc.id}`} className="studio-row">
       <div className="studio-row__cover">
         {coverUrl ? (
@@ -83,5 +84,18 @@ export function PostRow({ doc }: { doc: PubDoc }) {
         <span className={`studio-status studio-status--${status.kind}`}>{status.label}</span>
       </div>
     </Link>
+    {status.kind === 'published' && doc.slug && (
+      <a
+        href={`/publication/${doc.slug}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="studio-row-open"
+        title="Открыть на сайте"
+        aria-label="Открыть публикацию на сайте"
+      >
+        <ExternalLink size={16} />
+      </a>
+    )}
+    </div>
   )
 }

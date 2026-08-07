@@ -17,9 +17,10 @@ export type CapMatrix = {
   appearance?: ManageCaps; home?: ManageCaps; tiers?: ManageCaps; goals?: ManageCaps; authorShowcase?: ManageCaps
   commentsModeration?: ModerateCaps; bugReports?: ManageCaps
   access?: ManageCaps
+  dashboard?: { view?: boolean }
 }
 
-export type EntityKind = 'content' | 'manage' | 'moderate'
+export type EntityKind = 'content' | 'manage' | 'moderate' | 'view'
 export type EntityMeta = { key: keyof CapMatrix; label: string; kind: EntityKind }
 export type EntityGroup = { title: string; items: EntityMeta[] }
 
@@ -33,6 +34,7 @@ export const ENTITY_GROUPS: EntityGroup[] = [
     { key: 'downloads', label: 'Файлы', kind: 'content' },
   ] },
   { title: 'Структура', items: [
+    { key: 'dashboard', label: 'Дашборд', kind: 'view' },
     { key: 'taxonomy', label: 'Категории и разделы', kind: 'manage' },
     { key: 'menu', label: 'Меню и футер', kind: 'manage' },
     { key: 'pages', label: 'Страницы', kind: 'manage' },
@@ -75,11 +77,13 @@ export const PRESETS: Record<string, CapMatrix> = {
     taxonomy: { manage: true }, menu: { manage: true }, pages: { manage: true },
     appearance: { manage: true }, home: { manage: true }, tiers: { manage: true }, goals: { manage: true }, authorShowcase: { manage: true },
     commentsModeration: { moderate: true }, bugReports: { manage: true }, access: { manage: true },
+    dashboard: { view: true },
   },
   editor: {
     posts: fullContent(), videos: fullContent(), books: fullContent(), gallery: fullContent(), downloads: fullContent(),
     taxonomy: { manage: true }, menu: { manage: true }, pages: { manage: true }, home: { manage: true },
     commentsModeration: { moderate: true }, bugReports: { manage: true },
+    dashboard: { view: true },
   },
   author: {
     posts: ownContent(), videos: ownContent(), books: ownContent(), gallery: ownContent(), downloads: ownContent(),
@@ -139,4 +143,4 @@ export function hasCap(abilities: CapMatrix | null | undefined, entity: keyof Ca
 }
 
 /** Ключи «управляемых» разделов настроек (для показа пункта «Настройки»). */
-export const SETTINGS_MANAGE_KEYS: (keyof CapMatrix)[] = ['appearance', 'home', 'menu', 'tiers', 'goals', 'authorShowcase', 'taxonomy']
+export const SETTINGS_MANAGE_KEYS: (keyof CapMatrix)[] = ['appearance', 'home', 'menu', 'tiers', 'goals', 'authorShowcase']

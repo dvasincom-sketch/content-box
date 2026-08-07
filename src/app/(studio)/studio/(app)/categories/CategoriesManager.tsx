@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Plus, Pencil, Trash2, Loader2, FolderTree, Image as ImageIcon, FolderPlus } from 'lucide-react'
 import { CategoryEditPanel, type EditableCat } from './CategoryEditPanel'
@@ -42,6 +42,18 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
   // и дерево пересобирается сразу (useState заморозил бы первый снимок).
   const cats = initialCategories
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  // Запоминаем раскрытые категории между переходами (ушёл в публикации →
+  // вернулся и видишь те же раскрытые ветки). Храним в localStorage.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('cb.studio.cat.expanded')
+      if (raw) setExpanded(new Set(JSON.parse(raw) as string[]))
+    } catch {}
+  }, [])
+  useEffect(() => {
+    try { localStorage.setItem('cb.studio.cat.expanded', JSON.stringify([...expanded])) } catch {}
+  }, [expanded])
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 

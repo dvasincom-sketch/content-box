@@ -12,7 +12,7 @@ import { logActivity } from '@/lib/logActivity'
  *  - merge: к текущим секциям добавляются недостающие из пака (тема/тексты — как есть).
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (!authorCan(author, 'home', 'manage')) return apiError('Недостаточно прав', 403)
+  if (!(authorCan(author, 'appearance', 'manage') && authorCan(author, 'home', 'manage'))) return apiError('Недостаточно прав', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Plus, Trash2, Check, ChevronDown } from 'lucide-react'
 import { PerkIcon, PERK_TYPES, type PerkType } from '@/components/studio/PerkIcon'
@@ -96,6 +96,26 @@ export function SettingsView({
   }
   const visibleTabs = TABS.filter((t) => canTab(t.id))
   const [tab, setTab] = useState<SettingsTab>(visibleTabs[0]?.id ?? 'appearance')
+  // Уникальная ссылка на подраздел через хэш (#menu и т.п.): читаем при входе,
+  // пишем при переключении — чтобы можно было делиться ссылкой и вернуться на
+  // тот же подраздел.
+  useEffect(() => {
+    const h = (typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '') as SettingsTab
+    if (h && visibleTabs.some((t) => t.id === h)) setTab(h)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  function selectTab(id: SettingsTab) {
+    setTab(id)
+    if (typeof window !== 'undefined') window.history.replaceState(null, '', `#${id}`)
+  }
+
+  // Панельная гранулярность вкладки «Оформление»: шаблоны меняют И тему, И
+  // секции — поэтому требуют оба права (appearance+home); изображения/декор —
+  // appearance; счётчики автора — authorShowcase.
+  const canAppearance = isOwner || hasCap(abilities, 'appearance', 'manage')
+  const canHome = isOwner || hasCap(abilities, 'home', 'manage')
+  const canAuthorShowcase = isOwner || hasCap(abilities, 'authorShowcase', 'manage')
+  const canTemplates = canAppearance && canHome
 
   return (
     <>
@@ -106,23 +126,26 @@ export function SettingsView({
         </div>
       </div>
 
+      {visibleTabs.length > 1 && (
       <div className="settings__tabs">
         {visibleTabs.map((t) => (
           <button
             key={t.id}
             type="button"
             className={`settings__tab${tab === t.id ? ' is-active' : ''}`}
-            onClick={() => setTab(t.id)}
+            onClick={() => selectTab(t.id)}
           >
             {t.label}
           </button>
         ))}
       </div>
+      )}
 
       <div className="settings">
         {tab === 'appearance' && (
           <>
-            <TemplatesBlock savedTemplates={savedTemplates} appliedTemplate={appliedTemplate} />
+            {canTemplates && <TemplatesBlock savedTemplates={savedTemplates} appliedTemplate={appliedTemplate} />}
+            {canAppearance && (
             <section className="settings__block">
               <div className="settings__block-head">
                 <h2>Изображения</h2>
@@ -134,8 +157,9 @@ export function SettingsView({
                 <ImageUploadField field="ogImage" title="Картинка для соцсетей (OG)" hint="Рекомендуется 1200×630. Показывается при отправке ссылки в мессенджерах." initialUrl={ogImageUrl} compact />
               </div>
             </section>
-            <BgDecorPicker initial={bgDecor} />
-            <AuthorStatsPanel initial={authorStats} />
+            )}
+            {canAppearance && <BgDecorPicker initial={bgDecor} />}
+            {canAuthorShowcase && <AuthorStatsPanel initial={authorStats} />}
           </>
         )}
         {tab === 'home' && <HomeBlock homeSections={homeSections} />}

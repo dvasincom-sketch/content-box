@@ -1,12 +1,16 @@
 import React from 'react'
 import Link from 'next/link'
-import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, Users, CreditCard, TrendingUp, Wallet } from 'lucide-react'
+import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor } from '@/lib/currentAuthor'
+import { redirect } from 'next/navigation'
+import { capabilitiesOf } from '@/access'
+import { hasCap, SETTINGS_MANAGE_KEYS, CONTENT_ENTITIES } from '@/lib/permissions'
 import { getMediaStats, formatBytes } from '@/lib/mediaStats'
 import { getCommerceStats, formatRub } from '@/lib/commerceStats'
 import { DashChart } from './DashChart'
+import { UsersKpiCard } from './UsersKpiCard'
 
 /**
  * Дашборд студии (витрина, референс Patreon Creator Studio):
@@ -46,6 +50,27 @@ export default async function StudioDashboard() {
   const author = await requireAuthor()
   const payload = await getPayload({ config: await config })
   const tenantId = author!.tenantId
+
+  // Дашборд — по праву. Участник без права «Дашборд» на первый доступный раздел.
+  const isOwner = (author!.user as { tenantRole?: string | null }).tenantRole !== 'contributor'
+  const abilities = capabilitiesOf(author!.user as any)
+  if (!isOwner && !hasCap(abilities, 'dashboard', 'view')) {
+    const hasContent = CONTENT_ENTITIES.some((e) => {
+      const n = abilities[e] as Record<string, boolean> | undefined
+      return Boolean(n && (n.create || n.viewAny || n.editOwn || n.editAny || n.deleteOwn || n.deleteAny))
+    })
+    const canSettings = SETTINGS_MANAGE_KEYS.some((k) => hasCap(abilities, k, 'manage'))
+    const target = hasContent
+      ? '/studio/posts'
+      : hasCap(abilities, 'taxonomy', 'manage')
+        ? '/studio/categories'
+        : hasCap(abilities, 'commentsModeration', 'moderate')
+          ? '/studio/moderation'
+          : canSettings
+            ? '/studio/settings'
+            : '/studio/posts'
+    redirect(target)
+  }
 
   // Для счётчиков берём limit:1 и читаем totalDocs — не тянем все документы
   // в память (в Payload limit:0 означало бы «без лимита», грузило бы всё).
@@ -119,16 +144,7 @@ export default async function StudioDashboard() {
       {commerce ? (
         <>
           <div className="dash__kpis">
-            <div className="dash__kpi">
-              <div className="dash__kpi-icon"><Users size={16} /></div>
-              <div className="dash__kpi-body">
-                <div className="dash__kpi-value">{commerce.registered}</div>
-                <div className="dash__kpi-label">Зарегистрировано</div>
-              </div>
-              {commerce.registered7d > 0 && (
-                <div className="dash__kpi-delta">+{commerce.registered7d} за 7 дн.</div>
-              )}
-            </div>
+            <UsersKpiCard registered={commerce.registered} registered7d={commerce.registered7d} />
             <div className="dash__kpi">
               <div className="dash__kpi-icon"><CreditCard size={16} /></div>
               <div className="dash__kpi-body">

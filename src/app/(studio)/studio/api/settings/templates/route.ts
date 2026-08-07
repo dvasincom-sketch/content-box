@@ -51,7 +51,7 @@ function pickContent(settings: any) {
 }
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (!authorCan(author, 'home', 'manage')) return apiError('Недостаточно прав', 403)
+  if (!(authorCan(author, 'appearance', 'manage') && authorCan(author, 'home', 'manage'))) return apiError('Недостаточно прав', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
   const action = String(data.action || '')

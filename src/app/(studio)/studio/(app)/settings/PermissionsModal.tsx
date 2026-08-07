@@ -122,8 +122,8 @@ export function PermissionsModal({ member, onClose }: { member: Member; onClose:
 
                 {/* Manage / moderate — одиночные тумблеры */}
                 {g.items.filter((i) => i.kind !== 'content').map((it) => {
-                  const action = it.kind === 'moderate' ? 'moderate' : 'manage'
-                  const actionLabel = it.kind === 'moderate' ? 'Модерировать' : 'Управлять'
+                  const action = it.kind === 'moderate' ? 'moderate' : it.kind === 'view' ? 'view' : 'manage'
+                  const actionLabel = it.kind === 'moderate' ? 'Модерировать' : it.kind === 'view' ? 'Показывать' : 'Управлять'
                   return (
                     <label key={it.key} className="perm__single">
                       <span className="perm__ent">{it.label}</span>
