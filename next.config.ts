@@ -99,18 +99,21 @@ const nextConfig: NextConfig = {
   async rewrites() {
     // ВАЖНО: rewrites() Next вычисляет на СБОРКЕ (`next build`) и запекает в
     // routes-manifest.json — runtime-env здесь НЕ читается, а на сборке Timeweb
-    // доступны только build.args. Поэтому хост/апстрим — константы по умолчанию
-    // (не секреты). env-override оставлен на случай проброса через build.args.
-    const host = process.env.UMAMI_PROXY_HOST || 'analytics.contentbox.site'
-    const upstream = process.env.UMAMI_UPSTREAM || 'http://umami:3000'
+    // доступны только build.args. Поэтому хост/апстрим — КОНСТАНТЫ (не секреты).
+    // Служебные поддомены заворачиваются на внутренние сервисы compose:
+    //   analytics.contentbox.site → Umami (веб-аналитика)
+    //   lists.contentbox.site     → Listmonk (рассылки: админка + публичные
+    //                                страницы подписки/отписки + трекинг)
+    const proxied = [
+      { host: 'analytics.contentbox.site', upstream: 'http://umami:3000' },
+      { host: 'lists.contentbox.site', upstream: 'http://listmonk:9000' },
+    ]
     return {
-      beforeFiles: [
-        {
-          source: '/:path*',
-          has: [{ type: 'host' as const, value: host }],
-          destination: `${upstream.replace(/\/+$/, '')}/:path*`,
-        },
-      ],
+      beforeFiles: proxied.map((p) => ({
+        source: '/:path*',
+        has: [{ type: 'host' as const, value: p.host }],
+        destination: `${p.upstream.replace(/\/+$/, '')}/:path*`,
+      })),
     }
   },
   webpack: (webpackConfig) => {

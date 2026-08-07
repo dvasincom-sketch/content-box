@@ -114,5 +114,35 @@ services:
     mem_limit: 512m
     restart: unless-stopped
 
+  # --- Рассылки/новостники: self-hosted Listmonk ---
+  # Те же правила Timeweb, что у Umami:
+  #  1) наружу порт НЕ публикуем — домен lists.contentbox.site заворачивает `app`
+  #     реверс-прокси на внутренний http://listmonk:9000 (next.config.ts + proxy.ts);
+  #  2) БД — ВНЕШНЯЯ managed-Postgres (ОТДЕЛЬНАЯ база `listmonk`), тома нет.
+  # command: идемпотентно ставит/обновляет схему в managed-БД при старте и
+  # запускает сервер (`--config ''` = конфиг только из env). Схема живёт в БД,
+  # поэтому эфемерность контейнера не страшна.
+  # Первый суперадмин — LISTMONK_ADMIN_USER/PASSWORD (панель Timeweb).
+  # SMTP настраивается ПОЗЖЕ прямо в UI Listmonk (Settings → SMTP), без передеплоя.
+  # ВАЖНО: LISTMONK_db__host — тот же ВНУТРЕННИЙ хост managed-Postgres, что у app
+  # (НЕ публичный *.twc1.net — из контейнера он недостижим, это и есть текущая
+  # ошибка Umami P1001). База `listmonk` должна быть создана на инстансе заранее.
+  listmonk:
+    image: listmonk/listmonk:latest
+    command: ["sh", "-c", "./listmonk --install --idempotent --yes --config '' && ./listmonk --upgrade --yes --config '' && ./listmonk --config ''"]
+    environment:
+      LISTMONK_app__address: "0.0.0.0:9000"
+      TZ: "Europe/Moscow"
+      LISTMONK_db__host: ${LISTMONK_DB_HOST}
+      LISTMONK_db__port: ${LISTMONK_DB_PORT:-5432}
+      LISTMONK_db__user: ${LISTMONK_DB_USER}
+      LISTMONK_db__password: ${LISTMONK_DB_PASSWORD}
+      LISTMONK_db__database: ${LISTMONK_DB_NAME:-listmonk}
+      LISTMONK_db__ssl_mode: ${LISTMONK_DB_SSLMODE:-require}
+      LISTMONK_ADMIN_USER: ${LISTMONK_ADMIN_USER:-}
+      LISTMONK_ADMIN_PASSWORD: ${LISTMONK_ADMIN_PASSWORD:-}
+    mem_limit: 512m
+    restart: unless-stopped
+
 volumes:
   meili_data:

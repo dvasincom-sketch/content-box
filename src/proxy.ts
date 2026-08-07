@@ -127,16 +127,20 @@ export async function proxy(request: NextRequest) {
   // next.config (beforeFiles rewrite → внутренний контейнер umami). Здесь просто
   // пропускаем ЛЮБОЙ путь этого хоста, не резолвя тенант, иначе middleware увёл
   // бы «/», «/login» и т.п. на /domain-not-found до срабатывания rewrite.
-  // Хост по умолчанию `analytics.<PLATFORM_ROOT>`; env-override не обязателен
-  // (middleware выполняется РАНЬШЕ rewrites, поэтому завязка на runtime-env тут
-  // ненадёжна — держим дефолт, чтобы passthrough срабатывал всегда).
-  const umamiProxyHost = process.env.UMAMI_PROXY_HOST || `analytics.${PLATFORM_ROOT}`
+  // Служебные поддомены, которые app реверс-проксирует на внутренние сервисы
+  // (см. next.config.ts rewrites): аналитика Umami и рассылки Listmonk. Хосты —
+  // константы `<sub>.<PLATFORM_ROOT>` (middleware выполняется РАНЬШЕ rewrites,
+  // завязка на runtime-env тут ненадёжна), чтобы passthrough срабатывал всегда.
+  const proxiedHosts = new Set([
+    `analytics.${PLATFORM_ROOT}`,
+    `lists.${PLATFORM_ROOT}`,
+  ])
   const rawHost = stripPort(
     request.headers.get('x-forwarded-host') ??
     request.headers.get('host') ??
     request.nextUrl.hostname,
   )
-  if (rawHost === umamiProxyHost) return passthrough()
+  if (proxiedHosts.has(rawHost)) return passthrough()
 
   if (BYPASS_PREFIXES.some((p) => pathname.startsWith(p))) {
     return passthrough()
