@@ -94,48 +94,25 @@ services:
     restart: unless-stopped
 
   # --- Веб-аналитика: self-hosted Umami ---
-  # Umami сам отдаёт /script.js и /api и САМ накатывает свою схему в свою БД при
-  # старте — ставить/выгружать руками ничего не нужно.
-  # ВАЖНО (Timeweb App Platform): домен получает ТОЛЬКО первый сервис (app),
-  # привязать поддомен к umami нельзя. Поэтому наружу umami НЕ публикуем (порт не
-  # маппим) — трафик analytics.contentbox.site заворачивает сам `app` реверс-
-  # прокси во внутренний http://umami:3000 (см. next.config.ts rewrites +
-  # src/proxy.ts — хост/апстрим захардкожены, т.к. rewrites() Next вычисляется на
-  # сборке, где runtime-env недоступен). По внутренней сети compose
-  # umami доступен по имени сервиса и без публикации порта (как meilisearch).
-  # Переменные ${...} задаются в панели Timeweb «Переменные».
+  # Umami сам отдаёт /script.js и /api и САМ накатывает свою схему в БД при старте.
+  # ВАЖНО (Timeweb App Platform):
+  #  1) домен получает ТОЛЬКО первый сервис (app) — поэтому наружу umami НЕ
+  #     публикуем; трафик analytics.contentbox.site заворачивает сам `app`
+  #     реверс-прокси на внутренний http://umami:3000 (next.config.ts rewrites +
+  #     src/proxy.ts). По внутренней сети compose umami доступен по имени сервиса.
+  #  2) ТОМА НЕ ПЕРСИСТЕНТНЫ — окружение пересоздаётся на каждый деплой, данные
+  #     контейнеров стираются. Поэтому БД Umami держим во ВНЕШНЕЙ managed-Postgres
+  #     (отдельная база `umami`), а контейнера umami-db с томом больше нет — иначе
+  #     аналитика (и пароль админа) обнулялись бы каждый деплой.
+  # UMAMI_DATABASE_URL и UMAMI_APP_SECRET задаются в панели Timeweb «Переменные».
   umami:
     image: ghcr.io/umami-software/umami:postgresql-latest
     environment:
-      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      DATABASE_URL: ${UMAMI_DATABASE_URL}
       DATABASE_TYPE: postgresql
       APP_SECRET: ${UMAMI_APP_SECRET}
-    depends_on:
-      umami-db:
-        condition: service_healthy
-    mem_limit: 512m
-    restart: unless-stopped
-
-  # Отдельный Postgres ТОЛЬКО под Umami — изоляция от прод-БД приложения
-  # (у app свой managed DATABASE_URL). Данные в томе umami_db_data, наружу не
-  # публикуется. Ничего в managed-БД приложения создавать не нужно.
-  umami-db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: umami
-      POSTGRES_USER: umami
-      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD}
-    volumes:
-      - umami_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U umami -d umami']
-      interval: 10s
-      timeout: 3s
-      retries: 12
-      start_period: 20s
     mem_limit: 512m
     restart: unless-stopped
 
 volumes:
   meili_data:
-  umami_db_data:
