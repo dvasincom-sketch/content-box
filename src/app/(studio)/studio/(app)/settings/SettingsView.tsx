@@ -12,6 +12,7 @@ import { TemplatesPanel } from './TemplatesPanel'
 import { ImageUploadField } from './ImageUploadField'
 import { BgDecorPicker } from './BgDecorPicker'
 import { AuthorStatsPanel, type AuthorStats } from './AuthorStatsPanel'
+import { GoalsPanel, type Goal } from './GoalsPanel'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
@@ -60,6 +61,7 @@ export function SettingsView({
   appliedTemplate,
   bgDecor,
   authorStats,
+  goals,
   members,
   isOwner,
 }: {
@@ -73,6 +75,7 @@ export function SettingsView({
   appliedTemplate: string | null
   bgDecor: string | null
   authorStats: AuthorStats
+  goals: Goal[]
   members: Member[]
   isOwner: boolean
 }) {
@@ -123,7 +126,12 @@ export function SettingsView({
         {tab === 'socials' && <SocialsBlock initial={initialSocials} />}
         {tab === 'menu' && <MenuBlock />}
         {tab === 'menu' && <PagesBlock />}
-        {tab === 'tiers' && <TiersBlock initial={initialTiers} />}
+        {tab === 'tiers' && (
+          <>
+            <TiersBlock initial={initialTiers} />
+            <GoalsPanel initial={goals} />
+          </>
+        )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}
       </div>
     </>

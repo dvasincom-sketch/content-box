@@ -30,7 +30,7 @@ export function SiteHeader({
   nav,
   menu = [],
   supportLabel = 'Поддержать проект',
-  supportUrl = '#support',
+  supportUrl = '/donate',
   subscriber = null,
 }: SiteHeaderProps) {
   const [open, setOpen] = useState(false)

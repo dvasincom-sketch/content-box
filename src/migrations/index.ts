@@ -71,6 +71,7 @@ import * as migration_20260806_180000_add_bg_decor from './20260806_180000_add_b
 import * as migration_20260806_190000_add_photo_showcase_section from './20260806_190000_add_photo_showcase_section';
 import * as migration_20260806_200000_add_activity_invite_action from './20260806_200000_add_activity_invite_action';
 import * as migration_20260807_100000_add_author_stats from './20260807_100000_add_author_stats';
+import * as migration_20260807_120000_support from './20260807_120000_support';
 
 export const migrations = [
   {
@@ -437,5 +438,10 @@ export const migrations = [
     up: migration_20260807_100000_add_author_stats.up,
     down: migration_20260807_100000_add_author_stats.down,
     name: '20260807_100000_add_author_stats',
+  },
+  {
+    up: migration_20260807_120000_support.up,
+    down: migration_20260807_120000_support.down,
+    name: '20260807_120000_support',
   },
 ];

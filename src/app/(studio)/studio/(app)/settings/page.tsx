@@ -87,6 +87,26 @@ export default async function SettingsPage() {
       : [],
   }))
 
+  // Цели сбора (вкладка «Подписки», страница «Поддержать проект»).
+  const goalsRes = await payload.find({
+    collection: 'support-goals',
+    where: { tenant: { equals: author!.tenantId } },
+    sort: 'weight',
+    limit: 100,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const goals = (goalsRes.docs as any[]).map((g) => ({
+    id: g.id,
+    title: g.title || '',
+    description: g.description || '',
+    targetRub: Number(g.targetRub) || 0,
+    raisedRub: Number(g.raisedRub) || 0,
+    weight: Number(g.weight) || 0,
+    isActive: g.isActive !== false,
+    slug: g.slug || '',
+  }))
+
   // Участники тенанта (вкладка «Доступ», видна только владельцу).
   const usersRes = await payload.find({
     collection: 'users',
@@ -114,6 +134,7 @@ export default async function SettingsPage() {
       appliedTemplate={appliedTemplate}
       bgDecor={bgDecor}
       authorStats={authorStats}
+      goals={goals}
       members={members}
       isOwner={isOwner}
     />

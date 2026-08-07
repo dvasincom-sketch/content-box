@@ -91,6 +91,8 @@ export interface Config {
     'activity-events': ActivityEvent;
     'studio-activity': StudioActivity;
     'subscription-events': SubscriptionEvent;
+    'support-goals': SupportGoal;
+    'support-payments': SupportPayment;
     submissions: Submission;
     'bug-reports': BugReport;
     bookmarks: Bookmark;
@@ -126,6 +128,8 @@ export interface Config {
     'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
     'studio-activity': StudioActivitySelect<false> | StudioActivitySelect<true>;
     'subscription-events': SubscriptionEventsSelect<false> | SubscriptionEventsSelect<true>;
+    'support-goals': SupportGoalsSelect<false> | SupportGoalsSelect<true>;
+    'support-payments': SupportPaymentsSelect<false> | SupportPaymentsSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'bug-reports': BugReportsSelect<false> | BugReportsSelect<true>;
     bookmarks: BookmarksSelect<false> | BookmarksSelect<true>;
@@ -1388,6 +1392,44 @@ export interface SubscriptionEvent {
   createdAt: string;
 }
 /**
+ * Цели для страницы «Поддержать проект».
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "support-goals".
+ */
+export interface SupportGoal {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  title: string;
+  description?: string | null;
+  targetRub: number;
+  raisedRub?: number | null;
+  weight?: number | null;
+  isActive?: boolean | null;
+  slug?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Донаты со страницы «Поддержать проект».
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "support-payments".
+ */
+export interface SupportPayment {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  goal?: (number | null) | SupportGoal;
+  user?: (number | null) | User;
+  displayName?: string | null;
+  amountRub: number;
+  message?: string | null;
+  isAnonymous?: boolean | null;
+  status?: ('pending' | 'succeeded' | 'canceled') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Публикации от участников на модерации.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1617,6 +1659,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'subscription-events';
         value: number | SubscriptionEvent;
+      } | null)
+    | ({
+        relationTo: 'support-goals';
+        value: number | SupportGoal;
+      } | null)
+    | ({
+        relationTo: 'support-payments';
+        value: number | SupportPayment;
       } | null)
     | ({
         relationTo: 'submissions';
@@ -2385,6 +2435,38 @@ export interface SubscriptionEventsSelect<T extends boolean = true> {
   tierName?: T;
   priceRub?: T;
   action?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "support-goals_select".
+ */
+export interface SupportGoalsSelect<T extends boolean = true> {
+  tenant?: T;
+  title?: T;
+  description?: T;
+  targetRub?: T;
+  raisedRub?: T;
+  weight?: T;
+  isActive?: T;
+  slug?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "support-payments_select".
+ */
+export interface SupportPaymentsSelect<T extends boolean = true> {
+  tenant?: T;
+  goal?: T;
+  user?: T;
+  displayName?: T;
+  amountRub?: T;
+  message?: T;
+  isAnonymous?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }

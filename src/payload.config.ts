@@ -35,6 +35,8 @@ import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
 import { Activity } from './collections/Activity'
 import { SubscriptionEvents } from './collections/SubscriptionEvents'
+import { SupportGoals } from './collections/SupportGoals'
+import { SupportPayments } from './collections/SupportPayments'
 import { Submissions } from './collections/Submissions'
 import { BugReports } from './collections/BugReports'
 import { Bookmarks } from './collections/Bookmarks'
@@ -164,6 +166,8 @@ export default buildConfig({
     ActivityEvents,
     Activity,
     SubscriptionEvents,
+    SupportGoals,
+    SupportPayments,
     Submissions,
     BugReports,
     Bookmarks,

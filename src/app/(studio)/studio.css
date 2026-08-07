@@ -5201,3 +5201,9 @@ a.session-expired__btn {
 .astats__grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--st-space-3) var(--st-space-4); }
 .astats__foot { margin-top: var(--st-space-4); display: flex; justify-content: flex-end; }
 @media (max-width: 640px) { .astats__grid { grid-template-columns: 1fr; } }
+
+/* Панель целей сбора (вкладка «Подписки») */
+.settings__block-head--row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--st-space-4); }
+.settings__block-head--row > div { min-width: 0; }
+.studio-field--check { flex-direction: row; align-items: center; gap: var(--st-space-2); cursor: pointer; }
+.studio-field--check input { width: 18px; height: 18px; }
