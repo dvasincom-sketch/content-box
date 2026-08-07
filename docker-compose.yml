@@ -111,6 +111,13 @@ services:
       DATABASE_URL: ${UMAMI_DATABASE_URL}
       DATABASE_TYPE: postgresql
       APP_SECRET: ${UMAMI_APP_SECRET}
+      # Prisma 7 (JS-драйвер pg) строго проверяет TLS-цепочку и отвергает
+      # сертификат managed-Postgres Timeweb («self-signed certificate in chain»),
+      # из-за чего Umami падает в 500, хотя app (node-postgres) и Listmonk (Go)
+      # к той же базе с sslmode=require подключаются. Отключаем проверку цепочки
+      # ТОЛЬКО у Umami — соединение остаётся шифрованным. Затрагивает лишь этот
+      # вторичный контейнер, app не касается.
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
     mem_limit: 512m
     restart: unless-stopped
 
@@ -139,6 +146,12 @@ services:
       LISTMONK_db__password: ${LISTMONK_DB_PASSWORD}
       LISTMONK_db__database: ${LISTMONK_DB_NAME:-listmonk}
       LISTMONK_db__ssl_mode: ${LISTMONK_DB_SSLMODE:-require}
+      # ЖЁСТКО ограничиваем пул: managed-Postgres общий с app, у него небольшой
+      # max_connections. По умолчанию Listmonk открывает ~25+25 соединений и
+      # исчерпывал лимит → падал ВЕСЬ app и сайты тенантов (P1001). 4+2 хватает.
+      LISTMONK_db__max_open: ${LISTMONK_DB_MAXOPEN:-4}
+      LISTMONK_db__max_idle: ${LISTMONK_DB_MAXIDLE:-2}
+      LISTMONK_db__max_lifetime: "300s"
       LISTMONK_ADMIN_USER: ${LISTMONK_ADMIN_USER:-}
       LISTMONK_ADMIN_PASSWORD: ${LISTMONK_ADMIN_PASSWORD:-}
     mem_limit: 512m
