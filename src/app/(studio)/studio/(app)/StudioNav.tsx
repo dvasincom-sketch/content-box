@@ -4,8 +4,9 @@ import React from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock, Repeat, Moon, Sun } from 'lucide-react'
+import { hasCap, SETTINGS_MANAGE_KEYS, type CapMatrix } from '@/lib/permissions'
 
-type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media'; ownerOnly?: boolean }
+type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media'; need?: [keyof CapMatrix, string]; settings?: boolean }
 
 // Меню сгруппировано: «Медиа» объединяет видео и аудио (позже — галерея).
 type NavGroup = { label?: string; items: NavItem[] }
@@ -14,9 +15,9 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/studio', label: 'Дашборд', icon: <LayoutDashboard size={18} />, exact: true },
       { href: '/studio/posts', label: 'Публикации', icon: <FileText size={18} /> },
-      { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} />, ownerOnly: true },
-      { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} />, ownerOnly: true },
-      { href: '/studio/settings', label: 'Настройки', icon: <Settings size={18} />, ownerOnly: true },
+      { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} />, need: ['taxonomy', 'manage'] },
+      { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} />, need: ['commentsModeration', 'moderate'] },
+      { href: '/studio/settings', label: 'Настройки', icon: <Settings size={18} />, settings: true },
     ],
   },
   {
@@ -36,8 +37,9 @@ function isActive(pathname: string, item: NavItem): boolean {
   return pathname === item.href || pathname.startsWith(item.href + '/')
 }
 
-export function StudioNav({ authorEmail, brandName, nav, isOwner = true, isSuperadmin = false }: { authorEmail: string; brandName: string; nav?: { books: boolean; media: boolean; frozen: boolean }; isOwner?: boolean; isSuperadmin?: boolean }) {
+export function StudioNav({ authorEmail, brandName, nav, isOwner = true, isSuperadmin = false, abilities }: { authorEmail: string; brandName: string; nav?: { books: boolean; media: boolean; frozen: boolean }; isOwner?: boolean; isSuperadmin?: boolean; abilities?: CapMatrix }) {
   const pathname = usePathname()
+  const canSettings = isOwner || SETTINGS_MANAGE_KEYS.some((k) => hasCap(abilities, k, 'manage'))
 
   return (
     <aside className="studio-nav">
@@ -102,7 +104,11 @@ export function StudioNav({ authorEmail, brandName, nav, isOwner = true, isSuper
                 {group.label}
               </div>
             )}
-            {group.items.filter((item) => !item.ownerOnly || isOwner).map((item) => {
+            {group.items.filter((item) => {
+              if (item.settings) return canSettings
+              if (item.need) return isOwner || hasCap(abilities, item.need[0], item.need[1])
+              return true
+            }).map((item) => {
               const active = isActive(pathname, item)
               const locked = nav ? ((item.cap === 'books' && !nav.books) || (item.cap === 'media' && !nav.media)) : false
               if (locked) {

@@ -4,6 +4,7 @@ import { Plus, FileText } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { can } from '@/access'
 import { PostRow } from './PostRow'
 
 /**
@@ -30,7 +31,8 @@ type PubDoc = {
 
 export default async function StudioPostsPage() {
   const author = await requireAuthor() // guard в (app)/layout гарантирует наличие
-  const ownFilter = contributorOwnerFilter(author!)
+  const canCreatePost = can(author!.user as any, 'posts', 'create')
+  const ownFilter = contributorOwnerFilter(author!, 'posts')
   const payload = await getPayload({ config: await config })
 
   const res = await payload.find({
@@ -53,10 +55,12 @@ export default async function StudioPostsPage() {
             {docs.length > 0 ? `Всего: ${res.totalDocs}` : 'Пока ничего не опубликовано'}
           </div>
         </div>
+{canCreatePost && (
         <Link href="/studio/posts/new" className="studio-btn studio-btn--primary">
           <Plus size={18} />
           Новая публикация
         </Link>
+        )}
       </div>
 
       {docs.length === 0 ? (
@@ -68,10 +72,12 @@ export default async function StudioPostsPage() {
           <div className="studio-empty__text">
             Создайте первую — она сразу окажется в этой ленте.
           </div>
+{canCreatePost && (
           <Link href="/studio/posts/new" className="studio-btn studio-btn--primary">
             <Plus size={18} />
             Новая публикация
           </Link>
+          )}
         </div>
       ) : (
         <div className="studio-list">

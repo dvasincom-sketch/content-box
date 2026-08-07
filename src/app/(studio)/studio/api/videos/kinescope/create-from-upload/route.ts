@@ -1,4 +1,4 @@
-import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { kinescopeUploadFile } from '@/lib/kinescope'
 import { errorMessage } from '@/lib/errorMessage'
@@ -26,6 +26,7 @@ export const runtime = 'nodejs'
 const MAX_BYTES = 200 * 1024 * 1024 // 200 MB — потолок для загрузки через сервер
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (!authorCan(author, 'videos', 'create')) return apiError('Недостаточно прав', 403)
   let form: FormData
   try {
     form = await req.formData()

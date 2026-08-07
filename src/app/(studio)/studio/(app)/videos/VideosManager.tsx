@@ -89,10 +89,12 @@ export function VideosManager({
   initialVideos,
   tiers,
   categories: initialCategories,
+  canCreate = true,
 }: {
   initialVideos: Vid[]
   tiers: Tier[]
   categories: FolderItem[]
+  canCreate?: boolean
 }) {
   const router = useRouter()
   const [videos, setVideos] = useState<Vid[]>(initialVideos)
@@ -148,10 +150,12 @@ export function VideosManager({
           <h1>Видео</h1>
           <div className="studio-page-head__sub">Всего: {videos.length}</div>
         </div>
+        {canCreate && (
         <button className="studio-btn studio-btn--primary" onClick={() => setAdding((v) => !v)}>
           <Plus size={18} />
           Добавить видео
         </button>
+        )}
       </div>
 
       {adding && (

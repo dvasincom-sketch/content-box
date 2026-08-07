@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
 import { logActivity } from '@/lib/logActivity'
 import { errorMessage } from '@/lib/errorMessage'
+import { PRESETS, normalize, ASSIGNABLE_PRESETS } from '@/lib/permissions'
 
 /**
  * Пригласить участника (роль contributor). Только владелец студии (не участник).
@@ -29,6 +30,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (data === undefined) return apiError('Некорректный запрос')
   const email = String(data.email || '').trim().toLowerCase()
   const name = String(data.name || '').trim()
+  const roleRaw = String((data as { studioRole?: unknown }).studioRole || 'author')
+  const role = (ASSIGNABLE_PRESETS as readonly string[]).includes(roleRaw) ? roleRaw : 'author'
+  const caps = normalize(PRESETS[role] ?? {})
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return apiError('Укажите корректный email')
 
   // Свежие токен/срок готовим заранее — пригодятся и для создания, и для реактивации.
@@ -66,6 +70,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
           inviteTokenHash: hash,
           inviteExpiresAt: expiresAt,
           inviteAcceptedAt: null,
+          studioRole: role,
+          capabilities: caps,
           ...(name ? { name } : {}),
         } as any,
       })
@@ -84,6 +90,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         name: name || undefined,
         tenant: tenantId,
         tenantRole: 'contributor',
+        studioRole: role,
+        capabilities: caps,
         password: crypto.randomBytes(24).toString('hex'),
         inviteTokenHash: hash,
         inviteExpiresAt: expiresAt,

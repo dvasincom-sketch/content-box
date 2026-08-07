@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { withAuthor, readJson, apiError, apiOk, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -15,7 +15,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
   const id = data.id
-  if (!(await ownsForContributor(payload, 'gallery-images', id, author))) return apiError('Нет доступа к чужому контенту', 403)
+  if (!(await canMutateDoc(payload, 'gallery-images', id, author, 'gallery', 'delete'))) return apiError('Недостаточно прав', 403)
   if (!id) return apiError('Не указано изображение')
 
   const img: any = await payload

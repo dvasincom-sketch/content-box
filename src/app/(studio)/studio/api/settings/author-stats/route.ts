@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { logActivity } from '@/lib/logActivity'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -10,7 +10,7 @@ const clip = (x: unknown, max = 60): string => String(x ?? '').trim().slice(0, m
  * Пустое значение = на сайте подставится реальное число.
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
+  if (!authorCan(author, 'authorShowcase', 'manage')) return apiError('Недостаточно прав', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

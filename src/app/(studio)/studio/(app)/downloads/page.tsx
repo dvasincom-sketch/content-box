@@ -2,6 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { can } from '@/access'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { DownloadsManager } from './DownloadsManager'
@@ -11,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function DownloadsPage() {
   const author = await requireAuthor()
-  const ownFilter = contributorOwnerFilter(author!)
+  const ownFilter = contributorOwnerFilter(author!, 'downloads')
   const payload = await getPayload({ config: await config })
   const ent = await loadEntitlements(payload, author!.tenantId)
   if (!canUse(ent, 'media')) return <StudioUpsell cap="media" />
@@ -57,5 +58,5 @@ export default async function DownloadsPage() {
     parentId: c.parent ? (typeof c.parent === 'object' ? Number(c.parent.id) : Number(c.parent)) : null,
   }))
 
-  return <DownloadsManager initialItems={items} tiers={tiers} categories={categories} />
+  return <DownloadsManager initialItems={items} tiers={tiers} categories={categories}  canCreate={can(author!.user as any, 'downloads', 'create')} />
 }

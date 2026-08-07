@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { logActivity } from '@/lib/logActivity'
 import { BG_DECOR_SLUGS } from '@/lib/bgDecors'
 import { errorMessage } from '@/lib/errorMessage'
@@ -8,7 +8,7 @@ import { errorMessage } from '@/lib/errorMessage'
  * Body: { bgDecor: 'none' | <slug из библиотеки> }. Значение валидируется по реестру.
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
+  if (!authorCan(author, 'appearance', 'manage')) return apiError('Недостаточно прав', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

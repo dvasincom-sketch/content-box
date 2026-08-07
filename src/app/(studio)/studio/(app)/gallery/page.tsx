@@ -2,6 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor } from '@/lib/currentAuthor'
+import { can } from '@/access'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { GalleryLibrary } from './GalleryLibrary'
@@ -26,5 +27,5 @@ export default async function GalleryPage() {
     parentId: f.parent ? (typeof f.parent === 'object' ? f.parent.id : f.parent) : null,
   }))
 
-  return <GalleryLibrary folders={folders} />
+  return <GalleryLibrary folders={folders}  canCreate={can(author!.user as any, 'gallery', 'create')} />
 }

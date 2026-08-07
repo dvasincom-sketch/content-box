@@ -6,6 +6,7 @@ import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { authenticatedUser } from '@/lib/currentUser'
 import type { User } from '@/payload-types'
 import { StudioNav } from './StudioNav'
+import { capabilitiesOf } from '@/access'
 import { SessionGuard } from './SessionGuard'
 import { BugReportWidget } from '@/components/BugReportWidget'
 import { canUse, type Entitlements } from '@/lib/studioEntitlements'
@@ -57,6 +58,7 @@ export default async function StudioAppLayout({ children }: { children: React.Re
   }
   const nav = { books: canUse(ent, 'books'), media: canUse(ent, 'media'), frozen: !!ent?.studioFrozen }
   const isOwner = (author.user as { tenantRole?: string | null }).tenantRole !== 'contributor'
+  const abilities = capabilitiesOf(author.user as any)
 
   // Незавершённый онбординг → в мастер (вне try, чтобы redirect не проглотился).
   // Для superadmin онбординг тенанта пропускаем: он не владелец, а обслуживает
@@ -73,6 +75,7 @@ export default async function StudioAppLayout({ children }: { children: React.Re
         nav={nav}
         isOwner={isOwner}
         isSuperadmin={author.isSuperadmin}
+        abilities={abilities}
       />
       <main className="studio-main">
         {nav.frozen && (

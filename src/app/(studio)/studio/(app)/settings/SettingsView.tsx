@@ -13,6 +13,7 @@ import { ImageUploadField } from './ImageUploadField'
 import { BgDecorPicker } from './BgDecorPicker'
 import { AuthorStatsPanel, type AuthorStats } from './AuthorStatsPanel'
 import { GoalsPanel, type Goal } from './GoalsPanel'
+import { hasCap, type CapMatrix } from '@/lib/permissions'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
@@ -64,6 +65,7 @@ export function SettingsView({
   goals,
   members,
   isOwner,
+  abilities,
 }: {
   logoUrl: string | null
   appIconUrl: string | null
@@ -78,8 +80,22 @@ export function SettingsView({
   goals: Goal[]
   members: Member[]
   isOwner: boolean
+  abilities: CapMatrix | null
 }) {
-  const [tab, setTab] = useState<SettingsTab>('appearance')
+  const canTab = (id: SettingsTab): boolean => {
+    if (isOwner) return true
+    switch (id) {
+      case 'appearance': return hasCap(abilities, 'appearance', 'manage') || hasCap(abilities, 'authorShowcase', 'manage')
+      case 'home': return hasCap(abilities, 'home', 'manage')
+      case 'socials': return hasCap(abilities, 'appearance', 'manage')
+      case 'menu': return hasCap(abilities, 'menu', 'manage')
+      case 'tiers': return hasCap(abilities, 'tiers', 'manage') || hasCap(abilities, 'goals', 'manage')
+      case 'access': return false
+      default: return false
+    }
+  }
+  const visibleTabs = TABS.filter((t) => canTab(t.id))
+  const [tab, setTab] = useState<SettingsTab>(visibleTabs[0]?.id ?? 'appearance')
 
   return (
     <>
@@ -91,7 +107,7 @@ export function SettingsView({
       </div>
 
       <div className="settings__tabs">
-        {TABS.filter((t) => t.id !== 'access' || isOwner).map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.id}
             type="button"

@@ -7,7 +7,8 @@ import type { Member } from './SettingsView'
 import { ActivityFeed } from './ActivityFeed'
 import { ConfirmDialog } from './ConfirmDialog'
 import { PermissionsModal } from './PermissionsModal'
-import { matchPreset, PRESET_LABELS } from '@/lib/permissions'
+import { StudioSelect } from '../_ui/StudioSelect'
+import { matchPreset, PRESET_LABELS, ASSIGNABLE_PRESETS } from '@/lib/permissions'
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   owner: { label: 'Владелец', cls: 'is-owner' },
@@ -25,6 +26,7 @@ export function AccessPanel({ members }: { members: Member[] }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
+  const [inviteRole, setInviteRole] = useState('author')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
@@ -41,7 +43,7 @@ export function AccessPanel({ members }: { members: Member[] }) {
     try {
       const res = await fetch('/studio/api/access/invite', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined }),
+        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined, studioRole: inviteRole }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) { setError(json.error || 'Не удалось пригласить'); setBusy(false); return }
@@ -122,6 +124,16 @@ export function AccessPanel({ members }: { members: Member[] }) {
           <label className="studio-field" style={{ flex: 1 }}>
             <span className="studio-field__label">Имя (необязательно)</span>
             <input className="studio-input" value={name} onChange={(e) => setName(e.target.value)} disabled={busy} />
+          </label>
+          <label className="studio-field" style={{ flex: 1 }}>
+            <span className="studio-field__label">Роль</span>
+            <StudioSelect
+              value={inviteRole}
+              onChange={setInviteRole}
+              disabled={busy}
+              ariaLabel="Роль участника"
+              options={ASSIGNABLE_PRESETS.map((r) => ({ value: r, label: PRESET_LABELS[r] }))}
+            />
           </label>
           <button type="button" className="studio-btn studio-btn--primary access__invite-btn" onClick={invite} disabled={busy}>
             {busy ? <Loader2 size={16} className="spin" /> : <UserPlus size={16} />} Пригласить

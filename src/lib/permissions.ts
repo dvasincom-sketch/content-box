@@ -131,3 +131,12 @@ export function normalize(caps: CapMatrix): Record<string, Record<string, boolea
   }
   return out
 }
+
+/** Проверка права по матрице (для UI). Владельца проверяйте отдельно (isOwner). */
+export function hasCap(abilities: CapMatrix | null | undefined, entity: keyof CapMatrix, action: string): boolean {
+  const node = abilities?.[entity] as Record<string, boolean> | undefined
+  return Boolean(node && node[action])
+}
+
+/** Ключи «управляемых» разделов настроек (для показа пункта «Настройки»). */
+export const SETTINGS_MANAGE_KEYS: (keyof CapMatrix)[] = ['appearance', 'home', 'menu', 'tiers', 'goals', 'authorShowcase', 'taxonomy']

@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
@@ -18,6 +18,7 @@ import type { Payload } from 'payload'
  *  publish=true → publishedAt=now (опубликовано); false → черновик (без даты).
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (!authorCan(author, 'posts', 'create')) return apiError('Недостаточно прав', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

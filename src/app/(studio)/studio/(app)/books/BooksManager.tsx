@@ -32,7 +32,7 @@ const TYPE_OPTIONS = [
 const FILTERS = [{ value: 'all', label: 'Все' }, ...TYPE_OPTIONS]
 
 /** Список книг + создание. Правка книги — на отдельной странице /studio/books/[id]. */
-export function BooksManager({ initialBooks }: { initialBooks: Book[] }) {
+export function BooksManager({ initialBooks, canCreate = true }: { initialBooks: Book[]; canCreate?: boolean }) {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [newType, setNewType] = useState('novel')
@@ -73,6 +73,7 @@ export function BooksManager({ initialBooks }: { initialBooks: Book[] }) {
     <div className="studio-page">
       <div className="studio-page-head"><h1>Произведения</h1></div>
 
+{canCreate && (
       <div className="studio-card" style={{ padding: 16, marginBottom: 20, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <input
           className="studio-input" placeholder="Название нового произведения" value={title}
@@ -86,6 +87,7 @@ export function BooksManager({ initialBooks }: { initialBooks: Book[] }) {
           {busy ? <Loader2 size={16} className="spin" /> : <Plus size={16} />} Создать
         </button>
       </div>
+)}
       {error && <div className="studio-login__error" style={{ marginBottom: 12 }}>{error}</div>}
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>

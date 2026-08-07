@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { can } from '@/access'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { lexicalToHtml } from '@/lib/lexical'
 import { Composer, type PostInitial } from '../new/Composer'
@@ -21,7 +22,7 @@ export default async function EditPostPage({
 }) {
   const { id } = await params
   const author = await requireAuthor()
-  const ownFilter = contributorOwnerFilter(author!)
+  const ownFilter = contributorOwnerFilter(author!, 'posts')
   const payload = await getPayload({ config: await config })
 
   // Пост
@@ -32,9 +33,9 @@ export default async function EditPostPage({
   if (!post) notFound()
   const postTenant = post.tenant && typeof post.tenant === 'object' ? post.tenant.id : post.tenant
   if (Number(postTenant) !== Number(author!.tenantId)) notFound()
-  if (author!.user.tenantRole === 'contributor') {
+  if (!can(author!.user as any, 'posts', 'editAny')) {
     const _o = post.owner && typeof post.owner === 'object' ? post.owner.id : post.owner
-    if (Number(_o) !== Number(author!.user.id)) notFound()
+    if (!(can(author!.user as any, 'posts', 'editOwn') && Number(_o) === Number(author!.user.id))) notFound()
   }
 
   // Категории, уровни и видео (как в композере создания)

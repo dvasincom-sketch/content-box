@@ -2,6 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { can } from '@/access'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { BooksManager } from './BooksManager'
@@ -14,7 +15,7 @@ const TYPE_LABEL: Record<string, string> = { novel: 'Роман', story: 'Рас
 
 export default async function BooksPage() {
   const author = await requireAuthor()
-  const ownFilter = contributorOwnerFilter(author!)
+  const ownFilter = contributorOwnerFilter(author!, 'books')
   const payload = await getPayload({ config: await config })
   const ent = await loadEntitlements(payload, author!.tenantId)
   if (!canUse(ent, 'books')) return <StudioUpsell cap="books" />
@@ -49,5 +50,5 @@ export default async function BooksPage() {
     updatedAt: b.updatedAt || null,
   }))
 
-  return <BooksManager initialBooks={books} />
+  return <BooksManager initialBooks={books}  canCreate={can(author!.user as any, 'books', 'create')} />
 }

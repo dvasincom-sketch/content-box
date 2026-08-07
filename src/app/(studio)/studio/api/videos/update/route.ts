@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 import { parseVideoEmbed } from '@/lib/videoEmbed'
 
@@ -18,7 +18,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (data === undefined) return apiError('Некорректный запрос')
 
   const videoId = data.videoId
-  if (!(await ownsForContributor(payload, 'videos', videoId, author))) return apiError('Нет доступа к чужому контенту', 403)
+  if (!(await canMutateDoc(payload, 'videos', videoId, author, 'videos', 'edit'))) return apiError('Недостаточно прав', 403)
   if (!videoId) return apiError('Не указано видео')
 
   const title = typeof data.title === 'string' ? data.title.trim() : ''

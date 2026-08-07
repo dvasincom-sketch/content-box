@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { isSameOrigin, isMutating } from '@/lib/sameOrigin'
 import { loadEntitlements, canUse, type Capability } from '@/lib/studioEntitlements'
+import { can } from '@/access'
 
 /**
  * Общая обвязка серверных роутов студии (`(studio)/studio/api/**`).
@@ -150,4 +151,41 @@ export async function ownsForContributor(
 /** where-фрагмент для студийных списков: участник — только своё, иначе null. */
 export function ownerWhere(author: Author): Record<string, unknown> | null {
   return isContributor(author) ? { owner: { equals: author.user.id } } : null
+}
+
+/* ── Тонкие права (Фаза 2): проверки в студийных роутах ──────────────────── */
+
+/** Есть ли у автора право на действие над сущностью (владелец — всегда). */
+export function authorCan(
+  author: Author,
+  entity: Parameters<typeof can>[1],
+  action: Parameters<typeof can>[2],
+): boolean {
+  return can(author.user as any, entity, action)
+}
+
+/**
+ * Может ли автор изменить/удалить конкретную запись контента: право *Any →
+ * любую; право *Own → только свою (owner === self). Владелец/суперадмин — всегда.
+ */
+export async function canMutateDoc(
+  payload: Payload,
+  collection: CollectionSlug,
+  id: string | number,
+  author: Author,
+  entity: Parameters<typeof can>[1],
+  kind: 'edit' | 'delete',
+): Promise<boolean> {
+  const anyA = (kind === 'edit' ? 'editAny' : 'deleteAny') as Parameters<typeof can>[2]
+  const ownA = (kind === 'edit' ? 'editOwn' : 'deleteOwn') as Parameters<typeof can>[2]
+  if (authorCan(author, entity, anyA)) return true
+  if (!authorCan(author, entity, ownA)) return false
+  try {
+    const doc: any = await payload.findByID({ collection, id, depth: 0, overrideAccess: true })
+    const owner = doc?.owner
+    const ownerId = owner && typeof owner === 'object' ? owner.id : owner
+    return ownerId != null && Number(ownerId) === Number(author.user.id)
+  } catch {
+    return false
+  }
 }

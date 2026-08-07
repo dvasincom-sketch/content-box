@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, belongsToTenant, hasCapability } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant, hasCapability, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { headObject, publicUrl } from '@/lib/s3'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
@@ -20,6 +20,7 @@ function numOrNull(v: unknown): number | null {
 }
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (!authorCan(author, 'videos', 'create')) return apiError('Недостаточно прав', 403)
   if (!(await hasCapability(payload, tenantId, 'media'))) return apiError('Раздел медиа недоступен на текущем тарифе. Оформите пакет в студии.', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')

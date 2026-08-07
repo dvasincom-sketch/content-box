@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -15,7 +15,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (data === undefined) return apiError('Некорректный запрос')
 
   const imageId = data.imageId
-  if (!(await ownsForContributor(payload, 'gallery-images', imageId, author))) return apiError('Нет доступа к чужому контенту', 403)
+  if (!(await canMutateDoc(payload, 'gallery-images', imageId, author, 'gallery', 'edit'))) return apiError('Недостаточно прав', 403)
   if (!imageId) return apiError('Не указано изображение')
 
   // Видео принадлежит тенанту?

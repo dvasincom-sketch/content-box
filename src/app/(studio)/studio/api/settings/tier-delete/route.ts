@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { logActivity } from '@/lib/logActivity'
 
 /**
@@ -9,7 +9,7 @@ import { logActivity } from '@/lib/logActivity'
  * (activeTier), Payload может вернуть ошибку связи — тогда сообщаем об этом.
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
+  if (!authorCan(author, 'tiers', 'manage')) return apiError('Недостаточно прав', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

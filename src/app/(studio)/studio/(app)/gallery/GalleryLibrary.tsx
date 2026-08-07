@@ -38,7 +38,7 @@ function flattenFolders(folders: FolderItem[]) {
  * Переиспользует готовые роуты gallery-images/{list,upload,set-folder,delete}
  * и gallery-folders/*, а также GalleryFolderManager из композера.
  */
-export function GalleryLibrary({ folders }: { folders: FolderItem[] }) {
+export function GalleryLibrary({ folders, canCreate = true }: { folders: FolderItem[]; canCreate?: boolean }) {
   const router = useRouter()
   const flat = flattenFolders(folders)
 
@@ -168,10 +168,12 @@ export function GalleryLibrary({ folders }: { folders: FolderItem[] }) {
           <button className={`studio-btn studio-btn--ghost${managing ? ' is-active' : ''}`} onClick={() => setManaging((v) => !v)}>
             <Folder size={15} /> Папки
           </button>
+          {canCreate && (<>
           <button className="studio-btn studio-btn--primary" onClick={() => fileInput.current?.click()}>
             <Upload size={15} /> Загрузить
           </button>
           <input ref={fileInput} type="file" accept="image/*" multiple onChange={onPick} style={{ display: 'none' }} />
+          </>)}
         </div>
       </div>
 

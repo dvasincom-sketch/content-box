@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, hasCapability } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, hasCapability, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -7,6 +7,7 @@ import { errorMessage } from '@/lib/errorMessage'
  * Body: { title, slug? }
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (!authorCan(author, 'books', 'create')) return apiError('Недостаточно прав', 403)
   if (!(await hasCapability(payload, tenantId, 'books'))) return apiError('Раздел книг недоступен на текущем тарифе. Оформите пакет в студии.', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')

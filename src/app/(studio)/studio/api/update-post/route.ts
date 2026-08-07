@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { errorMessage } from '@/lib/errorMessage'
 import type { Payload, CollectionSlug } from 'payload'
@@ -24,7 +24,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (data === undefined) return apiError('Некорректный запрос')
 
   const id = data.id
-  if (!(await ownsForContributor(payload, 'publications', id, author))) return apiError('Нет доступа к чужому контенту', 403)
+  if (!(await canMutateDoc(payload, 'publications', id, author, 'posts', 'edit'))) return apiError('Недостаточно прав', 403)
   if (!id) return apiError('Не указана публикация')
 
   // Пост принадлежит тенанту?

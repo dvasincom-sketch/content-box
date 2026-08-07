@@ -2,6 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
+import { can } from '@/access'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { VideosManager } from './VideosManager'
@@ -14,7 +15,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function VideosPage() {
   const author = await requireAuthor()
-  const ownFilter = contributorOwnerFilter(author!)
+  const ownFilter = contributorOwnerFilter(author!, 'videos')
   const payload = await getPayload({ config: await config })
   const ent = await loadEntitlements(payload, author!.tenantId)
   if (!canUse(ent, 'media')) return <StudioUpsell cap="media" />
@@ -115,5 +116,5 @@ export default async function VideosPage() {
     }
   })
 
-  return <VideosManager initialVideos={videos} tiers={tiers} categories={categories} />
+  return <VideosManager initialVideos={videos} tiers={tiers} categories={categories}  canCreate={can(author!.user as any, 'videos', 'create')} />
 }

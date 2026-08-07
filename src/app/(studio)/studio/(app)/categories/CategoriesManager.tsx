@@ -38,7 +38,9 @@ function buildTree(items: Cat[]): TreeNode[] {
 
 export function CategoriesManager({ initialCategories }: { initialCategories: Cat[] }) {
   const router = useRouter()
-  const [cats] = useState<Cat[]>(initialCategories)
+  // Берём напрямую из пропа: после router.refresh() приходят свежие данные,
+  // и дерево пересобирается сразу (useState заморозил бы первый снимок).
+  const cats = initialCategories
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

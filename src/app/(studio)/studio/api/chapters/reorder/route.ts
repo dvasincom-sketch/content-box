@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, belongsToTenant, ownsForContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -9,7 +9,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
   const bookId = data.bookId
-  if (!(await ownsForContributor(payload, 'books' as any, bookId, author))) return apiError('Нет доступа к чужому контенту', 403)
+  if (!(await canMutateDoc(payload, 'books' as any, bookId, author, 'books', 'edit'))) return apiError('Недостаточно прав', 403)
   if (!bookId) return apiError('Не указана книга')
   if (!(await belongsToTenant(payload, 'books' as any, bookId, tenantId))) return apiError('Книга не найдена', 404)
   const ids = Array.isArray(data.orderedIds) ? data.orderedIds : []

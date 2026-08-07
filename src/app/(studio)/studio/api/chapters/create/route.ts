@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, belongsToTenant, hasCapability } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, belongsToTenant, hasCapability, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { errorMessage } from '@/lib/errorMessage'
 import { wordCountFromHtml } from '../_wordcount'
@@ -8,6 +8,7 @@ import { wordCountFromHtml } from '../_wordcount'
  * Body: { bookId, title, body(html)?, isPreview?, minTierId?, order? }
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (!authorCan(author, 'books', 'create')) return apiError('Недостаточно прав', 403)
   if (!(await hasCapability(payload, tenantId, 'books'))) return apiError('Раздел книг недоступен на текущем тарифе. Оформите пакет в студии.', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')

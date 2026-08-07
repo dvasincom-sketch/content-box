@@ -2,6 +2,8 @@ import { authenticatedUser } from '@/lib/currentUser'
 import { cookies } from 'next/headers.js'
 import { redirect } from 'next/navigation'
 import type { User } from '@/payload-types'
+import { can } from '@/access'
+import type { ContentEntity } from '@/lib/permissions'
 
 /**
  * Имя httpOnly-cookie с id «активного тенанта» для платформенного администратора
@@ -76,6 +78,10 @@ export async function requireAuthor(): Promise<{ user: User; tenantId: number; i
 /** where-фрагмент «только своё» для участника (contributor); иначе null. */
 export function contributorOwnerFilter(
   author: { user: { id: number | string; tenantRole?: string | null } },
+  entity?: ContentEntity,
 ): { owner: { equals: number | string } } | null {
-  return author.user.tenantRole === 'contributor' ? { owner: { equals: author.user.id } } : null
+  const u = author.user as any
+  if (u.tenantRole !== 'contributor') return null
+  if (entity && (can(u, entity, 'viewAny') || can(u, entity, 'editAny') || can(u, entity, 'deleteAny'))) return null
+  return { owner: { equals: u.id } }
 }

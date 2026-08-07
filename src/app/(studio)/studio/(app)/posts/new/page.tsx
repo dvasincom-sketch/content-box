@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function NewPostPage() {
   const author = await requireAuthor() // guard в (app)/layout гарантирует
-  const ownFilter = contributorOwnerFilter(author!)
+  const ownFilter = contributorOwnerFilter(author!, 'posts')
   const payload = await getPayload({ config: await config })
 
   const [catsRes, tiersRes, videosRes, galFoldersRes] = await Promise.all([

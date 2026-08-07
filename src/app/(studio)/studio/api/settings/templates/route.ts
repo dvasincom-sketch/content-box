@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings, authorCan } from '@/app/(studio)/studio/api/_lib'
 import {
   normalizeHomeSections,
   isHomeSectionType,
@@ -51,7 +51,7 @@ function pickContent(settings: any) {
 }
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
+  if (!authorCan(author, 'home', 'manage')) return apiError('Недостаточно прав', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
   const action = String(data.action || '')

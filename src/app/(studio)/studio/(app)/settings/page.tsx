@@ -14,6 +14,8 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { redirect } from 'next/navigation'
 import { requireAuthor } from '@/lib/currentAuthor'
+import { capabilitiesOf } from '@/access'
+import { hasCap, SETTINGS_MANAGE_KEYS } from '@/lib/permissions'
 import { normalizeHomeSections } from '@/lib/homeSections'
 import { SettingsView } from './SettingsView'
 
@@ -26,7 +28,9 @@ export const dynamic = 'force-dynamic'
 
 export default async function SettingsPage() {
   const author = await requireAuthor()
-  if ((author!.user as { tenantRole?: string | null }).tenantRole === 'contributor') redirect('/studio')
+  const isOwnerEarly = (author!.user as { tenantRole?: string | null }).tenantRole !== 'contributor'
+  const abilities = capabilitiesOf(author!.user as any)
+  if (!isOwnerEarly && !SETTINGS_MANAGE_KEYS.some((k) => hasCap(abilities, k, 'manage'))) redirect('/studio')
   const payload = await getPayload({ config: await config })
 
   const [settingsRes, tiersRes] = await Promise.all([
@@ -137,6 +141,7 @@ export default async function SettingsPage() {
       goals={goals}
       members={members}
       isOwner={isOwner}
+      abilities={abilities}
     />
   )
 }

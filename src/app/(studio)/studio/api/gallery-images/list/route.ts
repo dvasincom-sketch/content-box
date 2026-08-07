@@ -1,4 +1,4 @@
-import { withAuthor, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -19,7 +19,7 @@ export const GET = withAuthor(async ({ req, payload, tenantId, author }) => {
   const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || '40') || 40))
 
   const and: any[] = [{ tenant: { equals: tenantId } }]
-  if (isContributor(author)) and.push({ owner: { equals: author.user.id } })
+  if (!authorCan(author, 'gallery', 'viewAny') && !authorCan(author, 'gallery', 'editAny') && !authorCan(author, 'gallery', 'deleteAny')) and.push({ owner: { equals: author.user.id } })
   if (folder === 'none') {
     and.push({ folder: { exists: false } })
   } else if (folder && folder !== 'all') {

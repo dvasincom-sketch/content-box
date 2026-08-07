@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { streamGetVideo } from '@/lib/cfStream'
 import { errorMessage } from '@/lib/errorMessage'
@@ -14,6 +14,7 @@ import { errorMessage } from '@/lib/errorMessage'
 export const runtime = 'nodejs'
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+  if (!authorCan(author, 'videos', 'create')) return apiError('Недостаточно прав', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 

@@ -1,4 +1,4 @@
-import { withAuthor, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, apiError, apiOk, findTenantSettings, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -12,7 +12,7 @@ const MAX_BYTES = 6 * 1024 * 1024 // 6 MB — логотипу больше не
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/avif']
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
+  if (!authorCan(author, 'appearance', 'manage')) return apiError('Недостаточно прав', 403)
   let form: FormData
   try {
     form = await req.formData()

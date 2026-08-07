@@ -72,10 +72,12 @@ export function AudioManager({
   initialAudios,
   tiers,
   categories,
+  canCreate = true,
 }: {
   initialAudios: AudioItem[]
   tiers: Tier[]
   categories: Cat[]
+  canCreate?: boolean
 }) {
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
@@ -153,7 +155,7 @@ export function AudioManager({
         <h1>Аудио</h1>
       </div>
 
-      {/* Загрузка */}
+      {canCreate && (
       <div className="studio-card" style={{ padding: 20, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ fontWeight: 700 }}>Загрузить аудио (MP3)</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -228,6 +230,8 @@ export function AudioManager({
           </button>
         </div>
       </div>
+
+      )}
 
       {/* Список */}
       {initialAudios.length === 0 ? (

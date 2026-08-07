@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, findTenantSettings, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { getHomePack } from '@/lib/homePacks'
 import { PRESET_IDS } from '@/lib/themePresets'
 import { isHomeSectionType, normalizeHomeSections, sanitizeSectionConfig, type HomeSectionType, type HomeSectionSettings } from '@/lib/homeSections'
@@ -12,7 +12,7 @@ import { logActivity } from '@/lib/logActivity'
  *  - merge: к текущим секциям добавляются недостающие из пака (тема/тексты — как есть).
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
+  if (!authorCan(author, 'home', 'manage')) return apiError('Недостаточно прав', 403)
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
