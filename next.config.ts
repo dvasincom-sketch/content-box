@@ -82,6 +82,34 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  /**
+   * Реверс-прокси служебного домена аналитики на внутренний контейнер Umami.
+   *
+   * Timeweb App Platform отдаёт домен ТОЛЬКО первому сервису compose (`app`),
+   * привязать поддомен к сервису `umami` нельзя. Поэтому `analytics.contentbox.site`
+   * приезжает в `app`, а мы (beforeFiles — раньше файлов и /_next/static)
+   * проксируем ВЕСЬ этот хост во внутренний http://umami:3000 — и трекер
+   * (/script.js, /api/send), и админку Umami целиком, по https.
+   *
+   * Хост и апстрим — из env; без них rewrite не добавляется (no-op).
+   * Порядок роутинга Next: headers → redirects → proxy(middleware) → beforeFiles
+   * rewrites → файлы. `src/proxy.ts` для этого хоста делает passthrough, чтобы
+   * не уводить на /domain-not-found до срабатывания rewrite.
+   */
+  async rewrites() {
+    const host = process.env.UMAMI_PROXY_HOST
+    const upstream = process.env.UMAMI_UPSTREAM
+    if (!host || !upstream) return []
+    return {
+      beforeFiles: [
+        {
+          source: '/:path*',
+          has: [{ type: 'host' as const, value: host }],
+          destination: `${upstream.replace(/\/+$/, '')}/:path*`,
+        },
+      ],
+    }
+  },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],
