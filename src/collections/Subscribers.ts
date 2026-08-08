@@ -143,6 +143,9 @@ export const Subscribers: CollectionConfig = {
   fields: [
     // `email` / `password` инжектит `auth: true`.
     { name: 'displayName', type: 'text', label: 'Отображаемое имя' },
+    // ── Вход по телефону (SMS-код) ───────────────────────────────────────
+    { name: 'phone', type: 'text', label: 'Телефон', index: true, admin: { description: 'Канонический вид 7XXXXXXXXXX. Заполняется при входе по SMS.' } },
+    { name: 'phoneVerified', type: 'checkbox', label: 'Телефон подтверждён', defaultValue: false, admin: { readOnly: true } },
     // ── Профиль участника (Фаза 1 «Сообщество») ──────────────────────────
     // Публичная страница /u/<handle>. Профиль по умолчанию публичный и
     // индексируемый (SEO-приоритет); participant может скрыть (profilePrivate).

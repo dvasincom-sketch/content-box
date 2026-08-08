@@ -759,6 +759,11 @@ export interface Subscriber {
   id: number;
   tenant?: (number | null) | Tenant;
   displayName?: string | null;
+  /**
+   * Канонический вид 7XXXXXXXXXX. Заполняется при входе по SMS.
+   */
+  phone?: string | null;
+  phoneVerified?: boolean | null;
   avatar?: (number | null) | Media;
   /**
    * Короткое описание в профиле. Без ссылок.
@@ -2198,6 +2203,8 @@ export interface SubscriptionTiersSelect<T extends boolean = true> {
 export interface SubscribersSelect<T extends boolean = true> {
   tenant?: T;
   displayName?: T;
+  phone?: T;
+  phoneVerified?: T;
   avatar?: T;
   bio?: T;
   handle?: T;

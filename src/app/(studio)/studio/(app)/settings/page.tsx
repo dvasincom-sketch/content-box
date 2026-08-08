@@ -70,14 +70,6 @@ export default async function SettingsPage() {
   const appliedTemplate = (settings?.appliedTemplate as string | null) ?? null
   const bgDecor = ((settings as { bgDecor?: string } | null)?.bgDecor as string | null) ?? null
 
-  const aStats = (settings?.authorStats ?? {}) as Record<string, string | undefined>
-  const authorStats = {
-    videosValue: aStats.videosValue ?? '',
-    videosLabel: aStats.videosLabel ?? '',
-    membersValue: aStats.membersValue ?? '',
-    membersLabel: aStats.membersLabel ?? '',
-  }
-
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     id: t.id,
     name: t.name,
@@ -85,6 +77,7 @@ export default async function SettingsPage() {
     weight: t.weight,
     priceRub: t.priceRub,
     description: t.description || '',
+    badge: t.badge || '',
     isActive: t.isActive !== false,
     perks: Array.isArray(t.perks)
       ? t.perks.map((p: any) => ({ type: p.type || 'included', text: p.text || '' }))
@@ -137,7 +130,6 @@ export default async function SettingsPage() {
       savedTemplates={savedTemplates}
       appliedTemplate={appliedTemplate}
       bgDecor={bgDecor}
-      authorStats={authorStats}
       goals={goals}
       members={members}
       isOwner={isOwner}

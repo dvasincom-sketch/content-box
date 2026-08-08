@@ -47,6 +47,14 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
   // Временно скрыт блок «об авторе» над тарифами (лого/био/статы/соцсети).
   const SHOW_HEAD = false
 
+  // Если бейджи не заданы вручную — по умолчанию выделяем первый платный тариф
+  // (рамка + яркая кнопка + «Популярно»), чтобы витрина не выглядела плоской.
+  const anyBadge = tiers.some((t) => Boolean(t.badge))
+  const featIdx = (() => {
+    const paid = tiers.findIndex((t) => t.priceRub > 0)
+    return paid >= 0 ? paid : Math.min(1, tiers.length - 1)
+  })()
+
   return (
     <section className="mt-10 spot">
       {SHOW_HEAD && (
@@ -91,26 +99,38 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
           <div className="spot__subs-label">Подписка</div>
           <div className="spot__tiers" data-count={Math.min(tiers.length, 3)}>
             {tiers.slice(0, 3).map((t, i) => {
-              const featured = Boolean(t.badge)
+              const featured = anyBadge ? Boolean(t.badge) : i === featIdx
+              const badgeText = t.badge || (featured && !anyBadge ? 'Популярно' : null)
+              const TEASER = 4
+              const shown = t.perks.slice(0, TEASER)
+              const rest = t.perks.slice(TEASER)
               return (
                 <div key={i} className={'spot__tier' + (featured ? ' is-feat' : '')}>
-                  {t.badge && <span className="spot__badge">{t.badge}</span>}
+                  {badgeText && <span className="spot__badge">{badgeText}</span>}
                   <div className="spot__tier-name">{t.name}</div>
                   <div className="spot__tier-price">{price(t.priceRub)}</div>
                   {t.description && <p className="spot__desc">{t.description}</p>}
-                  {t.perks.length > 0 && (
+                  {shown.length > 0 && (
+                    <ul className="spot__perks">
+                      {shown.map((p, j) => (
+                        <li key={j}>
+                          <Check size={15} className="spot__check" />
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {rest.length > 0 && (
                     <details className="spot__more">
-                      <summary className="spot__more-sum">Что входит <ChevronDown size={14} /></summary>
-                      <div className="spot__pop">
-                        <ul className="spot__perks">
-                          {t.perks.map((p, j) => (
-                            <li key={j}>
-                              <Check size={15} className="spot__check" />
-                              <span>{p}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      <summary className="spot__more-sum">Показать всё ({t.perks.length}) <ChevronDown size={14} /></summary>
+                      <ul className="spot__perks spot__perks--extra">
+                        {rest.map((p, j) => (
+                          <li key={j}>
+                            <Check size={15} className="spot__check" />
+                            <span>{p}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </details>
                   )}
                   <AppLink href={subscribeHref} className={'spot__btn' + (featured ? ' is-feat' : '')}>

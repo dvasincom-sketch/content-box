@@ -11,7 +11,6 @@ import { HomeBuilder } from './HomeBuilder'
 import { TemplatesPanel } from './TemplatesPanel'
 import { ImageUploadField } from './ImageUploadField'
 import { BgDecorPicker } from './BgDecorPicker'
-import { AuthorStatsPanel, type AuthorStats } from './AuthorStatsPanel'
 import { GoalsPanel, type Goal } from './GoalsPanel'
 import { hasCap, type CapMatrix } from '@/lib/permissions'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
@@ -28,6 +27,7 @@ type Tier = {
   priceRub: number
   description: string
   isActive: boolean
+  badge: string
   perks: Perk[]
 }
 
@@ -61,7 +61,6 @@ export function SettingsView({
   savedTemplates,
   appliedTemplate,
   bgDecor,
-  authorStats,
   goals,
   members,
   isOwner,
@@ -76,7 +75,6 @@ export function SettingsView({
   savedTemplates: HomeSavedTemplate[]
   appliedTemplate: string | null
   bgDecor: string | null
-  authorStats: AuthorStats
   goals: Goal[]
   members: Member[]
   isOwner: boolean
@@ -114,7 +112,6 @@ export function SettingsView({
   // appearance; счётчики автора — authorShowcase.
   const canAppearance = isOwner || hasCap(abilities, 'appearance', 'manage')
   const canHome = isOwner || hasCap(abilities, 'home', 'manage')
-  const canAuthorShowcase = isOwner || hasCap(abilities, 'authorShowcase', 'manage')
   const canTemplates = canAppearance && canHome
 
   return (
@@ -159,7 +156,6 @@ export function SettingsView({
             </section>
             )}
             {canAppearance && <BgDecorPicker initial={bgDecor} />}
-            {canAuthorShowcase && <AuthorStatsPanel initial={authorStats} />}
           </>
         )}
         {tab === 'home' && <HomeBlock homeSections={homeSections} />}
@@ -443,6 +439,7 @@ function TierEditor({
   const [weight, setWeight] = useState(String(tier?.weight ?? ''))
   const [priceRub, setPriceRub] = useState(String(tier?.priceRub ?? ''))
   const [description, setDescription] = useState(tier?.description || '')
+  const [badge, setBadge] = useState(tier?.badge || '')
   const [isActive, setIsActive] = useState(tier?.isActive ?? true)
   const [perks, setPerks] = useState<Perk[]>(tier?.perks || [])
   const [busy, setBusy] = useState(false)
@@ -484,6 +481,7 @@ function TierEditor({
         weight: Number(weight),
         priceRub: Number(priceRub),
         description,
+        badge: badge.trim(),
         isActive,
         perks: cleanPerks,
       }
@@ -562,6 +560,12 @@ function TierEditor({
           rows={2}
           placeholder="Короткое описание уровня для витрины."
         />
+      </label>
+
+      <label className="studio-field">
+        <span className="studio-field__label">Плашка на витрине (необязательно)</span>
+        <input className="studio-input" value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="Популярный" maxLength={20} />
+        <span className="settings__hint">Метка на карточке тарифа: «Популярный», «Выгодно». Выделяет тариф рамкой и яркой кнопкой. Пусто — без плашки.</span>
       </label>
 
       {/* Плюшки */}

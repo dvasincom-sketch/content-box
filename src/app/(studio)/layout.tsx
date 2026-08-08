@@ -11,6 +11,8 @@ import '@fontsource/ibm-plex-mono/500.css'
 import '@fontsource/ibm-plex-mono/600.css'
 import './fonts.css'
 import { THEME_INIT } from '@/lib/themeInit'
+import { UmamiTracker } from '@/components/UmamiTracker'
+import { UMAMI_STUDIO_WEBSITE_ID } from '@/lib/umami'
 
 // Студия — авторизованное приложение (auth + БД), не статика. Рендерим на каждый
 // запрос, иначе `next build` пытается пререндерить и упирается в недоступную на
@@ -34,6 +36,9 @@ export default function StudioRootLayout({ children }: { children: React.ReactNo
     <html lang="ru" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+        {/* Продуктовая аналитика студии (Umami, отдельный website «студия»).
+            No-op, пока не задан UMAMI_STUDIO_WEBSITE_ID и UMAMI_SCRIPT_URL. */}
+        <UmamiTracker websiteId={UMAMI_STUDIO_WEBSITE_ID} />
       </head>
       <body style={{ margin: 0 }}>
         <div className="studio-root">{children}</div>

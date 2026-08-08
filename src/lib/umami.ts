@@ -14,6 +14,12 @@
  * <UmamiTracker>), раздел «Аналитика» показывает состояние «не настроено».
  */
 export const UMAMI_SCRIPT_URL = (process.env.UMAMI_SCRIPT_URL || '').trim()
+/**
+ * Website ID Umami для продуктовой аналитики САМОЙ студии (поведение авторов в
+ * панели). Платформенный — ОДИН на всю студию, не путать с per-tenant
+ * `tenant.umamiWebsiteId` публичных сайтов. Пусто → трекер студии не грузится.
+ */
+export const UMAMI_STUDIO_WEBSITE_ID = (process.env.UMAMI_STUDIO_WEBSITE_ID || '').trim()
 export const UMAMI_API_URL = (process.env.UMAMI_API_URL || '').replace(/\/+$/, '')
 export const UMAMI_API_TOKEN = (process.env.UMAMI_API_TOKEN || '').trim()
 export const UMAMI_API_USER = (process.env.UMAMI_API_USER || '').trim()

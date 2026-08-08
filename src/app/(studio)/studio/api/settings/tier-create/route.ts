@@ -36,6 +36,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         weight,
         priceRub,
         description: typeof data.description === 'string' ? data.description : undefined,
+        badge: typeof data.badge === 'string' ? data.badge.trim() : undefined,
         isActive: data.isActive !== false,
         perks: Array.isArray(data.perks) ? normalizePerks(data.perks) : [],
         tenant: tenantId,

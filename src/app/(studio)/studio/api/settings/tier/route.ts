@@ -64,6 +64,10 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     patch.description = data.description
   }
 
+  if (typeof data.badge === 'string') {
+    patch.badge = data.badge.trim()
+  }
+
   // Плюшки: массив { type, text }. Санитайзим типы и обрезаем пустые.
   if (Array.isArray(data.perks)) {
     patch.perks = normalizePerks(data.perks)
