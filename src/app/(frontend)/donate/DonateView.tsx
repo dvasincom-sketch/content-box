@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Heart, X, Sparkles, TrendingUp, Users, Shield } from 'lucide-react'
+import { Heart, X, Sparkles, TrendingUp, Users, Shield, ChevronDown } from 'lucide-react'
 
 export type DnGoal = {
   id: number | string
@@ -44,6 +44,44 @@ const PRESET_HINT: Record<number, string> = {
   1000: 'час озвучки',
   2000: 'щедро',
   5000: 'меценат',
+}
+
+type GoalOpt = { value: string; label: string }
+/** Кастомный дропдаун в стиле сайта (нативный <select> не даёт стилизовать сам список). */
+function GoalSelect({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: GoalOpt[] }) {
+  const [open, setOpen] = useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+  const selected = options.find((o) => o.value === value) ?? options[0]
+  return (
+    <div className="dn-select" ref={ref}>
+      <button type="button" className="dn-select__btn" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}>
+        <span>{selected?.label}</span>
+        <ChevronDown size={16} className={'dn-select__caret' + (open ? ' is-open' : '')} />
+      </button>
+      {open && (
+        <ul className="dn-select__list" role="listbox">
+          {options.map((o) => (
+            <li
+              key={o.value}
+              role="option"
+              aria-selected={o.value === value}
+              className={'dn-select__opt' + (o.value === value ? ' is-active' : '')}
+              onClick={() => { onChange(o.value); setOpen(false) }}
+            >
+              {o.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 export function DonateView(props: DonateViewProps) {
@@ -152,10 +190,11 @@ export function DonateView(props: DonateViewProps) {
             </div>
 
             <label className="dn-label">Куда направить</label>
-            <select className="dn-input" value={goalId} onChange={(e) => setGoalId(e.target.value)}>
-              <option value="">На проект в целом</option>
-              {goals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
-            </select>
+            <GoalSelect
+              value={goalId}
+              onChange={setGoalId}
+              options={[{ value: '', label: 'На проект в целом' }, ...goals.map((g) => ({ value: String(g.id), label: g.title }))]}
+            />
 
             <label className="dn-label">Слова поддержки (необязательно)</label>
             <textarea className="dn-input" rows={3} placeholder="Спасибо за вашу работу!" value={message} onChange={(e) => setMessage(e.target.value)} />
@@ -203,10 +242,11 @@ export function DonateView(props: DonateViewProps) {
                   <div className="dn-msg__head">
                     <span className="dn-ava">{(s.name || '?').slice(0, 1).toUpperCase()}</span>
                     <div className="dn-msg__name">{s.name}</div>
+                    <span className="dn-msg__date">{s.dateLabel}</span>
                   </div>
                   <blockquote className="dn-msg__text">{s.message}</blockquote>
                   <figcaption className="dn-msg__foot">
-                    <span className="dn-msg__meta">{rub(s.amountRub)} · {s.dateLabel}</span>
+                    <span className="dn-msg__sum">{rub(s.amountRub)}</span>
                     {s.goalTitle && <span className="dn-msg__goal">на: {s.goalTitle}</span>}
                   </figcaption>
                 </figure>
