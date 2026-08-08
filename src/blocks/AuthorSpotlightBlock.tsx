@@ -1,10 +1,10 @@
 import React from 'react'
 import AppLink from '@/components/AppLink'
-import { Check, Play, Camera, Send, Zap, Users } from 'lucide-react'
+import { Check, Play, Camera, Send, Zap, Users, ChevronDown } from 'lucide-react'
 
 export type SpotlightStat = { value: string; label: string }
 export type SpotlightSocial = { platform: string; url: string }
-export type SpotlightTier = { name: string; priceRub: number; perks: string[] }
+export type SpotlightTier = { name: string; priceRub: number; perks: string[]; badge?: string | null; description?: string | null }
 
 export type AuthorSpotlightBlockProps = {
   name: string
@@ -43,13 +43,6 @@ function price(priceRub: number): string {
 export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers, subscribeHref }: AuthorSpotlightBlockProps) {
   if (!name && stats.length === 0 && tiers.length === 0) return null
 
-  const featIdx =
-    tiers.length > 0
-      ? (() => {
-          const paid = tiers.findIndex((t) => t.priceRub > 0)
-          return paid >= 0 ? paid : Math.min(1, tiers.length - 1)
-        })()
-      : -1
   const validSocials = socials.filter((s) => s && s.url)
   // Временно скрыт блок «об авторе» над тарифами (лого/био/статы/соцсети).
   const SHOW_HEAD = false
@@ -98,21 +91,27 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
           <div className="spot__subs-label">Подписка</div>
           <div className="spot__tiers" data-count={Math.min(tiers.length, 3)}>
             {tiers.slice(0, 3).map((t, i) => {
-              const featured = i === featIdx
+              const featured = Boolean(t.badge)
               return (
                 <div key={i} className={'spot__tier' + (featured ? ' is-feat' : '')}>
-                  {featured && <span className="spot__badge">Популярно</span>}
+                  {t.badge && <span className="spot__badge">{t.badge}</span>}
                   <div className="spot__tier-name">{t.name}</div>
                   <div className="spot__tier-price">{price(t.priceRub)}</div>
+                  {t.description && <p className="spot__desc">{t.description}</p>}
                   {t.perks.length > 0 && (
-                    <ul className="spot__perks">
-                      {t.perks.map((p, j) => (
-                        <li key={j}>
-                          <Check size={15} className="spot__check" />
-                          <span>{p}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <details className="spot__more">
+                      <summary className="spot__more-sum">Что входит <ChevronDown size={14} /></summary>
+                      <div className="spot__pop">
+                        <ul className="spot__perks">
+                          {t.perks.map((p, j) => (
+                            <li key={j}>
+                              <Check size={15} className="spot__check" />
+                              <span>{p}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </details>
                   )}
                   <AppLink href={subscribeHref} className={'spot__btn' + (featured ? ' is-feat' : '')}>
                     Оформить

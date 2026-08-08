@@ -836,6 +836,10 @@ export interface SubscriptionTier {
    */
   description?: string | null;
   /**
+   * Напр. «Популярный», «Выгодно». Пусто — без плашки. Тариф с бейджем выделяется рамкой.
+   */
+  badge?: string | null;
+  /**
    * Неактивные уровни не показываются для оформления.
    */
   isActive?: boolean | null;
@@ -2175,6 +2179,7 @@ export interface SubscriptionTiersSelect<T extends boolean = true> {
   weight?: T;
   priceRub?: T;
   description?: T;
+  badge?: T;
   isActive?: T;
   perks?:
     | T

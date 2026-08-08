@@ -70,6 +70,12 @@ export const SubscriptionTiers: CollectionConfig = {
       admin: { description: 'Краткое описание преимуществ уровня.' },
     },
     {
+      name: 'badge',
+      type: 'text',
+      label: 'Бейдж (плашка)',
+      admin: { description: 'Напр. «Популярный», «Выгодно». Пусто — без плашки. Тариф с бейджем выделяется рамкой.' },
+    },
+    {
       name: 'isActive',
       type: 'checkbox',
       defaultValue: true,

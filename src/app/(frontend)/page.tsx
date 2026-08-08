@@ -128,8 +128,10 @@ async function getAuthorSpotlight(payload: Payload, tenant: any, settings: any) 
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     name: t.name as string,
     priceRub: Number(t.priceRub ?? 0),
+    badge: typeof t.badge === 'string' && t.badge.trim() ? t.badge.trim() : null,
+    description: typeof t.description === 'string' && t.description.trim() ? t.description.trim() : null,
     perks: Array.isArray(t.perks)
-      ? (t.perks as any[]).map((pk) => pk?.text).filter((x: unknown): x is string => typeof x === 'string' && x.trim().length > 0).slice(0, 3)
+      ? (t.perks as any[]).map((pk) => pk?.text).filter((x: unknown): x is string => typeof x === 'string' && x.trim().length > 0)
       : [],
   }))
 

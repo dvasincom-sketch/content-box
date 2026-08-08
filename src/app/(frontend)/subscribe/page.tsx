@@ -27,6 +27,7 @@ type Tier = {
   name: string
   priceRub: number
   description: string
+  badge: string | null
   perks: Perk[]
   weight: number
 }
@@ -53,14 +54,12 @@ export default async function SubscribePage() {
     name: t.name,
     priceRub: t.priceRub,
     description: t.description || '',
+    badge: typeof t.badge === 'string' && t.badge.trim() ? t.badge.trim() : null,
     weight: t.weight,
     perks: Array.isArray(t.perks)
       ? t.perks.map((p: any) => ({ type: (p.type || 'included') as PerkType, text: p.text || '' }))
       : [],
   }))
-
-  // Акцент — на среднем тарифе (по позиции), если их три и больше.
-  const highlightIndex = tiers.length >= 3 ? 1 : -1
 
   return (
     <main
@@ -112,8 +111,8 @@ export default async function SubscribePage() {
           </div>
         ) : (
           <div className="sub-grid">
-            {tiers.map((tier, i) => (
-              <TierCard key={tier.id} tier={tier} highlighted={i === highlightIndex} />
+            {tiers.map((tier) => (
+              <TierCard key={tier.id} tier={tier} highlighted={Boolean(tier.badge)} />
             ))}
           </div>
         )}
@@ -146,7 +145,7 @@ function TierCard({ tier, highlighted }: { tier: Tier; highlighted: boolean }) {
           className="sub-card__badge"
           style={{ background: 'var(--brand-primary)', color: '#fff' }}
         >
-          Популярный
+          {tier.badge}
         </div>
       )}
 

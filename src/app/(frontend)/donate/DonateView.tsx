@@ -246,8 +246,8 @@ export function DonateView(props: DonateViewProps) {
                   </div>
                   <blockquote className="dn-msg__text">{s.message}</blockquote>
                   <figcaption className="dn-msg__foot">
-                    <span className="dn-msg__sum">{rub(s.amountRub)}</span>
                     {s.goalTitle && <span className="dn-msg__goal">на: {s.goalTitle}</span>}
+                    <span className="dn-msg__sum">{rub(s.amountRub)}</span>
                   </figcaption>
                 </figure>
               ))}
