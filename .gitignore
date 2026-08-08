@@ -16,3 +16,9 @@ data.ms/
 # e2e (Playwright) артефакты
 playwright-report/
 test-results/
+
+# Временные артефакты проверок typecheck ассистента (не коммитить)
+_to_delete/
+_tsc-*.json
+_tsc-*.tsbuildinfo
+*.tsbuildinfo
