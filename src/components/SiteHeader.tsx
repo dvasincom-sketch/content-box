@@ -29,7 +29,7 @@ export function SiteHeader({
   brandName,
   nav,
   menu = [],
-  supportLabel = 'Поддержать проект',
+  supportLabel = 'Поддержать',
   supportUrl = '/donate',
   subscriber = null,
 }: SiteHeaderProps) {

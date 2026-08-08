@@ -51,9 +51,12 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
         })()
       : -1
   const validSocials = socials.filter((s) => s && s.url)
+  // Временно скрыт блок «об авторе» над тарифами (лого/био/статы/соцсети).
+  const SHOW_HEAD = false
 
   return (
     <section className="mt-10 spot">
+      {SHOW_HEAD && (
       <div className="spot__head c-card">
         {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -88,6 +91,7 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
           </div>
         )}
       </div>
+      )}
 
       {tiers.length > 0 && (
         <div className="spot__subs">

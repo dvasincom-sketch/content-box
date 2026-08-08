@@ -47,7 +47,7 @@ const PRESET_HINT: Record<number, string> = {
 }
 
 export function DonateView(props: DonateViewProps) {
-  const { brandName, logoUrl, goals, supporters, totalRaisedRub, supportersCount, weekCount, userName, subscribeHref, isDemo } = props
+  const { brandName, logoUrl, goals, supporters, totalRaisedRub, supportersCount, weekCount, userName, subscribeHref } = props
 
   const [amount, setAmount] = useState<number>(1000)
   const [custom, setCustom] = useState('')
@@ -55,14 +55,12 @@ export function DonateView(props: DonateViewProps) {
   const [message, setMessage] = useState('')
   const [anon, setAnon] = useState(false)
   const [name, setName] = useState(userName || '')
-  const [showAll, setShowAll] = useState(false)
   const [modal, setModal] = useState(false)
 
   const effAmount = custom.trim() ? Math.max(0, Math.floor(Number(custom.replace(/\D/g, '')) || 0)) : amount
 
   const withMessages = useMemo(() => supporters.filter((s) => !s.isAnonymous && s.message.trim()), [supporters])
   const topSupporters = useMemo(() => [...supporters].sort((a, b) => b.amountRub - a.amountRub).slice(0, 5), [supporters])
-  const visibleList = showAll ? supporters : supporters.slice(0, 8)
 
   function pickGoal(id: string | number) {
     setGoalId(String(id))
@@ -204,41 +202,19 @@ export function DonateView(props: DonateViewProps) {
                 <figure key={s.id} className="dn-msg">
                   <div className="dn-msg__head">
                     <span className="dn-ava">{(s.name || '?').slice(0, 1).toUpperCase()}</span>
-                    <div><div className="dn-msg__name">{s.name}</div><div className="dn-msg__meta">{rub(s.amountRub)} · {s.dateLabel}</div></div>
+                    <div className="dn-msg__name">{s.name}</div>
                   </div>
                   <blockquote className="dn-msg__text">{s.message}</blockquote>
-                  {s.goalTitle && <figcaption className="dn-msg__goal">на: {s.goalTitle}</figcaption>}
+                  <figcaption className="dn-msg__foot">
+                    <span className="dn-msg__meta">{rub(s.amountRub)} · {s.dateLabel}</span>
+                    {s.goalTitle && <span className="dn-msg__goal">на: {s.goalTitle}</span>}
+                  </figcaption>
                 </figure>
               ))}
             </div>
           </section>
         )}
 
-        {/* ALL SUPPORTERS */}
-        {supporters.length > 0 && (
-          <section className="dn-section">
-            <h2 className="dn-h2">Все, кто поддержал <span className="dn-count">{fmt(supportersCount)}</span></h2>
-            <div className="dn-card dn-table">
-              {visibleList.map((s) => (
-                <div key={s.id} className="dn-row">
-                  <span className="dn-ava dn-ava--sm">{s.isAnonymous ? '?' : (s.name || '?').slice(0, 1).toUpperCase()}</span>
-                  <span className="dn-row__name">{s.isAnonymous ? 'Аноним' : s.name}</span>
-                  <span className="dn-row__date">{s.dateLabel}</span>
-                  <span className="dn-row__sum">{rub(s.amountRub)}</span>
-                </div>
-              ))}
-              {supporters.length > 8 && (
-                <button className="dn-btn dn-btn--ghost dn-btn--block" onClick={() => setShowAll((v) => !v)}>
-                  {showAll ? 'Свернуть' : `Показать всех (${supporters.length})`}
-                </button>
-              )}
-            </div>
-          </section>
-        )}
-
-        {isDemo && (
-          <p className="dn-demo-note">Показаны демонстрационные данные. Создайте цели в студии (Настройки → Подписки → «Цели сбора») — здесь появятся настоящие сборы и поддержавшие.</p>
-        )}
       </div>
 
       {modal && (
