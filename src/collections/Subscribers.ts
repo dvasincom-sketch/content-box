@@ -111,6 +111,11 @@ const logSubscriberRegister: NonNullable<NonNullable<CollectionConfig['hooks']>[
 export const Subscribers: CollectionConfig = {
   slug: 'subscribers',
   auth: {
+    // Stateless JWT: сессии Payload 3.85 (subscribers_sessions) не валидируются
+    // за TLS-терминирующим реверс-прокси Timeweb — свежий логин отдаёт токен, но
+    // куку тут же «разлогинивает». Без sid проверка идёт по подписи, старые куки
+    // остаются валидны.
+    useSessions: false,
     // Брендированное письмо сброса пароля в бренде тенанта, ссылка на его сайт.
     forgotPassword: {
       generateEmailSubject: (args) => subscriberResetSubject(args),

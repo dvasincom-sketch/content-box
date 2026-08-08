@@ -26,6 +26,8 @@ export const Users: CollectionConfig = {
   // студия «слетала» после сна ноутбука). Это конфиг, не поле БД — миграция
   // не нужна. Кука выставляется с maxAge = tokenExpiration.
   auth: {
+    // Stateless JWT — см. Subscribers.ts (сессии за реверс-прокси не валидируются).
+    useSessions: false,
     tokenExpiration: 60 * 60 * 24 * 7, // 604800 сек = 7 дней
     // Брендированное письмо сброса пароля (бренд платформы, ссылка на студию).
     forgotPassword: {

@@ -247,6 +247,22 @@ svg {
     var(--brand-bg);
 }
 
+/* Главная: подложка обрывалась на нижней кромке <main>, а футер — отдельный
+   прозрачный блок с зазором mt-16 (4rem). Дотягиваем свечение через зазор до
+   линии футера, чтобы не было резкого края. */
+.page-canvas--home::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 100%;
+  height: 4rem;
+  background: radial-gradient(70% 160% at 50% 0%, color-mix(in srgb, var(--brand-primary) 42%, transparent), transparent 72%);
+  z-index: -1;
+  pointer-events: none;
+}
+.theme-light .page-canvas--home::after {
+  background: radial-gradient(70% 160% at 50% 0%, color-mix(in srgb, var(--brand-primary) 12%, transparent), transparent 72%);
+}
+
 /* Карточка-стекло: база (статичная поверхность) */
 .c-card {
   background: var(--glass-2);
