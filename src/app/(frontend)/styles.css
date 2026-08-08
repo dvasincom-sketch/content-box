@@ -3046,3 +3046,60 @@ select.dn-input {
 .dn-select__opt { padding: .55rem .6rem; border-radius: 8px; cursor: pointer; color: var(--brand-text); font-size: .92rem; }
 .dn-select__opt:hover { background: color-mix(in srgb, var(--brand-primary) 10%, transparent); }
 .dn-select__opt.is-active { background: color-mix(in srgb, var(--brand-primary) 16%, transparent); font-weight: 600; }
+
+
+/* #2 главная: описание тарифа + перки в попапе (не режем возможности) */
+.spot__tier { display: flex; flex-direction: column; }
+.spot__tier > .spot__btn { margin-top: auto; }
+.spot__desc { font-size: 14px; color: var(--brand-muted); line-height: 1.5; margin: 0 0 16px; }
+.spot__more { position: relative; margin: 0 0 18px; }
+.spot__more-sum { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--brand-primary); user-select: none; }
+.spot__more-sum::-webkit-details-marker { display: none; }
+.spot__more-sum svg { transition: transform .18s ease; }
+.spot__more[open] .spot__more-sum svg { transform: rotate(180deg); }
+.spot__pop {
+  position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 20;
+  background: var(--brand-surface); border: 1px solid var(--brand-border);
+  border-radius: 12px; box-shadow: var(--brand-card-shadow); padding: 14px 16px;
+}
+.spot__pop .spot__perks { margin: 0; }
+
+/* ── Экран входа/регистрации (auth) — в стиле сайта ───────────────────────── */
+.auth { min-height: 68vh; display: grid; place-items: center; padding: 56px 20px; position: relative; }
+.auth::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse 55% 45% at 50% 0%, color-mix(in srgb, var(--brand-primary) 13%, transparent), transparent 72%);
+}
+.auth__card {
+  position: relative; z-index: 1; width: 100%; max-width: 440px;
+  background: var(--brand-surface); border: 1px solid var(--brand-border);
+  border-radius: 22px; box-shadow: var(--brand-card-shadow); padding: 40px 34px;
+}
+.auth__head { margin-bottom: 26px; }
+.auth__title { font-family: var(--font-head, inherit); font-size: 30px; font-weight: 800; letter-spacing: -.02em; color: var(--brand-text); margin: 0 0 8px; }
+.auth__sub { color: var(--brand-muted); font-size: 15px; margin: 0; }
+.auth__form { display: flex; flex-direction: column; gap: 18px; }
+.auth__field { display: flex; flex-direction: column; gap: 7px; }
+.auth__label { font-size: 13px; font-weight: 600; color: var(--brand-text); }
+.auth__input {
+  width: 100%; padding: 13px 15px; border-radius: 14px; border: 1.5px solid var(--brand-border);
+  background: var(--brand-bg); color: var(--brand-text); font-size: 15px; font-family: inherit;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.auth__input::placeholder { color: color-mix(in srgb, var(--brand-muted) 70%, transparent); }
+.auth__input:focus { outline: none; border-color: var(--brand-primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-primary) 15%, transparent); }
+.auth__error { color: #e5484d; font-size: 13.5px; margin: -4px 0 0; }
+.auth__btn {
+  margin-top: 6px; width: 100%; padding: 14px; border: none; border-radius: 14px;
+  background: var(--brand-primary); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+  transition: filter .15s ease, transform .05s ease;
+}
+.auth__btn:hover:not(:disabled) { filter: brightness(1.06); }
+.auth__btn:active:not(:disabled) { transform: translateY(1px); }
+.auth__btn:disabled { opacity: .7; cursor: default; }
+.auth__links { margin-top: 22px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; }
+.auth__link { color: var(--brand-muted); text-decoration: none; }
+.auth__link:hover { color: var(--brand-text); }
+.auth__reg { color: var(--brand-muted); }
+.auth__link--accent { color: var(--brand-primary); font-weight: 600; }
+@media (max-width: 480px) { .auth__card { padding: 32px 22px; border-radius: 18px; } .auth__title { font-size: 26px; } }

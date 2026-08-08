@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -18,7 +18,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit() {
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
     setError(null)
     setLoading(true)
     try {
@@ -41,46 +42,56 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="c-card" style={{ maxWidth: 420, margin: '64px auto', padding: '32px 28px' }}>
-      <h1 style={{ marginBottom: 24, fontSize: 28, color: 'var(--brand-text)' }}>Вход</h1>
+    <div className="auth">
+      <div className="auth__card">
+        <div className="auth__head">
+          <h1 className="auth__title">С возвращением</h1>
+          <p className="auth__sub">Войдите, чтобы продолжить смотреть</p>
+        </div>
 
-      <label style={{ display: 'block', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>
-        Email
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="c-input" style={{ marginTop: 6 }}
-          autoComplete="email"
-          required
-        />
-      </label>
+        <form className="auth__form" onSubmit={handleSubmit}>
+          <div className="auth__field">
+            <label className="auth__label" htmlFor="auth-email">Email</label>
+            <input
+              id="auth-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="auth__input"
+              autoComplete="email"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
 
-      <label style={{ display: 'block', marginBottom: 16, fontSize: 14, fontWeight: 500 }}>
-        Пароль
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="c-input" style={{ marginTop: 6 }}
-          autoComplete="current-password"
-          required
-        />
-      </label>
+          <div className="auth__field">
+            <label className="auth__label" htmlFor="auth-pass">Пароль</label>
+            <input
+              id="auth-pass"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="auth__input"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              required
+            />
+          </div>
 
-      {error && <p className="c-field__error" style={{ marginTop: 8 }}>{error}</p>}
+          {error && <p className="auth__error">{error}</p>}
 
-      <button onClick={handleSubmit} disabled={loading} className="c-btn c-btn--primary c-btn--block c-spotlight c-spotlight-bright" style={{ marginTop: 8 }}>
-        {loading ? 'Входим…' : 'Войти'}
-      </button>
+          <button type="submit" disabled={loading} className="auth__btn">
+            {loading ? 'Входим…' : 'Войти'}
+          </button>
+        </form>
 
-      <p style={{ marginTop: 16, fontSize: 14 }}>
-        <Link href="/forgot-password">Забыли пароль?</Link>
-      </p>
-
-      <p style={{ marginTop: 16, fontSize: 14 }}>
-        Нет аккаунта? <Link href="/register">Зарегистрироваться</Link>
-      </p>
+        <div className="auth__links">
+          <Link href="/forgot-password" className="auth__link">Забыли пароль?</Link>
+          <span className="auth__reg">
+            Нет аккаунта? <Link href="/register" className="auth__link auth__link--accent">Зарегистрироваться</Link>
+          </span>
+        </div>
+      </div>
     </div>
   )
 }
