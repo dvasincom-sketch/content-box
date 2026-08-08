@@ -363,6 +363,18 @@ export interface SiteSetting {
     | number
     | boolean
     | null;
+  /**
+   * Чипсы на странице поддержки: [{ amount, label }].
+   */
+  donatePresets?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   appliedTemplate?: string | null;
   theme?: {
     /**
@@ -1897,6 +1909,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         membersLabel?: T;
       };
   savedTemplates?: T;
+  donatePresets?: T;
   appliedTemplate?: T;
   theme?:
     | T

@@ -801,14 +801,14 @@ svg {
 
 .sub-card__badge {
   position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 14px;
+  top: 16px;
+  right: 16px;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
@@ -2843,8 +2843,8 @@ body.preset-tropic-sunset header .c-btn--primary:hover { filter: none; backgroun
 .dn-form { scroll-margin-top: 90px; }
 .dn-label { display: block; font-weight: 600; color: var(--brand-text); font-size: .9rem; margin: 1.1rem 0 .5rem; }
 .dn-label:first-of-type { margin-top: 0; }
-.dn-presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: .5rem; }
-.dn-chip { display: flex; flex-direction: column; gap: .15rem; padding: .6rem .5rem; border-radius: 12px; border: 1.5px solid var(--brand-border); background: transparent; cursor: pointer; text-align: center; transition: border-color .12s, background .12s; }
+.dn-presets { display: flex; flex-wrap: wrap; gap: .5rem; }
+.dn-chip { display: inline-flex; align-items: baseline; gap: .4rem; padding: .5rem .85rem; border-radius: 999px; border: 1.5px solid var(--brand-border); background: transparent; cursor: pointer; transition: border-color .12s, background .12s; }
 .dn-chip:hover { border-color: color-mix(in srgb, var(--brand-primary) 45%, var(--brand-border)); }
 .dn-chip.is-active { border-color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 10%, transparent); }
 .dn-chip__n { font-weight: 700; color: var(--brand-text); font-size: .95rem; }
@@ -3109,3 +3109,13 @@ select.dn-input {
 .auth__remember input { width: 16px; height: 16px; accent-color: var(--brand-primary); cursor: pointer; }
 .auth__resend { margin-top: .9rem; text-align: center; }
 .auth__link-btn { background: none; border: none; padding: 0; color: var(--brand-primary); font-weight: 600; font-size: .9rem; font-family: inherit; cursor: pointer; }
+
+
+/* Студия → Монетизация → Поддержать разово: редактор быстрых сумм */
+.dpreset__list { display: flex; flex-direction: column; gap: .5rem; margin-bottom: .7rem; }
+.dpreset__row { display: flex; align-items: center; gap: .5rem; }
+.dpreset__amount { max-width: 120px; }
+.dpreset__cur { color: var(--brand-muted); }
+.dpreset__label { flex: 1; }
+.dpreset__del { flex-shrink: 0; padding: .5rem; }
+.dpreset__add { margin-bottom: .4rem; }

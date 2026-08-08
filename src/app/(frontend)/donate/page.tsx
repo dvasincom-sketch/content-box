@@ -99,6 +99,9 @@ export default async function DonatePage() {
 
   const appIconM = settings?.appIcon && typeof settings.appIcon === 'object' ? settings.appIcon : null
   const logoM = settings?.logo && typeof settings.logo === 'object' ? settings.logo : null
+  const donatePresets = Array.isArray((settings as { donatePresets?: unknown } | null)?.donatePresets)
+    ? ((settings as { donatePresets: { amount: number; label: string }[] }).donatePresets)
+    : undefined
   const logoUrl = (appIconM?.url as string | undefined) ?? (logoM?.url as string | undefined) ?? null
 
   return (
@@ -113,6 +116,7 @@ export default async function DonatePage() {
         weekCount={weekCount}
         userName=""
         subscribeHref="/subscribe"
+        presets={donatePresets}
         isDemo={isDemo}
       />
     </div>

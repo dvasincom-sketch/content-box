@@ -69,6 +69,9 @@ export default async function SettingsPage() {
   const savedTemplates = Array.isArray(settings?.savedTemplates) ? (settings.savedTemplates as any[]) : []
   const appliedTemplate = (settings?.appliedTemplate as string | null) ?? null
   const bgDecor = ((settings as { bgDecor?: string } | null)?.bgDecor as string | null) ?? null
+  const donatePresets = Array.isArray((settings as { donatePresets?: unknown } | null)?.donatePresets)
+    ? ((settings as { donatePresets: { amount?: unknown; label?: unknown }[] }).donatePresets).map((p) => ({ amount: Number(p.amount) || 0, label: String(p.label ?? '') }))
+    : []
 
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     id: t.id,
@@ -131,6 +134,7 @@ export default async function SettingsPage() {
       appliedTemplate={appliedTemplate}
       bgDecor={bgDecor}
       goals={goals}
+      donatePresets={donatePresets}
       members={members}
       isOwner={isOwner}
       abilities={abilities}

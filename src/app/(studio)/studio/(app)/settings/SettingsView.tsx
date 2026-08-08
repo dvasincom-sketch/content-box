@@ -12,6 +12,7 @@ import { TemplatesPanel } from './TemplatesPanel'
 import { ImageUploadField } from './ImageUploadField'
 import { BgDecorPicker } from './BgDecorPicker'
 import { GoalsPanel, type Goal } from './GoalsPanel'
+import { DonatePresetsPanel, type DonatePreset } from './DonatePresetsPanel'
 import { hasCap, type CapMatrix } from '@/lib/permissions'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
@@ -39,7 +40,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'home', label: 'Главная страница' },
   { id: 'socials', label: 'Соцсети' },
   { id: 'menu', label: 'Меню и футер' },
-  { id: 'tiers', label: 'Подписки' },
+  { id: 'tiers', label: 'Монетизация' },
   { id: 'access', label: 'Доступ' },
 ]
 
@@ -62,6 +63,7 @@ export function SettingsView({
   appliedTemplate,
   bgDecor,
   goals,
+  donatePresets,
   members,
   isOwner,
   abilities,
@@ -76,6 +78,7 @@ export function SettingsView({
   appliedTemplate: string | null
   bgDecor: string | null
   goals: Goal[]
+  donatePresets: DonatePreset[]
   members: Member[]
   isOwner: boolean
   abilities: CapMatrix | null
@@ -166,6 +169,7 @@ export function SettingsView({
           <>
             <TiersBlock initial={initialTiers} />
             <GoalsPanel initial={goals} />
+            <DonatePresetsPanel initial={donatePresets} />
           </>
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}

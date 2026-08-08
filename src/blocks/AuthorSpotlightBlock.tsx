@@ -1,6 +1,6 @@
 import React from 'react'
 import AppLink from '@/components/AppLink'
-import { Check, Play, Camera, Send, Zap, Users, ChevronDown } from 'lucide-react'
+import { Play, Camera, Send, Zap, Users } from 'lucide-react'
 
 export type SpotlightStat = { value: string; label: string }
 export type SpotlightSocial = { platform: string; url: string }
@@ -101,38 +101,12 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
             {tiers.slice(0, 3).map((t, i) => {
               const featured = anyBadge ? Boolean(t.badge) : i === featIdx
               const badgeText = t.badge || (featured && !anyBadge ? 'Популярно' : null)
-              const TEASER = 4
-              const shown = t.perks.slice(0, TEASER)
-              const rest = t.perks.slice(TEASER)
               return (
                 <div key={i} className={'spot__tier' + (featured ? ' is-feat' : '')}>
                   {badgeText && <span className="spot__badge">{badgeText}</span>}
                   <div className="spot__tier-name">{t.name}</div>
                   <div className="spot__tier-price">{price(t.priceRub)}</div>
                   {t.description && <p className="spot__desc">{t.description}</p>}
-                  {shown.length > 0 && (
-                    <ul className="spot__perks">
-                      {shown.map((p, j) => (
-                        <li key={j}>
-                          <Check size={15} className="spot__check" />
-                          <span>{p}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {rest.length > 0 && (
-                    <details className="spot__more">
-                      <summary className="spot__more-sum">Показать всё ({t.perks.length}) <ChevronDown size={14} /></summary>
-                      <ul className="spot__perks spot__perks--extra">
-                        {rest.map((p, j) => (
-                          <li key={j}>
-                            <Check size={15} className="spot__check" />
-                            <span>{p}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
                   <AppLink href={subscribeHref} className={'spot__btn' + (featured ? ' is-feat' : '')}>
                     Оформить
                   </AppLink>

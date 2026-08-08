@@ -88,7 +88,7 @@ export default async function SubscribePage() {
           </h1>
           <p
             className="text-base lg:text-lg max-w-2xl mx-auto"
-            style={{ color: 'var(--brand-muted)' }}
+            style={{ color: 'var(--brand-muted)', textWrap: 'balance' }}
           >
             Выберите уровень доступа. Высший уровень открывает весь контент уровней ниже.
           </p>

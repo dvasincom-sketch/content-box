@@ -31,20 +31,22 @@ export type DonateViewProps = {
   weekCount: number
   userName: string
   subscribeHref: string
+  presets?: DnPreset[]
   isDemo: boolean
 }
 
 const fmt = (n: number) => new Intl.NumberFormat('ru-RU').format(Math.round(n || 0))
 const rub = (n: number) => `${fmt(n)} ₽`
 
-const PRESETS = [300, 500, 1000, 2000, 5000]
-const PRESET_HINT: Record<number, string> = {
-  300: 'кофе автору',
-  500: 'лайк рублём',
-  1000: 'час озвучки',
-  2000: 'щедро',
-  5000: 'меценат',
-}
+export type DnPreset = { amount: number; label: string }
+
+const PRESETS_DEFAULT: DnPreset[] = [
+  { amount: 300, label: 'кофе автору' },
+  { amount: 500, label: 'лайк рублём' },
+  { amount: 1000, label: 'час озвучки' },
+  { amount: 2000, label: 'щедро' },
+  { amount: 5000, label: 'меценат' },
+]
 
 type GoalOpt = { value: string; label: string }
 /** Кастомный дропдаун в стиле сайта (нативный <select> не даёт стилизовать сам список). */
@@ -85,9 +87,10 @@ function GoalSelect({ value, onChange, options }: { value: string; onChange: (v:
 }
 
 export function DonateView(props: DonateViewProps) {
-  const { brandName, logoUrl, goals, supporters, totalRaisedRub, supportersCount, weekCount, userName, subscribeHref } = props
+  const { brandName, logoUrl, goals, supporters, totalRaisedRub, supportersCount, weekCount, userName, subscribeHref, presets } = props
+  const presetList = presets && presets.length ? presets : PRESETS_DEFAULT
 
-  const [amount, setAmount] = useState<number>(1000)
+  const [amount, setAmount] = useState<number>(presetList[Math.min(2, presetList.length - 1)]?.amount ?? 1000)
   const [custom, setCustom] = useState('')
   const [goalId, setGoalId] = useState<string>('')
   const [message, setMessage] = useState('')
@@ -178,10 +181,10 @@ export function DonateView(props: DonateViewProps) {
             <h2 className="dn-h2">Поддержать разово</h2>
             <label className="dn-label">Сумма</label>
             <div className="dn-presets">
-              {PRESETS.map((p) => (
-                <button type="button" key={p} className={'dn-chip' + (!custom && amount === p ? ' is-active' : '')} onClick={() => { setAmount(p); setCustom('') }}>
-                  <span className="dn-chip__n">{fmt(p)} ₽</span>
-                  <span className="dn-chip__h">{PRESET_HINT[p]}</span>
+              {presetList.map((p) => (
+                <button type="button" key={p.amount} className={'dn-chip' + (!custom && amount === p.amount ? ' is-active' : '')} onClick={() => { setAmount(p.amount); setCustom('') }}>
+                  <span className="dn-chip__n">{fmt(p.amount)} ₽</span>
+                  {p.label && <span className="dn-chip__h">{p.label}</span>}
                 </button>
               ))}
             </div>

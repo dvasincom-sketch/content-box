@@ -83,6 +83,12 @@ export const SiteSettings: CollectionConfig = {
       admin: { hidden: true },
     },
     {
+      name: 'donatePresets',
+      type: 'json',
+      label: 'Быстрые суммы (Поддержать разово)',
+      admin: { description: 'Чипсы на странице поддержки: [{ amount, label }].' },
+    },
+    {
       // id последнего применённого шаблона (базового packId или id своего) —
       // для подсветки активного и подсказки «сохранить изменённый как свой».
       name: 'appliedTemplate',
