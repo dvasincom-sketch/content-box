@@ -3340,6 +3340,21 @@ select.studio-input {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Бейдж «недоступно» — внешняя вставка (VK) удалена или ограничена. */
+.vid-badge-unavail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 1px 7px 1px 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+}
 
 .vidtable__dur-cell,
 .vidtable__date-cell {

@@ -7,7 +7,7 @@ import * as tus from 'tus-js-client'
 import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
   Upload, X, Play, Folder, Pencil, ChevronRight, ChevronDown,
-  ChevronLeft, Search, MapPin, Globe,
+  ChevronLeft, Search, MapPin, Globe, AlertTriangle,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { StudioSelect } from '../_ui/StudioSelect'
@@ -24,6 +24,8 @@ type Vid = {
   embedProvider?: string | null
   embedSrc?: string | null
   embedAspect?: string | null
+  /** Статус доступности внешней вставки: 'ok' | 'unavailable' | 'unknown' | null. */
+  embedStatus?: string | null
   isPreview: boolean
   minTierName: string | null
   minTierId: string
@@ -39,6 +41,7 @@ type Vid = {
 
 const FILTER_ALL = '__all__'
 const FILTER_NONE = '__none__'
+const FILTER_UNAVAILABLE = '__unavailable__'
 
 function fmtDur(sec: number | null): string {
   if (!sec) return ''
@@ -129,19 +132,27 @@ export function VideosManager({
   }, [categories])
 
   const noSectionCount = useMemo(() => videos.filter((v) => !v.categoryId).length, [videos])
+  // Кол-во видео с недоступной внешней вставкой (VK удалил/ограничил) —
+  // чтобы автор быстро нашёл битые и разобрался.
+  const unavailableCount = useMemo(
+    () => videos.filter((v) => v.embedStatus === 'unavailable').length,
+    [videos],
+  )
 
   const visibleVideos = useMemo(() => {
     if (filter === FILTER_ALL) return videos
     if (filter === FILTER_NONE) return videos.filter((v) => !v.categoryId)
+    if (filter === FILTER_UNAVAILABLE) return videos.filter((v) => v.embedStatus === 'unavailable')
     return videos.filter((v) => String(v.categoryId) === filter)
   }, [videos, filter])
 
   const sectionFilterLabel = useMemo(() => {
     if (filter === FILTER_ALL) return `Все видео (${videos.length})`
     if (filter === FILTER_NONE) return `Без раздела (${noSectionCount})`
+    if (filter === FILTER_UNAVAILABLE) return `Недоступные (${unavailableCount})`
     const c = flatCategories.find((x) => String(x.id) === filter)
     return c ? c.title : 'Все видео'
-  }, [filter, flatCategories, videos.length, noSectionCount])
+  }, [filter, flatCategories, videos.length, noSectionCount, unavailableCount])
 
   return (
     <>
@@ -186,6 +197,9 @@ export function VideosManager({
             items={[
               { value: FILTER_ALL, label: `Все видео (${videos.length})`, depth: 0, active: filter === FILTER_ALL },
               { value: FILTER_NONE, label: `Без раздела (${noSectionCount})`, depth: 0, active: filter === FILTER_NONE },
+              ...(unavailableCount > 0
+                ? [{ value: FILTER_UNAVAILABLE, label: `⚠ Недоступные (${unavailableCount})`, depth: 0, active: filter === FILTER_UNAVAILABLE }]
+                : []),
               ...flatCategories.map((c) => ({
                 value: String(c.id),
                 label: c.title,
@@ -434,6 +448,11 @@ function VideoRow({
       {/* Название */}
       <td className="vidtable__title-cell">
         <span className="vidtable__title" title={video.title}>{video.title}</span>
+        {video.embedStatus === 'unavailable' && (
+          <span className="vid-badge-unavail" title="Внешняя вставка недоступна — VK удалил видео или ограничил доступ">
+            <AlertTriangle size={11} /> недоступно
+          </span>
+        )}
       </td>
 
       {/* Длительность */}
