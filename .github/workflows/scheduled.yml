@@ -1,0 +1,42 @@
+name: Scheduled tasks
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # ежедневно — валидатор доступности внешних видео
+    - cron: '0 10 * * 1'  # по понедельникам — дайджест новинок подписчикам
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Что запустить вручную
+        type: choice
+        default: both
+        options: [validate-videos, digest, both]
+
+jobs:
+  validate-videos:
+    if: >-
+      github.event.schedule == '0 4 * * *' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.task == 'validate-videos' || inputs.task == 'both'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Проверить доступность внешних видео
+        env:
+          BASE: ${{ vars.BASE_URL || 'https://contentbox.site' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -fsS --max-time 300 -X POST "$BASE/api/videos/validate" \
+            -H "Authorization: Bearer $CRON_SECRET"
+
+  digest:
+    if: >-
+      github.event.schedule == '0 10 * * 1' ||
+      (github.event_name == 'workflow_dispatch' && (inputs.task == 'digest' || inputs.task == 'both'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Отправить дайджест
+        env:
+          BASE: ${{ vars.BASE_URL || 'https://contentbox.site' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -fsS --max-time 300 -X POST "$BASE/api/notifications/digest" \
+            -H "Authorization: Bearer $CRON_SECRET"
