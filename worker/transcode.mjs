@@ -16,7 +16,7 @@ import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
 import { createHmac } from 'node:crypto'
 import pg from 'pg'
-import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 
 // ВАЖНО: берём env через `||`, а НЕ через destructuring-дефолты. Timeweb
 // подставляет незаданную переменную как ПУСТУЮ СТРОКУ, а `= 'ru-1'` срабатывает
@@ -298,6 +298,14 @@ async function processJob(job) {
       gifKey,
     })
     await finishJob(job.id, 'done', null)
+    // Оригинал больше не нужен — HLS собран и залит в S3. Удаляем исходник,
+    // чтобы не занимать место (у импорта по ссылке оригинала в нашем S3 и нет).
+    if (job.original_key) {
+      await s3
+        .send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: job.original_key }))
+        .then(() => log(`original ${job.original_key} deleted`))
+        .catch((e) => log('cleanup original failed (non-fatal):', e.message))
+    }
     log(`job ${job.id} done`)
   } catch (e) {
     log(`job ${job.id} error:`, e.message)

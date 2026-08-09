@@ -191,6 +191,13 @@ services:
       S3_BUCKET: ${S3_BUCKET}
       S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      # Легаси-имена R2_*: приложение читает бакет/эндпоинт как `S3_* || R2_*`,
+      # и в панели значения могут лежать под R2_*. Пробрасываем их и воркеру,
+      # иначе он видит пустой S3_BUCKET → «No value provided for input HTTP label: Bucket».
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_BUCKET: ${R2_BUCKET:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
       VIDEO_WEBHOOK_SECRET: ${VIDEO_WEBHOOK_SECRET:-}
       APP_INTERNAL_URL: http://app:3000
       POLL_INTERVAL_MS: ${VIDEO_POLL_INTERVAL_MS:-5000}

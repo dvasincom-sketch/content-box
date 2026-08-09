@@ -51,8 +51,21 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  // Возврат на страницу, с которой пришли на /login (?redirect=…). Читаем из
+  // location, а не через useSearchParams — чтобы не требовать Suspense-обёртку.
+  // Пускаем ТОЛЬКО внутренние пути (один ведущий '/', не '//') — защита от
+  // открытого редиректа на чужой домен.
+  function safeRedirect(): string {
+    try {
+      const p = new URLSearchParams(window.location.search).get('redirect') || ''
+      if (p.startsWith('/') && !p.startsWith('//')) return p
+    } catch {
+      /* ignore */
+    }
+    return '/'
+  }
   function done() {
-    router.push('/')
+    router.push(safeRedirect())
     router.refresh()
   }
   function switchMode(m: Mode) {

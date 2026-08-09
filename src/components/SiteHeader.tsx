@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from '@/components/AppLink'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Menu, X, Star, Search, ChevronRight, LogOut, FileText, Settings } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DesktopMenu } from '@/components/DesktopMenu'
@@ -37,6 +37,11 @@ export function SiteHeader({
   const [loggingOut, setLoggingOut] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
+  // «Войти» из шапки возвращает на текущую страницу после входа (?redirect=…).
+  const loginHref = pathname && pathname !== '/login' && pathname !== '/register'
+    ? `/login?redirect=${encodeURIComponent(pathname)}`
+    : '/login'
   const items = nav ?? []
 
   const borderSoft = 'color-mix(in srgb, var(--brand-text) 12%, transparent)'
@@ -172,7 +177,7 @@ export function SiteHeader({
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-1">
-                <Link href="/login" className="c-btn c-btn--ghost c-btn--pill c-btn--sm">Войти</Link>
+                <Link href={loginHref} className="c-btn c-btn--ghost c-btn--pill c-btn--sm">Войти</Link>
                 <Link href="/register" className="c-btn c-btn--ghost c-btn--pill c-btn--sm">Регистрация</Link>
               </div>
             )}
@@ -287,7 +292,7 @@ export function SiteHeader({
               ) : (
                 <>
                   <Link
-                    href="/login"
+                    href={loginHref}
                     onClick={() => setOpen(false)}
                     className="c-navlink py-2 px-2 rounded-lg text-base font-medium"
                   >
