@@ -60,10 +60,10 @@ export default async function NewslettersAnalytics() {
         <div>
           <h1>Рассылки</h1>
           <div className="studio-page-head__sub">Как аудитория реагирует на дайджесты новинок</div>
-          <nav className="an__ranges" style={{ marginTop: '.6rem' }}>
-            <Link href="/studio/analytics" className="an__range">Посещаемость</Link>
-            <Link href="/studio/analytics/newsletters" className="an__range is-active">Рассылки</Link>
-          </nav>
+          <div className="settings__tabs" style={{ marginTop: '.7rem', marginBottom: 0 }}>
+            <Link href="/studio/analytics" className="settings__tab" style={{ textDecoration: 'none' }}>Посещаемость</Link>
+            <Link href="/studio/analytics/newsletters" className="settings__tab is-active" style={{ textDecoration: 'none' }}>Рассылки</Link>
+          </div>
         </div>
       </div>
 

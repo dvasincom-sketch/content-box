@@ -101,7 +101,7 @@ export async function getPublicationEngagement(
         ],
       },
       sort: 'createdAt',
-      depth: 1, // подтянуть author
+      depth: 2, // подтянуть author + его аватар (media.url)
       limit: 500,
       overrideAccess: true,
     })
@@ -196,6 +196,10 @@ export async function getPublicationEngagement(
         authorLevel: typeof authorSub === 'object' && authorSub ? Number(authorSub.level) || 0 : 0,
         authorPaid: typeof authorSub === 'object' && authorSub ? Boolean(authorSub.activeTier) : false,
         authorColor: aid != null ? avatarColor(aid) : null,
+        authorAvatarUrl:
+          typeof authorSub === 'object' && authorSub?.avatar && typeof authorSub.avatar === 'object'
+            ? (authorSub.avatar.url ?? null)
+            : null,
         timeLabel: formatWhen(doc.createdAt),
         text: doc.text ?? '',
         reactions: commentReactionsFor(doc.id),

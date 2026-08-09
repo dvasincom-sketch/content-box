@@ -55,6 +55,7 @@ export type CommentNode = {
   authorLevel?: number
   authorPaid?: boolean
   authorColor?: string | null
+  authorAvatarUrl?: string | null
   timeLabel: string
   text: string
   reactions: CommentReaction[]
@@ -82,11 +83,24 @@ function Avatar({
   name,
   color,
   size = 36,
+  avatarUrl,
 }: {
   name: string
   color?: string | null
   size?: number
+  avatarUrl?: string | null
 }) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        className="cm-av"
+        src={avatarUrl}
+        alt={name}
+        style={{ width: size, height: size, objectFit: 'cover' }}
+      />
+    )
+  }
   return (
     <div
       className="cm-av"
@@ -288,7 +302,7 @@ function Comment({
   const replies = !isReply ? node.replies ?? [] : []
   return (
     <div className="cm-item">
-      <Avatar name={node.authorName} color={node.authorColor} size={isReply ? 28 : 36} />
+      <Avatar name={node.authorName} color={node.authorColor} avatarUrl={node.authorAvatarUrl} size={isReply ? 28 : 36} />
       <div className="cm-body">
         <div className="cm-meta">
           {node.authorHandle ? (

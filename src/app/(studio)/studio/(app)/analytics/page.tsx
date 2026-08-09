@@ -96,10 +96,10 @@ export default async function StudioAnalytics({ searchParams }: { searchParams: 
       <div>
         <h1>Аналитика</h1>
         <div className="studio-page-head__sub">Веб-трафик сайта — посетители, просмотры, источники</div>
-        <nav className="an__ranges" style={{ marginTop: '.6rem' }}>
-          <Link href="/studio/analytics" className="an__range is-active">Посещаемость</Link>
-          <Link href="/studio/analytics/newsletters" className="an__range">Рассылки</Link>
-        </nav>
+        <div className="settings__tabs" style={{ marginTop: '.7rem', marginBottom: 0 }}>
+          <Link href="/studio/analytics" className="settings__tab is-active" style={{ textDecoration: 'none' }}>Посещаемость</Link>
+          <Link href="/studio/analytics/newsletters" className="settings__tab" style={{ textDecoration: 'none' }}>Рассылки</Link>
+        </div>
       </div>
       {umamiApiEnabled() && websiteId && (
         <div className="an__ranges" role="tablist" aria-label="Период">
