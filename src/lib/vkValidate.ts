@@ -24,7 +24,7 @@ export async function checkEmbedAvailability(embedSrc: string): Promise<EmbedSta
         accept: 'text/html,application/xhtml+xml',
       },
       redirect: 'follow',
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(6000),
       cache: 'no-store',
     })
     if (res.status === 404 || res.status === 410 || res.status === 403) return 'unavailable'
