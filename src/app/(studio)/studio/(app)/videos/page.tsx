@@ -1,6 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { videoThumbUrl } from '@/lib/videoThumb'
 import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { can } from '@/access'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'

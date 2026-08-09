@@ -1,5 +1,6 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { videoThumbUrl } from '@/lib/videoThumb'
 import { notFound } from 'next/navigation'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { getTenantFromHeaders } from '@/lib/tenant'
