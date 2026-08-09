@@ -92,12 +92,18 @@ export async function GET(req: NextRequest) {
     if (access.video.posterKey) {
       poster = await presignGet(String(access.video.posterKey), 2 * 60 * 60).catch(() => null)
     }
+    // Динамический watermark: подпись зрителя поверх видео (антипиратство).
+    // Показываем email подписчика — если запись утечёт, на ней виден источник.
+    const wmEmail = access.subscriber && typeof access.subscriber === 'object'
+      ? String((access.subscriber as { email?: unknown }).email || '')
+      : ''
     return NextResponse.json({
       ok: true,
       provider: 'self',
       status: 'ready',
       master: `/api/hls/${playbackId}/master.m3u8?t=${encodeURIComponent(token)}`,
       poster,
+      watermark: wmEmail || null,
     })
   }
 

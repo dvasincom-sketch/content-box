@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 /**
  * Плеер собственного HLS-видео (provider='self'). Safari играет HLS нативно,
@@ -11,6 +11,13 @@ import React, { useEffect, useRef } from 'react'
  * watermarkText — каркас под динамический водяной знак (Фаза 2): если передан,
  * поверх видео плавает полупрозрачная подпись (email/IP зрителя).
  */
+const WM_POSITIONS: React.CSSProperties[] = [
+  { top: 12, left: 12 },
+  { top: 12, right: 12 },
+  { bottom: 48, right: 12 },
+  { bottom: 48, left: 12 },
+]
+
 export function SelfHostedPlayer({
   master,
   poster,
@@ -54,6 +61,15 @@ export function SelfHostedPlayer({
     }
   }, [master])
 
+  // Watermark медленно меняет позицию (раз в ~7с) — так его труднее закрыть
+  // или обрезать при записи экрана. 4 угла по кругу.
+  const [wmPos, setWmPos] = useState(0)
+  useEffect(() => {
+    if (!watermarkText) return
+    const id = setInterval(() => setWmPos((p) => (p + 1) % WM_POSITIONS.length), 7000)
+    return () => clearInterval(id)
+  }, [watermarkText])
+
   return (
     <>
       <video
@@ -69,15 +85,15 @@ export function SelfHostedPlayer({
           aria-hidden
           style={{
             position: 'absolute',
-            right: 12,
-            bottom: 48,
             padding: '2px 8px',
             fontSize: 11,
-            color: 'rgba(255,255,255,.55)',
-            background: 'rgba(0,0,0,.25)',
+            color: 'rgba(255,255,255,.5)',
+            background: 'rgba(0,0,0,.22)',
             borderRadius: 6,
             pointerEvents: 'none',
             userSelect: 'none',
+            transition: 'top .8s ease, left .8s ease, right .8s ease, bottom .8s ease',
+            ...WM_POSITIONS[wmPos],
           }}
         >
           {watermarkText}
