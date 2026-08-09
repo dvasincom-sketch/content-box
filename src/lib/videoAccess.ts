@@ -75,10 +75,16 @@ export async function checkVideoAccess(videoIdOrSlug: {
 
   if (!video) return { allowed: false, reason: 'not-found' }
 
-  // 2) бесплатное превью или без minTier — открыто всем
+  // 2) Открыто всем БЕСПЛАТНО только если:
+  //    - явно бесплатное превью (isPreview), ИЛИ
+  //    - внешняя вставка без уровня (её и так нельзя закрыть подпиской).
+  //    ВАЖНО: своё видео (наше хранилище) без minTier бесплатным НЕ считается —
+  //    оно требует любую активную подписку, иначе автор раздаёт наши мощности
+  //    даром. Раньше здесь было `!minTierId` для всех — это и была дыра.
+  const isEmbed = video.provider === 'embed'
   const minTier = video.minTier
   const minTierId = minTier ? (typeof minTier === 'object' ? minTier.id : minTier) : null
-  if (video.isPreview || !minTierId) {
+  if (video.isPreview || (isEmbed && !minTierId)) {
     const subscriber = await getCurrentSubscriber(tenantId)
     return { allowed: true, video, subscriber }
   }
@@ -106,6 +112,12 @@ export async function checkVideoAccess(videoIdOrSlug: {
   const activeTierId = activeTier ? (typeof activeTier === 'object' ? activeTier.id : activeTier) : null
   if (!activeTierId) {
     return { allowed: false, reason: 'need-subscription', video, requiredTierName }
+  }
+
+  // Своё видео без заданного уровня: достаточно ЛЮБОЙ активной подписки
+  // (подписка уже проверена выше — не истекла, подписчик не заблокирован).
+  if (!minTierId) {
+    return { allowed: true, video, subscriber }
   }
 
   // Подход Б: дочитываем веса обоих уровней из БД, оба — в пределах тенанта

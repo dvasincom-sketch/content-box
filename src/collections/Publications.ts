@@ -326,12 +326,16 @@ export const Publications: CollectionConfig = {
           : []
         for (const vid of ids) {
           try {
-            const video = await payload.findByID({ collection: 'videos', id: vid as string | number, depth: 0, overrideAccess: true }).catch(() => null)
+            // req основной операции ОБЯЗАТЕЛЕН: хук идёт внутри транзакции
+            // сохранения публикации. Без req вложенные вызовы открывают свою
+            // транзакцию на другом соединении и подвисают — публикация не
+            // сохраняется, loader крутится. С req — та же транзакция.
+            const video = await payload.findByID({ collection: 'videos', id: vid as string | number, depth: 0, overrideAccess: true, req }).catch(() => null)
             if (!video) continue
             const t = String((video as { title?: string }).title || '').trim()
             const isPlaceholder = !t || /^Видео · /.test(t)
             if (isPlaceholder && t !== pubTitle) {
-              await payload.update({ collection: 'videos', id: vid as string | number, data: { title: pubTitle }, overrideAccess: true, depth: 0 })
+              await payload.update({ collection: 'videos', id: vid as string | number, data: { title: pubTitle }, overrideAccess: true, depth: 0, req })
             }
           } catch {
             /* best-effort, не блокируем сохранение публикации */

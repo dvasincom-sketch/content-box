@@ -455,6 +455,16 @@ export function Composer({
               <div className="composer__hint">
                 Видео появятся на странице публикации в указанном порядке — до описания.
               </div>
+              {videoIds.some((id) => {
+                const v = videoCandidates.find((c) => String(c.id) === String(id))
+                const t = (v?.title || '').trim()
+                return !t || /^Видео · /.test(t)
+              }) && (
+                <div className="composer__hint" style={{ color: 'var(--st-warning)' }}>
+                  У некоторых видео нет своего названия — им присвоится заголовок
+                  этой публикации при сохранении. Переименовать можно в разделе «Видео».
+                </div>
+              )}
             </div>
 
             <div className="composer__media-section">

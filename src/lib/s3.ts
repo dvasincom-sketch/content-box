@@ -1,4 +1,4 @@
-import { S3Client, HeadObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, HeadObjectCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 /**
@@ -37,6 +37,15 @@ export function publicUrl(key: string): string {
  */
 export async function presignPut(key: string, contentType: string, expiresIn = 600): Promise<string> {
   return getSignedUrl(s3(), new PutObjectCommand({ Bucket: S3_BUCKET, Key: key, ContentType: contentType }), { expiresIn })
+}
+
+/**
+ * Presigned GET — краткоживущая ссылка на приватный объект для плеера.
+ * Используется подписывающим HLS-прокси: JWT проверяется у нас, затем 302 на
+ * этот URL, и байты идут S3 → клиент напрямую, минуя приложение.
+ */
+export async function presignGet(key: string, expiresIn = 120): Promise<string> {
+  return getSignedUrl(s3(), new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }), { expiresIn })
 }
 
 /** Проверка, что объект реально загружен (перед созданием записи). Размер/тип или null. */

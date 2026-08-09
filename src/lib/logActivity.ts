@@ -19,6 +19,7 @@ function relId(v: unknown): number | null {
 export async function logActivity(
   payload: Payload,
   args: { tenant: unknown; user: unknown; action: ActivityAction; entity: string; title?: string },
+  req?: unknown,
 ): Promise<void> {
   const tenant = relId(args.tenant)
   const user = relId(args.user)
@@ -34,6 +35,12 @@ export async function logActivity(
         title: (args.title || '').slice(0, 200),
       },
       overrideAccess: true,
+      // КРИТИЧНО: пробрасываем req основной операции. Хуки afterChange/afterDelete
+      // выполняются ВНУТРИ транзакции Payload; без req этот create открывает
+      // СВОЮ транзакцию на отдельном соединении и может зависнуть в ожидании
+      // (loader крутится вечно, ответ роуту не возвращается). С req — пишем в
+      // ту же транзакцию, тем же соединением.
+      ...(req ? { req } : {}),
     } as any)
   } catch {
     /* игнорируем: журнал вторичен */
@@ -61,7 +68,7 @@ export function activityAfterChange(entity: string) {
       action: operation,
       entity,
       title: doc?.title || doc?.name || '',
-    })
+    }, req)
   }
 }
 
@@ -79,6 +86,6 @@ export function activityAfterDelete(entity: string) {
       action: 'delete',
       entity,
       title: doc?.title || doc?.name || '',
-    })
+    }, req)
   }
 }

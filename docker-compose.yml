@@ -48,6 +48,10 @@ services:
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
       CRON_SECRET: ${CRON_SECRET}
+      # Своё видеохранилище (Фаза 1): секрет HMAC для webhook воркера и секрет
+      # подписи JWT для плейбэка HLS. Заданы в панели «Переменные» Timeweb.
+      VIDEO_WEBHOOK_SECRET: ${VIDEO_WEBHOOK_SECRET:-}
+      VIDEO_JWT_SECRET: ${VIDEO_JWT_SECRET:-}
       # Сервисный ключ VK для валидатора видео (video.get). Пусто — VK не проверяется.
       VK_SERVICE_TOKEN: ${VK_SERVICE_TOKEN:-}
       # Веб-аналитика Umami (runtime). Читаются серверным кодом при рендере:
@@ -158,6 +162,43 @@ services:
       LISTMONK_ADMIN_USER: ${LISTMONK_ADMIN_USER:-}
       LISTMONK_ADMIN_PASSWORD: ${LISTMONK_ADMIN_PASSWORD:-}
     mem_limit: 512m
+    restart: unless-stopped
+
+  # --- Транскод-воркер собственного видеохранилища (Фаза 1, VOD) ---
+  # ТОТ ЖЕ образ, что и app (build: context: .) — в нём уже есть node_modules и
+  # ffmpeg (см. Dockerfile). Отличие только в command: вместо next start гоняем
+  # worker/transcode.mjs. Отдельный сервис, чтобы тяжёлый ffmpeg НЕ душил веб.
+  #
+  # Поллит таблицу video_jobs (FOR UPDATE SKIP LOCKED), гонит HLS ABR, заливает
+  # артефакты в S3 и шлёт подписанный webhook в app по внутренней сети
+  # (http://app:3000). Пул к БД маленький (max=2) — managed-Postgres общий с app.
+  #
+  # ВНИМАНИЕ (Timeweb): сервис должен собираться из исходников так же, как app.
+  # Если платформа собирает ТОЛЬКО первый сервис — воркер не поднимется; тогда
+  # запускаем его как отдельное приложение Timeweb на том же репозитории со
+  # start-командой `node worker/transcode.mjs`, либо временно в app-контейнере.
+  worker:
+    build:
+      context: .
+      args:
+        - S3_PUBLIC_URL=${S3_PUBLIC_URL}
+        - R2_PUBLIC_URL=${R2_PUBLIC_URL}
+    command: ["node", "worker/transcode.mjs"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_REGION: ${S3_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      VIDEO_WEBHOOK_SECRET: ${VIDEO_WEBHOOK_SECRET:-}
+      APP_INTERNAL_URL: http://app:3000
+      POLL_INTERVAL_MS: ${VIDEO_POLL_INTERVAL_MS:-5000}
+      MAX_ATTEMPTS: ${VIDEO_MAX_ATTEMPTS:-3}
+    depends_on:
+      app:
+        condition: service_started
+    mem_limit: 2g
     restart: unless-stopped
 
 volumes:

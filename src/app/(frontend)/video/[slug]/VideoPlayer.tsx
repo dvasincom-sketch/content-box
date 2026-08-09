@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Lock } from 'lucide-react'
 import { AudioPlayer } from '@/components/AudioPlayer'
+import { SelfHostedPlayer } from './SelfHostedPlayer'
 
 /**
  * Клиентский плеер для публичной страницы видео. Запрашивает данные с публичного
@@ -46,6 +47,8 @@ export function VideoPlayer({
   hasNext?: boolean
 }) {
   const [src, setSrc] = useState<string | null>(null)
+  // Своё HLS-видео (provider='self'): master-URL с токеном + постер.
+  const [selfSrc, setSelfSrc] = useState<{ master: string; poster: string | null } | null>(null)
   const [aspect, setAspect] = useState<'16:9' | '9:16'>(initialAspect)
   const [kind, setKind] = useState<'video' | 'audio'>('video')
   const [error, setError] = useState<string | null>(null)
@@ -100,6 +103,12 @@ export function VideoPlayer({
             setAspect(json.aspect === '9:16' ? '9:16' : '16:9')
           } else {
             setError('Не удалось собрать плеер')
+          }
+        } else if (json.provider === 'self') {
+          if (json.status === 'ready' && typeof json.master === 'string') {
+            setSelfSrc({ master: json.master, poster: typeof json.poster === 'string' ? json.poster : null })
+          } else {
+            setError('Видео ещё обрабатывается — загляните чуть позже')
           }
         } else if (json.provider === 'kinescope') {
           setSrc(json.embedId ? `https://kinescope.io/embed/${json.embedId}` : null)
@@ -209,6 +218,8 @@ export function VideoPlayer({
           >
             <span>{error}</span>
           </div>
+        ) : selfSrc ? (
+          <SelfHostedPlayer master={selfSrc.master} poster={selfSrc.poster} />
         ) : !src ? (
           <div
             className="absolute inset-0 flex items-center justify-center"

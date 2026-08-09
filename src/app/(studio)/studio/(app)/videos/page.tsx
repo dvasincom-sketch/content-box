@@ -66,6 +66,8 @@ export default async function VideosPage() {
     // Статус доступности внешней вставки (VK): нужен клиенту для бейджа
     // «недоступно» и фильтра битых видео.
     embedStatus: (v.embedStatus as string) || null,
+    // Статус обработки своего видео (self): uploading|processing|ready|error.
+    assetStatus: (v.assetStatus as string) || null,
     isPreview: Boolean(v.isPreview),
     minTierName:
       v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug : null,

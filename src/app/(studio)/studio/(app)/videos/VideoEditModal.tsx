@@ -87,6 +87,10 @@ export function VideoEditModal({
       setError('Название не может быть пустым')
       return
     }
+    if (!isEmbed && !minTierId) {
+      setError('Выберите уровень доступа — своё видео доступно только по подписке')
+      return
+    }
     setSaving(true)
     try {
       const res = await fetch('/studio/api/videos/update', {
@@ -190,18 +194,31 @@ export function VideoEditModal({
               </div>
             )}
 
-            <div className="studio-field">
-              <span className="studio-field__label">Уровень доступа</span>
-              <StudioSelect
-                value={minTierId}
-                onChange={setMinTierId}
-                options={[
-                  { value: '', label: 'Все подписчики / бесплатно' },
-                  ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
-                ]}
-                ariaLabel="Уровень доступа"
-              />
-            </div>
+            {isEmbed ? (
+              <div className="studio-field">
+                <span className="studio-field__label">Уровень доступа</span>
+                <div className="videdit__hint" style={{ fontSize: 13, opacity: 0.8 }}>
+                  Внешнее видео доступно всем бесплатно — закрыть его подпиской
+                  нельзя (плеер грузится с чужого домена).
+                </div>
+              </div>
+            ) : (
+              <div className="studio-field">
+                <span className="studio-field__label">Уровень доступа</span>
+                <StudioSelect
+                  value={minTierId}
+                  onChange={setMinTierId}
+                  options={[
+                    { value: '', label: tiers.length ? '— выберите уровень —' : 'Сначала создайте уровень подписки' },
+                    ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
+                  ]}
+                  ariaLabel="Уровень доступа"
+                />
+                <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                  Своё видео доступно только по подписке.
+                </div>
+              </div>
+            )}
 
             <div className="studio-field">
               <span className="studio-field__label">Категория (раздел / видео-плейлист)</span>

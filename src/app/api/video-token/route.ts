@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { streamSignToken } from '@/lib/cfStream'
+import { signPlaybackToken } from '@/lib/videoJwt'
+import { presignGet } from '@/lib/s3'
 import { tenantIdFromRequestHeaders } from '@/lib/tenantByHost'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -74,6 +76,28 @@ export async function GET(req: NextRequest) {
       provider: 'embed',
       src,
       aspect: access.video.embedAspect === '9:16' ? '9:16' : '16:9',
+    })
+  }
+
+  // Своё хранилище (HLS, Timeweb S3). Доступ уже проверен checkVideoAccess —
+  // выдаём краткоживущий JWT, которым подписан master-URL. По нему /api/hls
+  // отдаёт плейлисты и редиректит сегменты на presigned S3.
+  if (access.video.provider === 'self') {
+    const playbackId = String(access.video.playbackId || '')
+    if (!playbackId || access.video.assetStatus !== 'ready') {
+      return NextResponse.json({ ok: true, provider: 'self', status: access.video.assetStatus || 'processing' })
+    }
+    const token = signPlaybackToken(playbackId, 2 * 60 * 60)
+    let poster: string | null = null
+    if (access.video.posterKey) {
+      poster = await presignGet(String(access.video.posterKey), 2 * 60 * 60).catch(() => null)
+    }
+    return NextResponse.json({
+      ok: true,
+      provider: 'self',
+      status: 'ready',
+      master: `/api/hls/${playbackId}/master.m3u8?t=${encodeURIComponent(token)}`,
+      poster,
     })
   }
 

@@ -26,6 +26,8 @@ type Vid = {
   embedAspect?: string | null
   /** Статус доступности внешней вставки: 'ok' | 'unavailable' | 'unknown' | null. */
   embedStatus?: string | null
+  /** Статус обработки своего видео: 'uploading'|'processing'|'ready'|'error'|null. */
+  assetStatus?: string | null
   isPreview: boolean
   minTierName: string | null
   minTierId: string
@@ -387,6 +389,7 @@ function VideoRow({
   // и каждое добавленное видео выглядело сломанным: «Нет файла» и
   // заблокированное превью.
   const isEmbed = video.provider === 'embed'
+  const isSelf = video.provider === 'self'
   useEffect(() => {
     if (isEmbed) {
       setReady(true)
@@ -471,19 +474,31 @@ function VideoRow({
 
       {/* Статус */}
       <td>
-        {ready === true && (
-          <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
-        )}
-        {ready === false && (
-          <span className="vid__status vid__status--wait">
-            <Loader2 size={13} className="spin" /> Кодируется{pct ? ` ${pct}%` : ''}
-          </span>
-        )}
-        {ready === null && video.videoRef && (
-          <span className="vid__status"><Clock size={13} /> Проверка…</span>
-        )}
-        {ready === null && !video.videoRef && !isEmbed && (
-          <span className="vid__status vid__status--wait"><Clock size={13} /> Нет файла</span>
+        {isSelf ? (
+          video.assetStatus === 'ready' ? (
+            <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
+          ) : video.assetStatus === 'error' ? (
+            <span className="vid__status vid__status--wait"><Clock size={13} /> Ошибка обработки</span>
+          ) : (
+            <span className="vid__status vid__status--wait"><Loader2 size={13} className="spin" /> Обрабатывается</span>
+          )
+        ) : (
+          <>
+            {ready === true && (
+              <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
+            )}
+            {ready === false && (
+              <span className="vid__status vid__status--wait">
+                <Loader2 size={13} className="spin" /> Кодируется{pct ? ` ${pct}%` : ''}
+              </span>
+            )}
+            {ready === null && video.videoRef && (
+              <span className="vid__status"><Clock size={13} /> Проверка…</span>
+            )}
+            {ready === null && !video.videoRef && !isEmbed && (
+              <span className="vid__status vid__status--wait"><Clock size={13} /> Нет файла</span>
+            )}
+          </>
         )}
       </td>
 
@@ -612,7 +627,7 @@ export function AddPanel({
   onCreated?: (v: { id: number | string; title: string }) => void
 }) {
   const [mode, setMode] = useState<'upload' | 'url' | 'library'>('upload')
-  const [provider, setProvider] = useState<'stream' | 'kinescope' | 'embed'>('embed')
+  const [provider, setProvider] = useState<'self' | 'stream' | 'kinescope' | 'embed'>('self')
   // Вкладка «Библиотека» есть только у Kinescope. При переключении на Cloudflare
   // возвращаемся к загрузке, чтобы не остаться на скрытой вкладке.
   useEffect(() => {
@@ -621,17 +636,17 @@ export function AddPanel({
   return (
     <div className="studio-card vid__form">
       <div className="vid__provider">
-        <div className="vid__provider-label">Где хранить видео</div>
+        <div className="vid__provider-label">Где хранится видео</div>
         <div className="vid__provider-opts">
           <button
             type="button"
-            className={`vid__provider-opt${provider === 'kinescope' ? ' is-active' : ''}`}
-            onClick={() => setProvider('kinescope')}
+            className={`vid__provider-opt${provider === 'self' ? ' is-active' : ''}`}
+            onClick={() => setProvider('self')}
           >
             <span className="vid__provider-title">
               <MapPin size={15} className="vid__provider-icon" /> Для России
             </span>
-            <span className="vid__provider-hint">Работает в РФ без VPN. Рекомендуется.</span>
+            <span className="vid__provider-hint">Наше хранилище (HLS). Работает в РФ без VPN. Рекомендуется.</span>
           </button>
           <button
             type="button"
@@ -649,14 +664,14 @@ export function AddPanel({
             onClick={() => setProvider('embed')}
           >
             <span className="vid__provider-title">
-              <LinkIcon size={15} className="vid__provider-icon" /> Не хранить
+              <LinkIcon size={15} className="vid__provider-icon" /> Внешнее видео
             </span>
-            <span className="vid__provider-hint">Видео остаётся на VK или Дзене. Бесплатно, но подписка его не закроет.</span>
+            <span className="vid__provider-hint">Показываем видео с VK или Дзена, не копируя к себе. Всегда бесплатно для всех.</span>
           </button>
         </div>
       </div>
 
-      {provider === 'embed' ? null : (
+      {provider === 'embed' || provider === 'self' ? null : (
       <div className="vid__tabs">
         <button
           className={`vid__tab${mode === 'upload' ? ' is-active' : ''}`}
@@ -681,7 +696,9 @@ export function AddPanel({
       </div>
       )}
 
-      {provider === 'embed' ? (
+      {provider === 'self' ? (
+        <SelfUploadForm tiers={tiers} categories={categories} onDone={onDone} onCancel={onCancel} onCreated={onCreated} />
+      ) : provider === 'embed' ? (
         <EmbedFields tiers={tiers} categories={categories} onDone={onDone} onCancel={onCancel} onCreated={onCreated} />
       ) : mode === 'upload' ? (
         <UploadFileForm provider={provider} tiers={tiers} categories={categories} onDone={onDone} onCancel={onCancel} onCreated={onCreated} />
@@ -1058,8 +1075,9 @@ function UploadFileForm({
 }) {
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
-  const [minTierId, setMinTierId] = useState('')
-  const [isPreview, setIsPreview] = useState(false)
+  // Своё видео обязано быть платным — по умолчанию берём самый дешёвый
+  // уровень; «бесплатного» варианта в списке нет.
+  const [minTierId, setMinTierId] = useState<string>(() => (tiers[0] ? String(tiers[0].id) : ''))
   const [categoryId, setCategoryId] = useState('')
   const [season, setSeason] = useState('')
   const [episode, setEpisode] = useState('')
@@ -1091,7 +1109,8 @@ function UploadFileForm({
     fd.append('file', f)
     fd.append('title', title.trim())
     if (minTierId) fd.append('minTierId', minTierId)
-    fd.append('isPreview', String(isPreview))
+    // Своё видео не бывает бесплатным превью — сервер это форсит, шлём false.
+    fd.append('isPreview', String(false))
     if (categoryId) fd.append('categoryId', categoryId)
     if (season.trim()) fd.append('season', season.trim())
     if (episode.trim()) fd.append('episode', episode.trim())
@@ -1132,6 +1151,7 @@ function UploadFileForm({
     setError(null)
     if (!file) return setError('Выберите файл')
     if (!title.trim()) return setError('Укажите название')
+    if (!minTierId) return setError('Выберите уровень доступа — своё видео доступно только по подписке')
 
     // Российское хранилище — простой multipart-путь
     if (provider === 'kinescope') {
@@ -1182,7 +1202,7 @@ function UploadFileForm({
                 uid,
                 title: title.trim(),
                 minTierId: minTierId || null,
-                isPreview,
+                isPreview: false,
                 categoryId: categoryId || null,
                 season: season.trim() || null,
                 episode: episode.trim() || null,
@@ -1281,21 +1301,16 @@ function UploadFileForm({
             value={minTierId}
             onChange={setMinTierId}
             options={[
-              { value: '', label: 'Все подписчики / бесплатно' },
+              { value: '', label: tiers.length ? '— выберите уровень —' : 'Сначала создайте уровень подписки' },
               ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
             ]}
-            disabled={isPreview || uploading}
+            disabled={uploading}
             ariaLabel="Уровень доступа"
           />
-        </label>
-        <label className="vid__preview-check">
-          <input
-            type="checkbox"
-            checked={isPreview}
-            onChange={(e) => setIsPreview(e.target.checked)}
-            disabled={uploading}
-          />
-          Бесплатное превью
+          <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+            Своё видео доступно только по подписке — оно занимает наше хранилище
+            и транскодинг. Бесплатно можно показывать лишь внешнее видео.
+          </div>
         </label>
       </div>
 
@@ -1353,8 +1368,8 @@ function UrlFields({
 }) {
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
-  const [minTierId, setMinTierId] = useState('')
-  const [isPreview, setIsPreview] = useState(false)
+  // Своё видео обязано быть платным — по умолчанию самый дешёвый уровень.
+  const [minTierId, setMinTierId] = useState<string>(() => (tiers[0] ? String(tiers[0].id) : ''))
   const [categoryId, setCategoryId] = useState('')
   const [season, setSeason] = useState('')
   const [episode, setEpisode] = useState('')
@@ -1366,6 +1381,7 @@ function UrlFields({
     setError(null)
     if (!title.trim()) return setError('Укажите название')
     if (!url.trim()) return setError('Укажите ссылку на видеофайл')
+    if (!minTierId) return setError('Выберите уровень доступа — своё видео доступно только по подписке')
     setBusy(true)
     try {
       const endpoint =
@@ -1380,7 +1396,7 @@ function UrlFields({
           title: title.trim(),
           url: url.trim(),
           minTierId: minTierId || null,
-          isPreview,
+          isPreview: false,
           categoryId: categoryId || null,
           season: season.trim() || null,
           episode: episode.trim() || null,
@@ -1427,16 +1443,14 @@ function UrlFields({
             value={minTierId}
             onChange={setMinTierId}
             options={[
-              { value: '', label: 'Все подписчики / бесплатно' },
+              { value: '', label: tiers.length ? '— выберите уровень —' : 'Сначала создайте уровень подписки' },
               ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
             ]}
-            disabled={isPreview}
             ariaLabel="Уровень доступа"
           />
-        </label>
-        <label className="vid__preview-check">
-          <input type="checkbox" checked={isPreview} onChange={(e) => setIsPreview(e.target.checked)} />
-          Бесплатное превью
+          <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+            Своё видео доступно только по подписке.
+          </div>
         </label>
       </div>
       <VideoMetaFields
@@ -1469,7 +1483,12 @@ function UrlFields({
    внешнюю вставку подпиской технически невозможно, и автор должен понимать это
    до того, как выложит платный материал.
 */
-function EmbedFields({
+/* ============================================================================
+   ЗАГРУЗКА В СВОЁ ХРАНИЛИЩЕ (provider='self')
+   presigned PUT оригинала в S3 → create-from-storage (ставит задачу транскода).
+   Своё видео обязательно платное — уровень доступа требуется.
+   ============================================================================ */
+function SelfUploadForm({
   tiers,
   categories,
   onDone,
@@ -1482,18 +1501,169 @@ function EmbedFields({
   onCancel: () => void
   onCreated?: (v: { id: number | string; title: string }) => void
 }) {
+  const [file, setFile] = useState<File | null>(null)
+  const [title, setTitle] = useState('')
+  const [minTierId, setMinTierId] = useState<string>(() => (tiers[0] ? String(tiers[0].id) : ''))
+  const [categoryId, setCategoryId] = useState('')
+  const [season, setSeason] = useState('')
+  const [episode, setEpisode] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [pct, setPct] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  function putWithProgress(url: string, f: File, contentType: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('PUT', url)
+      xhr.setRequestHeader('Content-Type', contentType)
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) setPct(Math.round((e.loaded / e.total) * 100)) }
+      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Загрузка не удалась (HTTP ${xhr.status})`)))
+      xhr.onerror = () => reject(new Error('Ошибка сети при загрузке'))
+      xhr.send(f)
+    })
+  }
+
+  async function start() {
+    setError(null)
+    if (!file) return setError('Выберите файл')
+    if (!title.trim()) return setError('Укажите название')
+    if (!minTierId) return setError('Выберите уровень доступа — своё видео доступно только по подписке')
+    const contentType = file.type || 'video/mp4'
+    setUploading(true)
+    setPct(0)
+    try {
+      const presRes = await fetch('/studio/api/videos/asset-presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ filename: file.name, contentType, size: file.size }),
+      })
+      const pres = await presRes.json()
+      if (!presRes.ok) { setError(pres.error || 'Не удалось начать загрузку'); setUploading(false); return }
+
+      await putWithProgress(pres.uploadUrl, file, contentType)
+
+      const createRes = await fetch('/studio/api/videos/create-from-storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          key: pres.key,
+          title: title.trim(),
+          minTierId,
+          categoryId: categoryId || null,
+          season: season.trim() || null,
+          episode: episode.trim() || null,
+          tags,
+        }),
+      })
+      const created = await createRes.json()
+      if (!createRes.ok) { setError(created.error || 'Файл залит, но запись не создана'); setUploading(false); return }
+      if (created.id != null) onCreated?.({ id: created.id, title: title.trim() })
+      onDone()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка загрузки')
+      setUploading(false)
+    }
+  }
+
+  return (
+    <>
+      <p className="vid__form-hint">
+        Загрузите видеофайл — мы сохраним его в своём хранилище и подготовим для
+        просмотра (HLS, качество подстроится под зрителя). Работает в России без VPN.
+        После загрузки видео некоторое время обрабатывается.
+      </p>
+
+      <label className="studio-field">
+        <span className="studio-field__label">Видеофайл</span>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="video/*"
+          disabled={uploading}
+          onChange={(e) => {
+            const f = e.target.files?.[0] || null
+            setFile(f)
+            if (f && !title.trim()) setTitle(f.name.replace(/\.[^.]+$/, ''))
+          }}
+        />
+      </label>
+
+      <label className="studio-field">
+        <span className="studio-field__label">Название</span>
+        <input className="studio-input" value={title} onChange={(e) => setTitle(e.target.value)} disabled={uploading} />
+      </label>
+
+      <div className="vid__form-row">
+        <label className="studio-field" style={{ flex: 1 }}>
+          <span className="studio-field__label">Уровень доступа</span>
+          <StudioSelect
+            value={minTierId}
+            onChange={setMinTierId}
+            options={[
+              { value: '', label: tiers.length ? '— выберите уровень —' : 'Сначала создайте уровень подписки' },
+              ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
+            ]}
+            disabled={uploading}
+            ariaLabel="Уровень доступа"
+          />
+          <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+            Своё видео доступно только по подписке — оно занимает наше хранилище и обработку.
+          </div>
+        </label>
+      </div>
+
+      <VideoMetaFields
+        categories={categories}
+        categoryId={categoryId} setCategoryId={setCategoryId}
+        season={season} setSeason={setSeason}
+        episode={episode} setEpisode={setEpisode}
+        tags={tags} setTags={setTags}
+      />
+
+      {uploading && (
+        <div className="vid__form-hint">
+          Загрузка: {pct}% {pct >= 100 ? '· создаём запись…' : ''}
+        </div>
+      )}
+      {error && <div className="studio-login__error">{error}</div>}
+
+      <div className="vid__form-actions">
+        <button className="studio-btn studio-btn--ghost" onClick={onCancel} disabled={uploading}>Отмена</button>
+        <button className="studio-btn studio-btn--primary" onClick={start} disabled={uploading || !file}>
+          {uploading ? <Loader2 size={16} className="spin" /> : <Upload size={16} />}
+          {uploading ? 'Загрузка…' : 'Загрузить'}
+        </button>
+      </div>
+    </>
+  )
+}
+
+function EmbedFields({
+  categories,
+  onDone,
+  onCancel,
+  onCreated,
+}: {
+  // tiers больше не нужен: внешняя вставка всегда бесплатна. Оставляем в типе
+  // для совместимости с вызовом <EmbedFields tiers=… />.
+  tiers?: Tier[]
+  categories: MetaCat[]
+  onDone: () => void
+  onCancel: () => void
+  onCreated?: (v: { id: number | string; title: string }) => void
+}) {
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
-  const [minTierId, setMinTierId] = useState('')
-  const [isPreview, setIsPreview] = useState(false)
   const [categoryId, setCategoryId] = useState('')
   const [season, setSeason] = useState('')
   const [episode, setEpisode] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const gated = Boolean(minTierId) && !isPreview
 
   async function submit() {
     setError(null)
@@ -1507,8 +1677,10 @@ function EmbedFields({
         body: JSON.stringify({
           title: title.trim(),
           url: url.trim(),
-          minTierId: minTierId || null,
-          isPreview,
+          // Внешняя вставка всегда бесплатна для всех — сервер это форсит
+          // (хук enforceAccessPolicy), здесь передаём явно для ясности.
+          minTierId: null,
+          isPreview: true,
           categoryId: categoryId || null,
           season: season.trim() || null,
           episode: episode.trim() || null,
@@ -1555,24 +1727,13 @@ function EmbedFields({
           onChange={(e) => setTitle(e.target.value)}
         />
       </label>
-      <div className="vid__form-row">
-        <label className="studio-field" style={{ flex: 1 }}>
-          <span className="studio-field__label">Уровень доступа</span>
-          <StudioSelect
-            value={minTierId}
-            onChange={setMinTierId}
-            options={[
-              { value: '', label: 'Все подписчики / бесплатно' },
-              ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
-            ]}
-            disabled={isPreview}
-            ariaLabel="Уровень доступа"
-          />
-        </label>
-        <label className="vid__preview-check">
-          <input type="checkbox" checked={isPreview} onChange={(e) => setIsPreview(e.target.checked)} />
-          Бесплатное превью
-        </label>
+      <div className="vid__form-hint" style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+        <Unlock size={15} style={{ flexShrink: 0, marginTop: 1, opacity: 0.8 }} />
+        <span>
+          <b>Доступно всем бесплатно.</b> Внешнее видео нельзя закрыть подпиской:
+          плеер грузится с чужого домена (VK, Дзен), и адрес виден в исходнике
+          страницы. Чтобы продавать доступ — загрузите видео в наше хранилище.
+        </span>
       </div>
 
       <VideoMetaFields
@@ -1583,15 +1744,16 @@ function EmbedFields({
         tags={tags} setTags={setTags}
       />
 
-      {gated && (
-        <div className="vid__form-hint" style={{ color: 'var(--st-warning)' }}>
-          Подписка это видео не закроет. Браузер загружает плеер с чужого домена,
-          поэтому адрес виден в исходнике страницы и пересылается как обычная
-          ссылка — включая ключ доступа к закрытому видео на VK. Замок на
-          странице останется, но он остановит только случайного посетителя.
-          Для действительно платного материала загружайте видео в хранилище.
-        </div>
-      )}
+      <div className="vid__form-hint" style={{ color: 'var(--st-warning)', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+        <AlertTriangle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
+        <span>
+          Видео остаётся на стороннем сервисе — мы его не копируем к себе, а
+          только показываем на сайте. Если автор удалит или закроет его на VK
+          (Дзене), у вас оно тоже перестанет отображаться. Закрытое VK-видео
+          («только для подписчиков VK») во вставке не сработает — такое нужно
+          загрузить в наше хранилище.
+        </span>
+      </div>
 
       {error && <div className="studio-login__error">{error}</div>}
       <div className="vid__form-actions">

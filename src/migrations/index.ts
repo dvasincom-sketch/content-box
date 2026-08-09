@@ -81,6 +81,8 @@ import * as migration_20260808_110000_subscriber_phone from './20260808_110000_s
 import * as migration_20260808_130000_donate_presets from './20260808_130000_donate_presets';
 import * as migration_20260808_140000_video_embed_status from './20260808_140000_video_embed_status';
 import * as migration_20260808_150000_backfill_video_titles from './20260808_150000_backfill_video_titles';
+import * as migration_20260809_120000_embed_always_free from './20260809_120000_embed_always_free';
+import * as migration_20260809_130000_video_self_hosted from './20260809_130000_video_self_hosted';
 
 export const migrations = [
   {
@@ -497,5 +499,15 @@ export const migrations = [
     up: migration_20260808_150000_backfill_video_titles.up,
     down: migration_20260808_150000_backfill_video_titles.down,
     name: '20260808_150000_backfill_video_titles',
+  },
+  {
+    up: migration_20260809_120000_embed_always_free.up,
+    down: migration_20260809_120000_embed_always_free.down,
+    name: '20260809_120000_embed_always_free',
+  },
+  {
+    up: migration_20260809_130000_video_self_hosted.up,
+    down: migration_20260809_130000_video_self_hosted.down,
+    name: '20260809_130000_video_self_hosted',
   },
 ];

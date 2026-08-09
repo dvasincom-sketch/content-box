@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, CollectionBeforeChangeHook } from 'payload'
 import { contentAccess, ownerField, stampOwner } from '../access'
 import { activityAfterChange, activityAfterDelete } from '../lib/logActivity'
 import { tagsField, normalizeTags } from '../fields/tags'
@@ -18,6 +18,31 @@ import { tagsField, normalizeTags } from '../fields/tags'
  * Привязка к существующему дереву категорий (weverse-live, концерты, участники).
  * Группа админки: «Контент».
  */
+
+/**
+ * Правило доступа к видео в зависимости от того, ГДЕ лежит файл (beforeChange).
+ *
+ * Внешняя вставка (provider='embed') — видео физически на чужой площадке
+ * (VK, Дзен). Закрыть его подпиской технически невозможно: браузер грузит
+ * плеер с чужого домена, адрес и ключ доступа видны в исходнике страницы.
+ * Поэтому такое видео ВСЕГДА бесплатно для всех — иначе автор мог бы выдать
+ * открытое VK-видео за платный материал (нечестно к подписчикам).
+ *
+ * Своё хранилище (stream/kinescope/audio) — файл занимает наши диски и
+ * проходит наш транскодинг. Раздавать это бесплатно = дарить чужим ресурсы
+ * платформы, поэтому «бесплатное превью» для него запрещено. Отсутствие
+ * уровня трактуется как «нужна любая активная подписка» (см. checkVideoAccess).
+ */
+const enforceAccessPolicy: CollectionBeforeChangeHook = ({ data }) => {
+  if (!data) return data
+  if (data.provider === 'embed') {
+    data.isPreview = true
+    data.minTier = null
+  } else if (data.provider != null) {
+    data.isPreview = false
+  }
+  return data
+}
 
 export const Videos: CollectionConfig = {
   slug: 'videos',
@@ -67,7 +92,10 @@ export const Videos: CollectionConfig = {
       relationTo: 'subscription-tiers',
       label: 'Минимальный уровень доступа',
       admin: {
-        description: 'Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.',
+        description:
+          'От этого уровня и выше. Для СВОЕГО видео пусто ≠ бесплатно: без ' +
+          'уровня оно требует любую активную подписку. Для внешней вставки ' +
+          'уровень игнорируется — она всегда бесплатна.',
       },
     },
     {
@@ -76,7 +104,10 @@ export const Videos: CollectionConfig = {
       defaultValue: false,
       label: 'Бесплатное превью',
       admin: {
-        description: 'Открыто всем, даже без подписки (перебивает minTier).',
+        description:
+          'Открыто всем, даже без подписки. Устанавливается автоматически: ' +
+          'внешняя вставка — всегда бесплатна, своё видео (наше хранилище) — ' +
+          'никогда (нагружает наши диски и транскодинг). См. хук enforceAccessPolicy.',
       },
     },
     {
@@ -86,6 +117,7 @@ export const Videos: CollectionConfig = {
       defaultValue: 'stream',
       label: 'Видеопровайдер',
       options: [
+        { label: 'Своё хранилище (Timeweb, HLS)', value: 'self' },
         { label: 'Cloudflare Stream (зарубежный)', value: 'stream' },
         { label: 'Kinescope (российский)', value: 'kinescope' },
         { label: 'Внешняя ссылка (VK, Дзен)', value: 'embed' },
@@ -94,12 +126,15 @@ export const Videos: CollectionConfig = {
       // Выбрать 'embed' руками нельзя: адрес плеера заполняет сервер после
       // разбора ссылки, и запись без него будет неиграбельной. Такие видео
       // создаются в студии кнопкой «Не хранить».
-      validate: (value: unknown, { data }: { data?: { embedSrc?: unknown; audioSrc?: unknown } }) => {
+      validate: (value: unknown, { data }: { data?: { embedSrc?: unknown; audioSrc?: unknown; playbackId?: unknown } }) => {
         if (value === 'embed' && !data?.embedSrc) {
           return 'Видео по внешней ссылке добавляется в студии — там разбирается ссылка и проверяется площадка.'
         }
         if (value === 'audio' && !data?.audioSrc) {
           return 'Аудио добавляется в студии загрузкой MP3-файла.'
+        }
+        if (value === 'self' && !data?.playbackId) {
+          return 'Своё видео создаётся в студии загрузкой файла — сервер присваивает playbackId после заливки.'
         }
         return true
       },
@@ -202,6 +237,82 @@ export const Videos: CollectionConfig = {
         description: 'Ссылка на MP3 в хранилище. Заполняется сервером при загрузке файла.',
       },
     },
+    // ── Своё хранилище (provider = 'self') ──────────────────────────────────
+    // HLS-конвейер на Timeweb S3. Все поля пишет ТОЛЬКО сервер: студия при
+    // заливке (originalKey), воркер-транскод через webhook (playbackId и
+    // артефакты). Правку руками закрываем field-access + readOnly.
+    {
+      name: 'assetStatus',
+      type: 'select',
+      label: 'Статус обработки',
+      defaultValue: 'processing',
+      access: { create: () => false, update: () => false },
+      options: [
+        { label: 'Загружается', value: 'uploading' },
+        { label: 'Обрабатывается', value: 'processing' },
+        { label: 'Готово', value: 'ready' },
+        { label: 'Ошибка', value: 'error' },
+      ],
+      admin: {
+        condition: (data) => data?.provider === 'self',
+        readOnly: true,
+        description: 'Состояние транскодинга: uploading → processing → ready/error. Ставит сервер и воркер.',
+      },
+    },
+    {
+      name: 'playbackId',
+      type: 'text',
+      label: 'Playback ID',
+      index: true,
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
+    {
+      name: 'originalKey',
+      type: 'text',
+      label: 'Ключ оригинала в S3',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
+    {
+      name: 'posterKey',
+      type: 'text',
+      label: 'Постер (ключ S3)',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
+    {
+      name: 'spriteKey',
+      type: 'text',
+      label: 'Storyboard (ключ S3)',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
+    {
+      name: 'gifKey',
+      type: 'text',
+      label: 'GIF-превью (ключ S3)',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
+    {
+      name: 'renditions',
+      type: 'json',
+      label: 'Рендишены (HLS)',
+      access: { create: () => false, update: () => false },
+      admin: {
+        condition: (data) => data?.provider === 'self',
+        readOnly: true,
+        description: 'Массив { height, bandwidth, key } — залитые воркером варианты качества.',
+      },
+    },
+    {
+      name: 'assetError',
+      type: 'text',
+      label: 'Ошибка обработки',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
     {
       name: 'durationSec',
       type: 'number',
@@ -232,7 +343,7 @@ export const Videos: CollectionConfig = {
   ],
   hooks: {
     // Свободные теги: тримим label и считаем slug (slugify), убираем дубли.
-    beforeChange: [stampOwner, ({ data }) => normalizeTags(data)],
+    beforeChange: [stampOwner, enforceAccessPolicy, ({ data }) => normalizeTags(data)],
     afterChange: [activityAfterChange('video')],
     afterDelete: [activityAfterDelete('video')],
   },

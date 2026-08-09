@@ -6,11 +6,12 @@
 FROM node:20-bookworm-slim
 
 # ca-certificates/openssl — для TLS к Postgres/R2/Kinescope.
-# curl — для HEALTHCHECK ниже.
+# curl — для HEALTHCHECK ниже. ffmpeg — для транскод-воркера (worker/transcode.mjs)
+# в том же образе: сервис worker гоняет им HLS ABR + постер/gif/сториборд.
 # libvips для sharp идёт prebuilt в самом пакете sharp (доп. системных либ на
 # Debian не требуется). apt-get требует root, поэтому ставим ДО смены пользователя.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates openssl curl \
+  && apt-get install -y --no-install-recommends ca-certificates openssl curl ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
 # Дальше всё от непривилегированного `node`, а COPY идут с --chown.

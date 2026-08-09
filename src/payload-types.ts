@@ -885,17 +885,17 @@ export interface Video {
    */
   folder?: (number | null) | VideoFolder;
   /**
-   * Пусто = доступно всем бесплатно. Иначе — от этого уровня и выше.
+   * От этого уровня и выше. Для СВОЕГО видео пусто ≠ бесплатно: без уровня оно требует любую активную подписку. Для внешней вставки уровень игнорируется — она всегда бесплатна.
    */
   minTier?: (number | null) | SubscriptionTier;
   /**
-   * Открыто всем, даже без подписки (перебивает minTier).
+   * Открыто всем, даже без подписки. Устанавливается автоматически: внешняя вставка — всегда бесплатна, своё видео (наше хранилище) — никогда (нагружает наши диски и транскодинг). См. хук enforceAccessPolicy.
    */
   isPreview?: boolean | null;
   /**
    * Где хранится видео. Stream — для зарубежной аудитории; Kinescope — для РФ (не блокируется провайдерами); внешняя ссылка — видео лежит на чужой площадке и НЕ защищается подпиской.
    */
-  provider: 'stream' | 'kinescope' | 'embed' | 'audio';
+  provider: 'self' | 'stream' | 'kinescope' | 'embed' | 'audio';
   /**
    * Идентификатор видео в хранилище: CF Stream uid или Kinescope video_id (по provider). Для внешней ссылки не используется — см. поля ниже.
    */
@@ -921,6 +921,28 @@ export interface Video {
    * Ссылка на MP3 в хранилище. Заполняется сервером при загрузке файла.
    */
   audioSrc?: string | null;
+  /**
+   * Состояние транскодинга: uploading → processing → ready/error. Ставит сервер и воркер.
+   */
+  assetStatus?: ('uploading' | 'processing' | 'ready' | 'error') | null;
+  playbackId?: string | null;
+  originalKey?: string | null;
+  posterKey?: string | null;
+  spriteKey?: string | null;
+  gifKey?: string | null;
+  /**
+   * Массив { height, bandwidth, key } — залитые воркером варианты качества.
+   */
+  renditions?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  assetError?: string | null;
   durationSec?: number | null;
   /**
    * Номер сезона в видео-плейлисте. Пусто = вне сезона.
@@ -2251,6 +2273,14 @@ export interface VideosSelect<T extends boolean = true> {
   embedStatus?: T;
   embedCheckedAt?: T;
   audioSrc?: T;
+  assetStatus?: T;
+  playbackId?: T;
+  originalKey?: T;
+  posterKey?: T;
+  spriteKey?: T;
+  gifKey?: T;
+  renditions?: T;
+  assetError?: T;
   durationSec?: T;
   season?: T;
   episode?: T;

@@ -1,0 +1,72 @@
+import { NextResponse, type NextRequest } from 'next/server'
+import { createHmac, timingSafeEqual } from 'crypto'
+import { getPayload } from 'payload'
+import config from '@/payload.config'
+import { errorMessage } from '@/lib/errorMessage'
+
+/**
+ * Webhook транскод-воркера: video.asset.ready.
+ *
+ * Воркер (отдельный сервис) закончил HLS-транскод и залил артефакты в S3 —
+ * здесь проставляем видео assetStatus + ключи артефактов. Роут ПУБЛИЧНЫЙ
+ * (воркер ходит по внутренней сети compose), поэтому защищён HMAC-подписью
+ * тела: заголовок x-signature = "sha256=<hex>" по сырому body с секретом
+ * VIDEO_WEBHOOK_SECRET. Видео ищем по playbackId (он уникален между тенантами).
+ *
+ * Body: { playbackId, status:'ready'|'error', durationSec?, renditions?, masterKey?, posterKey?, spriteKey?, gifKey?, error? }
+ */
+export const runtime = 'nodejs'
+
+function verify(raw: string, header: string | null): boolean {
+  const secret = process.env.VIDEO_WEBHOOK_SECRET || ''
+  if (!secret || !header) return false
+  const expected = createHmac('sha256', secret).update(raw).digest('hex')
+  const got = header.replace(/^sha256=/, '')
+  const a = Buffer.from(got, 'hex')
+  const b = Buffer.from(expected, 'hex')
+  if (a.length !== b.length) return false
+  try { return timingSafeEqual(a, b) } catch { return false }
+}
+
+export async function POST(req: NextRequest) {
+  const raw = await req.text()
+  if (!verify(raw, req.headers.get('x-signature'))) {
+    return NextResponse.json({ error: 'Неверная подпись' }, { status: 401 })
+  }
+
+  let data: any
+  try { data = JSON.parse(raw) } catch { return NextResponse.json({ error: 'Некорректный JSON' }, { status: 400 }) }
+
+  const playbackId = String(data.playbackId || '').trim()
+  if (!playbackId) return NextResponse.json({ error: 'Нет playbackId' }, { status: 400 })
+
+  try {
+    const payload = await getPayload({ config: await config })
+    const found = await payload.find({
+      collection: 'videos',
+      where: { playbackId: { equals: playbackId } },
+      limit: 1,
+      depth: 0,
+      overrideAccess: true,
+    })
+    const video = found.docs[0]
+    if (!video) return NextResponse.json({ error: 'Видео не найдено' }, { status: 404 })
+
+    const patch: Record<string, unknown> =
+      data.status === 'error'
+        ? { assetStatus: 'error', assetError: String(data.error || 'Ошибка транскодинга').slice(0, 500) }
+        : {
+            assetStatus: 'ready',
+            renditions: Array.isArray(data.renditions) ? data.renditions : null,
+            posterKey: data.posterKey || null,
+            spriteKey: data.spriteKey || null,
+            gifKey: data.gifKey || null,
+            ...(data.durationSec ? { durationSec: Number(data.durationSec) } : {}),
+          }
+
+    await payload.update({ collection: 'videos', id: video.id, data: patch as any, overrideAccess: true, depth: 0 })
+    return NextResponse.json({ ok: true })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: errorMessage(e, 'Не удалось обновить видео') }, { status: 500 })
+  }
+}

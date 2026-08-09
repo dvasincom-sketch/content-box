@@ -17,6 +17,7 @@ import { deleteObject, keyFromPublicUrl } from '@/lib/s3'
  * Body: { videoId }
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
+ try {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
   const videoId = data.videoId
@@ -69,4 +70,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось удалить видео'), 500)
   }
+ } catch (e: unknown) {
+  // Страховка: любой сбой ДО внутреннего try (проверки прав/поиск) тоже
+  // возвращает JSON, а не подвисает без ответа (иначе loader крутится вечно).
+  return apiError(errorMessage(e, 'Не удалось удалить видео'), 500)
+ }
 })
