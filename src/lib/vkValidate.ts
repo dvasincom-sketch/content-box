@@ -1,54 +1,69 @@
 /**
- * Проверка доступности внешнего (embed) видео — VK и др. Платформенный риск:
- * автор вставил битую ссылку или видео удалили/скрыли на стороне VK, и на
- * публичной странице висит «Видеофайл не найден».
+ * Проверка доступности внешнего (embed) видео.
  *
- * Как VK ведёт себя (проверено на реальном битом видео):
- *   - рабочий ПУБЛИЧНЫЙ эмбед `video_ext.php` → 200 + HTML плеера;
- *   - битый/удалённый/приватный → 302 в цепочку автологина
- *     (`login.vk…/act=autologin` → `errorCode=…&errorText=invalid+user` → петля).
- * Текста «удалено» в теле НЕТ — поэтому сигнал = сам факт редиректа эмбеда.
+ * Почему НЕ скрейпим video_ext.php: VK требует сессию и редиректит ЛЮБОЙ
+ * серверный запрос на автологин — и рабочие, и битые видео ведут себя
+ * одинаково, отличить по HTTP/HTML нельзя (проверено: 193/193 «редиректят»).
  *
- * Поэтому идём `redirect: 'manual'`: любой редирект эмбеда (opaqueredirect / 3xx)
- * или явный 404/410/403 → 'unavailable'. 200 → сверяем тело (на всякий случай) и
- * 'ok'. Таймаут/сеть/5xx → 'unknown' (не пугаем ложным флагом).
+ * Надёжно только через VK API `video.get`: он прямо говорит, существует и
+ * доступно ли видео. Требует токен (`VK_SERVICE_TOKEN`). Без токена VK-видео
+ * возвращаем 'unknown' — НИЧЕГО не флагуем (безопасно, без ложных срабатываний).
+ *
+ * ВАЖНО: помечаем 'unavailable' только при явном признаке недоступности; при
+ * любой неопределённости (нет токена, rate-limit, сеть, неоднозначный ответ) —
+ * 'unknown'.
  */
 export type EmbedStatus = 'ok' | 'unavailable' | 'unknown'
 
-const DEAD =
-  /Видеозапись\s+(удалена|недоступна|была удалена|заблокирована)|Видеофайл не найден|Видео\s+(удалено|недоступно)|Запись недоступна|invalid\s+user|errorCode=|This video is (unavailable|no longer available|private)|Video (not found|unavailable|deleted|is unavailable)|content is not available/i
+const VK_TOKEN = (process.env.VK_SERVICE_TOKEN || '').trim()
+
+function parseVkIds(embedSrc: string): { owner: string; id: string } | null {
+  try {
+    const u = new URL(embedSrc)
+    if (!/(^|\.)vkvideo\.ru$|(^|\.)vk\.com$|(^|\.)vk\.ru$/i.test(u.hostname)) return null
+    const owner = u.searchParams.get('oid')
+    const id = u.searchParams.get('id')
+    return owner && id ? { owner, id } : null
+  } catch {
+    return null
+  }
+}
+
+async function checkVkApi(owner: string, id: string): Promise<EmbedStatus> {
+  try {
+    const url =
+      `https://api.vk.com/method/video.get?videos=${encodeURIComponent(`${owner}_${id}`)}` +
+      `&access_token=${encodeURIComponent(VK_TOKEN)}&v=5.199`
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000), cache: 'no-store' })
+    if (!res.ok) return 'unknown'
+    const data = (await res.json()) as {
+      response?: { count?: number; items?: unknown[] }
+      error?: { error_code?: number }
+    }
+    if (data.error) {
+      const code = data.error.error_code
+      // 100 — неверный параметр (битый id), 15 — доступ запрещён, 204 — доступ к видео запрещён.
+      if (code === 100 || code === 15 || code === 204) return 'unavailable'
+      return 'unknown' // 5 (auth), 6/29 (rate limit) и прочее — не флагуем
+    }
+    const items = data.response?.items
+    if (Array.isArray(items) && items.length > 0) return 'ok'
+    if (data.response && (data.response.count === 0 || (Array.isArray(items) && items.length === 0))) {
+      return 'unavailable' // видео нет в ответе → удалено/недоступно
+    }
+    return 'unknown'
+  } catch {
+    return 'unknown'
+  }
+}
 
 export async function checkEmbedAvailability(embedSrc: string): Promise<EmbedStatus> {
   const src = (embedSrc || '').trim()
   if (!src) return 'unknown'
-  try {
-    const res = await fetch(src, {
-      headers: {
-        'user-agent': 'Mozilla/5.0 (compatible; ContentBoxBot/1.0; +https://contentbox.site)',
-        'accept-language': 'ru,en;q=0.8',
-        accept: 'text/html,application/xhtml+xml',
-      },
-      redirect: 'manual', // не идём по редиректам — сам редирект и есть сигнал
-      signal: AbortSignal.timeout(6000),
-      cache: 'no-store',
-    })
-
-    // Явные коды недоступности.
-    if (res.status === 404 || res.status === 410 || res.status === 403) return 'unavailable'
-
-    // Редирект эмбеда (у VK — уход в автологин на битом/приватном/удалённом).
-    // `redirect: 'manual'` даёт opaqueredirect (status 0). Плюс подстрахуемся 3xx.
-    if (res.type === 'opaqueredirect' || res.status === 0 || (res.status >= 300 && res.status < 400)) {
-      return 'unavailable'
-    }
-
-    if (!res.ok) return 'unknown'
-
-    // Рабочий эмбед — 200. На всякий случай сверяем тело с маркерами.
-    const html = (await res.text()).slice(0, 200_000)
-    if (DEAD.test(html)) return 'unavailable'
-    return 'ok'
-  } catch {
-    return 'unknown'
+  const vk = parseVkIds(src)
+  if (vk) {
+    if (!VK_TOKEN) return 'unknown' // без токена VK не проверяем и не флагуем
+    return checkVkApi(vk.owner, vk.id)
   }
+  return 'unknown' // не-VK эмбеды пока не проверяем
 }
