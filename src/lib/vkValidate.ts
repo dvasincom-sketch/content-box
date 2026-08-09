@@ -47,9 +47,15 @@ async function checkVkApi(owner: string, id: string): Promise<EmbedStatus> {
       return 'unknown' // 5 (auth), 6/29 (rate limit) и прочее — не флагуем
     }
     const items = data.response?.items
-    if (Array.isArray(items) && items.length > 0) return 'ok'
     if (data.response && (data.response.count === 0 || (Array.isArray(items) && items.length === 0))) {
-      return 'unavailable' // видео нет в ответе → удалено/недоступно
+      return 'unavailable' // видео нет в ответе → удалено
+    }
+    if (Array.isArray(items) && items.length > 0) {
+      const it = items[0] as { content_restricted?: unknown; restriction?: { can_play?: number } | null }
+      // Ограничено для публики («только для авторизованных», регион/donut и т.п.):
+      // у посетителя без VK-сессии не проигрывается → для сайта это битое видео.
+      if (it.content_restricted || (it.restriction && it.restriction.can_play === 0)) return 'unavailable'
+      return 'ok'
     }
     return 'unknown'
   } catch {

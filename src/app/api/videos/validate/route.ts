@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   const rhParam = url.searchParams.get('recheckHours')
   // Внимание: `Number(x) || 24` считает 0 ложным → recheckHours=0 не работал.
   const recheckHours = rhParam !== null && rhParam !== '' ? Math.max(0, Number(rhParam) || 0) : 24
-  const concurrency = Math.min(20, Math.max(1, Number(url.searchParams.get('concurrency')) || 3))
+  const concurrency = Math.min(20, Math.max(1, Number(url.searchParams.get('concurrency')) || 2))
   const cutoff = new Date(Date.now() - recheckHours * 3600_000).toISOString()
 
   const payload = await getPayload({ config: await config })
