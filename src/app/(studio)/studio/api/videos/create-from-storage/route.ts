@@ -3,6 +3,7 @@ import { slugify } from '@/lib/slugify'
 import { headObject } from '@/lib/s3'
 import { enqueueTranscode } from '@/lib/videoJobs'
 import { errorMessage } from '@/lib/errorMessage'
+import { MIN_VIDEO_TIER_PRICE, tierPrice } from '@/lib/videoPricing'
 import { randomBytes } from 'crypto'
 
 /**
@@ -35,6 +36,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (!title) return apiError('Укажите название')
   if (minTierId == null) {
     return apiError('Выберите уровень доступа — своё видео доступно только по подписке')
+  }
+  const price = await tierPrice(payload, minTierId, tenantId)
+  if (price == null) return apiError('Выбранный уровень доступа не найден')
+  if (price < MIN_VIDEO_TIER_PRICE) {
+    return apiError(`Для видео нужен тариф от ${MIN_VIDEO_TIER_PRICE} ₽/мес — поднимите цену уровня или выберите подходящий.`)
   }
 
   // Убеждаемся, что файл реально залит в S3 (защита от подделки key).

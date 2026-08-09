@@ -107,14 +107,40 @@ export function VideosManager({
 
   // после router.refresh() приходят свежие данные — синхронизируем
   useEffect(() => setVideos(initialVideos), [initialVideos])
-  // Пока есть видео в обработке (self: uploading/processing) — тихо обновляем
-  // список раз в 10с, чтобы статус сам сменился на «Готово» без ручной перезагрузки.
+  // Пока есть видео в обработке (self) — ЛЕГКО опрашиваем только их статус и
+  // обновляем строки на месте. Раньше тут был router.refresh() каждые 10с — он
+  // перезагружал всю страницу (214 видео) и мигал экраном (тёмная вспышка).
   useEffect(() => {
-    const anyProcessing = videos.some((v) => v.assetStatus === 'processing' || v.assetStatus === 'uploading')
-    if (!anyProcessing) return
-    const id = setInterval(() => router.refresh(), 10_000)
-    return () => clearInterval(id)
-  }, [videos, router])
+    const procIds = videos
+      .filter((v) => v.assetStatus === 'processing' || v.assetStatus === 'uploading')
+      .map((v) => v.id)
+    if (procIds.length === 0) return
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const res = await fetch(`/studio/api/videos/status?ids=${procIds.join(',')}`, {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+        if (!res.ok || cancelled) return
+        const json = await res.json()
+        const statuses = (json?.statuses || {}) as Record<string, string | null>
+        setVideos((prev) => {
+          let changed = false
+          const next = prev.map((v) => {
+            const st = statuses[String(v.id)]
+            if (st && st !== v.assetStatus) { changed = true; return { ...v, assetStatus: st } }
+            return v
+          })
+          return changed ? next : prev
+        })
+      } catch {
+        /* сеть — не критично, повторим */
+      }
+    }
+    const id = setInterval(poll, 8000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [videos])
   useEffect(() => setCategories(initialCategories), [initialCategories])
 
   const [adding, setAdding] = useState(false)
@@ -654,7 +680,7 @@ export function AddPanel({
             <span className="vid__provider-title">
               <MapPin size={15} className="vid__provider-icon" /> Для России
             </span>
-            <span className="vid__provider-hint">Наше хранилище (HLS). Работает в РФ без VPN. Рекомендуется.</span>
+            <span className="vid__provider-hint">Загружаем видео к себе и готовим к просмотру (HLS, качество под зрителя). Работает в РФ без VPN. Нужно подождать обработку. Рекомендуется.</span>
           </button>
           <button
             type="button"
@@ -1621,10 +1647,23 @@ function SelfUploadForm({
         </button>
       </div>
 
+      <div
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8,
+          padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600,
+          color: '#9a6700', background: '#fff7e6', border: '1px solid #ffe1a8',
+        }}
+      >
+        <Lock size={12} /> Только по подписке
+      </div>
       <p className="vid__form-hint">
         {mode === 'url'
-          ? 'Вставьте публичную ссылку на видеофайл с Яндекс.Диска — заберём его напрямую, без скачивания на ваше устройство. Удобно для больших файлов.'
-          : 'Загрузите видеофайл — мы сохраним его в своём хранилище и подготовим для просмотра (HLS, качество подстроится под зрителя). После загрузки видео некоторое время обрабатывается.'}
+          ? 'Вставьте публичную ссылку на видеофайл с Яндекс.Диска — заберём его напрямую, без скачивания на ваше устройство. Удобно для больших файлов. После импорта видео обрабатывается.'
+          : 'Загрузим видео в своё хранилище и подготовим к просмотру: соберём HLS с несколькими качествами (подстраивается под зрителя, работает в РФ без VPN). После загрузки видео обрабатывается — чем больше и длиннее файл, тем дольше. Это нормально: можно продолжать работу, статус обновится сам.'}
+      </p>
+      <p className="vid__form-hint" style={{ marginTop: 0 }}>
+        Своё видео нельзя выложить бесплатно для всех — оно занимает наше хранилище и
+        обработку, поэтому доступно только в рамках подписки.
       </p>
 
       {mode === 'url' ? (

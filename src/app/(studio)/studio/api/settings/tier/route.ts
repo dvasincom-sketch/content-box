@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
+import { MIN_VIDEO_TIER_PRICE, tenantHasSelfVideo } from '@/lib/videoPricing'
 import { logActivity } from '@/lib/logActivity'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -39,6 +40,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     const price = Number(data.priceRub)
     if (Number.isNaN(price) || price < 0) {
       return apiError('Цена должна быть числом ≥ 0')
+    }
+    if (price < MIN_VIDEO_TIER_PRICE && (await tenantHasSelfVideo(payload, tenantId))) {
+      return apiError(`У вас есть загруженное видео — цена подписки не может быть ниже ${MIN_VIDEO_TIER_PRICE} ₽/мес.`)
     }
     patch.priceRub = price
   }

@@ -2,6 +2,7 @@ import { withAuthor, readJson, apiError, apiOk, authorCan } from '@/app/(studio)
 import { logActivity } from '@/lib/logActivity'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
+import { MIN_VIDEO_TIER_PRICE, tenantHasSelfVideo } from '@/lib/videoPricing'
 
 /**
  * Создание уровня подписки. Все поля + плюшки.
@@ -25,6 +26,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const priceRub = Number(data.priceRub)
   if (Number.isNaN(priceRub) || priceRub < 0) {
     return apiError('Цена должна быть числом ≥ 0')
+  }
+  if (priceRub < MIN_VIDEO_TIER_PRICE && (await tenantHasSelfVideo(payload, tenantId))) {
+    return apiError(`У вас есть загруженное видео — цена подписки не может быть ниже ${MIN_VIDEO_TIER_PRICE} ₽/мес (иначе платный доступ к видео обходится дешёвым тарифом).`)
   }
 
   try {

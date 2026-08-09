@@ -3,6 +3,7 @@ import { slugify } from '@/lib/slugify'
 import { enqueueTranscode } from '@/lib/videoJobs'
 import { isYandexDiskUrl, yandexPublicMeta } from '@/lib/yandexDisk'
 import { errorMessage } from '@/lib/errorMessage'
+import { MIN_VIDEO_TIER_PRICE, tierPrice } from '@/lib/videoPricing'
 import { randomBytes } from 'crypto'
 
 /**
@@ -37,6 +38,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (!isYandexDiskUrl(url)) return apiError('Поддерживаются публичные ссылки Яндекс.Диска (disk.yandex.ru/...)')
   if (!title) return apiError('Укажите название')
   if (minTierId == null) return apiError('Выберите уровень доступа — своё видео доступно только по подписке')
+  const price = await tierPrice(payload, minTierId, tenantId)
+  if (price == null) return apiError('Выбранный уровень доступа не найден')
+  if (price < MIN_VIDEO_TIER_PRICE) {
+    return apiError(`Для видео нужен тариф от ${MIN_VIDEO_TIER_PRICE} ₽/мес — поднимите цену уровня или выберите подходящий.`)
+  }
 
   // Проверяем, что ссылка доступна и указывает на файл (а не папку).
   const meta = await yandexPublicMeta(url)

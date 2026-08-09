@@ -15,6 +15,7 @@ import { join, extname } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
 import { createHmac } from 'node:crypto'
+import http from 'node:http'
 import pg from 'pg'
 import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 
@@ -33,8 +34,22 @@ const VIDEO_WEBHOOK_SECRET = process.env.VIDEO_WEBHOOK_SECRET || ''
 const APP_INTERNAL_URL = process.env.APP_INTERNAL_URL || 'http://app:3000'
 const POLL_INTERVAL_MS = process.env.POLL_INTERVAL_MS || '5000'
 const MAX_ATTEMPTS = process.env.MAX_ATTEMPTS || '3'
+// Жёсткий предохранитель: один ffmpeg-прогон не может длиться вечно (иначе
+// зависший процесс блокирует очередь навсегда — конкурентность 1).
+const FFMPEG_TIMEOUT_MS = Number(process.env.FFMPEG_TIMEOUT_MS || 2 * 60 * 60 * 1000)
 
 const log = (...a) => console.log(new Date().toISOString(), '[worker]', ...a)
+
+// Health-сервер. Воркер использует ТОТ ЖЕ образ, что и app, и наследует его
+// HEALTHCHECK (curl :3000/api/health). Но здесь нет веб-сервера на 3000 —
+// healthcheck падал, и оркестратор убивал контейнер каждые ~7 мин прямо посреди
+// транскода. Поднимаем свой лёгкий health-эндпоинт, а в compose healthcheck
+// воркера указывает на него.
+const HEALTH_PORT = Number(process.env.WORKER_HEALTH_PORT || 3001)
+http
+  .createServer((_req, res) => { res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('ok') })
+  .listen(HEALTH_PORT, () => log(`health server on :${HEALTH_PORT}`))
+
 
 const pool = new pg.Pool({ connectionString: DATABASE_URL, max: 2, idleTimeoutMillis: 10_000 })
 const s3 = new S3Client({
@@ -60,13 +75,23 @@ const CT = {
   '.vtt': 'text/vtt',
 }
 
-function run(cmd, args, opts = {}) {
+function run(cmd, args, opts = {}, timeoutMs = 0) {
   return new Promise((resolve, reject) => {
     const p = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], ...opts })
     let err = ''
+    let timer = null
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        try { p.kill('SIGKILL') } catch { /* уже мёртв */ }
+        reject(new Error(`${cmd} timeout after ${Math.round(timeoutMs / 1000)}s`))
+      }, timeoutMs)
+    }
     p.stderr.on('data', (d) => { err += d.toString(); if (err.length > 8000) err = err.slice(-8000) })
-    p.on('error', reject)
-    p.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`${cmd} exit ${code}: ${err.slice(-1200)}`))))
+    p.on('error', (e) => { if (timer) clearTimeout(timer); reject(e) })
+    p.on('close', (code) => {
+      if (timer) clearTimeout(timer)
+      code === 0 ? resolve() : reject(new Error(`${cmd} exit ${code}: ${err.slice(-1200)}`))
+    })
   })
 }
 
@@ -129,14 +154,26 @@ async function uploadFile(localPath, key) {
   await s3.send(new PutObjectCommand({ Bucket: S3_BUCKET, Key: key, Body: body, ContentType: ct }))
 }
 
-// Рекурсивно заливает содержимое dir в S3 под prefix.
-async function uploadDir(dir, prefix) {
+// Собирает все файлы (путь, ключ) рекурсивно.
+async function collectFiles(dir, prefix, out) {
   const entries = await readdir(dir, { withFileTypes: true })
   for (const e of entries) {
     const full = join(dir, e.name)
-    if (e.isDirectory()) await uploadDir(full, `${prefix}/${e.name}`)
-    else await uploadFile(full, `${prefix}/${e.name}`)
+    if (e.isDirectory()) await collectFiles(full, `${prefix}/${e.name}`, out)
+    else out.push([full, `${prefix}/${e.name}`])
   }
+  return out
+}
+
+// Заливает содержимое dir в S3 под prefix пачками по 6 (последовательная заливка
+// сотен HLS-сегментов длинного видео была узким местом). Возвращает число файлов.
+async function uploadDir(dir, prefix) {
+  const files = await collectFiles(dir, prefix, [])
+  const CONC = 6
+  for (let i = 0; i < files.length; i += CONC) {
+    await Promise.all(files.slice(i, i + CONC).map(([f, k]) => uploadFile(f, k)))
+  }
+  return files.length
 }
 
 async function buildHls(input, outDir, meta) {
@@ -165,7 +202,7 @@ async function buildHls(input, outDir, meta) {
     '-hls_segment_filename', join(outDir, '%v', 'seg_%03d.ts'),
     join(outDir, '%v', 'index.m3u8'),
   )
-  await run('nice', ['-n', '10', 'ffmpeg', ...args])
+  await run('nice', ['-n', '10', 'ffmpeg', ...args], {}, FFMPEG_TIMEOUT_MS)
 
   return renditions.map((r, i) => ({ height: r.height, bandwidth: (r.vb + (meta.hasAudio ? r.ab : 0)) * 1000, index: i }))
 }
@@ -229,6 +266,7 @@ async function claimJob() {
       `SELECT id, video_id, tenant_id, playback_id, original_key, source_url, attempts
          FROM video_jobs
         WHERE status = 'queued'
+           OR (status = 'processing' AND locked_at IS NOT NULL AND locked_at < now() - interval '30 minutes')
         ORDER BY created_at
         FOR UPDATE SKIP LOCKED
         LIMIT 1`,
@@ -259,17 +297,27 @@ async function processJob(job) {
   const spriteDir = join(work, 'sprite')
   await mkdir(hlsDir, { recursive: true })
   await mkdir(spriteDir, { recursive: true })
+  const started = Date.now()
+  const secs = (from) => ((Date.now() - from) / 1000).toFixed(1)
   try {
+    let t = Date.now()
+    log(`job ${job.id} downloading ${job.source_url ? 'from URL' : 'from S3'}…`)
     if (job.source_url) {
-      log(`downloading from source url…`)
       await downloadFromUrl(job.source_url, input)
     } else {
       await downloadOriginal(job.original_key, input)
     }
+    log(`job ${job.id} downloaded in ${secs(t)}s`)
+
     const meta = await probe(input)
+    log(`job ${job.id} probed: ${meta.width}x${meta.height}, ${Math.round(meta.duration || 0)}s, audio=${meta.hasAudio}`)
     const posterT = Math.max(1, Math.floor((meta.duration || 10) * 0.1))
 
+    t = Date.now()
+    log(`job ${job.id} transcoding HLS…`)
     const renditions = await buildHls(input, hlsDir, meta)
+    log(`job ${job.id} transcoded ${renditions.length} rendition(s) in ${secs(t)}s`)
+
     await makePoster(input, join(work, 'poster.jpg'), posterT)
     await makeGif(input, join(work, 'preview.gif'), posterT).catch((e) => log('gif failed (non-fatal):', e.message))
 
@@ -281,7 +329,10 @@ async function processJob(job) {
     } catch (e) { log('storyboard failed (non-fatal):', e.message) }
 
     // Заливаем HLS и превью.
-    await uploadDir(hlsDir, `hls/${playbackId}`)
+    t = Date.now()
+    log(`job ${job.id} uploading to S3…`)
+    const uploaded = await uploadDir(hlsDir, `hls/${playbackId}`)
+    log(`job ${job.id} uploaded ${uploaded} HLS file(s) in ${secs(t)}s`)
     await uploadFile(join(work, 'poster.jpg'), `posters/${playbackId}.jpg`)
     const gifKey = `preview/${playbackId}.gif`
     try { await uploadFile(join(work, 'preview.gif'), gifKey) } catch { /* нет gif — ок */ }
@@ -306,7 +357,7 @@ async function processJob(job) {
         .then(() => log(`original ${job.original_key} deleted`))
         .catch((e) => log('cleanup original failed (non-fatal):', e.message))
     }
-    log(`job ${job.id} done`)
+    log(`job ${job.id} done in ${secs(started)}s total`)
   } catch (e) {
     log(`job ${job.id} error:`, e.message)
     const fatal = job.attempts >= Number(MAX_ATTEMPTS)
