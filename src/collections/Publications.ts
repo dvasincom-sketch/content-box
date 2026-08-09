@@ -312,7 +312,35 @@ export const Publications: CollectionConfig = {
     ],
     // Состав секций главной зависит от публикаций — сбрасываем кэш ленты
     // тенанта. Тег точечный, соседние сайты не затрагиваются.
-    afterChange: [async ({ doc, req }) => { await revalidateHomeFeed(doc?.tenant ?? getUserTenantID(req.user as any)) }, activityAfterChange('publication')],
+    afterChange: [
+      // #6: у прикреплённого видео без своего названия («Видео · VK Видео» —
+      // плейсхолдер из embed-роута, либо пусто) подставляем заголовок публикации.
+      // Ручные названия НЕ трогаем.
+      async ({ doc, req }) => {
+        const payload = req?.payload
+        const pubTitle = String((doc as { title?: string })?.title || '').trim()
+        if (!payload || !doc?.id || !pubTitle) return
+        const rel = (doc as { relatedVideos?: unknown }).relatedVideos
+        const ids = Array.isArray(rel)
+          ? rel.map((v) => (v && typeof v === 'object' ? (v as { id?: unknown }).id : v)).filter(Boolean)
+          : []
+        for (const vid of ids) {
+          try {
+            const video = await payload.findByID({ collection: 'videos', id: vid as string | number, depth: 0, overrideAccess: true }).catch(() => null)
+            if (!video) continue
+            const t = String((video as { title?: string }).title || '').trim()
+            const isPlaceholder = !t || /^Видео · /.test(t)
+            if (isPlaceholder && t !== pubTitle) {
+              await payload.update({ collection: 'videos', id: vid as string | number, data: { title: pubTitle }, overrideAccess: true, depth: 0 })
+            }
+          } catch {
+            /* best-effort, не блокируем сохранение публикации */
+          }
+        }
+      },
+      async ({ doc, req }) => { await revalidateHomeFeed(doc?.tenant ?? getUserTenantID(req.user as any)) },
+      activityAfterChange('publication'),
+    ],
     afterDelete: [async ({ doc }) => { await revalidateHomeFeed(doc?.tenant) }, activityAfterDelete('publication')],
   },
   timestamps: true,

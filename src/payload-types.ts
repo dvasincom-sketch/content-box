@@ -913,6 +913,11 @@ export interface Video {
    */
   embedAspect?: ('16:9' | '9:16') | null;
   /**
+   * Автопроверка доступности внешнего видео: ok / unavailable / unknown. Заполняется валидатором (/api/videos/validate).
+   */
+  embedStatus?: string | null;
+  embedCheckedAt?: string | null;
+  /**
    * Ссылка на MP3 в хранилище. Заполняется сервером при загрузке файла.
    */
   audioSrc?: string | null;
@@ -2243,6 +2248,8 @@ export interface VideosSelect<T extends boolean = true> {
   embedProvider?: T;
   embedSrc?: T;
   embedAspect?: T;
+  embedStatus?: T;
+  embedCheckedAt?: T;
   audioSrc?: T;
   durationSec?: T;
   season?: T;

@@ -79,6 +79,7 @@ import * as migration_20260807_170000_tenant_umami from './20260807_170000_tenan
 import * as migration_20260808_100000_tier_badge from './20260808_100000_tier_badge';
 import * as migration_20260808_110000_subscriber_phone from './20260808_110000_subscriber_phone';
 import * as migration_20260808_130000_donate_presets from './20260808_130000_donate_presets';
+import * as migration_20260808_140000_video_embed_status from './20260808_140000_video_embed_status';
 
 export const migrations = [
   {
@@ -485,5 +486,10 @@ export const migrations = [
     up: migration_20260808_130000_donate_presets.up,
     down: migration_20260808_130000_donate_presets.down,
     name: '20260808_130000_donate_presets',
+  },
+  {
+    up: migration_20260808_140000_video_embed_status.up,
+    down: migration_20260808_140000_video_embed_status.down,
+    name: '20260808_140000_video_embed_status',
   },
 ];

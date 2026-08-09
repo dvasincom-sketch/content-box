@@ -169,6 +169,24 @@ export const Videos: CollectionConfig = {
         description: 'Подставляется по типу ссылки; можно поправить вручную.',
       },
     },
+    {
+      name: 'embedStatus',
+      type: 'text',
+      label: 'Статус вставки',
+      access: { create: () => false, update: () => false },
+      admin: {
+        condition: (data) => data?.provider === 'embed',
+        readOnly: true,
+        description: 'Автопроверка доступности внешнего видео: ok / unavailable / unknown. Заполняется валидатором (/api/videos/validate).',
+      },
+    },
+    {
+      name: 'embedCheckedAt',
+      type: 'date',
+      label: 'Проверено',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'embed', readOnly: true },
+    },
     // ── Аудио (provider = 'audio') ──────────────────────────────────────────
     // MP3 лежит в S3 (загружается в студии), audioSrc — публичный URL файла.
     // Как и embedSrc, пишет ТОЛЬКО сервер (overrideAccess) после загрузки;

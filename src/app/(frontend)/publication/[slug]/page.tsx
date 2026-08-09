@@ -64,6 +64,19 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   })
 }
 
+/** Есть ли осмысленный текст в lexical-richtext (для «видео-центричного» шаблона #2). */
+function lexicalHasText(rt: unknown): boolean {
+  let len = 0
+  const walk = (node: any) => {
+    if (!node || len > 0) return
+    if (typeof node.text === 'string') len += node.text.trim().length
+    if (Array.isArray(node.children)) node.children.forEach(walk)
+  }
+  const root = (rt as { root?: { children?: unknown[] } } | null)?.root
+  if (root?.children && Array.isArray(root.children)) root.children.forEach(walk)
+  return len > 0
+}
+
 /** Публикация → карточка навигации. minTier задан → premium (бейдж). */
 function toNavItem(doc: any, kind: PostNavItem['kind']): PostNavItem {
   const category = doc?.category && typeof doc.category === 'object' ? doc.category : null
@@ -197,6 +210,10 @@ export default async function PublicationPage({ params }: { params: Promise<Para
       )
     : []
 
+  // #2: «видео-центричный» шаблон — обложка+заголовок+видео без текстового тела.
+  // Скрываем отдельную большую обложку сверху (постер плеера её дублирует).
+  const isVideoFirst = pubAccess.allowed && !lexicalHasText(pub.description) && relatedVideos.length > 0
+
   // Галерея: доступна только если публикация открыта (наследует её minTier).
   // depth:2 → gallery.image populate'ится объектом с url/width/height/sizes.
   // На сайт отдаём НЕ оригинал (8–10 МБ), а сгенерированные размеры (WebP):
@@ -291,7 +308,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
 
         {/* Обложка: только при наличии фото (Ken Burns). Нет обложки — блок не
             выводим вообще, без градиента-заглушки. Заголовок идёт ниже. */}
-        {pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
+        {!isVideoFirst && pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
           <div className="pubhero-cover relative rounded-3xl overflow-hidden h-72 lg:h-96">
             <Image
               src={pub.cover.url}
@@ -384,7 +401,16 @@ export default async function PublicationPage({ params }: { params: Promise<Para
                       <div className="text-lg font-semibold mb-3" style={{ color: 'var(--brand-text)' }}>{video.title}</div>
                     )}
                     {allowed ? (
-                      <VideoPlayer videoId={video.id} />
+                      video?.embedStatus === 'unavailable' ? (
+                        <div
+                          className="rounded-xl px-4 py-6 text-center"
+                          style={{ background: 'color-mix(in srgb, var(--brand-text) 5%, transparent)', color: 'var(--brand-muted)', fontSize: '.92rem', lineHeight: 1.5 }}
+                        >
+                          Это видео сейчас недоступно у источника — возможно, оно удалено или ссылка изменилась. Мы уже знаем о проблеме.
+                        </div>
+                      ) : (
+                        <VideoPlayer videoId={video.id} />
+                      )
                     ) : (
                       <VideoLockInline
                         reason={(access as any).reason}
