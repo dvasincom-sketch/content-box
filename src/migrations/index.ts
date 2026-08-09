@@ -80,6 +80,7 @@ import * as migration_20260808_100000_tier_badge from './20260808_100000_tier_ba
 import * as migration_20260808_110000_subscriber_phone from './20260808_110000_subscriber_phone';
 import * as migration_20260808_130000_donate_presets from './20260808_130000_donate_presets';
 import * as migration_20260808_140000_video_embed_status from './20260808_140000_video_embed_status';
+import * as migration_20260808_150000_backfill_video_titles from './20260808_150000_backfill_video_titles';
 
 export const migrations = [
   {
@@ -491,5 +492,10 @@ export const migrations = [
     up: migration_20260808_140000_video_embed_status.up,
     down: migration_20260808_140000_video_embed_status.down,
     name: '20260808_140000_video_embed_status',
+  },
+  {
+    up: migration_20260808_150000_backfill_video_titles.up,
+    down: migration_20260808_150000_backfill_video_titles.down,
+    name: '20260808_150000_backfill_video_titles',
   },
 ];

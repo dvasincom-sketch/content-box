@@ -70,7 +70,7 @@ export type PublicationEngagementProps = {
   reactions: PublicationReaction[]
   comments: CommentNode[]
   commentCount: number
-  currentUser?: { name: string; color?: string | null } | null
+  currentUser?: { name: string; color?: string | null; avatarUrl?: string | null } | null
 }
 
 type ReplyTarget = { id: string | number; authorName: string } | null
@@ -563,7 +563,7 @@ export function PublicationEngagement({
 
       {isAuthed && (
         <div className="cm-form">
-          <Avatar name={currentUser?.name ?? 'Вы'} color={currentUser?.color} size={36} />
+          <Avatar name={currentUser?.name ?? 'Вы'} color={currentUser?.color} avatarUrl={currentUser?.avatarUrl} size={36} />
           <div className="cm-form__field">
             {replyTo && (
               <div className="cm-replying">

@@ -60,7 +60,7 @@ function relID(val: any): string | number | null {
 export type EngagementData = {
   isAuthed: boolean
   canModerate: boolean
-  currentUser: { name: string; color?: string | null } | null
+  currentUser: { name: string; color?: string | null; avatarUrl?: string | null } | null
   reactions: PublicationReaction[]
   comments: CommentNode[]
   commentCount: number
@@ -78,11 +78,26 @@ export async function getPublicationEngagement(
   const isAuthed = Boolean(meId)
   const viewerCanModerate = Boolean(subscriber && !(subscriber as any).isBlocked && canModerate((subscriber as any).level))
 
+  // #7: аватар текущего пользователя для формы комментария — payload.auth отдаёт
+  // avatar как id, поэтому резолвим URL (как в шапке сайта).
+  let meAvatarUrl: string | null = null
+  if (subscriber) {
+    const av = (subscriber as { avatar?: unknown }).avatar
+    if (av && typeof av === 'object' && (av as { url?: string }).url) {
+      meAvatarUrl = (av as { url?: string }).url ?? null
+    } else if (av != null) {
+      const media = await payload
+        .findByID({ collection: 'media', id: av as string | number, depth: 0, overrideAccess: true })
+        .catch(() => null)
+      meAvatarUrl = (media as { url?: string } | null)?.url ?? null
+    }
+  }
+
   const empty: EngagementData = {
     isAuthed,
     canModerate: viewerCanModerate,
     currentUser: isAuthed
-      ? { name: subName(subscriber), color: avatarColor(meId as string | number) }
+      ? { name: subName(subscriber), color: avatarColor(meId as string | number), avatarUrl: meAvatarUrl }
       : null,
     reactions: REACTION_KEYS.map((key) => ({ key, count: 0, reactors: [], mine: false })),
     comments: [],
