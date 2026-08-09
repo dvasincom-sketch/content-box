@@ -13,6 +13,7 @@ import { mkdtemp, rm, readdir, stat, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, extname } from 'node:path'
 import { pipeline } from 'node:stream/promises'
+import { Readable } from 'node:stream'
 import { createHmac } from 'node:crypto'
 import pg from 'pg'
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
@@ -87,6 +88,33 @@ async function probe(file) {
 async function downloadOriginal(key, dest) {
   const res = await s3.send(new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }))
   await pipeline(res.Body, createWriteStream(dest))
+}
+
+function isYandexDiskUrl(url) {
+  try {
+    const u = new URL(url)
+    return /(^|\.)disk\.yandex\.(ru|com|net|by|kz|ua)$/.test(u.hostname) || u.hostname === 'yadi.sk'
+  } catch { return false }
+}
+
+// Публичная ссылка Яндекс.Диска → прямая ссылка на скачивание (href живёт недолго,
+// поэтому резолвим прямо перед загрузкой).
+async function resolveYandexHref(publicUrl) {
+  const api = `https://cloud-api.yandex.net/v1/disk/public/resources/download?public_key=${encodeURIComponent(publicUrl)}`
+  const res = await fetch(api, { headers: { Accept: 'application/json' } })
+  if (!res.ok) throw new Error(`Яндекс.Диск: HTTP ${res.status}`)
+  const j = await res.json()
+  if (!j.href) throw new Error('Яндекс.Диск: нет прямой ссылки')
+  return j.href
+}
+
+// Скачивание оригинала из внешнего источника (импорт по ссылке). Стримом на диск,
+// без буферизации в память — важно для файлов на десятки ГБ.
+async function downloadFromUrl(sourceUrl, dest) {
+  const href = isYandexDiskUrl(sourceUrl) ? await resolveYandexHref(sourceUrl) : sourceUrl
+  const res = await fetch(href, { redirect: 'follow' })
+  if (!res.ok || !res.body) throw new Error(`Загрузка источника: HTTP ${res.status}`)
+  await pipeline(Readable.fromWeb(res.body), createWriteStream(dest))
 }
 
 async function uploadFile(localPath, key) {
@@ -192,7 +220,7 @@ async function claimJob() {
   try {
     await c.query('BEGIN')
     const r = await c.query(
-      `SELECT id, video_id, tenant_id, playback_id, original_key, attempts
+      `SELECT id, video_id, tenant_id, playback_id, original_key, source_url, attempts
          FROM video_jobs
         WHERE status = 'queued'
         ORDER BY created_at
@@ -226,7 +254,12 @@ async function processJob(job) {
   await mkdir(hlsDir, { recursive: true })
   await mkdir(spriteDir, { recursive: true })
   try {
-    await downloadOriginal(job.original_key, input)
+    if (job.source_url) {
+      log(`downloading from source url…`)
+      await downloadFromUrl(job.source_url, input)
+    } else {
+      await downloadOriginal(job.original_key, input)
+    }
     const meta = await probe(input)
     const posterT = Math.max(1, Math.floor((meta.duration || 10) * 0.1))
 

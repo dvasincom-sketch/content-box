@@ -1,4 +1,5 @@
 import { S3Client, HeadObjectCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3'
+import type { ListObjectsV2CommandOutput } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 /**
@@ -73,7 +74,7 @@ export async function deletePrefix(prefix: string): Promise<void> {
   let token: string | undefined = undefined
   try {
     do {
-      const list = await s3().send(
+      const list: ListObjectsV2CommandOutput = await s3().send(
         new ListObjectsV2Command({ Bucket: S3_BUCKET, Prefix: prefix, ContinuationToken: token }),
       )
       const objects = (list.Contents || []).map((o) => ({ Key: o.Key! })).filter((o) => o.Key)

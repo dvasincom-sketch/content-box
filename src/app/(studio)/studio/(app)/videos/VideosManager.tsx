@@ -1519,6 +1519,8 @@ function SelfUploadForm({
   const [uploading, setUploading] = useState(false)
   const [pct, setPct] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [mode, setMode] = useState<'file' | 'url'>('file')
+  const [url, setUrl] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
 
   function putWithProgress(url: string, f: File, contentType: string): Promise<void> {
@@ -1531,6 +1533,37 @@ function SelfUploadForm({
       xhr.onerror = () => reject(new Error('Ошибка сети при загрузке'))
       xhr.send(f)
     })
+  }
+
+  async function importUrl() {
+    setError(null)
+    if (!url.trim()) return setError('Вставьте ссылку на Яндекс.Диск')
+    if (!title.trim()) return setError('Укажите название')
+    if (!minTierId) return setError('Выберите уровень доступа — своё видео доступно только по подписке')
+    setUploading(true)
+    try {
+      const res = await fetch('/studio/api/videos/import-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          url: url.trim(),
+          title: title.trim(),
+          minTierId,
+          categoryId: categoryId || null,
+          season: season.trim() || null,
+          episode: episode.trim() || null,
+          tags,
+        }),
+      })
+      const j = await res.json()
+      if (!res.ok) { setError(j.error || 'Не удалось импортировать'); setUploading(false); return }
+      if (j.id != null) onCreated?.({ id: j.id, title: title.trim() })
+      onDone()
+    } catch {
+      setError('Ошибка соединения')
+      setUploading(false)
+    }
   }
 
   async function start() {
@@ -1579,26 +1612,63 @@ function SelfUploadForm({
 
   return (
     <>
+      <div className="vid__tabs">
+        <button type="button" className={`vid__tab${mode === 'file' ? ' is-active' : ''}`} onClick={() => setMode('file')} disabled={uploading}>
+          <Upload size={15} /> С устройства
+        </button>
+        <button type="button" className={`vid__tab${mode === 'url' ? ' is-active' : ''}`} onClick={() => setMode('url')} disabled={uploading}>
+          <LinkIcon size={15} /> Со ссылки (Яндекс.Диск)
+        </button>
+      </div>
+
       <p className="vid__form-hint">
-        Загрузите видеофайл — мы сохраним его в своём хранилище и подготовим для
-        просмотра (HLS, качество подстроится под зрителя). Работает в России без VPN.
-        После загрузки видео некоторое время обрабатывается.
+        {mode === 'url'
+          ? 'Вставьте публичную ссылку на видеофайл с Яндекс.Диска — заберём его напрямую, без скачивания на ваше устройство. Удобно для больших файлов.'
+          : 'Загрузите видеофайл — мы сохраним его в своём хранилище и подготовим для просмотра (HLS, качество подстроится под зрителя). После загрузки видео некоторое время обрабатывается.'}
       </p>
 
-      <label className="studio-field">
+      {mode === 'url' ? (
+        <label className="studio-field">
+          <span className="studio-field__label">Ссылка на Яндекс.Диск</span>
+          <input
+            className="studio-input"
+            placeholder="https://disk.yandex.ru/i/…"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            disabled={uploading}
+            autoFocus
+          />
+        </label>
+      ) : (
+      <div className="studio-field">
         <span className="studio-field__label">Видеофайл</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            type="button"
+            className="studio-btn studio-btn--ghost"
+            onClick={() => fileInput.current?.click()}
+            disabled={uploading}
+          >
+            <Upload size={16} /> Выбрать файл
+          </button>
+          <span style={{ fontSize: 13, color: 'var(--st-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {file ? file.name : 'Файл не выбран'}
+          </span>
+        </div>
         <input
           ref={fileInput}
           type="file"
           accept="video/*"
           disabled={uploading}
+          style={{ display: 'none' }}
           onChange={(e) => {
             const f = e.target.files?.[0] || null
             setFile(f)
             if (f && !title.trim()) setTitle(f.name.replace(/\.[^.]+$/, ''))
           }}
         />
-      </label>
+      </div>
+      )}
 
       <label className="studio-field">
         <span className="studio-field__label">Название</span>
@@ -1641,9 +1711,13 @@ function SelfUploadForm({
 
       <div className="vid__form-actions">
         <button className="studio-btn studio-btn--ghost" onClick={onCancel} disabled={uploading}>Отмена</button>
-        <button className="studio-btn studio-btn--primary" onClick={start} disabled={uploading || !file}>
-          {uploading ? <Loader2 size={16} className="spin" /> : <Upload size={16} />}
-          {uploading ? 'Загрузка…' : 'Загрузить'}
+        <button
+          className="studio-btn studio-btn--primary"
+          onClick={mode === 'url' ? importUrl : start}
+          disabled={uploading || (mode === 'file' ? !file : !url.trim())}
+        >
+          {uploading ? <Loader2 size={16} className="spin" /> : mode === 'url' ? <LinkIcon size={16} /> : <Upload size={16} />}
+          {uploading ? (mode === 'url' ? 'Импорт…' : 'Загрузка…') : mode === 'url' ? 'Импортировать' : 'Загрузить'}
         </button>
       </div>
     </>

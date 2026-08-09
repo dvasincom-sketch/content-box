@@ -181,8 +181,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
       overrideAccess: true,
     })
     seriesEpisodes = (vidsRes.docs as any[]).map((v) => {
-      const cover = v.cover && typeof v.cover === 'object' ? v.cover : null
-      const coverUrl = cover?.sizes?.thumb?.url || cover?.sizes?.card?.url || cover?.url || null
+      const coverUrl = videoThumbUrl(v)
       return {
         id: v.id,
         title: v.title || 'Без названия',

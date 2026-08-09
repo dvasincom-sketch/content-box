@@ -8,17 +8,26 @@ import { sqlRows } from '@/lib/sql'
  */
 export async function enqueueTranscode(
   payload: Payload,
-  args: { videoId: number | string; tenantId: number | string | null; playbackId: string; originalKey: string },
+  args: {
+    videoId: number | string
+    tenantId: number | string | null
+    playbackId: string
+    /** Ключ оригинала в нашем S3 (загрузка файлом). */
+    originalKey?: string | null
+    /** Внешний источник (импорт по ссылке, напр. Яндекс.Диск) — воркер качает сам. */
+    sourceUrl?: string | null
+  },
 ): Promise<void> {
   await sqlRows(
     payload,
-    `INSERT INTO "video_jobs" ("video_id","tenant_id","playback_id","original_key","status")
-     VALUES ($1,$2,$3,$4,'queued')`,
+    `INSERT INTO "video_jobs" ("video_id","tenant_id","playback_id","original_key","source_url","status")
+     VALUES ($1,$2,$3,$4,$5,'queued')`,
     [
       Number(args.videoId),
       args.tenantId != null ? Number(args.tenantId) : null,
       args.playbackId,
-      args.originalKey,
+      args.originalKey ?? null,
+      args.sourceUrl ?? null,
     ],
   )
 }
