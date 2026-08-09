@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
 
   const url = new URL(req.url)
   const limit = Math.min(1000, Math.max(1, Number(url.searchParams.get('limit')) || 200))
-  const recheckHours = Math.max(0, Number(url.searchParams.get('recheckHours')) || 24)
+  const rhParam = url.searchParams.get('recheckHours')
+  // Внимание: `Number(x) || 24` считает 0 ложным → recheckHours=0 не работал.
+  const recheckHours = rhParam !== null && rhParam !== '' ? Math.max(0, Number(rhParam) || 0) : 24
   const concurrency = Math.min(20, Math.max(1, Number(url.searchParams.get('concurrency')) || 10))
   const cutoff = new Date(Date.now() - recheckHours * 3600_000).toISOString()
 
