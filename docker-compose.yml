@@ -48,6 +48,8 @@ services:
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
       CRON_SECRET: ${CRON_SECRET}
+      # Сервисный ключ VK для валидатора видео (video.get). Пусто — VK не проверяется.
+      VK_SERVICE_TOKEN: ${VK_SERVICE_TOKEN:-}
       # Веб-аналитика Umami (runtime). Читаются серверным кодом при рендере:
       # UMAMI_SCRIPT_URL — трекер во фронт-layout; UMAMI_API_URL + токен/логин —
       # чтение агрегатов в /studio/analytics. Сам реверс-прокси домена на
