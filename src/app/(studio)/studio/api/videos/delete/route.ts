@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { withAuthor, readJson, apiError, apiOk, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
-import { deleteObject, keyFromPublicUrl } from '@/lib/s3'
+import { deleteObject, keyFromPublicUrl, deletePrefix } from '@/lib/s3'
+import { sqlRows } from '@/lib/sql'
 
 /**
  * Удаление видео из студии.
@@ -64,6 +65,19 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     if (video.provider === 'audio' && typeof video.audioSrc === 'string') {
       const key = keyFromPublicUrl(video.audioSrc)
       if (key) await deleteObject(key).catch(() => {})
+    }
+    // Своё видео (self): чистим S3-артефакты HLS-конвейера и задачи транскода,
+    // иначе на каждое удаление в бакете остаются гигабайты сирот. Best-effort.
+    if (video.provider === 'self') {
+      const pid = String(video.playbackId || '')
+      if (video.originalKey) await deleteObject(String(video.originalKey)).catch(() => {})
+      if (pid) {
+        await deletePrefix(`hls/${pid}/`)
+        await deletePrefix(`sprites/${pid}/`)
+        await deleteObject(`posters/${pid}.jpg`).catch(() => {})
+        await deleteObject(`preview/${pid}.gif`).catch(() => {})
+      }
+      await sqlRows(payload, `DELETE FROM "video_jobs" WHERE video_id = $1`, [Number(videoId)]).catch(() => {})
     }
     await payload.delete({ collection: 'videos', id: videoId, overrideAccess: true })
     return apiOk()

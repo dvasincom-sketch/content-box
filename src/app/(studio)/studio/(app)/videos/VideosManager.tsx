@@ -107,6 +107,14 @@ export function VideosManager({
 
   // после router.refresh() приходят свежие данные — синхронизируем
   useEffect(() => setVideos(initialVideos), [initialVideos])
+  // Пока есть видео в обработке (self: uploading/processing) — тихо обновляем
+  // список раз в 10с, чтобы статус сам сменился на «Готово» без ручной перезагрузки.
+  useEffect(() => {
+    const anyProcessing = videos.some((v) => v.assetStatus === 'processing' || v.assetStatus === 'uploading')
+    if (!anyProcessing) return
+    const id = setInterval(() => router.refresh(), 10_000)
+    return () => clearInterval(id)
+  }, [videos, router])
   useEffect(() => setCategories(initialCategories), [initialCategories])
 
   const [adding, setAdding] = useState(false)

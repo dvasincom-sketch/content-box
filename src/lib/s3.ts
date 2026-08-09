@@ -1,4 +1,4 @@
-import { S3Client, HeadObjectCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, HeadObjectCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 /**
@@ -61,6 +61,30 @@ export async function headObject(key: string): Promise<{ size: number; contentTy
 /** Удалить объект из S3 (при удалении аудио/файла, чтобы не копить сирот). */
 export async function deleteObject(key: string): Promise<void> {
   await s3().send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }))
+}
+
+/**
+ * Удаляет ВСЕ объекты под префиксом (лесенка HLS, спрайты и т.п.). В S3 нет
+ * «удалить папку» — листаем постранично и удаляем пачками по 1000. Best-effort:
+ * ошибки не бросаем, чтобы не блокировать удаление записи видео.
+ */
+export async function deletePrefix(prefix: string): Promise<void> {
+  if (!prefix) return
+  let token: string | undefined = undefined
+  try {
+    do {
+      const list = await s3().send(
+        new ListObjectsV2Command({ Bucket: S3_BUCKET, Prefix: prefix, ContinuationToken: token }),
+      )
+      const objects = (list.Contents || []).map((o) => ({ Key: o.Key! })).filter((o) => o.Key)
+      if (objects.length) {
+        await s3().send(new DeleteObjectsCommand({ Bucket: S3_BUCKET, Delete: { Objects: objects, Quiet: true } }))
+      }
+      token = list.IsTruncated ? list.NextContinuationToken : undefined
+    } while (token)
+  } catch {
+    /* best-effort: не блокируем удаление видео из-за чистки бакета */
+  }
 }
 
 /** Ключ объекта из публичного URL (обратное к publicUrl). null, если не наш URL. */
