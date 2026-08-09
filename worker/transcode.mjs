@@ -18,15 +18,21 @@ import { createHmac } from 'node:crypto'
 import pg from 'pg'
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 
-const {
-  DATABASE_URL,
-  S3_ENDPOINT, S3_REGION = 'ru-1', S3_BUCKET,
-  S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY,
-  VIDEO_WEBHOOK_SECRET = '',
-  APP_INTERNAL_URL = 'http://app:3000',
-  POLL_INTERVAL_MS = '5000',
-  MAX_ATTEMPTS = '3',
-} = process.env
+// ВАЖНО: берём env через `||`, а НЕ через destructuring-дефолты. Timeweb
+// подставляет незаданную переменную как ПУСТУЮ СТРОКУ, а `= 'ru-1'` срабатывает
+// только на undefined — из-за этого S3Client падал с «Region is missing» и
+// воркер крутился в рестарте, не обрабатывая ни одной задачи. `||` ловит и
+// пустую строку. Фолбэк на R2_* — как в приложении (src/lib/s3.ts).
+const DATABASE_URL = process.env.DATABASE_URL || process.env.DATABASE_URI || ''
+const S3_ENDPOINT = process.env.S3_ENDPOINT || process.env.R2_ENDPOINT || ''
+const S3_REGION = process.env.S3_REGION || 'ru-1'
+const S3_BUCKET = process.env.S3_BUCKET || process.env.R2_BUCKET || ''
+const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID || ''
+const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY || ''
+const VIDEO_WEBHOOK_SECRET = process.env.VIDEO_WEBHOOK_SECRET || ''
+const APP_INTERNAL_URL = process.env.APP_INTERNAL_URL || 'http://app:3000'
+const POLL_INTERVAL_MS = process.env.POLL_INTERVAL_MS || '5000'
+const MAX_ATTEMPTS = process.env.MAX_ATTEMPTS || '3'
 
 const log = (...a) => console.log(new Date().toISOString(), '[worker]', ...a)
 

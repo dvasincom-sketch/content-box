@@ -11,6 +11,8 @@ export type VideoOption = {
   addedAt: string | null
   /** provider записи videos ('audio' для аудио) — для разделения секций */
   provider?: string | null
+  /** статус обработки своего видео: 'processing'|'ready'|'error'|null */
+  assetStatus?: string | null
   /** id категории записи — для иерархии в «Из библиотеки» */
   categoryId?: number | string | null
 }
@@ -68,6 +70,16 @@ export function VideoAttachPicker({
       .filter((v) => (q ? v.title.toLowerCase().includes(q) : true))
   }, [videos, attachedSet, query])
 
+  // «Недавно загруженные»: когда поиск пуст — сверху показываем последние по дате
+  // добавления, чтобы только что залитое видео было под рукой, а не терялось в
+  // алфавитных категориях. При поиске — обычная фильтрация ниже.
+  const recent = useMemo(() => {
+    if (query.trim()) return null
+    const arr = [...candidates]
+    arr.sort((a, b) => new Date(b.addedAt || 0).getTime() - new Date(a.addedAt || 0).getTime())
+    return arr.slice(0, 8)
+  }, [candidates, query])
+
   // Группировка кандидатов по категориям в порядке дерева (для иерархии).
   const groups = useMemo(() => {
     if (!categoryTree || categoryTree.length === 0) return null
@@ -113,10 +125,28 @@ export function VideoAttachPicker({
     onChange(next)
   }
 
+  const statusBadge = (v: VideoOption) => {
+    if (v.provider !== 'self' || !v.assetStatus || v.assetStatus === 'ready') return null
+    const err = v.assetStatus === 'error'
+    return (
+      <span
+        style={{
+          marginLeft: 6, padding: '1px 7px', borderRadius: 999, fontSize: 11, fontWeight: 600,
+          color: err ? '#b42318' : '#9a6700',
+          background: err ? '#fef3f2' : '#fff7e6',
+          border: `1px solid ${err ? '#fecdca' : '#ffe1a8'}`,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {err ? 'ошибка' : 'обрабатывается'}
+      </span>
+    )
+  }
+
   const resultBtn = (v: VideoOption) => (
     <button type="button" className="vpick__result" onClick={() => add(v.id)}>
       <span className="vpick__result-body">
-        <span className="vpick__result-title" title={v.title}>{v.title}</span>
+        <span className="vpick__result-title" title={v.title}>{v.title}{statusBadge(v)}</span>
         {v.addedAt && <span className="vpick__result-date">{fmtDate(v.addedAt)}</span>}
       </span>
       <Plus size={14} className="vpick__result-add" aria-hidden />
@@ -134,7 +164,7 @@ export function VideoAttachPicker({
                 <Icon size={14} />
               </span>
               <span className="vpick__item-body">
-                <span className="vpick__item-title" title={v.title}>{v.title}</span>
+                <span className="vpick__item-title" title={v.title}>{v.title}{statusBadge(v)}</span>
                 {v.addedAt && <span className="vpick__item-date">{fmtDate(v.addedAt)}</span>}
               </span>
               <span className="vpick__item-order">
@@ -187,8 +217,18 @@ export function VideoAttachPicker({
               <li className="vpick__empty">
                 {videos.length === 0 ? emptyLabel : query.trim() ? 'Ничего не найдено' : 'Всё уже прикреплено'}
               </li>
-            ) : groups ? (
-              groups.map((g) => (
+            ) : (
+              <>
+                {recent && recent.length > 0 && (
+                  <React.Fragment>
+                    <li className="vpick__group">Недавно загруженные</li>
+                    {recent.map((v) => (
+                      <li key={`recent-${v.id}`}>{resultBtn(v)}</li>
+                    ))}
+                  </React.Fragment>
+                )}
+                {groups ? (
+                  groups.map((g) => (
                 <React.Fragment key={g.key}>
                   <li className="vpick__group" style={{ paddingLeft: `${8 + g.depth * 14}px` }}>{g.title}</li>
                   {g.items.map((v) => (
@@ -196,8 +236,10 @@ export function VideoAttachPicker({
                   ))}
                 </React.Fragment>
               ))
-            ) : (
-              candidates.map((v) => <li key={v.id}>{resultBtn(v)}</li>)
+                ) : (
+                  candidates.map((v) => <li key={v.id}>{resultBtn(v)}</li>)
+                )}
+              </>
             )}
           </ul>
         </div>

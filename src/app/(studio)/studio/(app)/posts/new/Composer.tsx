@@ -107,7 +107,11 @@ export function Composer({
   const [videoModalOpen, setVideoModalOpen] = useState(false)
 
   function onVideoCreated(v: CreatedMedia) {
-    setAllMedia((prev) => [{ id: v.id, title: v.title, addedAt: null, provider: null }, ...prev])
+    // Новое видео из композера — это загрузка в своё хранилище (провайдер по
+    // умолчанию 'self'), оно сразу уходит в обработку. Помечаем как processing,
+    // чтобы в списке прикреплённых тут же был бейдж «обрабатывается» — автору не
+    // нужно уходить в раздел «Видео», чтобы это увидеть.
+    setAllMedia((prev) => [{ id: v.id, title: v.title, addedAt: null, provider: 'self', assetStatus: 'processing' }, ...prev])
     setVideoIds((prev) => (prev.some((x) => String(x) === String(v.id)) ? prev : [...prev, v.id]))
     setVideoModalOpen(false)
   }

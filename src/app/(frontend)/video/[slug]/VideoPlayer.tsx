@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Lock } from 'lucide-react'
+import { Lock, Loader2, Sparkles } from 'lucide-react'
 import { AudioPlayer } from '@/components/AudioPlayer'
 import { SelfHostedPlayer } from './SelfHostedPlayer'
 
@@ -49,6 +49,8 @@ export function VideoPlayer({
   const [src, setSrc] = useState<string | null>(null)
   // Своё HLS-видео (provider='self'): master-URL с токеном + постер.
   const [selfSrc, setSelfSrc] = useState<{ master: string; poster: string | null; watermark: string | null } | null>(null)
+  // Своё видео ещё обрабатывается воркером — отдельное «доброе» состояние.
+  const [processing, setProcessing] = useState(false)
   const [aspect, setAspect] = useState<'16:9' | '9:16'>(initialAspect)
   const [kind, setKind] = useState<'video' | 'audio'>('video')
   const [error, setError] = useState<string | null>(null)
@@ -108,7 +110,7 @@ export function VideoPlayer({
           if (json.status === 'ready' && typeof json.master === 'string') {
             setSelfSrc({ master: json.master, poster: typeof json.poster === 'string' ? json.poster : null, watermark: typeof json.watermark === 'string' ? json.watermark : null })
           } else {
-            setError('Видео ещё обрабатывается — загляните чуть позже')
+            setProcessing(true)
           }
         } else if (json.provider === 'kinescope') {
           setSrc(json.embedId ? `https://kinescope.io/embed/${json.embedId}` : null)
@@ -183,7 +185,9 @@ export function VideoPlayer({
         className="relative rounded-2xl overflow-hidden"
         style={{
           aspectRatio: vertical ? '9 / 16' : '16 / 9',
-          background: '#000',
+          background: processing
+            ? 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 22%, #1a1a1f), #14141a)'
+            : '#000',
         }}
       >
         {gate ? (
@@ -210,6 +214,22 @@ export function VideoPlayer({
             >
               {gate.reason === 'need-login' ? 'Войти или оформить подписку' : 'Оформить подписку'}
             </Link>
+          </div>
+        ) : processing ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-center px-8">
+            <span
+              className="inline-flex items-center justify-center rounded-full"
+              style={{ width: 56, height: 56, background: 'rgba(255,255,255,.16)' }}
+            >
+              <Sparkles size={26} color="#fff" />
+            </span>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>Скоро всё будет готово!</span>
+            <span style={{ color: 'rgba(255,255,255,.8)', fontSize: '.95rem', maxWidth: 360 }}>
+              Готовим видео к просмотру в лучшем качестве — обычно это занимает пару минут. Обновите страницу чуть позже.
+            </span>
+            <span className="inline-flex items-center gap-2" style={{ color: 'rgba(255,255,255,.65)', fontSize: '.85rem', marginTop: 2 }}>
+              <Loader2 size={15} className="animate-spin" /> Обработка идёт
+            </span>
           </div>
         ) : error ? (
           <div

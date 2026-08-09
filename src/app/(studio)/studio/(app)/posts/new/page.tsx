@@ -84,6 +84,7 @@ export default async function NewPostPage() {
     title: v.title || 'Без названия',
     addedAt: v.publishedAt || v.createdAt || null,
     provider: v.provider ?? null,
+    assetStatus: v.assetStatus ?? null,
     categoryId: (v.category && typeof v.category === 'object' ? v.category.id : v.category) ?? null,
   }))
 
