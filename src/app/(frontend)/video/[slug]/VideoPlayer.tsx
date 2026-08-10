@@ -239,7 +239,7 @@ export function VideoPlayer({
             <span>{error}</span>
           </div>
         ) : selfSrc ? (
-          <SelfHostedPlayer master={selfSrc.master} poster={selfSrc.poster} watermarkText={selfSrc.watermark} sprite={selfSrc.sprite} subtitles={selfSrc.subtitles} />
+          <SelfHostedPlayer master={selfSrc.master} poster={selfSrc.poster} watermarkText={selfSrc.watermark} sprite={selfSrc.sprite} subtitles={selfSrc.subtitles} videoId={videoId} />
         ) : !src ? (
           <div
             className="absolute inset-0 flex items-center justify-center"

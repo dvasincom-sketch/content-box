@@ -269,6 +269,8 @@ export function VideoEditModal({
               <SubtitlesSection videoId={video.id} playbackId={video.playbackId ?? null} initial={video.subtitles || []} />
             )}
 
+            {video.provider === 'self' && <AnalyticsSection videoId={video.id} />}
+
             {error && <div className="studio-login__error">{error}</div>}
 
             <div className="videdit__used">
@@ -439,6 +441,57 @@ function SubtitlesSection({
           </div>
           {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
           <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Формат VTT или SRT (SRT конвертируется автоматически). Код языка — ru, en и т.п.</div>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Аналитика просмотров своего видео: кривая удержания / тепловая карта         */
+/* -------------------------------------------------------------------------- */
+function AnalyticsSection({ videoId }: { videoId: number | string }) {
+  const [data, setData] = useState<{ buckets: number[]; starts: number; plays: number } | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let stop = false
+    fetch(`/studio/api/videos/heatmap?videoId=${videoId}`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((j) => { if (!stop && Array.isArray(j?.buckets)) setData({ buckets: j.buckets, starts: j.starts || 0, plays: j.plays || 0 }) })
+      .catch(() => {})
+      .finally(() => { if (!stop) setLoading(false) })
+    return () => { stop = true }
+  }, [videoId])
+
+  const max = data ? Math.max(1, ...data.buckets) : 1
+  const avgPct = data && data.starts > 0 ? Math.round(data.plays / data.starts) : 0
+  const at = (p: number) => (data && data.starts > 0 ? Math.round((data.buckets[p] / data.starts) * 100) : 0)
+
+  return (
+    <div className="studio-field">
+      <span className="studio-field__label">Аналитика просмотров</span>
+      {loading ? (
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7 }}>Загрузка…</div>
+      ) : !data || data.starts === 0 ? (
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7 }}>Пока нет данных о просмотрах. Появятся, когда видео начнут смотреть.</div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginBottom: 10 }}>
+            <div><div style={{ fontSize: 18, fontWeight: 700 }}>{data.starts}</div><div style={{ fontSize: 12, opacity: 0.7 }}>запусков</div></div>
+            <div><div style={{ fontSize: 18, fontWeight: 700 }}>{avgPct}%</div><div style={{ fontSize: 12, opacity: 0.7 }}>ср. досмотр</div></div>
+            <div><div style={{ fontSize: 18, fontWeight: 700 }}>{at(50)}%</div><div style={{ fontSize: 12, opacity: 0.7 }}>до середины</div></div>
+            <div><div style={{ fontSize: 18, fontWeight: 700 }}>{at(99)}%</div><div style={{ fontSize: 12, opacity: 0.7 }}>до конца</div></div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 64, background: 'var(--surface-2, rgba(128,128,128,0.08))', borderRadius: 8, padding: '6px 6px 0', overflow: 'hidden' }}>
+            {data.buckets.map((v, i) => (
+              <div key={i} title={`${i}% — ${v}`} style={{ flex: 1, height: `${Math.max(3, (v / max) * 100)}%`, background: 'var(--brand-primary, #7c3aed)', opacity: 0.35 + 0.65 * (v / max), borderRadius: '2px 2px 0 0' }} />
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, opacity: 0.6, marginTop: 4 }}>
+            <span>начало</span><span>середина</span><span>конец</span>
+          </div>
+          <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Высота столбца — как часто смотрят этот участок. Провалы — где перематывают или уходят.</div>
         </>
       )}
     </div>

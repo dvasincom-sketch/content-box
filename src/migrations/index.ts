@@ -86,6 +86,7 @@ import * as migration_20260809_130000_video_self_hosted from './20260809_130000_
 import * as migration_20260809_140000_video_jobs_source_url from './20260809_140000_video_jobs_source_url';
 import * as migration_20260810_100000_video_asset_bytes from './20260810_100000_video_asset_bytes';
 import * as migration_20260810_110000_video_subtitles from './20260810_110000_video_subtitles';
+import * as migration_20260810_120000_video_heatmap from './20260810_120000_video_heatmap';
 
 export const migrations = [
   {
@@ -527,5 +528,10 @@ export const migrations = [
     up: migration_20260810_110000_video_subtitles.up,
     down: migration_20260810_110000_video_subtitles.down,
     name: '20260810_110000_video_subtitles',
+  },
+  {
+    up: migration_20260810_120000_video_heatmap.up,
+    down: migration_20260810_120000_video_heatmap.down,
+    name: '20260810_120000_video_heatmap',
   },
 ];

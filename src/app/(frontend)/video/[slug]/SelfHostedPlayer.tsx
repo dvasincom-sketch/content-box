@@ -72,17 +72,21 @@ export function SelfHostedPlayer({
   watermarkText,
   sprite,
   subtitles,
+  videoId,
 }: {
   master: string
   poster?: string | null
   watermarkText?: string | null
   sprite?: string | null
   subtitles?: { lang: string; label: string; url: string }[] | null
+  videoId?: number | string | null
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const watchedRef = useRef<Set<number>>(new Set()) // все просмотренные слоты (для дедупа)
+  const pendingRef = useRef<Set<number>>(new Set())  // новые слоты к отправке
 
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -148,7 +152,13 @@ export function SelfHostedPlayer({
   useEffect(() => {
     const v = videoRef.current
     if (!v) return
-    const onTime = () => setCurrent(v.currentTime)
+    const onTime = () => {
+      setCurrent(v.currentTime)
+      if (v.duration > 0) {
+        const b = Math.min(99, Math.max(0, Math.floor((v.currentTime / v.duration) * 100)))
+        if (!watchedRef.current.has(b)) { watchedRef.current.add(b); pendingRef.current.add(b) }
+      }
+    }
     const onDur = () => { setDuration(v.duration || 0); setReady(true) }
     const onPlay = () => setPlaying(true)
     const onPause = () => setPlaying(false)
@@ -173,6 +183,35 @@ export function SelfHostedPlayer({
       v.removeEventListener('progress', onProgress)
     }
   }, [])
+
+  /* ── Аналитика удержания: beacon со слотами просмотра ────────────────── */
+  useEffect(() => {
+    if (!videoId) return
+    const flush = () => {
+      const b = Array.from(pendingRef.current)
+      if (!b.length) return
+      pendingRef.current.clear()
+      try {
+        const body = JSON.stringify({ videoId, buckets: b })
+        navigator.sendBeacon?.('/api/video-heatmap', new Blob([body], { type: 'application/json' }))
+      } catch { /* аналитика не критична */ }
+    }
+    const id = setInterval(flush, 10000)
+    const onHide = () => flush()
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('pagehide', onHide)
+    const v = videoRef.current
+    v?.addEventListener('pause', flush)
+    v?.addEventListener('ended', flush)
+    return () => {
+      flush()
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onHide)
+      window.removeEventListener('pagehide', onHide)
+      v?.removeEventListener('pause', flush)
+      v?.removeEventListener('ended', flush)
+    }
+  }, [videoId])
 
   /* ── Fullscreen ──────────────────────────────────────────────────────── */
   useEffect(() => {
