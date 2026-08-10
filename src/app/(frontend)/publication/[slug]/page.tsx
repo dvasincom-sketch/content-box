@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { categoryHref } from '@/lib/categoryHref'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -304,13 +303,9 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Хлебные крошки: путь до категории (сам пост не дублируем — он в H1).
-            Одна строка, горизонтальный скролл на мобиле, приглушённая плашка. */}
-        <Breadcrumbs
-          crumbs={(category?.breadcrumbs ?? []) as any}
-          className="pubhero-reveal pubhero-d0 mb-5"
-        />
-
+        {/* Категория публикации показывается чипом ниже (в мете) — путь с
+            родительскими разделами намеренно НЕ выводим: для публикаций это
+            лишнее (правило для всех публикаций). */}
         {/* Обложка: только при наличии фото (Ken Burns). Нет обложки — блок не
             выводим вообще, без градиента-заглушки. Заголовок идёт ниже. */}
         {!isVideoFirst && pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
