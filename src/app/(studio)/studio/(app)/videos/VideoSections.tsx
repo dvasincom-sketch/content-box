@@ -235,7 +235,7 @@ export function SummarySection({ videoId, initial, hasSubtitles }: { videoId: nu
       <div style={{ borderRadius: 14, border: '1px solid color-mix(in srgb, #b79aef 42%, var(--brand-border, rgba(128,128,128,.25)))', background: 'linear-gradient(135deg, rgba(247,161,188,.07), rgba(183,154,239,.07))', padding: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 10 }}>
           <span aria-hidden style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, background: 'radial-gradient(circle at 34% 30%, #ffffff, #ffb3cc 42%, #c3a0f2 70%, #8fb8ff)', boxShadow: '0 0 9px 1px rgba(199,150,240,.75), 0 0 0 1px rgba(255,255,255,.5)' }} />
-          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--brand-text)' }}>Саммари от Аси</span>
+          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--brand-text)' }}>Саммари от <a href="https://ася.online" target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>Аси</a></span>
         </div>
         {summary?.tldr ? (
           <div className="videdit__hint" style={{ fontSize: 13, opacity: 0.9, marginBottom: 10 }}>{summary.tldr}</div>

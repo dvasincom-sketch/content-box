@@ -44,15 +44,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
   }
 
-  // Гейт по тарифу (премиум). Не прошёл → апселл.
+  // Кэш открыт всем: готовое саммари показываем даже гостю — само видео под
+  // замком, но краткая справка доступна и подводит к покупке подписки (тизер).
+  if (!refresh && video.summary && (video.summary.tldr || video.summary.text)) {
+    return NextResponse.json({ ok: true, cached: true, summary: video.summary })
+  }
+
+  // Генерация нового саммари — только премиум (тариф >= ASYA_MIN_TIER_PRICE).
   const sub = await getCurrentSubscriber(tenantId)
   if (!(await isEligible(payload, sub))) {
     return NextResponse.json({ ok: false, error: 'upsell', minPrice: ASYA_MIN_TIER_PRICE }, { status: 402 })
-  }
-
-  // Кэш на видео — мгновенно.
-  if (!refresh && video.summary && (video.summary.tldr || video.summary.text)) {
-    return NextResponse.json({ ok: true, cached: true, summary: video.summary })
   }
   if (!asyaEnabled()) return NextResponse.json({ ok: false, error: 'summary_disabled' }, { status: 503 })
 

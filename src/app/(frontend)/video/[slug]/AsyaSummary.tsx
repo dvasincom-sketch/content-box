@@ -148,7 +148,7 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
       {state === 'upsell' && (
         <div style={{ marginTop: 12, padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg, rgba(247,161,188,.12), rgba(183,154,239,.12))', border: '1px solid rgba(183,154,239,.4)' }}>
           <div style={{ fontWeight: 700, color: 'var(--brand-text)', marginBottom: 4 }}>Ася расскажет, что в этом видео ✨</div>
-          <div style={{ color: 'var(--brand-muted)', fontSize: 14, marginBottom: 10 }}>Краткое содержание от Аси — в подписке от {minPrice} ₽ («Золотой» и выше).</div>
+          <div style={{ color: 'var(--brand-muted)', fontSize: 14, marginBottom: 10 }}>Краткое содержание от <a href="https://ася.online" target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>Аси</a> — в подписке от {minPrice} ₽ («Золотой» и выше).</div>
           <a href="/subscribe" style={{ display: 'inline-block', padding: '9px 18px', borderRadius: 22, color: '#fff', fontWeight: 700, textDecoration: 'none', background: 'linear-gradient(135deg, #f7a1bc, #b79aef)' }}>Оформить подписку</a>
         </div>
       )}
@@ -201,7 +201,7 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
                   <ThumbsDown size={16} />
                 </button>
               </div>
-              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--brand-muted)' }}>Краткое содержание сгенерировала Ася по субтитрам — возможны неточности.</div>
+              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--brand-muted)' }}>Краткое содержание сгенерировала <a href="https://ася.online" target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>Ася</a> по субтитрам — возможны неточности.</div>
             </>
           )}
         </div>
