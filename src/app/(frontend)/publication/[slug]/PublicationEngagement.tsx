@@ -70,7 +70,7 @@ export type PublicationEngagementProps = {
   reactions: PublicationReaction[]
   comments: CommentNode[]
   commentCount: number
-  currentUser?: { name: string; color?: string | null; avatarUrl?: string | null } | null
+  currentUser?: { name: string; color?: string | null; avatarUrl?: string | null; paid?: boolean } | null
 }
 
 type ReplyTarget = { id: string | number; authorName: string } | null
@@ -306,7 +306,13 @@ function Comment({
   const replies = !isReply ? node.replies ?? [] : []
   return (
     <div className="cm-item">
-      <Avatar name={node.authorName} color={node.authorColor} avatarUrl={node.authorAvatarUrl} size={isReply ? 28 : 36} paid={node.authorPaid} />
+      {node.authorHandle ? (
+        <Link href={`/u/${node.authorHandle}`} className="cm-avlink" aria-label={node.authorName}>
+          <Avatar name={node.authorName} color={node.authorColor} avatarUrl={node.authorAvatarUrl} size={isReply ? 28 : 36} paid={node.authorPaid} />
+        </Link>
+      ) : (
+        <Avatar name={node.authorName} color={node.authorColor} avatarUrl={node.authorAvatarUrl} size={isReply ? 28 : 36} paid={node.authorPaid} />
+      )}
       <div className="cm-body">
         <div className="cm-meta">
           {node.authorHandle ? (
@@ -567,7 +573,7 @@ export function PublicationEngagement({
 
       {isAuthed && (
         <div className="cm-form">
-          <Avatar name={currentUser?.name ?? 'Вы'} color={currentUser?.color} avatarUrl={currentUser?.avatarUrl} size={36} />
+          <Avatar name={currentUser?.name ?? 'Вы'} color={currentUser?.color} avatarUrl={currentUser?.avatarUrl} size={36} paid={currentUser?.paid} />
           <div className="cm-form__field">
             {replyTo && (
               <div className="cm-replying">

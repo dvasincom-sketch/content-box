@@ -1116,6 +1116,9 @@ svg {
 /* Окантовка аватара автора с активной подпиской (в т.ч. буквенного). */
 .cm-av--ring { box-shadow: 0 0 0 2px var(--brand-bg, #fff), 0 0 0 4px color-mix(in srgb, var(--brand-accent) 88%, #f2b23a); }
 
+.cm-avlink { flex: none; display: inline-flex; align-self: flex-start; border-radius: 50%; line-height: 0; text-decoration: none; }
+.cm-avlink:hover { opacity: 0.85; }
+
 /* Заголовок раздела-события + панель фильтра справа (напротив заголовка). */
 .evhead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 8px; }
 .evfilter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; padding: 12px 14px; border-radius: var(--radius-lg, 14px); background: var(--brand-surface); border: 1px solid var(--brand-border); box-shadow: var(--elev-1, 0 6px 18px -12px rgba(0,0,0,.25)); }

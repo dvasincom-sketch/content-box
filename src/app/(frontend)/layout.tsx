@@ -21,6 +21,7 @@ import { footerFromTree } from '@/lib/footerFromTree'
 import { brandVars } from '@/lib/brand'
 import { SiteHeader } from '@/components/SiteHeader'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { avatarColor } from '@/lib/publicationEngagement'
 import { SiteFooter } from '@/components/SiteFooter'
 import { SpotlightController } from '@/components/SpotlightController'
 import { getPayload } from 'payload'
@@ -167,6 +168,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
                     email: subscriber.email,
                     displayName: subscriber.displayName,
                     avatarUrl: subscriberAvatarUrl,
+                    color: avatarColor((subscriber as any).id),
                     // Активная подписка → окантовка аватара (флейр подписчика).
                     isSubscriber: Boolean(
                       (subscriber as any).activeTier &&

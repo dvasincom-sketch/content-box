@@ -97,7 +97,7 @@ export async function getPublicationEngagement(
     isAuthed,
     canModerate: viewerCanModerate,
     currentUser: isAuthed
-      ? { name: subName(subscriber), color: avatarColor(meId as string | number), avatarUrl: meAvatarUrl }
+      ? { name: subName(subscriber), color: avatarColor(meId as string | number), avatarUrl: meAvatarUrl, paid: Boolean((subscriber as any).activeTier) }
       : null,
     reactions: REACTION_KEYS.map((key) => ({ key, count: 0, reactors: [], mine: false })),
     comments: [],
