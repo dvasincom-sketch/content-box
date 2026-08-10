@@ -182,7 +182,7 @@ export function SubtitlesSection({
           ) : (
             <>
               <button type="button" className="studio-btn studio-btn--ghost" onClick={genAuto} disabled={gen === 'busy'}>
-                {gen === 'busy' ? <Loader2 size={14} className="spin" /> : <Captions size={14} />} Сгенерировать автоматически (Whisper)
+                {gen === 'busy' ? <Loader2 size={14} className="spin" /> : <Captions size={14} />} Сгенерировать автоматически
               </button>
               <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Распознаём речь и делаем субтитры + главы. Работает и для старых видео (аудио берётся из HLS).</div>
             </>
@@ -403,7 +403,7 @@ export function ChaptersSection({ videoId, initial }: { videoId: number | string
           ))}
         </div>
       ) : (
-        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>Глав пока нет — сгенерируйте субтитры (Whisper) или добавьте вручную.</div>
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>Глав пока нет — сгенерируйте субтитры или добавьте вручную.</div>
       )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
