@@ -152,7 +152,7 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
     }
   }
 
-  const catLabel = CATEGORIES.find((c) => c.value === category)?.label || '—'
+  const archLabel = ARCHETYPES.find((a) => a.value === archetype)?.label || '—'
 
   return (
     <div className="studio-login onb">
@@ -315,7 +315,7 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
               <div className="onb__summary">
                 <div className="onb__row"><span>Проект</span><b>{name || '—'}</b></div>
                 <div className="onb__row"><span>Адрес</span><b>{(subdomain || '—')}{subdomain ? '.contentbox.site' : ''}</b></div>
-                <div className="onb__row"><span>Категория</span><b>{catLabel}</b></div>
+                <div className="onb__row"><span>Что создаёте</span><b>{archLabel}</b></div>
                 <div className="onb__row"><span>Логотип</span><b>{logoUrl ? 'Загружен' : 'Не задан'}</b></div>
                 <div className="onb__row"><span>Аккаунт</span><b>{email}</b></div>
               </div>
