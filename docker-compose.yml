@@ -222,7 +222,8 @@ services:
       # здесь только тумблер и параметры. WHISPER_ENABLED=0 — выключить.
       WHISPER_ENABLED: ${WHISPER_ENABLED:-1}
       WHISPER_LANG: ${WHISPER_LANG:-ru}
-      WHISPER_THREADS: ${WHISPER_THREADS:-4}
+      # Пусто → воркер берёт все ядра CPU (worker/transcode.mjs). Число в панели ограничивает.
+      WHISPER_THREADS: ${WHISPER_THREADS:-}
       WHISPER_MODEL_PATH: ${WHISPER_MODEL_PATH:-/opt/models/ggml-small.bin}
       WHISPER_TIMEOUT_MS: ${WHISPER_TIMEOUT_MS:-7200000}
     # ПЕРЕОПРЕДЕЛЯЕМ healthcheck из Dockerfile (там curl :3000/api/health — веб
