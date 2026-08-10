@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
         const mail = digestEmail({ brand, siteUrl, items, unsubscribeUrl: '{{ UnsubscribeURL }}' })
         sentViaListmonk = await sendDigestCampaign({
           tenantId,
-          tenantName: String((tenant.name as string) || brand.title || domain),
+          tenantName: String((tenant.name as string) || brand.name || domain),
           subscribers: optIn,
           subject: mail.subject,
           html: mail.html,
