@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { videoThumbUrl } from '@/lib/videoThumb'
 import { notFound } from 'next/navigation'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
@@ -128,8 +129,7 @@ export default async function TagPage({ params }: { params: Promise<Params> }) {
             </h2>
             <div className="tag-vidgrid">
               {videos.map((v) => {
-                const cover = v.cover && typeof v.cover === 'object' ? v.cover : null
-                const url = cover?.sizes?.card?.url || cover?.sizes?.thumb?.url || cover?.url || null
+                const url = videoThumbUrl(v)
                 return (
                   <Link key={v.id} href={`/video/${v.slug}`} className="tag-vidcard">
                     <div className="tag-vidcard__frame">

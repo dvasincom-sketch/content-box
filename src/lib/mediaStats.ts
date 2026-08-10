@@ -16,7 +16,7 @@ import type { Payload } from 'payload'
  */
 
 export interface MediaSourceStat {
-  key: 'media' | 'gallery' | 'downloads'
+  key: 'media' | 'gallery' | 'downloads' | 'video'
   label: string
   files: number
   bytes: number
@@ -32,6 +32,7 @@ const LABELS: Record<MediaSourceStat['key'], string> = {
   media: 'Обложки и аудио',
   gallery: 'Галерея',
   downloads: 'Файлы для скачивания',
+  video: 'Видео',
 }
 
 export async function getMediaStats(payload: Payload, tenantId: number | string): Promise<MediaStats | null> {
@@ -62,6 +63,11 @@ export async function getMediaStats(payload: Payload, tenantId: number | string)
            COUNT(*)::int,
            COALESCE(SUM(COALESCE(filesize, 0)), 0)::bigint
       FROM downloads WHERE tenant_id = $1
+    UNION ALL
+    SELECT 'video',
+           COUNT(*) FILTER (WHERE provider = 'self')::int,
+           COALESCE(SUM(COALESCE(asset_bytes, 0)) FILTER (WHERE provider = 'self'), 0)::bigint
+      FROM videos WHERE tenant_id = $1
   `
 
   try {

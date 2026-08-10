@@ -45,7 +45,7 @@ export function PosterGridBlock({ heading = 'Афиша', items }: PosterGridBlo
 
       <div className="poster-grid">
         {items.map((p) => {
-          const url = coverUrl(p.cover)
+          const url = coverUrl(p.cover) || p.posterFallback || null
           return (
             <Link
               key={p.id}

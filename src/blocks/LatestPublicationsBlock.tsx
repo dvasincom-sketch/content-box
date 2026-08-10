@@ -11,6 +11,8 @@ export type PublicationCard = {
   publishedAt?: string | null
   minTierName?: string | null
   cover?: { url?: string | null; alt?: string | null } | string | number | null
+  /** Автопостер связанного своего видео — обложка, когда своей нет. */
+  posterFallback?: string | null
   commentCount?: number
   reactionCount?: number
   hasVideo?: boolean
@@ -43,10 +45,10 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
           return (
             <article key={p.id} className="c-card c-card--interactive c-spotlight overflow-hidden flex flex-col">
               {/* Обложка — только при наличии картинки; без неё блок не выводим (без градиента) */}
-              {coverUrl(p.cover) && (
+              {(coverUrl(p.cover) || p.posterFallback) && (
                 <Link href={`/publication/${p.slug}`} prefetch={false} className="relative block aspect-video">
                   <Image
-                    src={coverUrl(p.cover) as string}
+                    src={(coverUrl(p.cover) || p.posterFallback) as string}
                     alt={(typeof p.cover === 'object' && p.cover?.alt) || p.title}
                     fill
                     className="object-cover"
@@ -70,7 +72,7 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
               )}
               <div className="p-5 flex flex-col gap-3 flex-1">
                 {/* Без обложки — дата и «замок» уходят в текст */}
-                {!coverUrl(p.cover) && (badge || p.minTierName) && (
+                {!(coverUrl(p.cover) || p.posterFallback) && (badge || p.minTierName) && (
                   <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--brand-muted)' }}>
                     {badge && <span>{badge}</span>}
                     {p.minTierName && (

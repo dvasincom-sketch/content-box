@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
             posterKey: data.posterKey || null,
             spriteKey: data.spriteKey || null,
             gifKey: data.gifKey || null,
+            ...(data.assetBytes ? { assetBytes: Number(data.assetBytes) } : {}),
             ...(data.durationSec ? { durationSec: Number(data.durationSec) } : {}),
           }
 

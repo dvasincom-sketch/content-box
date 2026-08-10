@@ -169,11 +169,19 @@ async function collectFiles(dir, prefix, out) {
 // сотен HLS-сегментов длинного видео была узким местом). Возвращает число файлов.
 async function uploadDir(dir, prefix) {
   const files = await collectFiles(dir, prefix, [])
+  let bytes = 0
   const CONC = 6
   for (let i = 0; i < files.length; i += CONC) {
-    await Promise.all(files.slice(i, i + CONC).map(([f, k]) => uploadFile(f, k)))
+    await Promise.all(files.slice(i, i + CONC).map(async ([f, k]) => {
+      try { bytes += (await stat(f)).size } catch { /* ignore */ }
+      await uploadFile(f, k)
+    }))
   }
-  return files.length
+  return { count: files.length, bytes }
+}
+
+async function fileBytes(path) {
+  try { return (await stat(path)).size } catch { return 0 }
 }
 
 async function buildHls(input, outDir, meta) {
@@ -322,20 +330,24 @@ async function processJob(job) {
     await makeGif(input, join(work, 'preview.gif'), posterT).catch((e) => log('gif failed (non-fatal):', e.message))
 
     let spriteKey = null
+    let spriteBytes = 0
     try {
       await makeStoryboard(input, spriteDir, meta)
-      await uploadDir(spriteDir, `sprites/${playbackId}`)
+      const spriteUp = await uploadDir(spriteDir, `sprites/${playbackId}`)
+      spriteBytes = spriteUp.bytes
       spriteKey = `sprites/${playbackId}/storyboard.vtt`
     } catch (e) { log('storyboard failed (non-fatal):', e.message) }
 
     // Заливаем HLS и превью.
     t = Date.now()
     log(`job ${job.id} uploading to S3…`)
-    const uploaded = await uploadDir(hlsDir, `hls/${playbackId}`)
-    log(`job ${job.id} uploaded ${uploaded} HLS file(s) in ${secs(t)}s`)
+    const hlsUp = await uploadDir(hlsDir, `hls/${playbackId}`)
+    let assetBytes = hlsUp.bytes
+    log(`job ${job.id} uploaded ${hlsUp.count} HLS file(s) in ${secs(t)}s`)
     await uploadFile(join(work, 'poster.jpg'), `posters/${playbackId}.jpg`)
+    assetBytes += await fileBytes(join(work, 'poster.jpg')) + spriteBytes
     const gifKey = `preview/${playbackId}.gif`
-    try { await uploadFile(join(work, 'preview.gif'), gifKey) } catch { /* нет gif — ок */ }
+    try { await uploadFile(join(work, 'preview.gif'), gifKey); assetBytes += await fileBytes(join(work, 'preview.gif')) } catch { /* нет gif — ок */ }
 
     await postWebhook({
       playbackId,
@@ -347,6 +359,7 @@ async function processJob(job) {
       posterKey: `posters/${playbackId}.jpg`,
       spriteKey,
       gifKey,
+      assetBytes,
     })
     await finishJob(job.id, 'done', null)
     // Оригинал больше не нужен — HLS собран и залит в S3. Удаляем исходник,

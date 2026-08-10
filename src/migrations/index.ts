@@ -84,6 +84,7 @@ import * as migration_20260808_150000_backfill_video_titles from './20260808_150
 import * as migration_20260809_120000_embed_always_free from './20260809_120000_embed_always_free';
 import * as migration_20260809_130000_video_self_hosted from './20260809_130000_video_self_hosted';
 import * as migration_20260809_140000_video_jobs_source_url from './20260809_140000_video_jobs_source_url';
+import * as migration_20260810_100000_video_asset_bytes from './20260810_100000_video_asset_bytes';
 
 export const migrations = [
   {
@@ -515,5 +516,10 @@ export const migrations = [
     up: migration_20260809_140000_video_jobs_source_url.up,
     down: migration_20260809_140000_video_jobs_source_url.down,
     name: '20260809_140000_video_jobs_source_url',
+  },
+  {
+    up: migration_20260810_100000_video_asset_bytes.up,
+    down: migration_20260810_100000_video_asset_bytes.down,
+    name: '20260810_100000_video_asset_bytes',
   },
 ];

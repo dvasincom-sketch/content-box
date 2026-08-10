@@ -1,4 +1,5 @@
 import { unstable_cache } from 'next/cache'
+import { publicUrl } from './s3'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
@@ -78,6 +79,12 @@ function toCard(p: Publication, stats?: { comments: number; reactions: number })
     minTierName:
       p.minTier && typeof p.minTier === 'object' ? p.minTier.name || p.minTier.slug || null : null,
     cover: p.cover,
+    posterFallback: (() => {
+      if (p.cover) return null
+      const rel = Array.isArray(p.relatedVideos) ? p.relatedVideos : []
+      const v = rel.find((x) => x && typeof x === 'object' && (x as any).provider === 'self' && (x as any).posterKey)
+      return v ? publicUrl(String((v as any).posterKey)) : null
+    })(),
     commentCount: stats?.comments ?? 0,
     reactionCount: stats?.reactions ?? 0,
     hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,

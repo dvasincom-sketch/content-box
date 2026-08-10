@@ -314,6 +314,13 @@ export const Videos: CollectionConfig = {
       admin: { condition: (data) => data?.provider === 'self', readOnly: true },
     },
     {
+      name: 'assetBytes',
+      type: 'number',
+      label: 'Размер в хранилище (байты)',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
+    {
       name: 'durationSec',
       type: 'number',
       label: 'Длительность, сек',
