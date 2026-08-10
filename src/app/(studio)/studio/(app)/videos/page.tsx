@@ -90,6 +90,9 @@ export default async function VideosPage() {
       ? (v.subtitles as any[]).map((sx) => ({ lang: String(sx.lang || ''), label: String(sx.label || sx.lang || '') })).filter((sx) => sx.lang)
       : [],
     summary: (v as any).summary ?? null,
+    chapters: Array.isArray((v as any).chapters)
+      ? ((v as any).chapters as any[]).map((c) => ({ start: Number(c?.start) || 0, title: String(c?.title || '') })).filter((c) => c.title)
+      : [],
   }))
 
   // уровни подписки для селектора доступа

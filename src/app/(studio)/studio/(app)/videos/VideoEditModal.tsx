@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { X, Loader2, Check, FileText, ArrowUpRight, Trash2, Link as LinkIcon, Captions, Upload, Plus, Sparkles } from 'lucide-react'
+import { X, Loader2, Check, FileText, ArrowUpRight, Trash2, Link as LinkIcon, Captions, Upload, Plus, Sparkles, List } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { TagInput } from '../_ui/TagInput'
 
@@ -25,6 +25,7 @@ export type EditableVideo = {
   playbackId?: string | null
   subtitles?: { lang: string; label: string }[]
   summary?: { tldr?: string; at?: string } | null
+  chapters?: { start: number; title: string }[]
 }
 
 /**
@@ -273,6 +274,8 @@ export function VideoEditModal({
             {video.provider === 'self' && <AnalyticsSection videoId={video.id} />}
 
             {video.provider === 'self' && <SummarySection videoId={video.id} initial={video.summary ?? null} hasSubtitles={(video.subtitles || []).length > 0} />}
+
+            {video.provider === 'self' && <ChaptersSection videoId={video.id} initial={video.chapters || []} />}
 
             {error && <div className="studio-login__error">{error}</div>}
 
@@ -565,6 +568,60 @@ function SummarySection({ videoId, initial, hasSubtitles }: { videoId: number | 
         {hasSubtitles
           ? 'Ася делает краткое содержание по субтитрам. Обновите после смены или дозагрузки субтитров.'
           : 'Сначала сгенерируйте автоматические субтитры или загрузите файл выше — затем можно собрать саммари.'}
+      </div>
+      {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Главы: полировка авто-заголовков через Асю                                  */
+/* -------------------------------------------------------------------------- */
+function fmtTs(sec: number): string {
+  const s = Math.max(0, Math.round(sec))
+  const m = Math.floor(s / 60)
+  return `${m}:${String(s % 60).padStart(2, '0')}`
+}
+
+function ChaptersSection({ videoId, initial }: { videoId: number | string; initial: { start: number; title: string }[] }) {
+  const [chapters, setChapters] = useState<{ start: number; title: string }[]>(initial)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const hasChapters = chapters.length >= 2
+
+  async function polish() {
+    setBusy(true); setErr(null)
+    try {
+      const res = await fetch('/studio/api/videos/polish-chapters', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ videoId }),
+      })
+      const j = await res.json()
+      if (!res.ok) setErr(j.error || 'Не удалось')
+      else if (Array.isArray(j.chapters)) setChapters(j.chapters)
+    } catch { setErr('Ошибка соединения') } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="studio-field">
+      <span className="studio-field__label">Главы</span>
+      {hasChapters ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+          {chapters.slice(0, 12).map((c, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, fontSize: 13, opacity: 0.9 }}>
+              <span style={{ opacity: 0.55, minWidth: 42 }}>{fmtTs(c.start)}</span>
+              <span>{c.title}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>Главы появятся после генерации субтитров (Whisper).</div>
+      )}
+      <button type="button" className="studio-btn studio-btn--ghost" onClick={polish} disabled={busy || !hasChapters} title={!hasChapters ? 'Сначала нужны субтитры и главы' : undefined}>
+        {busy ? <Loader2 size={14} className="spin" /> : <List size={14} />} Улучшить названия глав (Ася)
+      </button>
+      <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+        Авто-главы берут первую фразу из распознанной речи — Ася заменит их короткими осмысленными заголовками. Тайминги не меняются.
       </div>
       {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
     </div>
