@@ -9,7 +9,7 @@
 
 import { spawn } from 'node:child_process'
 import { createWriteStream, createReadStream } from 'node:fs'
-import { mkdtemp, rm, readdir, stat, mkdir, readFile } from 'node:fs/promises'
+import { mkdtemp, rm, readdir, stat, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, extname } from 'node:path'
 import { pipeline } from 'node:stream/promises'
@@ -281,7 +281,7 @@ async function claimJob() {
   try {
     await c.query('BEGIN')
     const r = await c.query(
-      `SELECT id, video_id, tenant_id, playback_id, original_key, source_url, attempts
+      `SELECT id, video_id, tenant_id, playback_id, original_key, source_url, attempts, kind
          FROM video_jobs
         WHERE status = 'queued'
            OR (status = 'processing' AND locked_at IS NOT NULL AND locked_at < now() - interval '30 minutes')
@@ -357,9 +357,7 @@ function chaptersFromVtt(vtt, opts = {}) {
 // Авто-субтитры через whisper.cpp: извлекаем 16кГц mono WAV (требование whisper),
 // гоним распознавание в VTT, заливаем в subs/{pid}/{lang}.vtt. Возвращает
 // дескриптор дорожки { lang, label, key } или бросает (ловим выше как non-fatal).
-async function generateSubtitles(input, playbackId, work) {
-  const wav = join(work, 'audio.wav')
-  await run('ffmpeg', ['-y', '-i', input, '-vn', '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le', wav], {}, FFMPEG_TIMEOUT_MS)
+async function transcribeToVtt(wav, playbackId, work) {
   const outBase = join(work, 'auto')
   await run(
     WHISPER_BIN,
@@ -371,6 +369,73 @@ async function generateSubtitles(input, playbackId, work) {
   await uploadFile(`${outBase}.vtt`, key)
   const vttText = await readFile(`${outBase}.vtt`, 'utf8').catch(() => '')
   return { lang: WHISPER_LANG, label: `Авто (${WHISPER_LANG.toUpperCase()})`, key, vttText }
+}
+
+async function generateSubtitles(input, playbackId, work) {
+  const wav = join(work, 'audio.wav')
+  await run('ffmpeg', ['-y', '-i', input, '-vn', '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le', wav], {}, FFMPEG_TIMEOUT_MS)
+  return transcribeToVtt(wav, playbackId, work)
+}
+
+// Текст объекта S3 (m3u8-плейлисты для on-demand субтитров).
+async function getText(key) {
+  const res = await s3.send(new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }))
+  return await res.Body.transformToString()
+}
+
+// Аудио из HLS для on-demand (оригинала уже нет): берём самый низкий rendition
+// из master, качаем его плейлист + сегменты локально и извлекаем 16кГц WAV.
+async function downloadHlsAudio(playbackId, destWav, work) {
+  const master = await getText(`hls/${playbackId}/master.m3u8`)
+  const variants = master.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#') && l.endsWith('.m3u8'))
+  if (!variants.length) throw new Error('в master.m3u8 нет вариантов')
+  const variant = variants[variants.length - 1] // последний = самый низкий (лесенка 1080→480)
+  const variantDir = variant.includes('/') ? variant.slice(0, variant.lastIndexOf('/')) : ''
+  const playlist = await getText(`hls/${playbackId}/${variant}`)
+  const segs = playlist.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'))
+  if (!segs.length) throw new Error('в плейлисте нет сегментов')
+  const dir = join(work, 'hlsaudio')
+  await mkdir(dir, { recursive: true })
+  await writeFile(join(dir, 'index.m3u8'), playlist)
+  for (const seg of segs) {
+    const segKey = `hls/${playbackId}/${variantDir ? variantDir + '/' : ''}${seg}`
+    await downloadOriginal(segKey, join(dir, seg))
+  }
+  await run('ffmpeg', ['-y', '-i', join(dir, 'index.m3u8'), '-vn', '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le', destWav], {}, FFMPEG_TIMEOUT_MS)
+}
+
+// On-demand генерация субтитров для готового видео (kind='subtitles'). Оригинала
+// уже нет — аудио берём из HLS. НЕ трогаем assetStatus/ключи (webhook status='subtitles').
+async function processSubtitleJob(job) {
+  const playbackId = job.playback_id
+  log(`job ${job.id} → субтитры on-demand, playback ${playbackId}`)
+  if (!WHISPER_ENABLED) { await finishJob(job.id, 'error', 'whisper выключен (WHISPER_ENABLED=0)'); return }
+  const work = await mkdtemp(join(tmpdir(), `subs-${playbackId}-`))
+  const started = Date.now()
+  const secs = (from) => ((Date.now() - from) / 1000).toFixed(1)
+  try {
+    const wav = join(work, 'audio.wav')
+    log(`job ${job.id} тяну аудио из HLS…`)
+    await downloadHlsAudio(playbackId, wav, work)
+    log(`job ${job.id} whisper…`)
+    const track = await transcribeToVtt(wav, playbackId, work)
+    const chapters = chaptersFromVtt(track.vttText || '')
+    await postWebhook({
+      playbackId,
+      videoId: job.video_id,
+      status: 'subtitles',
+      subtitles: [{ lang: track.lang, label: track.label, key: track.key }],
+      chapters: chapters.length ? chapters : undefined,
+    })
+    await finishJob(job.id, 'done', null)
+    log(`job ${job.id} субтитры готовы за ${secs(started)}s, глав: ${chapters.length}`)
+  } catch (e) {
+    log(`job ${job.id} субтитры error:`, e.message)
+    const fatal = job.attempts >= Number(MAX_ATTEMPTS)
+    await finishJob(job.id, fatal ? 'error' : 'queued', e.message)
+  } finally {
+    await rm(work, { recursive: true, force: true }).catch(() => {})
+  }
 }
 
 async function processJob(job) {
@@ -481,7 +546,7 @@ async function loop() {
   while (!stopping) {
     let job = null
     try { job = await claimJob() } catch (e) { log('claim error:', e.message) }
-    if (job) { await processJob(job) }
+    if (job) { if (job.kind === 'subtitles') await processSubtitleJob(job); else await processJob(job) }
     else { await new Promise((r) => setTimeout(r, Number(POLL_INTERVAL_MS))) }
   }
 }

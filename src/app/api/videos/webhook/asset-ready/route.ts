@@ -64,22 +64,37 @@ export async function POST(req: NextRequest) {
       if (add.length) subsPatch = [...existing, ...add]
     }
 
-    const patch: Record<string, unknown> =
-      data.status === 'error'
-        ? { assetStatus: 'error', assetError: String(data.error || 'Ошибка транскодинга').slice(0, 500) }
-        : {
-            assetStatus: 'ready',
-            renditions: Array.isArray(data.renditions) ? data.renditions : null,
-            posterKey: data.posterKey || null,
-            spriteKey: data.spriteKey || null,
-            gifKey: data.gifKey || null,
-            ...(data.assetBytes ? { assetBytes: Number(data.assetBytes) } : {}),
-            ...(data.durationSec ? { durationSec: Number(data.durationSec) } : {}),
-            ...(subsPatch ? { subtitles: subsPatch } : {}),
-            ...(Array.isArray(data.chapters) && data.chapters.length
-              ? { chapters: data.chapters.filter((c: any) => c && typeof c.start === 'number').map((c: any) => ({ start: Math.max(0, Math.floor(Number(c.start))), title: String(c.title || '').slice(0, 120) })) }
-              : {}),
-          }
+    const chaptersPatch =
+      Array.isArray(data.chapters) && data.chapters.length
+        ? data.chapters
+            .filter((c: any) => c && typeof c.start === 'number')
+            .map((c: any) => ({ start: Math.max(0, Math.floor(Number(c.start))), title: String(c.title || '').slice(0, 120) }))
+        : undefined
+
+    // status='subtitles' — on-demand генерация для готового видео: обновляем ТОЛЬКО
+    // дорожки/главы, не трогая assetStatus и ключи артефактов.
+    let patch: Record<string, unknown>
+    if (data.status === 'error') {
+      patch = { assetStatus: 'error', assetError: String(data.error || 'Ошибка транскодинга').slice(0, 500) }
+    } else if (data.status === 'subtitles') {
+      patch = {
+        ...(subsPatch ? { subtitles: subsPatch } : {}),
+        ...(chaptersPatch ? { chapters: chaptersPatch } : {}),
+      }
+      if (!Object.keys(patch).length) return NextResponse.json({ ok: true }) // нечего обновлять
+    } else {
+      patch = {
+        assetStatus: 'ready',
+        renditions: Array.isArray(data.renditions) ? data.renditions : null,
+        posterKey: data.posterKey || null,
+        spriteKey: data.spriteKey || null,
+        gifKey: data.gifKey || null,
+        ...(data.assetBytes ? { assetBytes: Number(data.assetBytes) } : {}),
+        ...(data.durationSec ? { durationSec: Number(data.durationSec) } : {}),
+        ...(subsPatch ? { subtitles: subsPatch } : {}),
+        ...(chaptersPatch ? { chapters: chaptersPatch } : {}),
+      }
+    }
 
     await payload.update({ collection: 'videos', id: video.id, data: patch as any, overrideAccess: true, depth: 0 })
     return NextResponse.json({ ok: true })

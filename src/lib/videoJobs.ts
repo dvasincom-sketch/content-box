@@ -31,3 +31,20 @@ export async function enqueueTranscode(
     ],
   )
 }
+
+
+/**
+ * Задача on-demand генерации субтитров для УЖЕ готового видео (оригинала нет —
+ * воркер берёт аудио из HLS). kind='subtitles'; original_key/source_url пустые.
+ */
+export async function enqueueSubtitleJob(
+  payload: Payload,
+  args: { videoId: number | string; tenantId: number | string | null; playbackId: string },
+): Promise<void> {
+  await sqlRows(
+    payload,
+    `INSERT INTO "video_jobs" ("video_id","tenant_id","playback_id","status","kind")
+     VALUES ($1,$2,$3,'queued','subtitles')`,
+    [Number(args.videoId), args.tenantId != null ? Number(args.tenantId) : null, args.playbackId],
+  )
+}

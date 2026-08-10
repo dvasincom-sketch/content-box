@@ -1,5 +1,6 @@
 import { withAuthor, readJson, apiError, apiOk, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { putObject, deleteObject } from '@/lib/s3'
+import { enqueueSubtitleJob } from '@/lib/videoJobs'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -41,6 +42,12 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const action = String(data.action || 'add')
 
   try {
+    // On-demand генерация субтитров+глав через whisper (аудио из HLS).
+    if (action === 'generate') {
+      await enqueueSubtitleJob(payload, { videoId, tenantId, playbackId: pid })
+      return apiOk({ queued: true })
+    }
+
     if (action === 'remove') {
       const lang = String(data.lang || '')
       if (!lang) return apiError('Не указан язык')

@@ -369,6 +369,20 @@ function SubtitlesSection({
   const [fileName, setFileName] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [gen, setGen] = useState<'idle' | 'busy' | 'queued'>('idle')
+
+  async function genAuto() {
+    setErr(null); setGen('busy')
+    try {
+      const res = await fetch('/studio/api/videos/subtitles', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ videoId, action: 'generate' }),
+      })
+      const j = await res.json()
+      if (!res.ok) { setErr(j.error || 'Не удалось'); setGen('idle') }
+      else setGen('queued')
+    } catch { setErr('Ошибка соединения'); setGen('idle') }
+  }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -441,6 +455,20 @@ function SubtitlesSection({
           </div>
           {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
           <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Формат VTT или SRT (SRT конвертируется автоматически). Код языка — ru, en и т.п.</div>
+
+          <div style={{ borderTop: '1px solid var(--brand-border, rgba(128,128,128,.2))', margin: '12px 0 8px' }} />
+          {gen === 'queued' ? (
+            <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.85 }}>
+              <Check size={13} style={{ verticalAlign: '-2px' }} /> Задача поставлена — субтитры и главы появятся через несколько минут (обновите позже).
+            </div>
+          ) : (
+            <>
+              <button type="button" className="studio-btn studio-btn--ghost" onClick={genAuto} disabled={gen === 'busy'}>
+                {gen === 'busy' ? <Loader2 size={14} className="spin" /> : <Captions size={14} />} Сгенерировать автоматически (Whisper)
+              </button>
+              <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Распознаём речь и делаем субтитры + главы. Работает и для старых видео (аудио берётся из HLS).</div>
+            </>
+          )}
         </>
       )}
     </div>
