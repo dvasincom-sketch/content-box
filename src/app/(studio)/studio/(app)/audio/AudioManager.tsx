@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, Upload, Pencil, Play, Lock, Unlock, Headphones } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
-import { VideoEditModal, type EditableVideo } from '../videos/VideoEditModal'
+import { AudioEditModal } from './AudioEditModal'
+import type { EditableVideo } from '../videos/VideoSections'
 
 type Tier = { id: number | string; name: string }
 type Cat = { id: number | string; title: string; parentId: number | null }
@@ -293,7 +294,7 @@ export function AudioManager({
       )}
 
       {editing && (
-        <VideoEditModal
+        <AudioEditModal
           video={editing}
           tiers={tiers}
           onClose={() => setEditing(null)}
