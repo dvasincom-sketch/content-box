@@ -72,23 +72,24 @@ export default async function AccountOverviewPage() {
 
       {/* Статус подписки */}
       {subActive ? (
-        <div className="c-card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 16%, var(--brand-surface)), var(--brand-surface))', border: '1px solid color-mix(in srgb, var(--brand-primary) 35%, var(--brand-border))' }}>
-          <span style={{ display: 'inline-flex', width: 48, height: 48, borderRadius: 14, flexShrink: 0, alignItems: 'center', justifyContent: 'center', background: 'var(--brand-primary)', color: '#fff' }}>
-            <Crown size={24} />
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', borderRadius: 'var(--radius-lg, 16px)', background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 15%, var(--brand-surface)), var(--brand-surface))', border: '1px solid color-mix(in srgb, var(--brand-primary) 32%, var(--brand-border))', boxShadow: 'var(--elev-2)' }}>
+          <span style={{ display: 'inline-flex', width: 46, height: 46, borderRadius: 13, flexShrink: 0, alignItems: 'center', justifyContent: 'center', background: 'var(--brand-primary)', color: '#fff' }}>
+            <Crown size={23} />
           </span>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--brand-text)' }}>Подписка «{String(tier.name || '')}»</div>
-            <div style={{ fontSize: 14, color: 'var(--brand-muted)', display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
-              <CalendarClock size={15} /> Активна · действует до {subUntilStr}
+            <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--brand-text)', lineHeight: 1.25 }}>Подписка «{String(tier.name || '')}»</div>
+            <div style={{ fontSize: 13.5, color: 'var(--brand-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+              <CalendarClock size={15} style={{ flexShrink: 0 }} />
+              <span>Активна · действует до {subUntilStr}</span>
               {subDaysLeft != null && subDaysLeft <= 14 ? (
-                <span style={{ marginLeft: 4, padding: '1px 8px', borderRadius: 999, fontWeight: 700, fontSize: 12, background: 'color-mix(in srgb, var(--brand-primary) 18%, transparent)', color: 'var(--brand-primary)' }}>осталось {subDaysLeft} дн.</span>
+                <span style={{ padding: '1px 8px', borderRadius: 999, fontWeight: 700, fontSize: 12, background: 'color-mix(in srgb, var(--brand-primary) 18%, transparent)', color: 'var(--brand-primary)' }}>осталось {subDaysLeft} дн.</span>
               ) : null}
             </div>
           </div>
-          <Link href="/subscribe" className="c-btn c-btn--surface" style={{ flexShrink: 0 }}>Продлить</Link>
+          <Link href="/subscribe" style={{ flexShrink: 0, alignSelf: 'center', padding: '8px 16px', borderRadius: 10, fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap', textDecoration: 'none', color: 'var(--brand-primary)', background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--brand-primary) 30%, var(--brand-border))' }}>Продлить</Link>
         </div>
       ) : (
-        <div className="c-card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between', padding: '16px 18px', borderRadius: 'var(--radius-lg, 16px)', background: 'var(--brand-surface)', border: '1px solid var(--brand-border)' }}>
           <span style={{ color: 'var(--brand-muted)' }}>У вас нет активной подписки{subUntilStr ? ' (истекла ' + subUntilStr + ')' : ''}.</span>
           <Link href="/subscribe" className="c-btn c-btn--primary">Оформить подписку</Link>
         </div>
