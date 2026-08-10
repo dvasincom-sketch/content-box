@@ -91,6 +91,7 @@ import * as migration_20260810_130000_video_chapters from './20260810_130000_vid
 import * as migration_20260810_140000_video_jobs_kind from './20260810_140000_video_jobs_kind';
 import * as migration_20260810_150000_event_category from './20260810_150000_event_category';
 import * as migration_20260810_160000_video_summary from './20260810_160000_video_summary';
+import * as migration_20260811_120000_add_tenant_archetype from './20260811_120000_add_tenant_archetype';
 
 export const migrations = [
   {
@@ -557,5 +558,10 @@ export const migrations = [
     up: migration_20260810_160000_video_summary.up,
     down: migration_20260810_160000_video_summary.down,
     name: '20260810_160000_video_summary',
+  },
+  {
+    up: migration_20260811_120000_add_tenant_archetype.up,
+    down: migration_20260811_120000_add_tenant_archetype.down,
+    name: '20260811_120000_add_tenant_archetype',
   },
 ];

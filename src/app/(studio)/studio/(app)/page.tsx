@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet, BarChart3, Music, Video as VideoIcon } from 'lucide-react'
+import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet, BarChart3, Music, Video as VideoIcon, Check, Circle, Rocket } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor } from '@/lib/currentAuthor'
@@ -127,6 +127,20 @@ export default async function StudioDashboard() {
   const media = await getMediaStats(payload, tenantId)
   const commerce = await getCommerceStats(payload, tenantId)
 
+  // Чеклист запуска проекта (для владельца). Пока не всё сделано — показываем.
+  const [tiersCount, ssRes] = await Promise.all([
+    payload.count({ collection: 'subscription-tiers', where: { tenant: { equals: tenantId } }, overrideAccess: true }).then((r) => r.totalDocs).catch(() => 0),
+    payload.find({ collection: 'site-settings', where: { tenant: { equals: tenantId } }, limit: 1, depth: 0, overrideAccess: true }).catch(() => ({ docs: [] as any[] })),
+  ])
+  const hasLogo = Boolean((ssRes.docs?.[0] as any)?.logo)
+  const setupTasks = [
+    { done: hasLogo, label: 'Загрузите логотип проекта', href: '/studio/settings' },
+    { done: totalCats > 0, label: 'Создайте первый раздел', href: '/studio/categories' },
+    { done: totalPubs > 0, label: 'Добавьте первый материал', href: '/studio/posts/new' },
+    { done: tiersCount > 0, label: 'Настройте уровень подписки', href: '/studio/settings' },
+  ]
+  const setupDoneN = setupTasks.filter((t) => t.done).length
+
   // Веб-аналитика (Umami): пара агрегатов на дашборд — только владельцу и только
   // когда платформа подключила аналитику и у проекта задан website.
   let umamiKpis: { visitors: number; pageviews: number; days: number } | null = null
@@ -152,6 +166,31 @@ export default async function StudioDashboard() {
           Новая публикация
         </Link>
       </div>
+
+      {/* Чеклист запуска — пока не всё сделано и только владельцу. */}
+      {isOwner && setupDoneN < setupTasks.length && (
+        <div style={{ padding: 20, marginBottom: 18, border: '1px solid var(--st-border)', borderRadius: 'var(--st-radius, 12px)', background: 'var(--st-surface)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 12 }}>
+            <span style={{ width: 34, height: 34, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'var(--st-accent)', color: 'var(--st-accent-text)', flex: 'none' }}><Rocket size={18} /></span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--st-text)' }}>Запуск проекта</div>
+              <div style={{ fontSize: 13, color: 'var(--st-text-muted)' }}>Сделано {setupDoneN} из {setupTasks.length} — пара шагов до живого сайта</div>
+            </div>
+          </div>
+          <div style={{ height: 6, borderRadius: 999, background: 'var(--st-surface-2)', overflow: 'hidden', marginBottom: 14 }}>
+            <div style={{ height: '100%', width: `${Math.round((setupDoneN / setupTasks.length) * 100)}%`, background: 'var(--st-accent)', transition: 'width .3s' }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {setupTasks.map((t, i) => (
+              <Link key={i} href={t.href} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: t.done ? 'var(--st-text-muted)' : 'var(--st-text)', fontSize: 14 }}>
+                <span style={{ flex: 'none', display: 'inline-flex', color: t.done ? 'var(--st-success, #22c55e)' : 'var(--st-text-faint)' }}>{t.done ? <Check size={18} /> : <Circle size={18} />}</span>
+                <span style={{ flex: 1, textDecoration: t.done ? 'line-through' : 'none' }}>{t.label}</span>
+                {!t.done && <ArrowRight size={15} style={{ color: 'var(--st-text-faint)' }} />}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Первый экран: ключевые коммерческие метрики + динамика */}
       {commerce ? (

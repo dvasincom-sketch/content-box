@@ -15,6 +15,17 @@ export const dynamic = 'force-dynamic'
 
 const CATEGORIES = ['blogger', 'musician', 'podcaster', 'streamer', 'artist', 'education', 'other']
 
+// Архетип «что создаёшь». `course` пока «Скоро» — в мастере не выбирается.
+const ARCHETYPES = ['writer', 'video', 'course', 'podcast', 'expert', 'studio']
+// Дефолтный тема-пресет по архетипу (id из lib/themePresets). course — позже.
+const ARCHETYPE_PRESET: Record<string, string> = {
+  writer: 'warm-earth',
+  video: 'tropic-sunset',
+  podcast: 'digital-monolith',
+  expert: 'frost',
+  studio: 'neon-dawn',
+}
+
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const body = await readJson<Record<string, unknown>>(req)
@@ -37,6 +48,14 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       return apiError('Неизвестная категория.')
     }
     patch.category = body.category
+  }
+
+  if (body.archetype !== undefined && body.archetype !== '') {
+    if (typeof body.archetype !== 'string' || !ARCHETYPES.includes(body.archetype)) {
+      return apiError('Неизвестный тип проекта.')
+    }
+    if (body.archetype === 'course') return apiError('Курсы скоро — выберите другой вариант.')
+    patch.archetype = body.archetype
   }
 
   if (typeof body.subdomain === 'string' && body.subdomain !== '') {
@@ -82,6 +101,29 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     })
   } catch (e) {
     return apiError((e as Error).message || 'Не удалось сохранить.')
+  }
+
+  // Авто-оформление: по архетипу проставляем дефолтный тема-пресет (не критично).
+  const arch = patch.archetype as string | undefined
+  if (arch && ARCHETYPE_PRESET[arch]) {
+    try {
+      const ss = await payload.find({
+        collection: 'site-settings',
+        where: { tenant: { equals: tenantId } },
+        limit: 1,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const doc = ss.docs[0] as any
+      if (doc) {
+        await payload.update({
+          collection: 'site-settings',
+          id: doc.id,
+          data: { themePreset: ARCHETYPE_PRESET[arch] } as any,
+          overrideAccess: true,
+        })
+      }
+    } catch { /* тема не критична для онбординга */ }
   }
 
   return apiOk({

@@ -20,22 +20,22 @@ type Initial = {
   name: string
   description: string
   subdomain: string
-  category: string
+  archetype: string
   step: number
   logoUrl: string | null
 }
 
-const STEPS = ['Бренд', 'Адрес', 'Категория', 'Аватар', 'Готово']
+const STEPS = ['Бренд', 'Адрес', 'Что создаёте', 'Аватар', 'Готово']
 const LAST = STEPS.length - 1
 
-const CATEGORIES: { value: string; label: string }[] = [
-  { value: 'blogger', label: 'Блогер' },
-  { value: 'musician', label: 'Музыкант' },
-  { value: 'podcaster', label: 'Подкастер' },
-  { value: 'streamer', label: 'Стример' },
-  { value: 'artist', label: 'Художник' },
-  { value: 'education', label: 'Образование' },
-  { value: 'other', label: 'Другое' },
+// Архетип задаёт оформление (тема-пресет) и подсказки. Курсы — пока «Скоро».
+const ARCHETYPES: { value: string; label: string; desc: string; soon?: boolean }[] = [
+  { value: 'writer', label: 'Автор книг', desc: 'Книги и главы, ридер' },
+  { value: 'video', label: 'Видео и озвучка', desc: 'Своё видео, плейлисты, субтитры' },
+  { value: 'course', label: 'Курсы', desc: 'Уроки и прогресс прохождения', soon: true },
+  { value: 'podcast', label: 'Подкасты и аудио', desc: 'Аудио-раздел и фонотека' },
+  { value: 'expert', label: 'Эксперт и наставник', desc: 'Статьи, видео и сообщество' },
+  { value: 'studio', label: 'Медиа-студия', desc: 'Всё сразу — большой архив' },
 ]
 
 function sanitizeSub(v: string): string {
@@ -48,7 +48,7 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
   const [name, setName] = useState(initial.name)
   const [description, setDescription] = useState(initial.description)
   const [subdomain, setSubdomain] = useState(initial.subdomain)
-  const [category, setCategory] = useState(initial.category)
+  const [archetype, setArchetype] = useState(initial.archetype)
   const [logoUrl, setLogoUrl] = useState<string | null>(initial.logoUrl)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -103,11 +103,11 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
       return
     }
     if (step === 2) {
-      if (!category) {
-        setError('Выберите категорию.')
+      if (!archetype) {
+        setError('Выберите, что вы создаёте.')
         return
       }
-      const ok = await save({ category, step: 3 })
+      const ok = await save({ archetype, step: 3 })
       if (ok) setStep(3)
       return
     }
@@ -239,24 +239,34 @@ export function OnboardingWizard({ initial, email }: { initial: Initial; email: 
 
           {step === 2 && (
             <>
-              <h1 className="onb__title">Категория проекта</h1>
-              <p className="onb__lede">Поможет с оформлением и рекомендациями.</p>
-              <div className="onb__radios" role="radiogroup" aria-label="Категория проекта">
-                {CATEGORIES.map((c) => (
+              <h1 className="onb__title">Что вы создаёте?</h1>
+              <p className="onb__lede">Подберём оформление и подскажем, с чего начать. Всё можно поменять потом.</p>
+              <div className="onb__radios" role="radiogroup" aria-label="Что вы создаёте">
+                {ARCHETYPES.map((a) => (
                   <label
-                    key={c.value}
-                    className={`onb__radio ${category === c.value ? 'is-active' : ''}`}
+                    key={a.value}
+                    className={`onb__radio ${archetype === a.value ? 'is-active' : ''}`}
+                    style={a.soon ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
+                    title={a.soon ? 'Скоро' : undefined}
                   >
                     <input
                       type="radio"
-                      name="category"
-                      value={c.value}
-                      checked={category === c.value}
-                      onChange={() => setCategory(c.value)}
-                      disabled={saving}
+                      name="archetype"
+                      value={a.value}
+                      checked={archetype === a.value}
+                      onChange={() => { if (!a.soon) setArchetype(a.value) }}
+                      disabled={saving || a.soon}
                     />
                     <span className="onb__radio-dot" aria-hidden />
-                    <span className="onb__radio-label">{c.label}</span>
+                    <span className="onb__radio-label">
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        {a.label}
+                        {a.soon && (
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '1px 8px', borderRadius: 999, background: 'var(--st-surface-2, rgba(128,128,128,.16))', color: 'var(--st-text-muted, #8a8a8a)', textTransform: 'uppercase', letterSpacing: '.04em' }}>Скоро</span>
+                        )}
+                      </span>
+                      <span style={{ display: 'block', fontSize: 12.5, opacity: 0.7, fontWeight: 400, marginTop: 2 }}>{a.desc}</span>
+                    </span>
                   </label>
                 ))}
               </div>

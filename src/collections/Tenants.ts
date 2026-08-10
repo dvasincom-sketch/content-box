@@ -131,6 +131,20 @@ export const Tenants: CollectionConfig = {
       ],
     },
     {
+      name: 'archetype',
+      type: 'select',
+      label: 'Тип проекта (что создаёт)',
+      admin: { description: 'Выбирается в мастере онбординга. Задаёт оформление и подсказки. «course» — пока «Скоро».' },
+      options: [
+        { label: 'Автор книг', value: 'writer' },
+        { label: 'Видео и озвучка', value: 'video' },
+        { label: 'Курсы (скоро)', value: 'course' },
+        { label: 'Подкасты и аудио', value: 'podcast' },
+        { label: 'Эксперт и наставник', value: 'expert' },
+        { label: 'Медиа-студия', value: 'studio' },
+      ],
+    },
+    {
       name: 'description',
       type: 'textarea',
       label: 'Короткое описание проекта',

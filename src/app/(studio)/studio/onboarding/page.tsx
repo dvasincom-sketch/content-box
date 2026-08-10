@@ -45,7 +45,7 @@ export default async function OnboardingPage() {
     name: displayName,
     description: t.description || '',
     subdomain: t.subdomain || '',
-    category: t.category || '',
+    archetype: t.archetype || '',
     step: Number(t.onboardingStep) || 0,
     logoUrl: logoUrl as string | null,
   }
