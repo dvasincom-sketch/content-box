@@ -376,7 +376,7 @@ export function Composer({
           {isNew && (
             <div className="composer__hint" style={{ marginTop: 8 }}>
               {initial?.isNew && initial?.newUntil
-                ? `В разделе «Новинки» до ${new Date(initial.newUntil).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                ? `В разделе «Новинки» до ${new Date(initial.newUntil).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'long', year: 'numeric' })}`
                 : 'После сохранения — 14 дней в разделе «Новинки», затем только в своих категориях'}
             </div>
           )}

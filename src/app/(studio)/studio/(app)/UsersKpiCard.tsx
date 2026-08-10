@@ -30,19 +30,19 @@ type Ev = {
 }
 
 const fmt = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+  iso ? new Date(iso).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'short', year: 'numeric' }) : '—'
 
 // Последний вход — дата и время (минуты), чтобы «был(а) сегодня» читалось точнее.
 const fmtSeen = (iso: string | null) =>
   iso
-    ? new Date(iso).toLocaleString('ru-RU', {
+    ? new Date(iso).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow',
         day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
       })
     : null
 
 // Время события с точностью до секунды.
 const fmtTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  new Date(iso).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit', second: '2-digit' })
 const dayLabel = (iso: string) => {
   const d = new Date(iso)
   const today = new Date()
@@ -50,7 +50,7 @@ const dayLabel = (iso: string) => {
   const same = (a: Date, b: Date) => a.toDateString() === b.toDateString()
   if (same(d, today)) return 'Сегодня'
   if (same(d, y)) return 'Вчера'
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+  return d.toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 // Метаданные действий: иконка + человекочитаемая формулировка.
@@ -181,7 +181,7 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
                   </div>
                   {e.meta?.preview && <div className="uk-tl__preview">{e.meta.preview}</div>}
                 </div>
-                <time className="uk-tl__time" title={new Date(e.at).toLocaleString('ru-RU')}>{fmtTime(e.at)}</time>
+                <time className="uk-tl__time" title={new Date(e.at).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}>{fmtTime(e.at)}</time>
               </div>
             </React.Fragment>
           )

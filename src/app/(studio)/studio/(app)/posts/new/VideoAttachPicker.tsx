@@ -250,7 +250,7 @@ export function VideoAttachPicker({
 
 function fmtDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString('ru-RU', {
+    return new Date(iso).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',

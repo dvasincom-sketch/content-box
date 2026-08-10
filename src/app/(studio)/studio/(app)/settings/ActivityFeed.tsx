@@ -28,7 +28,7 @@ function rel(at: string): string {
   if (h < 24) return `${h} ч назад`
   const d = Math.floor(h / 24)
   if (d < 7) return `${d} дн назад`
-  return new Date(at).toLocaleDateString('ru-RU')
+  return new Date(at).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' })
 }
 
 function phrase(it: Item): string {

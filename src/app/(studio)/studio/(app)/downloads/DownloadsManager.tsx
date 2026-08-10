@@ -251,7 +251,7 @@ export function DownloadsManager({
                     <span>Бесплатно</span>
                   )}
                   {a.filesize != null && <span>{formatBytes(a.filesize)}</span>}
-                  {a.addedAt && <span>{new Date(a.addedAt).toLocaleDateString('ru-RU')}</span>}
+                  {a.addedAt && <span>{new Date(a.addedAt).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' })}</span>}
                 </div>
               </div>
               <a href={`/api/download/${a.id}`} target="_blank" rel="noopener noreferrer" className="studio-btn studio-btn--ghost">

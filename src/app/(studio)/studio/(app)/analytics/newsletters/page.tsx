@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
  */
 function fmtDate(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })
+    return new Date(iso).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow', day: '2-digit', month: 'short', year: 'numeric' })
   } catch {
     return ''
   }

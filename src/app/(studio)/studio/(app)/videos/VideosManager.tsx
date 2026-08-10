@@ -55,10 +55,14 @@ function fmtDur(sec: number | null): string {
 function fmtDate(iso: string | null): string {
   if (!iso) return ''
   try {
+    // ВАЖНО: фиксируем timeZone. Без неё сервер (UTC) и браузер (MSK) для
+    // даты у полуночной границы форматируют РАЗНЫЙ день → hydration mismatch
+    // (React #418): SSR-дерево отбрасывается и перерисовывается — тёмная вспышка.
     return new Date(iso).toLocaleDateString('ru-RU', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
+      timeZone: 'Europe/Moscow',
     })
   } catch {
     return ''

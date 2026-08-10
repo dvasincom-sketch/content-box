@@ -136,7 +136,7 @@ export function BookEditor({
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) { setError(json.error || 'Не удалось сохранить'); setSaving(false); return }
-      setSavedAt(new Date().toLocaleTimeString('ru-RU'))
+      setSavedAt(new Date().toLocaleTimeString('ru-RU', { timeZone: 'Europe/Moscow' }))
       router.refresh()
     } catch { setError('Ошибка соединения') } finally { setSaving(false) }
   }

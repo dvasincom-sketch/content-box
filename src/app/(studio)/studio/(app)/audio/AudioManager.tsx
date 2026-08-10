@@ -259,7 +259,7 @@ export function AudioManager({
                   ) : (
                     <span>Бесплатно</span>
                   )}
-                  {a.addedAt && <span>{new Date(a.addedAt).toLocaleDateString('ru-RU')}</span>}
+                  {a.addedAt && <span>{new Date(a.addedAt).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' })}</span>}
                 </div>
               </div>
               {a.slug && (
