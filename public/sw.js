@@ -4,13 +4,25 @@
  * API, студию, админку, видео и оптимизацию картинок — НИКОГДА не кэшируем.
  * SW скоупится по origin, поэтому кэш разных тенантов не смешивается.
  */
-const VERSION = 'v9';
+const VERSION = 'v10';
 const STATIC_CACHE = `static-${VERSION}`;
 const OFFLINE_URL = '/offline';
 
+// Платформенный апекс (contentbox.site) — у него нет фан-бренда: экран деплоя
+// показываем в НЕЙТРАЛЬНОМ студийном стиле, а статические страницы платформы
+// (лендинг, /update, /manifest, оферта…) кэшируем и отдаём из кэша, даже когда
+// сервер недоступен во время выката.
+const IS_PLATFORM = /^(www\.)?contentbox\.site$/i.test(self.location.hostname);
+const STATIC_PATHS = ['/', '/update', '/manifest', '/oferta.html', '/policy.html', '/brandbook.html'];
+const STATIC_SET = new Set(STATIC_PATHS.concat(['/update/', '/manifest/']));
+function isStaticNav(pathname) { return IS_PLATFORM && STATIC_SET.has(pathname); }
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.add(OFFLINE_URL)).catch(() => {}),
+    caches.open(STATIC_CACHE).then((cache) => {
+      const urls = [OFFLINE_URL].concat(IS_PLATFORM ? STATIC_PATHS : []);
+      return Promise.all(urls.map((u) => cache.add(u).catch(() => {})));
+    }).catch(() => {}),
   );
   self.skipWaiting();
 });
@@ -76,18 +88,30 @@ self.addEventListener('fetch', (event) => {
  */
 async function handleNavigate(req) {
   let isStudio = false;
-  try { const p = new URL(req.url).pathname; isStudio = p.startsWith('/studio') || p.startsWith('/admin'); } catch (e) {}
+  let pathname = '/';
+  try { pathname = new URL(req.url).pathname; isStudio = IS_PLATFORM || pathname.startsWith('/studio') || pathname.startsWith('/admin'); } catch (e) {}
+  const staticNav = isStaticNav(pathname);
   const delays = [0, 500, 1200];
   let sawServerError = false;
   for (let i = 0; i < delays.length; i++) {
     if (delays[i]) await new Promise((r) => setTimeout(r, delays[i]));
     try {
       const res = await fetch(req);
-      if (res.status < 500) return res; // 2xx/3xx или честный 4xx — как есть
+      if (res.status < 500) {
+        // Статическую страницу платформы держим в кэше — на случай выката.
+        if (staticNav && res.ok) { try { const c = await caches.open(STATIC_CACHE); c.put(req, res.clone()); } catch (e) {} }
+        return res; // 2xx/3xx или честный 4xx — как есть
+      }
       sawServerError = true; // 5xx — транзиентная осечка, ретраим
     } catch {
       /* сетевой сбой — ретраим */
     }
+  }
+  // Сервер лежит (деплой): статические страницы платформы отдаём из кэша —
+  // они не зависят от живого сервера, поэтому остаются доступными.
+  if (staticNav) {
+    const cached = (await caches.match(req)) || (await caches.match(pathname));
+    if (cached) return cached;
   }
   if (sawServerError) return reconnecting(isStudio);
   const offline = await caches.match(OFFLINE_URL);
