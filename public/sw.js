@@ -4,7 +4,7 @@
  * API, студию, админку, видео и оптимизацию картинок — НИКОГДА не кэшируем.
  * SW скоупится по origin, поэтому кэш разных тенантов не смешивается.
  */
-const VERSION = 'v5';
+const VERSION = 'v6';
 const STATIC_CACHE = `static-${VERSION}`;
 const OFFLINE_URL = '/offline';
 
@@ -97,36 +97,97 @@ async function handleNavigate(req) {
 function reconnecting(isStudio) {
   const title = 'Идёт обновление';
   const text = isStudio
-    ? 'Выкатываем обновление — через пару минут студия вернётся и будет работать быстрее и стабильнее. И появились новые функции. Страница обновится сама, как только сервер ответит.'
+    ? 'Выкатываем обновление — через пару минут студия вернётся и будет работать быстрее и стабильнее. Страница обновится сама, как только сервер ответит.'
     : 'Обновляем сайт — через пару минут всё вернётся и станет работать быстрее. Страница обновится сама, как только сервер ответит.';
-  const updateLink = isStudio
-    ? '<a class="upd" href="https://contentbox.site/update" target="_blank" rel="noopener">Что нового в этом обновлении →</a>'
-    : '';
+  const IS_STUDIO = isStudio ? 'true' : 'false';
   const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}…</title>
 <script>
-(function(){try{var m=localStorage.getItem('theme');if(m!=='light'&&m!=='dark')m='dark';var d={};try{d=JSON.parse(localStorage.getItem('cb-brand')||'{}')||{};}catch(e){}var v=d[m]||{};var st=document.documentElement.style;if(v.bg)st.setProperty('--rbg',v.bg);if(v.text)st.setProperty('--rtext',v.text);if(v.primary)st.setProperty('--racc',v.primary);}catch(e){}})();
+(function(){var st=document.documentElement.style;var mode='dark';try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')mode=t;}catch(e){}
+function set(o){for(var k in o)st.setProperty('--r'+k,o[k]);}
+if(${IS_STUDIO}){
+  set(mode==='light'
+    ?{bg:'#fafafa',surface:'#ffffff',border:'#e4e4e7',text:'#18181b',muted:'#52525b',acc:'#18181b',acctext:'#ffffff'}
+    :{bg:'#0a0a0b',surface:'#131316',border:'#26262c',text:'#f4f4f5',muted:'#a1a1aa',acc:'#ffffff',acctext:'#0a0a0b'});
+}else{
+  var d={};try{d=JSON.parse(localStorage.getItem('cb-brand')||'{}')||{};}catch(e){}var v=d[mode]||{};
+  set({
+    bg:v.bg||(mode==='light'?'#faf7f2':'#0F0A1E'),
+    surface:mode==='light'?'#ffffff':'#171226',
+    border:mode==='light'?'rgba(0,0,0,.10)':'rgba(255,255,255,.12)',
+    text:v.text||(mode==='light'?'#1c1a17':'#EDE9FE'),
+    muted:mode==='light'?'#8b8378':'rgba(237,233,254,.6)',
+    acc:v.primary||'#ea580c',
+    acctext:'#ffffff'
+  });
+}})();
 </script>
 <style>
 html,body{height:100%;margin:0}
-:root{--rbg:#0F0A1E;--rtext:#EDE9FE;--racc:#7C3AED}
-body{display:flex;align-items:center;justify-content:center;background:var(--rbg);color:var(--rtext);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-.box{max-width:380px;text-align:center;padding:24px}
-.sp{width:34px;height:34px;margin:0 auto 18px;border:3px solid rgba(128,128,128,.28);border-top-color:var(--racc);border-radius:50%;animation:s 1s linear infinite}
-@keyframes s{to{transform:rotate(360deg)}}
-h1{font-size:19px;margin:0 0 8px;font-weight:700}
-p{margin:0 0 16px;color:var(--rtext);opacity:.7;font-size:14px;line-height:1.55}
-.upd{display:inline-block;margin:0 0 18px;color:var(--racc);font-size:14px;font-weight:600;text-decoration:none}
+:root{--rbg:#0a0a0b;--rsurface:#131316;--rborder:#26262c;--rtext:#f4f4f5;--rmuted:#a1a1aa;--racc:#fff;--racctext:#0a0a0b}
+body{margin:0;min-height:100%;display:flex;align-items:center;justify-content:center;background:var(--rbg);color:var(--rtext);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:24px;box-sizing:border-box}
+.wrap{width:100%;max-width:760px;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center}
+.col{min-width:0}
+.sp{width:34px;height:34px;margin:0 0 18px;border:3px solid color-mix(in srgb,var(--rmuted) 35%,transparent);border-top-color:var(--racc);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+h1{font-size:22px;margin:0 0 10px;font-weight:800}
+p{margin:0 0 20px;color:var(--rmuted);font-size:14px;line-height:1.6}
+.btn{background:var(--racc);color:var(--racctext);border:0;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer}
+.panel{background:var(--rsurface);border:1px solid var(--rborder);border-radius:14px;padding:16px}
+.panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--rmuted);margin:0 0 12px;font-weight:700}
+.log{display:flex;flex-direction:column;gap:9px;min-height:184px}
+.st-row{display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.35;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.st-ic{flex:none;width:18px;height:18px;display:grid;place-items:center}
+.st-sp{width:14px;height:14px;border:2px solid color-mix(in srgb,var(--rmuted) 40%,transparent);border-top-color:var(--racc);border-radius:50%;animation:spin .8s linear infinite}
+.st-row.is-done{color:var(--rmuted)}
+.st-ck{color:var(--racc)}
+.upd{display:inline-block;margin-top:14px;color:var(--racc);font-size:13.5px;font-weight:600;text-decoration:none}
 .upd:hover{text-decoration:underline}
-button{background:var(--racc);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-size:14px;cursor:pointer}
-</style></head><body><div class="box">
-<div class="sp"></div>
-<h1>${title}</h1>
-<p>${text}</p>
-${updateLink}
-<div><button onclick="location.reload()">Обновить сейчас</button></div>
-</div><script>
+@media(max-width:640px){.wrap{grid-template-columns:1fr;gap:22px;max-width:420px}.log{min-height:150px}}
+</style></head><body>
+<div class="wrap">
+  <div class="col">
+    <div class="sp"></div>
+    <h1>${title}</h1>
+    <p>${text}</p>
+    <button class="btn" onclick="location.reload()">Обновить сейчас</button>
+  </div>
+  <div class="col">
+    <div class="panel">
+      <h2>На сервере сейчас</h2>
+      <div class="log" id="log"></div>
+      <a class="upd" href="https://contentbox.site/update" target="_blank" rel="noopener">Что нового в этом обновлении →</a>
+    </div>
+  </div>
+</div>
+<script>
+var MSGS=[
+'Останавливаем приём новых запросов','Закрываем активные соединения с базой данных','Создаём резервную копию базы данных','Применяем миграции базы данных','Проверяем целостность данных','Перестраиваем индексы таблиц','Прогреваем пул соединений с базой','Очищаем устаревший кэш запросов',
+'Собираем новую версию приложения','Тянем свежий образ из реестра','Останавливаем предыдущий контейнер','Освобождаем порт приложения','Запускаем обновлённый контейнер','Ждём проверку работоспособности контейнера','Перезапускаем воркер обработки видео','Переключаем трафик на новую версию','Останавливаем фоновые задачи','Восстанавливаем фоновую очередь',
+'Проверяем поисковый сервис (Meilisearch)','Переиндексируем каталог публикаций','Поднимаем сервис аналитики','Проверяем очередь email-рассылок','Проверяем подключение к хранилищу S3','Обновляем сервис саммари «Ася»','Синхронизируем субтитры и главы видео','Проверяем доступность CDN','Проверяем сервис комментариев и реакций','Прогреваем кэш обложек и превью',
+'Обновляем токены доступа к видео','Проверяем платёжный шлюз','Проверяем SSL-сертификат','Проверяем вебхуки оплаты','Прогоняем smoke-тесты API','Проверяем права доступа авторов','Проверяем лимиты и квоты хранилища','Проверяем интеграцию с Telegram',
+'Прогреваем кэш популярных страниц','Восстанавливаем пользовательские сессии','Финальная проверка перед запуском','Почти готово — открываем доступ'
+];
+var CHECK='<svg class="st-ck" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+var queue=shuffle(MSGS.slice());
+var logEl=document.getElementById('log');
+var MAX=7;
+function step(){
+  if(!queue.length)queue=shuffle(MSGS.slice());
+  var msg=queue.shift();
+  var cur=logEl.querySelector('.st-row.is-current');
+  if(cur){cur.classList.remove('is-current');cur.classList.add('is-done');cur.querySelector('.st-ic').innerHTML=CHECK;}
+  var row=document.createElement('div');row.className='st-row is-current';
+  var ic=document.createElement('span');ic.className='st-ic';ic.innerHTML='<span class="st-sp"></span>';
+  var tx=document.createElement('span');tx.className='st-tx';tx.textContent=msg;
+  row.appendChild(ic);row.appendChild(tx);logEl.appendChild(row);
+  while(logEl.children.length>MAX)logEl.removeChild(logEl.firstChild);
+  setTimeout(step,900+Math.random()*1000);
+}
+setTimeout(step,250);
 function ping(){fetch('/api/health?cb='+Math.random(),{cache:'no-store'}).then(function(r){if(r.ok){location.reload();}else{setTimeout(ping,2000);}}).catch(function(){setTimeout(ping,2000);});}
 setTimeout(ping,1500);
 </script></body></html>`;
