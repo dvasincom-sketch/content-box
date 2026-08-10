@@ -41,10 +41,17 @@ export async function enqueueSubtitleJob(
   payload: Payload,
   args: { videoId: number | string; tenantId: number | string | null; playbackId: string },
 ): Promise<void> {
+  // Дедуп: не плодим задачи, если для видео уже есть активная (queued/processing)
+  // задача на субтитры — иначе повторные клики «Сгенерировать» и авто-вебхук
+  // забивают очередь дублями (каждая — длинный whisper-прогон).
   await sqlRows(
     payload,
     `INSERT INTO "video_jobs" ("video_id","tenant_id","playback_id","status","kind")
-     VALUES ($1,$2,$3,'queued','subtitles')`,
+     SELECT $1,$2,$3,'queued','subtitles'
+     WHERE NOT EXISTS (
+       SELECT 1 FROM "video_jobs"
+       WHERE "video_id" = $1 AND "kind" = 'subtitles' AND "status" IN ('queued','processing')
+     )`,
     [Number(args.videoId), args.tenantId != null ? Number(args.tenantId) : null, args.playbackId],
   )
 }

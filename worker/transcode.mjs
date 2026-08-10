@@ -10,7 +10,7 @@
 import { spawn } from 'node:child_process'
 import { createWriteStream, createReadStream } from 'node:fs'
 import { mkdtemp, rm, readdir, stat, mkdir, readFile, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { tmpdir, cpus } from 'node:os'
 import { join, extname } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
@@ -45,8 +45,8 @@ const WHISPER_ENABLED = (process.env.WHISPER_ENABLED || '1') !== '0'
 const WHISPER_BIN = process.env.WHISPER_BIN || 'whisper-cli'
 const WHISPER_MODEL_PATH = process.env.WHISPER_MODEL_PATH || '/opt/models/ggml-small.bin'
 const WHISPER_LANG = process.env.WHISPER_LANG || 'ru'
-const WHISPER_THREADS = process.env.WHISPER_THREADS || '4'
-const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 2 * 60 * 60 * 1000)
+const WHISPER_THREADS = process.env.WHISPER_THREADS || String(Math.max(4, cpus()?.length || 4))
+const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 60 * 60 * 1000)
 
 const log = (...a) => console.log(new Date().toISOString(), '[worker]', ...a)
 
@@ -431,7 +431,10 @@ async function processSubtitleJob(job) {
     log(`job ${job.id} субтитры готовы за ${secs(started)}s, глав: ${chapters.length}`)
   } catch (e) {
     log(`job ${job.id} субтитры error:`, e.message)
-    const fatal = job.attempts >= Number(MAX_ATTEMPTS)
+    // Таймаут whisper/ffmpeg повтором не «вылечить» — помечаем задачу ошибкой
+    // сразу, не гоняя ещё попытки по часу каждая.
+    const isTimeout = /timeout after/.test(e.message || '')
+    const fatal = isTimeout || job.attempts >= Number(MAX_ATTEMPTS)
     await finishJob(job.id, fatal ? 'error' : 'queued', e.message)
   } finally {
     await rm(work, { recursive: true, force: true }).catch(() => {})
