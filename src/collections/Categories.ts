@@ -98,6 +98,16 @@ export const Categories: CollectionConfig = {
       },
     },
     {
+      name: 'eventTemplate',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Раздел-события (сортировка и плашка по дате события)',
+      admin: {
+        description:
+          'Публикации этого раздела получают «Дату события» (напр. дата лайв-трансляции). Список сортируется по дате события (новые сверху), а на обложке и в публикации показывается оранжевая плашка с датой.',
+      },
+    },
+    {
       name: 'seo',
       type: 'group',
       label: 'SEO (оверрайды)',

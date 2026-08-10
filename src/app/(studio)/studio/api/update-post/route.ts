@@ -109,6 +109,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       : []
   }
 
+  // Дата события (раздел-события): пусто → null (снять).
+  if ('eventDate' in data) {
+    patch.eventDate = data.eventDate && !Number.isNaN(Date.parse(data.eventDate)) ? new Date(data.eventDate).toISOString() : null
+  }
+
   // Статус
   if (data.publish === true) {
     // публикуем: ставим дату, если её не было

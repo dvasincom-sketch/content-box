@@ -15,6 +15,7 @@ export type PublicationCard = {
   /** Автопостер связанного своего видео — обложка, когда своей нет. */
   posterFallback?: string | null
   previewGif?: string | null
+  eventDate?: string | null
   commentCount?: number
   reactionCount?: number
   hasVideo?: boolean
@@ -31,6 +32,14 @@ function coverUrl(cover: PublicationCard['cover']): string | null {
   return null
 }
 
+/** Дата события для оранжевой плашки (МСК, чтобы не ловить hydration #418). */
+function fmtEventDate(iso?: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Moscow' })
+}
+
 export function LatestPublicationsBlock({ heading = 'Последние публикации', items }: LatestPublicationsBlockProps) {
   if (!items || items.length === 0) return null
 
@@ -44,6 +53,7 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((p) => {
           const badge = relativeDayLabel(p.publishedAt)
+          const evLabel = fmtEventDate(p.eventDate)
           return (
             <article key={p.id} className="c-card c-card--interactive c-spotlight overflow-hidden flex flex-col">
               {/* Обложка — только при наличии картинки; без неё блок не выводим (без градиента) */}
@@ -55,12 +65,17 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
                     alt={(typeof p.cover === "object" && p.cover?.alt) || p.title}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
-                  {badge && (
+                  {evLabel ? (
+                    <span className="absolute top-3 left-3 text-sm font-bold px-3 py-1 rounded-full"
+                      style={{ background: '#ea580c', color: '#fff', boxShadow: '0 2px 8px rgba(234,88,12,.45)' }}>
+                      {evLabel}
+                    </span>
+                  ) : badge ? (
                     <span className="absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full"
                       style={{ background: 'rgba(0,0,0,0.45)', color: '#fff' }}>
                       {badge}
                     </span>
-                  )}
+                  ) : null}
                   {/* Бейдж платной публикации */}
                   {p.minTierName && (
                     <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
@@ -73,9 +88,9 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
               )}
               <div className="p-5 flex flex-col gap-3 flex-1">
                 {/* Без обложки — дата и «замок» уходят в текст */}
-                {!(coverUrl(p.cover) || p.posterFallback) && (badge || p.minTierName) && (
+                {!(coverUrl(p.cover) || p.posterFallback) && (badge || p.minTierName || evLabel) && (
                   <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--brand-muted)' }}>
-                    {badge && <span>{badge}</span>}
+                    {evLabel ? <span style={{ color: '#ea580c', fontWeight: 700 }}>{evLabel}</span> : badge ? <span>{badge}</span> : null}
                     {p.minTierName && (
                       <span className="inline-flex items-center gap-1">
                         <Lock size={12} />

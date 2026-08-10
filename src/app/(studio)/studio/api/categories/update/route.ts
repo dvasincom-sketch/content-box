@@ -63,6 +63,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     patch.videoSeries = Boolean(data.videoSeries)
   }
 
+  if ('eventTemplate' in data) patch.eventTemplate = Boolean(data.eventTemplate)
+
   // Флаги показа в меню/футере (используются опцией «добавить категорию в меню»).
   if ('showInHeader' in data) patch.showInHeader = Boolean(data.showInHeader)
   if ('showInFooter' in data) patch.showInFooter = Boolean(data.showInFooter)

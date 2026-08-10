@@ -56,6 +56,7 @@ export type PostInitial = {
   relatedVideoIds: (number | string)[]
   gallery: GalleryItem[]
   tags?: string[]
+  eventDate?: string | null
 }
 
 export function Composer({
@@ -122,6 +123,7 @@ export function Composer({
 
   const [gallery, setGallery] = useState<GalleryItem[]>(initial?.gallery ?? [])
   const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
+  const [eventDate, setEventDate] = useState<string>(initial?.eventDate ? String(initial.eventDate).slice(0, 10) : '')
 
   const [saving, setSaving] = useState<false | 'draft' | 'publish' | 'save' | 'unpublish'>(false)
   const [deleting, setDeleting] = useState(false)
@@ -211,6 +213,7 @@ export function Composer({
       // свободные теги (лейблы): в edit шлём всегда (пустой = очистить),
       // в create — только если есть
       tags: isEdit ? tags : (tags.length ? tags : undefined),
+      eventDate: isEdit ? (eventDate || null) : (eventDate || undefined),
     }
     if (isEdit) payload.id = initial!.id
     if (publish !== undefined) payload.publish = publish
@@ -512,6 +515,12 @@ export function Composer({
           <div className="composer__field">
             <div className="composer__field-label">Основная категория</div>
             <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+          </div>
+
+          <div className="composer__field">
+            <div className="composer__field-label">Дата события</div>
+            <input type="date" className="studio-input" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+            <div className="composer__hint">Для разделов-событий (лайвы и т.п.): по этой дате сортируется список и рисуется оранжевая плашка. Можно оставить пустым.</div>
           </div>
 
           <div className="composer__field">

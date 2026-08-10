@@ -108,6 +108,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
   // эпизоды живут внутри дочерних разделов.
   const isPosterContainer = Boolean(category.posterLayout)
   const isVideoSeries = Boolean(category.videoSeries)
+  const isEvent = Boolean(category.eventTemplate)
 
   // Публикации всей ветки: категории, у которых текущая есть в цепочке предков.
   // Для контейнера не нужны (показываем афиши детей), поэтому не запрашиваем.
@@ -155,7 +156,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
           { or: catMatch },
         ],
       },
-      sort: '-publishedAt',
+      sort: isEvent ? '-eventDate' : '-publishedAt',
       depth: 1,
       limit: 50,
       overrideAccess: true,
@@ -323,6 +324,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
                     ? p.minTier.name || p.minTier.slug || null
                     : null,
                 cover: p.cover,
+                eventDate: isEvent ? (p.eventDate ?? null) : null,
                 commentCount: stats?.comments ?? 0,
                 reactionCount: stats?.reactions ?? 0,
                 hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,

@@ -93,6 +93,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
                 .map((t) => ({ label: t.trim() })),
             }
           : {}),
+        ...(data.eventDate && !Number.isNaN(Date.parse(data.eventDate)) ? { eventDate: new Date(data.eventDate).toISOString() } : {}),
         ...(publish ? { publishedAt: new Date().toISOString() } : {}),
       } as any,
       overrideAccess: true,

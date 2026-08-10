@@ -34,6 +34,7 @@ export const Publications: CollectionConfig = {
     },
     { name: 'cover', type: 'upload', relationTo: 'media', label: 'Обложка карточки' },
     { name: 'publishedAt', type: 'date', label: 'Дата публикации' },
+    { name: 'eventDate', type: 'date', label: 'Дата события', admin: { description: 'Для разделов-событий: дата лайва/мероприятия. По ней сортируется список и рисуется оранжевая плашка.' } },
     { name: 'category', type: 'relationship', relationTo: 'categories', label: 'Основная категория' },
     {
       // Дополнительные категории: публикация показывается и в них, но основной

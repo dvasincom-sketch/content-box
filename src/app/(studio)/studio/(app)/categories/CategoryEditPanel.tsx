@@ -15,6 +15,7 @@ export type EditableCat = {
   coverUrl: string | null
   posterLayout: boolean
   videoSeries: boolean
+  eventTemplate: boolean
 }
 
 /** Ответ роута загрузки обложки /studio/api/categories/cover. */
@@ -40,6 +41,7 @@ export function CategoryEditPanel({
   const [coverUrl, setCoverUrl] = useState<string | null>(cat.coverUrl)
   const [posterLayout, setPosterLayout] = useState<boolean>(cat.posterLayout ?? false)
   const [videoSeries, setVideoSeries] = useState<boolean>(cat.videoSeries ?? false)
+  const [eventTemplate, setEventTemplate] = useState<boolean>(cat.eventTemplate ?? false)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -187,6 +189,7 @@ export function CategoryEditPanel({
           coverId: coverId ?? null,
           posterLayout,
           videoSeries,
+          eventTemplate,
           parentId: parentSel === '__root__' ? null : Number(parentSel),
         }),
       })
@@ -289,6 +292,14 @@ export function CategoryEditPanel({
               </div>
             </div>
           )}
+
+          <div className="studio-field">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={eventTemplate} onChange={(e) => setEventTemplate(e.target.checked)} />
+              <span className="studio-field__label" style={{ margin: 0 }}>Раздел-события</span>
+            </label>
+            <div className="catedit__hint">Публикации получают «Дату события»; список сортируется по ней (новые сверху), а на обложке и в публикации показывается оранжевая плашка с датой.</div>
+          </div>
 
           <div className="studio-field">
             <span className="studio-field__label">Обложка</span>

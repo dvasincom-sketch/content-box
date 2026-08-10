@@ -191,6 +191,9 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   // Связка со «Смотреть» (depth:2 populate'ит объект с breadcrumbs для ссылки).
   const watchCat =
     pub.watchCategory && typeof pub.watchCategory === 'object' ? pub.watchCategory : null
+  const eventStr = pub.eventDate
+    ? new Date(pub.eventDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Moscow' })
+    : null
   const dateStr = pub.publishedAt
     ? new Date(pub.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
@@ -359,6 +362,11 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               дата — с акцентной точкой-маркером (.pubmeta-date). */}
           <div className="pubhero-reveal pubhero-d3 flex items-center flex-wrap gap-3 mb-6" style={{ justifyContent: 'space-between' }}>
             <div className="flex items-center flex-wrap gap-3">
+              {eventStr && (
+                <span style={{ background: '#ea580c', color: '#fff', fontWeight: 700, padding: '4px 12px', borderRadius: 999, fontSize: '0.95rem', boxShadow: '0 2px 8px rgba(234,88,12,.35)' }}>
+                  {eventStr}
+                </span>
+              )}
               {category && (
                 <Link href={categoryHref(category)} className="pubmeta-chip">
                   {category.title}
