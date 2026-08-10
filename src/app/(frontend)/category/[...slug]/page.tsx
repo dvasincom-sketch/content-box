@@ -17,6 +17,7 @@ import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { categoryHref } from '@/lib/categoryHref'
 import { CrossLinkCard } from '@/components/CrossLinkCard'
 import { publishedWhere } from '@/lib/published'
+import { EventFilter } from './EventFilter'
 import '../../styles.css'
 import type { Payload } from 'payload'
 
@@ -246,27 +247,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
             {category.title}
           </h1>
           {isEvent && (
-            <form method="get" className="evfilter">
-              <label className="evfilter__field">
-                <span className="evfilter__lbl">Сортировка</span>
-                <select name="sort" defaultValue={evSort} className="c-input evfilter__ctl">
-                  <option value="new">Сначала новые</option>
-                  <option value="old">Сначала старые</option>
-                </select>
-              </label>
-              <label className="evfilter__field">
-                <span className="evfilter__lbl">С даты</span>
-                <input type="date" name="from" defaultValue={evFrom} className="c-input evfilter__ctl" />
-              </label>
-              <label className="evfilter__field">
-                <span className="evfilter__lbl">По дату</span>
-                <input type="date" name="to" defaultValue={evTo} className="c-input evfilter__ctl" />
-              </label>
-              <button type="submit" className="c-btn c-btn--primary evfilter__go">Показать</button>
-              {(evFrom || evTo || evSort === 'old') && (
-                <a href="?" className="evfilter__reset" title="Сбросить фильтр">Сбросить</a>
-              )}
-            </form>
+            <EventFilter sort={evSort} from={evFrom} to={evTo} />
           )}
         </div>
 
