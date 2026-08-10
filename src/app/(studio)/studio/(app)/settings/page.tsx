@@ -18,6 +18,10 @@ import { capabilitiesOf } from '@/access'
 import { hasCap, SETTINGS_MANAGE_KEYS } from '@/lib/permissions'
 import { normalizeHomeSections } from '@/lib/homeSections'
 import { SettingsView } from './SettingsView'
+import { getMediaStats } from '@/lib/mediaStats'
+import { getCommerceStats } from '@/lib/commerceStats'
+import { computeTariff } from '@/lib/tariff'
+import type { TariffPanelData } from './TariffPanel'
 
 /**
  * Экран «Настройки» (студия): логотип, соцсети, уровни подписки, тема студии.
@@ -122,6 +126,25 @@ export default async function SettingsPage() {
     return { id: u.id, email: u.email as string, name: (u.name as string) || '', status, isSelf: Number(u.id) === Number(selfId), studioRole: (u.studioRole as string) || null, capabilities: (u.capabilities as any) || null }
   })
 
+  // Данные раздела «Тариф» (только владельцу): занятое место, MRR, дата создания
+  // проекта для триала — считаем расчётный платформенный сбор.
+  let tariff: TariffPanelData | null = null
+  if (isOwner) {
+    const [mediaStats, commerce, tenantDoc] = await Promise.all([
+      getMediaStats(payload, author!.tenantId),
+      getCommerceStats(payload, author!.tenantId),
+      payload.findByID({ collection: 'tenants', id: author!.tenantId, depth: 0, overrideAccess: true }).catch(() => null),
+    ])
+    if (mediaStats) {
+      const mrrRub = commerce?.mrr ?? 0
+      tariff = {
+        tariff: computeTariff({ bytes: mediaStats.bytes, mrrRub, createdAt: (tenantDoc as { createdAt?: string } | null)?.createdAt ?? null }),
+        sources: mediaStats.sources,
+        mrrRub,
+      }
+    }
+  }
+
   return (
     <SettingsView
       logoUrl={logoUrl}
@@ -138,6 +161,7 @@ export default async function SettingsPage() {
       members={members}
       isOwner={isOwner}
       abilities={abilities}
+      tariff={tariff}
     />
   )
 }

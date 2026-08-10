@@ -6,7 +6,7 @@ import { errorMessage } from '@/lib/errorMessage'
 /**
  * Шаг 2 presigned-загрузки аудио: файл уже в S3 (ключ из presign). Проверяем,
  * что объект существует и принадлежит тенанту (префикс ключа), затем создаём
- * запись Videos (provider='audio', audioSrc = публичный URL). Байты не трогаем.
+ * запись Videos (provider='audio', audioSrc = публичный URL, assetBytes = размер для учёта хранилища).
  * Body: { key, title, minTierId?, isPreview?, categoryId?, folderId? }.
  */
 export const runtime = 'nodejs'
@@ -49,6 +49,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         slug: await uniqueSlug(payload, tenantId, slugify(title) || 'audio'),
         provider: 'audio',
         audioSrc: publicUrl(key),
+        assetBytes: head.size,
         minTier: minTierId,
         isPreview: data.isPreview === true || data.isPreview === '1',
         category: categoryId,

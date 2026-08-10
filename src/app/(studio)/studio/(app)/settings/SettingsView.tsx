@@ -17,6 +17,7 @@ import { hasCap, type CapMatrix } from '@/lib/permissions'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
+import { TariffPanel, type TariffPanelData } from './TariffPanel'
 
 type Social = { platform: string; url: string }
 type Perk = { type: PerkType; text: string }
@@ -32,7 +33,7 @@ type Tier = {
   perks: Perk[]
 }
 
-type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers' | 'access'
+type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers' | 'access' | 'tariff'
 export type Member = { id: number | string; email: string; name: string; status: string; isSelf: boolean; studioRole?: string | null; capabilities?: import('@/lib/permissions').CapMatrix | null }
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -42,6 +43,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'menu', label: 'Меню и футер' },
   { id: 'tiers', label: 'Монетизация' },
   { id: 'access', label: 'Доступ' },
+  { id: 'tariff', label: 'Тариф' },
 ]
 
 const PLATFORMS = [
@@ -67,6 +69,7 @@ export function SettingsView({
   members,
   isOwner,
   abilities,
+  tariff,
 }: {
   logoUrl: string | null
   appIconUrl: string | null
@@ -82,6 +85,7 @@ export function SettingsView({
   members: Member[]
   isOwner: boolean
   abilities: CapMatrix | null
+  tariff: TariffPanelData | null
 }) {
   const canTab = (id: SettingsTab): boolean => {
     if (isOwner) return true
@@ -92,6 +96,7 @@ export function SettingsView({
       case 'menu': return hasCap(abilities, 'menu', 'manage')
       case 'tiers': return hasCap(abilities, 'tiers', 'manage') || hasCap(abilities, 'goals', 'manage')
       case 'access': return false
+      case 'tariff': return false
       default: return false
     }
   }
@@ -173,6 +178,7 @@ export function SettingsView({
           </>
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}
+        {tab === 'tariff' && isOwner && <TariffPanel data={tariff} />}
       </div>
     </>
   )

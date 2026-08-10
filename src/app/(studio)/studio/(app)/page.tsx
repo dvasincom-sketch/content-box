@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet, BarChart3 } from 'lucide-react'
+import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet, BarChart3, Music, Video as VideoIcon } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor } from '@/lib/currentAuthor'
@@ -232,7 +232,7 @@ export default async function StudioDashboard() {
               {media.sources.filter((sMedia) => sMedia.files > 0).map((sMedia) => (
                 <div key={sMedia.key} className="dash__mediabreak-row">
                   <span className="dash__mediabreak-icon">
-                    {sMedia.key === 'gallery' ? <Images size={15} /> : sMedia.key === 'downloads' ? <FileDown size={15} /> : <ImageIcon size={15} />}
+                    {sMedia.key === 'gallery' ? <Images size={15} /> : sMedia.key === 'downloads' ? <FileDown size={15} /> : sMedia.key === 'audio' ? <Music size={15} /> : sMedia.key === 'video' ? <VideoIcon size={15} /> : <ImageIcon size={15} />}
                   </span>
                   <span className="dash__mediabreak-label">{sMedia.label}</span>
                   <span className="dash__mediabreak-count">{sMedia.files} файл.</span>
