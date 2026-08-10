@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from 'crypto'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { errorMessage } from '@/lib/errorMessage'
+import { enqueueSubtitleJob } from '@/lib/videoJobs'
 
 /**
  * Webhook транскод-воркера: video.asset.ready.
@@ -104,6 +105,19 @@ export async function POST(req: NextRequest) {
     }
 
     await payload.update({ collection: 'videos', id: video.id, data: patch as any, overrideAccess: true, depth: 0 })
+
+    // Авто-субтитры фоном: у готового видео без единой дорожки ставим whisper-
+    // задачу, чтобы автор не запускал распознавание вручную (фоновый процесс).
+    const subsCount = Array.isArray(subsPatch)
+      ? (subsPatch as any[]).length
+      : (Array.isArray((video as any).subtitles) ? (video as any).subtitles.length : 0)
+    if (data.status !== 'error' && data.status !== 'subtitles' && subsCount === 0 && playbackId) {
+      try {
+        const vt = (video as any).tenant
+        await enqueueSubtitleJob(payload, { videoId: video.id, tenantId: vt != null ? (typeof vt === 'object' ? vt.id : vt) : null, playbackId })
+      } catch { /* автосубтитры не критичны для вебхука */ }
+    }
+
     return NextResponse.json({ ok: true })
   } catch (e: unknown) {
     return NextResponse.json({ error: errorMessage(e, 'Не удалось обновить видео') }, { status: 500 })
