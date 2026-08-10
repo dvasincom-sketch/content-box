@@ -13,6 +13,7 @@ import { GalleryComposer, type GalleryItem } from './GalleryComposer'
 import { VideoCreateModal, AudioUploadButton, type CreatedMedia } from './MediaCreate'
 import { StudioSelect } from '../../_ui/StudioSelect'
 import { TagInput } from '../../_ui/TagInput'
+import { StudioDateField } from './StudioDateField'
 
 type Category = CatItem
 type GalleryFolder = { id: number | string; title: string; parentId: number | string | null }
@@ -519,7 +520,7 @@ export function Composer({
 
           <div className="composer__field">
             <div className="composer__field-label">Дата события</div>
-            <input type="date" className="studio-input" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+            <StudioDateField value={eventDate} onChange={setEventDate} />
             <div className="composer__hint">Для разделов-событий (лайвы и т.п.): по этой дате сортируется список и рисуется оранжевая плашка. Можно оставить пустым.</div>
           </div>
 

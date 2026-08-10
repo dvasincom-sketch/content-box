@@ -3316,6 +3316,30 @@ select.studio-input {
   pointer-events: none;
 }
 .vidtable__thumb:hover:not(:disabled) .vidtable__thumb-gif { opacity: 1; }
+
+/* ── Поле даты в стиле студии (StudioDateField) ─────────────────────────── */
+.sdate { position: relative; }
+.sdate__control { position: relative; }
+.sdate__input { width: 100%; padding-right: 34px; font-variant-numeric: tabular-nums; }
+.sdate__icon { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 26px; height: 26px; border: none; background: transparent; color: var(--st-text-muted); cursor: pointer; border-radius: 6px; }
+.sdate__icon:hover { background: var(--st-surface-hover); color: var(--st-text); }
+.sdate__pop { position: absolute; z-index: 50; top: calc(100% + 6px); left: 0; width: 264px; padding: 10px; background: var(--st-surface); border: 1px solid var(--st-border); border-radius: var(--st-radius); box-shadow: var(--st-shadow); }
+.sdate__nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.sdate__title { font-weight: 700; font-size: var(--st-text-sm); color: var(--st-text); }
+.sdate__navbtn { display: grid; place-items: center; width: 28px; height: 28px; border: none; background: transparent; color: var(--st-text-muted); cursor: pointer; border-radius: 7px; }
+.sdate__navbtn:hover { background: var(--st-surface-hover); color: var(--st-text); }
+.sdate__week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 4px; }
+.sdate__wd { text-align: center; font-size: 11px; color: var(--st-text-faint); font-weight: 600; padding: 2px 0; }
+.sdate__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.sdate__cell { height: 32px; display: grid; place-items: center; border: none; background: transparent; color: var(--st-text); font-size: 13px; border-radius: 8px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.sdate__cell:hover:not(.sdate__cell--empty) { background: var(--st-surface-hover); }
+.sdate__cell--empty { cursor: default; }
+.sdate__cell.is-today { box-shadow: inset 0 0 0 1px var(--st-border-strong, var(--st-border)); }
+.sdate__cell.is-selected { background: var(--st-accent); color: var(--st-accent-text); font-weight: 700; }
+.sdate__cell.is-selected:hover { background: var(--st-accent-hover, var(--st-accent)); }
+.sdate__foot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--st-border); }
+.sdate__foot-btn { border: none; background: transparent; color: var(--st-accent); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.sdate__foot-btn:hover { background: var(--st-surface-hover); }
 .vidtable__thumb-empty {
   display: flex;
   align-items: center;
