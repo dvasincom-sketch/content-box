@@ -11,7 +11,14 @@ import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import { levelName } from '@/lib/reputation'
 import { earnedBadges } from '@/lib/badges'
+import { avatarColor } from '@/lib/publicationEngagement'
+import { MessageCircle, MessagesSquare, PenLine, Heart, Users, Shield, Medal, Crown, Bug, Target, Star } from 'lucide-react'
 import { FollowButton } from '@/components/social/FollowButton'
+
+const BADGE_ICONS: Record<string, React.ComponentType<any>> = {
+  'message-circle': MessageCircle, messages: MessagesSquare, pen: PenLine, heart: Heart,
+  users: Users, shield: Shield, medal: Medal, crown: Crown, bug: Bug, target: Target, star: Star,
+}
 
 /**
  * Публичная страница профиля участника — /u/<handle> (Фаза 1 «Сообщество»).
@@ -125,6 +132,8 @@ export default async function ProfilePage({ params }: Params) {
   const avatarUrl = profile.avatar && typeof profile.avatar === 'object' ? profile.avatar.url : null
   const name = profile.displayName || `@${profile.handle}`
   const initial = (name.trim()[0] || '?').toUpperCase()
+  const avaColor = avatarColor(profile.id)
+  const isPaid = Boolean(profile.activeTier)
   const tierName =
     profile.activeTier && typeof profile.activeTier === 'object' ? profile.activeTier.name : null
   const confirmedBugs = await payload
@@ -155,8 +164,9 @@ export default async function ProfilePage({ params }: Params) {
             style={{
               width: 84, height: 84, borderRadius: 16, flex: 'none', overflow: 'hidden',
               display: 'grid', placeItems: 'center',
-              background: 'color-mix(in srgb, var(--brand-primary) 16%, transparent)',
-              color: 'var(--brand-text)', fontSize: 30, fontWeight: 700,
+              background: avatarUrl ? 'transparent' : avaColor,
+              color: '#fff', fontSize: 30, fontWeight: 700,
+              boxShadow: isPaid ? '0 0 0 3px var(--brand-bg, #fff), 0 0 0 6px color-mix(in srgb, var(--brand-accent) 88%, #f2b23a)' : undefined,
             }}
           >
             {avatarUrl ? (
@@ -172,13 +182,14 @@ export default async function ProfilePage({ params }: Params) {
               {tierName && (
                 <span
                   style={{
-                    fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 999,
-                    color: 'var(--brand-primary)',
-                    background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--brand-primary) 20%, transparent)',
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    fontSize: 12, fontWeight: 700, padding: '4px 11px', borderRadius: 999,
+                    color: '#8a5a00',
+                    background: 'linear-gradient(135deg, color-mix(in srgb, #f5c542 28%, transparent), color-mix(in srgb, #f0a500 20%, transparent))',
+                    border: '1px solid color-mix(in srgb, #e0a800 45%, transparent)',
                   }}
                 >
-                  {tierName}
+                  <Crown size={13} /> {tierName}
                 </span>
               )}
             </div>
@@ -211,21 +222,24 @@ export default async function ProfilePage({ params }: Params) {
 
         {badges.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
-            {badges.map((b) => (
-              <span
-                key={b.id}
-                title={b.desc}
-                style={{
-                  fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 999,
-                  color: b.exclusive ? 'var(--brand-accent)' : 'var(--brand-text)',
-                  background: b.exclusive
-                    ? 'color-mix(in srgb, var(--brand-accent) 14%, transparent)'
-                    : 'color-mix(in srgb, var(--brand-text) 8%, transparent)',
-                }}
-              >
-                {b.name}
-              </span>
-            ))}
+            {badges.map((b) => {
+              const Icon = BADGE_ICONS[b.icon] || Star
+              return (
+                <span
+                  key={b.id}
+                  title={b.desc}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    fontSize: 12, fontWeight: 600, padding: '5px 11px', borderRadius: 999,
+                    color: b.color,
+                    background: `color-mix(in srgb, ${b.color} 14%, transparent)`,
+                    border: `1px solid color-mix(in srgb, ${b.color} 32%, transparent)`,
+                  }}
+                >
+                  <Icon size={14} /> {b.name}
+                </span>
+              )
+            })}
           </div>
         )}
 
