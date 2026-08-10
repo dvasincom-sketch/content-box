@@ -90,6 +90,7 @@ import * as migration_20260810_120000_video_heatmap from './20260810_120000_vide
 import * as migration_20260810_130000_video_chapters from './20260810_130000_video_chapters';
 import * as migration_20260810_140000_video_jobs_kind from './20260810_140000_video_jobs_kind';
 import * as migration_20260810_150000_event_category from './20260810_150000_event_category';
+import * as migration_20260810_160000_video_summary from './20260810_160000_video_summary';
 
 export const migrations = [
   {
@@ -551,5 +552,10 @@ export const migrations = [
     up: migration_20260810_150000_event_category.up,
     down: migration_20260810_150000_event_category.down,
     name: '20260810_150000_event_category',
+  },
+  {
+    up: migration_20260810_160000_video_summary.up,
+    down: migration_20260810_160000_video_summary.down,
+    name: '20260810_160000_video_summary',
   },
 ];

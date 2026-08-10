@@ -54,6 +54,16 @@ export async function putObject(key: string, body: string | Buffer, contentType:
   await s3().send(new PutObjectCommand({ Bucket: S3_BUCKET, Key: key, Body: body, ContentType: contentType }))
 }
 
+/** Текст объекта S3 (напр. VTT-транскрипт для саммари). null при ошибке. */
+export async function getObjectText(key: string): Promise<string | null> {
+  try {
+    const r = await s3().send(new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }))
+    return await (r.Body as unknown as { transformToString: () => Promise<string> }).transformToString()
+  } catch {
+    return null
+  }
+}
+
 /** Проверка, что объект реально загружен (перед созданием записи). Размер/тип или null. */
 export async function headObject(key: string): Promise<{ size: number; contentType: string | null } | null> {
   try {

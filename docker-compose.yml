@@ -52,6 +52,9 @@ services:
       # подписи JWT для плейбэка HLS. Заданы в панели «Переменные» Timeweb.
       VIDEO_WEBHOOK_SECRET: ${VIDEO_WEBHOOK_SECRET:-}
       VIDEO_JWT_SECRET: ${VIDEO_JWT_SECRET:-}
+      # Ася-саммари видео (внешний сервис). Ключ — секрет, дёргаем сервер-к-серверу.
+      ASYA_SUMMARY_URL: ${ASYA_SUMMARY_URL:-https://xn--80a8a2b.online/api/summary}
+      ASYA_SUMMARY_KEY: ${ASYA_SUMMARY_KEY:-}
       # Сервисный ключ VK для валидатора видео (video.get). Пусто — VK не проверяется.
       VK_SERVICE_TOKEN: ${VK_SERVICE_TOKEN:-}
       # Веб-аналитика Umami (runtime). Читаются серверным кодом при рендере:

@@ -339,6 +339,13 @@ export const Videos: CollectionConfig = {
       },
     },
     {
+      name: 'summary',
+      type: 'json',
+      label: 'Саммари (Ася)',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true, description: 'Кэш краткого содержания от Аси {tldr, points, text, hash, lang, at}.' },
+    },
+    {
       name: 'durationSec',
       type: 'number',
       label: 'Длительность, сек',
