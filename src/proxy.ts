@@ -180,6 +180,12 @@ export async function proxy(request: NextRequest) {
       url.pathname = '/update.html'
       return NextResponse.rewrite(url, { request: { headers: safeHeaders } })
     }
+    // Манифест — статическая страница платформы (ценности/принципы/границы).
+    if (pathname === '/manifest' || pathname === '/manifest/') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/manifest.html'
+      return NextResponse.rewrite(url, { request: { headers: safeHeaders } })
+    }
     // Прочие пути (кроме уже пропущенных /studio, /admin, /api) — как есть.
     return passthrough()
   }

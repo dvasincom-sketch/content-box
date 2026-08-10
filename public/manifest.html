@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Манифест — Контент Бокс</title>
+<meta name="description" content="Ценности и принципы Контент Бокс: зачем мы строим платформу, где у каждого творца есть свой дом, и по каким правилам решаем, что можно, а чего у нас не место.">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="canonical" href="https://contentbox.site/manifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Контент Бокс">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:url" content="https://contentbox.site/manifest">
+<meta property="og:title" content="Манифест Контент Бокс">
+<meta property="og:description" content="Конец эпохи одного мнения и рождение миров. Наши ценности, принципы и границы.">
+<meta property="og:image" content="https://contentbox.site/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .theme-dark {
+    --bg:#0a0a0b; --surface:#131316; --surface-2:#1a1a1e; --surface-hover:#202027;
+    --border:#26262c; --border-strong:#35353d;
+    --text:#f4f4f5; --muted:#a1a1aa; --faint:#6b6b74;
+    --accent:#ffffff; --accent-text:#0a0a0b; --accent-hover:#e4e4e7;
+    --success:#4ade80; --danger:#f87171; --warning:#fbbf24;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 20px 50px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+  .theme-light {
+    --bg:#fafafa; --surface:#ffffff; --surface-2:#f4f4f5; --surface-hover:#ececee;
+    --border:#e4e4e7; --border-strong:#d4d4d8;
+    --text:#18181b; --muted:#52525b; --faint:#a1a1aa;
+    --accent:#18181b; --accent-text:#ffffff; --accent-hover:#27272a;
+    --success:#16a34a; --danger:#dc2626; --warning:#d97706;
+    --shadow:0 1px 2px rgba(0,0,0,.06), 0 20px 50px rgba(0,0,0,.10);
+    color-scheme:light;
+  }
+  :root {
+    --sans:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    --ease:cubic-bezier(.4,0,.2,1);
+    --radius-sm:6px; --radius:10px; --radius-lg:14px;
+    --maxw:820px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    line-height:1.5; -webkit-font-smoothing:antialiased;
+    transition:background .3s var(--ease), color .3s var(--ease);
+  }
+  a{color:inherit}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 20px}
+
+  /* Шапка / подвал — как на /update и главной */
+  .top{position:sticky; top:0; z-index:20; background:color-mix(in srgb,var(--bg) 82%,transparent); backdrop-filter:blur(20px) saturate(1.4); border-bottom:1px solid var(--border)}
+  .top__in{display:flex; align-items:center; justify-content:space-between; height:60px}
+  .logo{display:inline-flex; align-items:center; gap:9px; font-weight:700; font-size:16px; text-decoration:none; color:var(--text)}
+  .logo__mono{font-family:var(--mono); font-weight:500}
+  .logo__mark{display:inline-flex; width:26px; height:26px; color:var(--text)}
+  .top__right{display:flex; align-items:center; gap:8px}
+  .ghost{display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border:1px solid var(--border-strong); border-radius:var(--radius); background:transparent; color:var(--text); font:inherit; font-size:14px; font-weight:600; text-decoration:none; cursor:pointer; transition:background .15s var(--ease)}
+  .ghost:hover{background:var(--surface-hover)}
+  .icon-btn{width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border-strong); border-radius:var(--radius); background:transparent; color:var(--text); cursor:pointer}
+  .icon-btn svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+
+  /* Hero */
+  .hero{padding:72px 0 46px; border-bottom:1px solid var(--border)}
+  .kicker{font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:16px}
+  .hero h1{font-size:clamp(32px,6.4vw,52px); line-height:1.06; letter-spacing:-.02em; margin:0 0 18px; font-weight:700}
+  .hero p{font-size:18px; color:var(--muted); max-width:60ch; margin:0}
+  .hero .sig{margin-top:24px; font-family:var(--mono); font-size:13px; color:var(--faint)}
+
+  section{padding:52px 0; border-bottom:1px solid var(--border)}
+  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin:0 0 14px}
+  h2{font-size:clamp(24px,3.6vw,34px); line-height:1.2; letter-spacing:-.02em; font-weight:700; margin:0 0 18px}
+  h3{font-size:19px; font-weight:700; margin:0 0 6px; letter-spacing:-.01em}
+  p{margin:0 0 18px}
+  .muted{color:var(--muted)}
+  section p{font-size:16.5px; color:var(--text)}
+  section p.muted{color:var(--muted)}
+  section p b{font-weight:600}
+
+  /* Принципы */
+  .principle{padding:24px 0; border-top:1px solid var(--border); display:grid; grid-template-columns:52px 1fr; gap:18px}
+  .principle:first-of-type{border-top:0}
+  .pnum{font-family:var(--mono); font-size:15px; font-weight:600; color:var(--accent-text); width:40px; height:40px; border-radius:var(--radius); display:grid; place-items:center; background:var(--accent)}
+  .principle p{margin:0; color:var(--muted); font-size:16px; line-height:1.6}
+
+  /* Границы */
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:6px}
+  .card{border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px; background:var(--surface)}
+  .card h3{display:flex; align-items:center; gap:9px}
+  .dot{width:9px; height:9px; border-radius:50%; flex:none}
+  .dot--good{background:var(--success)} .dot--bad{background:var(--danger)}
+  .card ul{margin:12px 0 0; padding:0; list-style:none}
+  .card li{position:relative; padding:9px 0 9px 22px; color:var(--muted); font-size:15.5px; line-height:1.5; border-top:1px solid var(--border)}
+  .card li:first-child{border-top:0}
+  .card li::before{content:""; position:absolute; left:2px; top:16px; width:7px; height:7px; border-radius:50%}
+  .card--good li::before{background:var(--success)}
+  .card--bad li::before{background:var(--danger)}
+
+  /* Полярная звезда */
+  .star{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:26px 26px; margin-top:6px}
+  .star ol{margin:14px 0 0; padding-left:22px}
+  .star li{margin:0 0 10px; color:var(--muted); font-size:16px; line-height:1.55}
+  .star li b{color:var(--text)}
+
+  /* Финал */
+  .cta{text-align:center; border-bottom:none; padding:64px 0 84px}
+  .cta h2{max-width:20ch; margin:0 auto 12px}
+  .cta p{max-width:56ch; margin:0 auto 22px; color:var(--muted); font-size:17px}
+  .cta__btn{display:inline-flex; align-items:center; height:48px; padding:0 26px; border-radius:var(--radius); background:var(--accent); color:var(--accent-text); font-weight:700; font-size:16px; text-decoration:none; transition:background .15s var(--ease)}
+  .cta__btn:hover{background:var(--accent-hover)}
+  .cta .fine{margin-top:16px; font-family:var(--mono); font-size:12.5px; color:var(--faint)}
+
+  @media (max-width:640px){
+    .cols{grid-template-columns:1fr}
+    .principle{grid-template-columns:1fr; gap:8px}
+  }
+
+  .foot{border-top:1px solid var(--border); padding:30px 0 44px}
+  .foot__in{display:flex; flex-wrap:wrap; align-items:center; gap:14px; justify-content:space-between}
+  .foot__links{display:flex; flex-wrap:wrap; gap:18px}
+  .foot__links a{color:var(--muted); text-decoration:none; font-size:14px}
+  .foot__links a:hover{color:var(--text)}
+  .foot__copy{color:var(--faint); font-size:13px}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top__in">
+      <a class="logo" href="/">
+        <span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span>
+        Контент&nbsp;<span class="logo__mono">Бокс</span>
+      </a>
+      <div class="top__right">
+        <a class="ghost" href="/">На главную</a>
+        <button class="icon-btn" id="themeBtn" aria-label="Сменить тему"><svg id="themeIcon" viewBox="0 0 24 24"></svg></button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="kicker">Манифест</div>
+      <h1>Конец эпохи одного мнения и&nbsp;рождение миров</h1>
+      <p>Почему я строю платформу, где у каждого творца есть свой дом — и по каким принципам мы решаем, что здесь можно, а чего у нас не место.</p>
+      <div class="sig">Дмитрий Васин · основатель Контент Бокс</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">С чего всё началось</p>
+      <h2>Мир перестал вращаться вокруг одной оси</h2>
+      <p>Раньше мир был проще и линейнее. Существовал один источник, который диктовал, что хорошо, а что плохо, что достойно внимания, а что скучно. Сначала эту роль играли газеты и журналы, задававшие стандарты вкуса. Потом эстафету подхватило телевидение, где несколько каналов формировали повестку для миллионов.</p>
+      <p>Сегодня всё изменилось. Старые медиа стали просто каналами дистрибуции — они потеряли монополию на правду и вкус. Вместо одного голоса мы слышим тысячи, и этот шум породил новую силу: лидеров мнений. Тех, кого называют авторами, блогерами, наставниками, творцами. И самое важное — они перестали быть просто «вещателями». Вокруг них рождаются живые сообщества со своей культурой, ценностями и языком.</p>
+      <p>Но у этой свободы есть цена. Сегодня контент разбросан: видео на одном сервисе, курсы на другом, общение в мессенджерах, подписка оформлена где-то ещё. Алгоритмы чужих площадок решают, кого увидят. Публикации «протухают» за сутки. У лидера мнений есть аудитория — но нет дома.</p>
+      <p><b>Именно поэтому я создал Контент Бокс.</b> Платформу, которая возвращает контроль творцу. Здесь вы можете быть кем угодно — писателем, блогером, лектором, наставником — собрать все свои книги, видео, аудио, курсы и статьи в одном месте, под своим брендом и на своём домене, и монетизировать их по подписке или как цифровые товары. Без посредника, который в любой момент может всё отключить.</p>
+      <p>Но главное — Контент Бокс это не просто личный блог. Это экосистема, где сообщество оживает за счёт обсуждений, комментариев и публикаций ваших единомышленников. Мы строим мир, где каждый творец — центр собственной галактики.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Во что мы верим</p>
+      <h2>Шесть принципов, на которых стоит платформа</h2>
+      <p class="muted">Это не рекламные обещания, а правила, по которым мы принимаем решения — даже когда так делать дороже и сложнее.</p>
+
+      <div class="principle"><div class="pnum">1</div><div>
+        <h3>Творец владеет своим миром</h3>
+        <p>Аудитория, контент, бренд, домен и данные принадлежат автору, а не платформе. Мы — фундамент под вашим домом, но дом — ваш. Вы всегда можете забрать своё и уйти.</p>
+      </div></div>
+
+      <div class="principle"><div class="pnum">2</div><div>
+        <h3>Дом, а не лента</h3>
+        <p>Лента заставляет бежать и обесценивает вчерашнее. Мы строим библиотеку: архив, поиск, разделы, уровни доступа, плейлисты. Контент, созданный однажды, продолжает работать на вас годами.</p>
+      </div></div>
+
+      <div class="principle"><div class="pnum">3</div><div>
+        <h3>Независимость важнее удобства чужих правил</h3>
+        <p>Свой домен и свой бренд вместо «одного из тысячи» на чужой витрине. Никакой алгоритм не встаёт между вами и вашими людьми и не решает за вас, кого показать. Это ваша крепость — и мы защищаем её автономию.</p>
+      </div></div>
+
+      <div class="principle"><div class="pnum">4</div><div>
+        <h3>Сообщество — это со-творчество</h3>
+        <p>Ценность рождается не только сверху вниз. Комментарии, обсуждения, публикации участников — часть произведения. Мы даём инструменты, чтобы вокруг автора собирались единомышленники, а не просто зрители.</p>
+      </div></div>
+
+      <div class="principle"><div class="pnum">5</div><div>
+        <h3>Честная экономика</h3>
+        <p>Мы зарабатываем на понятной фиксированной подписке за платформу — а не на проценте с каждого вашего рубля. Чем больше вы зарабатываете, тем это для вас выгоднее. Ваш успех не должен быть нашим налогом.</p>
+      </div></div>
+
+      <div class="principle"><div class="pnum">6</div><div>
+        <h3>Мы берём на себя сложное, чтобы вы творили</h3>
+        <p>Домен, инфраструктура, платежи, хранилище, обновления — наша работа. Вы пришли создавать, а не администрировать серверы. Технологии должны исчезать из виду и просто работать.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Границы</p>
+      <h2>Что мы защищаем и чего у нас не место</h2>
+      <p class="muted">Платформа без границ превращается в свалку. Наши ценности определяют не только то, что мы строим, но и то, чему мы говорим «нет».</p>
+      <div class="cols">
+        <div class="card card--good">
+          <h3><span class="dot dot--good"></span>Мы за</h3>
+          <ul>
+            <li>Подлинность — живой автор и настоящая ценность, а не пустышка ради кликов.</li>
+            <li>Уважение к людям — к аудитории, её времени, деньгам и вниманию.</li>
+            <li>Свободу автора распоряжаться своим творчеством и своими правилами.</li>
+            <li>Долгую ценность — контент, который помогает и через год, а не только сегодня.</li>
+            <li>Приватность и безопасность данных ваших подписчиков.</li>
+            <li>Прозрачность — понятные условия, честные цены, никаких скрытых замков.</li>
+          </ul>
+        </div>
+        <div class="card card--bad">
+          <h3><span class="dot dot--bad"></span>У нас не место</h3>
+          <ul>
+            <li>Манипуляции и накрутке — фейковой активности, обману ради метрик.</li>
+            <li>Разжиганию ненависти, травле и насилию над людьми.</li>
+            <li>Эксплуатации и обману аудитории — продаже пустоты и ложным обещаниям.</li>
+            <li>Контенту, который вредит людям, — особенно всему, что угрожает детям.</li>
+            <li>«Выкачиванию» вместо создания — когда цель отнять, а не дать ценность.</li>
+            <li>Замыканию людей в зависимости вместо того, чтобы делать их сильнее.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <p class="eyebrow">Полярная звезда</p>
+      <h2>Как пользоваться этим манифестом</h2>
+      <p>Когда впереди сложное решение и нет готового ответа — ни в инструкции, ни в законе, — мы возвращаемся сюда. Хорошее решение то, на которое можно ответить «да» по всем вопросам:</p>
+      <div class="star">
+        <ol>
+          <li><b>Служит ли это творцу и его сообществу?</b> Делает ли автора и его людей сильнее.</li>
+          <li><b>Усиливает ли это независимость?</b> Или, наоборот, привязывает и ставит в зависимость от нас.</li>
+          <li><b>Создаёт ли это долгую ценность?</b> Останется ли это полезным завтра, а не только в моменте.</li>
+          <li><b>Уважает ли это людей?</b> Их время, деньги, внимание и достоинство.</li>
+          <li><b>Честно ли это?</b> Смогли бы мы объяснить это решение вслух, не пряча деталей.</li>
+        </ol>
+      </div>
+      <p class="muted" style="margin-top:18px">Если хоть на один вопрос ответ «нет» — мы не делаем этого, даже если так проще или прибыльнее.</p>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <h2>Добро пожаловать в мир, где творцы создают пространство для своих людей</h2>
+      <p>Даже если вы пока не автор — возможно, прочитав это, вы захотите им стать. Мир распался на тысячи маленьких вселенных. Постройте свою.</p>
+      <a class="cta__btn" href="/">Создать свою вселенную</a>
+      <div class="fine">Контент Бокс — инфраструктура для нового мира, а не хозяин над ним.</div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="wrap foot__in">
+      <a class="logo" href="/"><span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span>Контент&nbsp;<span class="logo__mono">Бокс</span></a>
+      <div class="foot__links">
+        <a href="/manifest">Манифест</a><a href="/update">Обновления</a><a href="/oferta.html">Оферта</a><a href="/policy.html">Политика</a><a href="mailto:hey@contentbox.site">hey@contentbox.site</a>
+      </div>
+      <div class="foot__copy">© 2026 Контент Бокс</div>
+    </div>
+  </footer>
+
+<script>
+  (function(){ var saved=null; try{ saved=localStorage.getItem('cb-theme2'); }catch(e){}
+    if(saved==='light') document.documentElement.className='theme-light'; })();
+  var icon=document.getElementById('themeIcon'), btn=document.getElementById('themeBtn');
+  var moon='<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+  var sun='<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4l1.4-1.4"/>';
+  function sync(){ if(icon) icon.innerHTML = document.documentElement.className==='theme-light' ? moon : sun; }
+  sync();
+  if(btn) btn.addEventListener('click',function(){ var light=document.documentElement.className==='theme-light'; document.documentElement.className=light?'theme-dark':'theme-light'; try{localStorage.setItem('cb-theme2', light?'dark':'light');}catch(e){} sync(); });
+</script>
+</body>
+</html>
