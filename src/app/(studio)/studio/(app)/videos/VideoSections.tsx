@@ -25,7 +25,7 @@ export type EditableVideo = {
   embedProvider?: string | null
   embedSrc?: string | null
   playbackId?: string | null
-  subtitles?: { lang: string; label: string }[]
+  subtitles?: { lang: string; label: string; at?: string; v?: number }[]
   summary?: { tldr?: string; at?: string } | null
   chapters?: { start: number; title: string }[]
 }
@@ -40,9 +40,9 @@ export function SubtitlesSection({
 }: {
   videoId: number | string
   playbackId: string | null
-  initial: { lang: string; label: string }[]
+  initial: { lang: string; label: string; at?: string; v?: number }[]
 }) {
-  const [tracks, setTracks] = useState<{ lang: string; label: string }[]>(initial)
+  const [tracks, setTracks] = useState<{ lang: string; label: string; at?: string; v?: number }[]>(initial)
   const [lang, setLang] = useState('')
   const [label, setLabel] = useState('')
   const [content, setContent] = useState<string | null>(null)
@@ -143,6 +143,9 @@ export function SubtitlesSection({
                 <div key={t.lang} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Captions size={14} />
                   <span style={{ fontSize: 13 }}>{t.label} <span style={{ opacity: 0.6 }}>({t.lang})</span></span>
+                  {(t.v || t.at) ? (
+                    <span style={{ fontSize: 11.5, opacity: 0.6 }}>{t.v ? `v${t.v}` : ''}{t.v && t.at ? ' · ' : ''}{t.at ? new Date(t.at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</span>
+                  ) : null}
                   <span style={{ flex: 1 }} />
                   <button type="button" className="catmgr__icon-btn catmgr__icon-btn--danger" onClick={() => remove(t.lang)} disabled={busy} title="Удалить"><Trash2 size={14} /></button>
                 </div>

@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       const langs = new Set(existing.map((sx) => String(sx?.lang)))
       const add = data.subtitles
         .filter((sx: any) => sx && sx.lang && sx.key && !langs.has(String(sx.lang)))
-        .map((sx: any) => ({ lang: String(sx.lang), label: String(sx.label || sx.lang), key: String(sx.key) }))
+        .map((sx: any) => ({ lang: String(sx.lang), label: String(sx.label || sx.lang), key: String(sx.key), at: new Date().toISOString(), v: 1 }))
       if (add.length) subsPatch = [...existing, ...add]
     }
 

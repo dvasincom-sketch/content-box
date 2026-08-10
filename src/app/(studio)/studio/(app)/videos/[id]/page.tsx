@@ -68,7 +68,7 @@ export default async function VideoEditorPage({ params }: { params: Promise<{ id
     usedIn,
     playbackId: (v.playbackId as string) || null,
     subtitles: Array.isArray(v.subtitles)
-      ? (v.subtitles as any[]).map((sx) => ({ lang: String(sx.lang || ''), label: String(sx.label || sx.lang || '') })).filter((sx) => sx.lang)
+      ? (v.subtitles as any[]).map((sx) => ({ lang: String(sx.lang || ''), label: String(sx.label || sx.lang || ''), at: sx.at ? String(sx.at) : undefined, v: sx.v != null ? Number(sx.v) : undefined })).filter((sx) => sx.lang)
       : [],
     summary: (v as any).summary ?? null,
     chapters: Array.isArray((v as any).chapters)

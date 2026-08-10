@@ -35,8 +35,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const pid = String(video.playbackId || '')
   if (!pid) return apiError('Видео ещё обрабатывается — субтитры можно добавить позже')
 
-  const current: Array<{ lang: string; label: string; key: string }> = Array.isArray(video.subtitles)
-    ? (video.subtitles as any[]).filter((s) => s && s.lang).map((s) => ({ lang: String(s.lang), label: String(s.label || s.lang), key: String(s.key || '') }))
+  const current: Array<{ lang: string; label: string; key: string; at?: string; v?: number }> = Array.isArray(video.subtitles)
+    ? (video.subtitles as any[]).filter((s) => s && s.lang).map((s) => ({ lang: String(s.lang), label: String(s.label || s.lang), key: String(s.key || ''), at: s.at ? String(s.at) : undefined, v: s.v != null ? Number(s.v) : undefined }))
     : []
 
   const action = String(data.action || 'add')
@@ -73,7 +73,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
     const key = `subs/${pid}/${lang}.vtt`
     await putObject(key, content, 'text/vtt; charset=utf-8')
-    const next = [...current.filter((s) => s.lang !== lang), { lang, label, key }]
+    const prevV = current.find((s) => s.lang === lang)?.v
+    const next = [...current.filter((s) => s.lang !== lang), { lang, label, key, at: new Date().toISOString(), v: (Number(prevV) || 0) + 1 }]
     await payload.update({ collection: 'videos', id: videoId, data: { subtitles: next } as any, overrideAccess: true })
     return apiOk({ subtitles: next })
   } catch (e: unknown) {
