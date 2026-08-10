@@ -5432,7 +5432,7 @@ a.session-expired__btn {
 /* Аналитика → Рассылки */
 .nl-policy { display: flex; align-items: center; gap: .6rem; padding: .8rem 1rem; margin-bottom: 1rem;
   border-radius: 12px; background: color-mix(in srgb, var(--brand-primary, #7c3aed) 8%, transparent);
-  color: var(--studio-text, #1a1a1a); font-size: .9rem; line-height: 1.4; }
+  color: var(--st-text); font-size: .9rem; line-height: 1.4; }
 .nl-policy svg { flex-shrink: 0; opacity: .8; }
 
 /* Универсальная информационная плашка с лёгким градиентом и иконкой
@@ -5455,11 +5455,11 @@ a.session-expired__btn {
 }
 .nl-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .8rem; }
 .nl-kpi { padding: .2rem 0; }
-.nl-kpi__n { font-size: 1.6rem; font-weight: 800; line-height: 1; }
-.nl-kpi__l { color: var(--studio-muted, #6b7280); font-size: .82rem; margin-top: .25rem; }
+.nl-kpi__n { font-size: 1.6rem; font-weight: 800; line-height: 1; color: var(--st-text); }
+.nl-kpi__l { color: var(--st-text-muted); font-size: .82rem; margin-top: .25rem; }
 .nl-table { display: flex; flex-direction: column; }
 .nl-row { display: grid; grid-template-columns: 1fr 90px 90px 90px; align-items: center; gap: .6rem;
   padding: .6rem .2rem; border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent); }
 .nl-row:last-child { border-bottom: 0; }
-.nl-row--head { font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; color: var(--studio-muted, #6b7280); }
+.nl-row--head { font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; color: var(--st-text-muted); }
 .nl-row__subj { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
