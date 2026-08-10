@@ -73,8 +73,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   })
 }
 
-export default async function CategoryPage({ params }: { params: Promise<Params> }) {
+export default async function CategoryPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { slug } = await params
+  const sp = await searchParams
+  // Фильтр/сортировка для разделов-событий.
+  const evSort: 'new' | 'old' = String(sp?.sort || '') === 'old' ? 'old' : 'new'
+  const evFrom = typeof sp?.from === 'string' ? sp.from : ''
+  const evTo = typeof sp?.to === 'string' ? sp.to : ''
   const ctx = await getTenantFromHeaders()
   if (!ctx) return <div className="p-8">Тенант не определён.</div>
 
@@ -145,6 +150,11 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
       })
     }
 
+    // Для событий — фильтр по диапазону дат события (если задан в запросе).
+    const eventRange: any[] = []
+    if (isEvent && evFrom) eventRange.push({ eventDate: { greater_than_equal: evFrom } })
+    if (isEvent && evTo) eventRange.push({ eventDate: { less_than_equal: `${evTo}T23:59:59.999` } })
+
     const pubsRes = await payload.find({
       collection: 'publications',
       where: {
@@ -154,9 +164,11 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
           // NULLS FIRST при '-publishedAt' — сразу наверх.
           publishedWhere(),
           { or: catMatch },
+          ...eventRange,
         ],
       },
-      sort: isEvent ? '-eventDate' : '-publishedAt',
+      // События: по умолчанию сначала новые (-eventDate), опц. сначала старые (eventDate).
+      sort: isEvent ? (evSort === 'old' ? 'eventDate' : '-eventDate') : '-publishedAt',
       depth: 1,
       limit: 50,
       overrideAccess: true,
@@ -302,7 +314,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
               В этом разделе пока нет подразделов.
             </p>
           )
-        ) : pubs.length === 0 ? (
+        ) : (pubs.length === 0 && !isEvent) ? (
           // Если есть статья или подкатегории — раздел не пустой.
           category.description || children.length > 0 || seriesEpisodes.length > 0 ? null : (
             <p style={{ color: 'var(--brand-muted)' }}>
@@ -310,6 +322,33 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
             </p>
           )
         ) : (
+          <>
+            {isEvent && (
+              <form method="get" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end', marginBottom: 20 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--brand-muted)' }}>
+                  Сортировка
+                  <select name="sort" defaultValue={evSort} className="c-input" style={{ minWidth: 160 }}>
+                    <option value="new">Сначала новые</option>
+                    <option value="old">Сначала старые</option>
+                  </select>
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--brand-muted)' }}>
+                  С даты
+                  <input type="date" name="from" defaultValue={evFrom} className="c-input" />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--brand-muted)' }}>
+                  По дату
+                  <input type="date" name="to" defaultValue={evTo} className="c-input" />
+                </label>
+                <button type="submit" className="c-btn c-btn--primary">Показать</button>
+                {(evFrom || evTo || evSort === 'old') && (
+                  <a href="?" className="c-btn c-btn--surface">Сбросить</a>
+                )}
+              </form>
+            )}
+            {pubs.length === 0 ? (
+              <p style={{ color: 'var(--brand-muted)' }}>{evFrom || evTo ? 'По заданным датам ничего не найдено.' : 'В этой категории пока нет материалов.'}</p>
+            ) : (
           <LatestPublicationsBlock
             heading=""
             items={pubs.map((p) => {
@@ -332,6 +371,8 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
               }
             })}
           />
+            )}
+          </>
         )}
 
         {/* Прямые подкатегории плитками — только для обычной категории.
