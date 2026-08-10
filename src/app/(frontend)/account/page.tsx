@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { levelProgress, LEVELS, POINT_WEIGHTS } from '@/lib/reputation'
 import { allBadges } from '@/lib/badges'
 
