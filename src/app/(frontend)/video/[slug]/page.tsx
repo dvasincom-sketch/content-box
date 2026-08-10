@@ -8,6 +8,7 @@ import { notFound } from 'next/navigation'
 import { Lock } from 'lucide-react'
 import { VideoPlayer } from './VideoPlayer'
 import { AsyaSummary } from './AsyaSummary'
+import { ASYA_MIN_TIER_PRICE } from '@/lib/asya'
 import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -104,9 +105,9 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
           <VideoLock reason={access.reason} requiredTierName={access.requiredTierName} cover={video.cover} settings={settings} />
         )}
 
-        {access.allowed && video.provider === 'self' && (Array.isArray(video.subtitles) && video.subtitles.length > 0 || video.summary) ? (
+        {video.provider === 'self' && ((Array.isArray(video.subtitles) && video.subtitles.length > 0) || video.summary) ? (
           <div style={{ marginTop: 20 }}>
-            <AsyaSummary videoId={video.id} initial={video.summary ?? null} />
+            <AsyaSummary videoId={video.id} minPrice={ASYA_MIN_TIER_PRICE} />
           </div>
         ) : null}
 

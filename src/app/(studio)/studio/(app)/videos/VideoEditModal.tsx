@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { X, Loader2, Check, FileText, ArrowUpRight, Trash2, Link as LinkIcon, Captions, Upload, Plus } from 'lucide-react'
+import { X, Loader2, Check, FileText, ArrowUpRight, Trash2, Link as LinkIcon, Captions, Upload, Plus, Sparkles } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { TagInput } from '../_ui/TagInput'
 
@@ -24,6 +24,7 @@ export type EditableVideo = {
   embedSrc?: string | null
   playbackId?: string | null
   subtitles?: { lang: string; label: string }[]
+  summary?: { tldr?: string; at?: string } | null
 }
 
 /**
@@ -270,6 +271,8 @@ export function VideoEditModal({
             )}
 
             {video.provider === 'self' && <AnalyticsSection videoId={video.id} />}
+
+            {video.provider === 'self' && <SummarySection videoId={video.id} initial={video.summary ?? null} />}
 
             {error && <div className="studio-login__error">{error}</div>}
 
@@ -522,6 +525,44 @@ function AnalyticsSection({ videoId }: { videoId: number | string }) {
           <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Высота столбца — как часто смотрят этот участок. Провалы — где перематывают или уходят.</div>
         </>
       )}
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Саммари от Аси: (пере)генерация краткого содержания по субтитрам             */
+/* -------------------------------------------------------------------------- */
+function SummarySection({ videoId, initial }: { videoId: number | string; initial: { tldr?: string; at?: string } | null }) {
+  const [summary, setSummary] = useState<{ tldr?: string; at?: string } | null>(initial)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function refresh() {
+    setBusy(true); setErr(null)
+    try {
+      const res = await fetch('/studio/api/videos/summarize', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ videoId }),
+      })
+      const j = await res.json()
+      if (!res.ok) setErr(j.error || 'Не удалось')
+      else setSummary(j.summary)
+    } catch { setErr('Ошибка соединения') } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="studio-field">
+      <span className="studio-field__label">Саммари от Аси</span>
+      {summary?.tldr ? (
+        <div className="videdit__hint" style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>{summary.tldr}</div>
+      ) : (
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>Саммари ещё не сгенерировано.</div>
+      )}
+      <button type="button" className="studio-btn studio-btn--ghost" onClick={refresh} disabled={busy}>
+        {busy ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} {summary?.tldr ? 'Обновить саммари' : 'Сгенерировать саммари'}
+      </button>
+      {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
+      <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Ася делает краткое содержание по субтитрам. Обновите после смены или дозагрузки субтитров.</div>
     </div>
   )
 }

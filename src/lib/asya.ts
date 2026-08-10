@@ -9,6 +9,9 @@
 const ASYA_URL = process.env.ASYA_SUMMARY_URL || 'https://xn--80a8a2b.online/api/summary'
 const ASYA_KEY = process.env.ASYA_SUMMARY_KEY || ''
 
+/** Мин. цена тарифа (₽) для доступа к саммари от Аси. Ниже — апселл. */
+export const ASYA_MIN_TIER_PRICE = Number(process.env.ASYA_MIN_TIER_PRICE_RUB || 2000)
+
 export function asyaEnabled(): boolean {
   return ASYA_KEY.trim().length > 0
 }
