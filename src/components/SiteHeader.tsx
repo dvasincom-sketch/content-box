@@ -11,7 +11,7 @@ import { InstallPWA } from '@/components/InstallPWA'
 import type { MenuNode } from '@/lib/buildMenu'
 
 export type NavItem = { label: string; url: string }
-export type HeaderSubscriber = { email?: string | null; displayName?: string | null; avatarUrl?: string | null } | null
+export type HeaderSubscriber = { email?: string | null; displayName?: string | null; avatarUrl?: string | null; isSubscriber?: boolean } | null
 export type SiteHeaderProps = {
   logoUrl?: string | null
   logoAlt?: string | null
@@ -126,7 +126,7 @@ export function SiteHeader({
                   aria-expanded={menuOpen}
                   title="Аккаунт"
                 >
-                  <span className="c-avatar c-avatar--soft c-avatar--sm" style={{ overflow: 'hidden' }}>
+                  <span className={`c-avatar c-avatar--soft c-avatar--sm${subscriber.isSubscriber ? ' c-avatar--ring' : ''}`} style={{ overflow: 'hidden' }}>
                     {avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

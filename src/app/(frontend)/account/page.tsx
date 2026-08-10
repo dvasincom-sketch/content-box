@@ -179,11 +179,7 @@ export default async function AccountOverviewPage() {
           {badges.map((b) => {
             const Icon = BADGE_ICONS[b.icon] || Star
             return (
-              <div
-                key={b.id}
-                title={b.earned ? b.desc : `Как получить: ${b.desc}`}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, width: 76, textAlign: 'center', cursor: 'help' }}
-              >
+              <div key={b.id} className="profile-badge" style={{ width: 76 }}>
                 <span
                   aria-hidden
                   style={{
@@ -202,6 +198,7 @@ export default async function AccountOverviewPage() {
                   )}
                 </span>
                 <span style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.2, color: b.earned ? 'var(--brand-text)' : 'var(--brand-muted)' }}>{b.name}</span>
+                <span className="profile-badge__tip" role="tooltip">{b.earned ? b.desc : `Как получить: ${b.desc}`}</span>
               </div>
             )
           })}

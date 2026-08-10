@@ -163,7 +163,17 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             menu={menu}
             subscriber={
               subscriber
-                ? { email: subscriber.email, displayName: subscriber.displayName, avatarUrl: subscriberAvatarUrl }
+                ? {
+                    email: subscriber.email,
+                    displayName: subscriber.displayName,
+                    avatarUrl: subscriberAvatarUrl,
+                    // Активная подписка → окантовка аватара (флейр подписчика).
+                    isSubscriber: Boolean(
+                      (subscriber as any).activeTier &&
+                        (subscriber as any).subscriptionUntil &&
+                        new Date((subscriber as any).subscriptionUntil).getTime() > Date.now(),
+                    ),
+                  }
                 : null
             }
           />
