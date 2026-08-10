@@ -46,7 +46,7 @@ const WHISPER_BIN = process.env.WHISPER_BIN || 'whisper-cli'
 const WHISPER_MODEL_PATH = process.env.WHISPER_MODEL_PATH || '/opt/models/ggml-small.bin'
 const WHISPER_LANG = process.env.WHISPER_LANG || 'ru'
 const WHISPER_THREADS = process.env.WHISPER_THREADS || String(Math.max(4, cpus()?.length || 4))
-const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 60 * 60 * 1000)
+const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 2 * 60 * 60 * 1000)
 
 const log = (...a) => console.log(new Date().toISOString(), '[worker]', ...a)
 
