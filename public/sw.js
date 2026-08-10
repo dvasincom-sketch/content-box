@@ -4,7 +4,7 @@
  * API, студию, админку, видео и оптимизацию картинок — НИКОГДА не кэшируем.
  * SW скоупится по origin, поэтому кэш разных тенантов не смешивается.
  */
-const VERSION = 'v6';
+const VERSION = 'v7';
 const STATIC_CACHE = `static-${VERSION}`;
 const OFFLINE_URL = '/offline';
 
@@ -126,7 +126,10 @@ if(${IS_STUDIO}){
 <style>
 html,body{height:100%;margin:0}
 :root{--rbg:#0a0a0b;--rsurface:#131316;--rborder:#26262c;--rtext:#f4f4f5;--rmuted:#a1a1aa;--racc:#fff;--racctext:#0a0a0b}
-body{margin:0;min-height:100%;display:flex;align-items:center;justify-content:center;background:var(--rbg);color:var(--rtext);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:24px;box-sizing:border-box}
+body{margin:0;min-height:100%;display:flex;align-items:center;justify-content:center;background:radial-gradient(60% 50% at 15% 12%,color-mix(in srgb,var(--racc) 16%,transparent),transparent 60%),radial-gradient(55% 45% at 88% 85%,color-mix(in srgb,var(--racc) 12%,transparent),transparent 60%),var(--rbg);color:var(--rtext);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:24px;box-sizing:border-box}
+.brand{position:fixed;top:24px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:9px;z-index:3}
+.brand-mark{width:26px;height:26px;border-radius:7px;background:var(--racc);color:var(--racctext);display:grid;place-items:center;flex:none}
+.brand-name{font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--rtext)}
 .wrap{width:100%;max-width:760px;display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center}
 .col{min-width:0}
 .sp{width:34px;height:34px;margin:0 0 18px;border:3px solid color-mix(in srgb,var(--rmuted) 35%,transparent);border-top-color:var(--racc);border-radius:50%;animation:spin 1s linear infinite}
@@ -134,7 +137,7 @@ body{margin:0;min-height:100%;display:flex;align-items:center;justify-content:ce
 h1{font-size:22px;margin:0 0 10px;font-weight:800}
 p{margin:0 0 20px;color:var(--rmuted);font-size:14px;line-height:1.6}
 .btn{background:var(--racc);color:var(--racctext);border:0;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer}
-.panel{background:var(--rsurface);border:1px solid var(--rborder);border-radius:14px;padding:16px}
+.panel{background:color-mix(in srgb,var(--rsurface) 58%,transparent);border:1px solid color-mix(in srgb,var(--rtext) 14%,transparent);border-radius:14px;padding:16px;-webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);box-shadow:0 24px 60px -34px rgba(0,0,0,.6),inset 0 1px 0 color-mix(in srgb,var(--rtext) 10%,transparent)}
 .panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--rmuted);margin:0 0 12px;font-weight:700}
 .log{display:flex;flex-direction:column;gap:9px;min-height:184px}
 .st-row{display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.35;animation:fade .3s ease}
@@ -147,6 +150,7 @@ p{margin:0 0 20px;color:var(--rmuted);font-size:14px;line-height:1.6}
 .upd:hover{text-decoration:underline}
 @media(max-width:640px){.wrap{grid-template-columns:1fr;gap:22px;max-width:420px}.log{min-height:150px}}
 </style></head><body>
+<div class="brand"><span class="brand-mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5"/><path d="M12 12v10"/></svg></span><span class="brand-name">Контент Бокс</span></div>
 <div class="wrap">
   <div class="col">
     <div class="sp"></div>
