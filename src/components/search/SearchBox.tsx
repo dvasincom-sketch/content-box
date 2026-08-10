@@ -108,7 +108,7 @@ export function SearchBox({
       setActive((a) => Math.max(a - 1, -1))
     } else if (e.key === 'Enter' && active >= 0) {
       const h = hits[active]
-      if (h && !h.locked) {
+      if (h) {
         e.preventDefault()
         setOpen(false)
         router.push(h.url)
@@ -187,7 +187,7 @@ export function SearchBox({
           {hits.map((h, i) => (
             <li key={h.id} role="option" aria-selected={i === active}>
               <Link
-                href={h.locked ? '#' : h.url}
+                href={h.url}
                 className={`${styles.suggest} c-spotlight ${i === active ? styles.suggestActive : ''}`}
                 onMouseEnter={() => setActive(i)}
                 onClick={() => setOpen(false)}

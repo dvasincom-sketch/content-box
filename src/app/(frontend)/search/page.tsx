@@ -130,9 +130,8 @@ export default async function SearchPage({
               {result.hits.map((h) => (
                 <li key={h.id}>
                   <Link
-                    href={h.locked ? '#' : h.url}
+                    href={h.url}
                     className={`${styles.itemLink} c-spotlight`}
-                    aria-disabled={h.locked}
                   >
                     {h.thumb ? (
                       // eslint-disable-next-line @next/next/no-img-element
