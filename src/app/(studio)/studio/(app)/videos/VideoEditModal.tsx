@@ -557,21 +557,27 @@ function SummarySection({ videoId, initial, hasSubtitles }: { videoId: number | 
 
   return (
     <div className="studio-field">
-      <span className="studio-field__label">Саммари от Аси</span>
-      {summary?.tldr ? (
-        <div className="videdit__hint" style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>{summary.tldr}</div>
-      ) : (
-        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>{hasSubtitles ? 'Саммари ещё не сгенерировано.' : 'Саммари появится, когда будут субтитры.'}</div>
-      )}
-      <button type="button" className="studio-btn studio-btn--ghost" onClick={refresh} disabled={busy || !hasSubtitles} title={!hasSubtitles ? 'Сначала нужны субтитры' : undefined}>
-        {busy ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} {summary?.tldr ? 'Обновить саммари' : 'Сгенерировать саммари'}
-      </button>
-      <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-        {hasSubtitles
-          ? 'Ася делает краткое содержание по субтитрам. Обновите после смены или дозагрузки субтитров.'
-          : 'Сначала сгенерируйте автоматические субтитры или загрузите файл выше — затем можно собрать саммари.'}
+      {/* Отдельная сущность — своя карточка с фирменным акцентом Аси. */}
+      <div style={{ borderRadius: 14, border: '1px solid color-mix(in srgb, #b79aef 42%, var(--brand-border, rgba(128,128,128,.25)))', background: 'linear-gradient(135deg, rgba(247,161,188,.07), rgba(183,154,239,.07))', padding: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 10 }}>
+          <span aria-hidden style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, background: 'radial-gradient(circle at 34% 30%, #ffffff, #ffb3cc 42%, #c3a0f2 70%, #8fb8ff)', boxShadow: '0 0 9px 1px rgba(199,150,240,.75), 0 0 0 1px rgba(255,255,255,.5)' }} />
+          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--brand-text)' }}>Саммари от Аси</span>
+        </div>
+        {summary?.tldr ? (
+          <div className="videdit__hint" style={{ fontSize: 13, opacity: 0.9, marginBottom: 10 }}>{summary.tldr}</div>
+        ) : (
+          <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 10 }}>{hasSubtitles ? 'Саммари ещё не сгенерировано.' : 'Саммари появится, когда будут субтитры.'}</div>
+        )}
+        <button type="button" className="studio-btn studio-btn--ghost" onClick={refresh} disabled={busy || !hasSubtitles} title={!hasSubtitles ? 'Сначала нужны субтитры' : undefined}>
+          {busy ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} {summary?.tldr ? 'Обновить саммари' : 'Сгенерировать саммари'}
+        </button>
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
+          {hasSubtitles
+            ? 'Ася делает краткое содержание по субтитрам. Обновите после смены или дозагрузки субтитров.'
+            : 'Сначала сгенерируйте автоматические субтитры или загрузите файл выше — затем можно собрать саммари.'}
+        </div>
+        {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
       </div>
-      {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
     </div>
   )
 }
