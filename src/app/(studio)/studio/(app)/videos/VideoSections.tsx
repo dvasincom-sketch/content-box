@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Loader2, Check, Trash2, Captions, Upload, Plus, Sparkles, List } from 'lucide-react'
 
 /**
@@ -50,6 +50,33 @@ export function SubtitlesSection({
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [gen, setGen] = useState<'idle' | 'busy' | 'queued'>('idle')
+  const [job, setJob] = useState<{ status: string; error: string | null } | null>(null)
+  const [pollKick, setPollKick] = useState(0)
+  const prevStatus = useRef<string | null>(null)
+
+  // Опрос статуса фоновой задачи субтитров: «в очереди / распознаём / готово /
+  // ошибка» вживую. Активно опрашиваем, только пока задача в работе; на 'done'
+  // перезагружаем — свежая дорожка приходит вебхуком и появится после reload.
+  useEffect(() => {
+    let alive = true
+    const tick = async () => {
+      if (!alive) return
+      let st: string | null = null
+      try {
+        const r = await fetch(`/studio/api/videos/job-status?videoId=${videoId}`, { credentials: 'include' })
+        const j = await r.json().catch(() => null)
+        st = j?.job?.status ?? null
+        if ((prevStatus.current === 'queued' || prevStatus.current === 'processing') && st === 'done') {
+          window.location.reload(); return
+        }
+        prevStatus.current = st
+        if (alive) setJob(j?.job ? { status: String(j.job.status), error: j.job.error ?? null } : null)
+      } catch { /* сеть — повторим позже */ }
+      if (alive && (st === 'queued' || st === 'processing')) setTimeout(tick, 6000)
+    }
+    tick()
+    return () => { alive = false }
+  }, [videoId, pollKick])
 
   async function genAuto() {
     setErr(null); setGen('busy')
@@ -60,7 +87,7 @@ export function SubtitlesSection({
       })
       const j = await res.json()
       if (!res.ok) { setErr(j.error || 'Не удалось'); setGen('idle') }
-      else setGen('queued')
+      else { setGen('queued'); prevStatus.current = 'queued'; setPollKick((k) => k + 1) }
     } catch { setErr('Ошибка соединения'); setGen('idle') }
   }
 
@@ -137,9 +164,20 @@ export function SubtitlesSection({
           <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Формат VTT или SRT (SRT конвертируется автоматически). Код языка — ru, en и т.п.</div>
 
           <div style={{ borderTop: '1px solid var(--brand-border, rgba(128,128,128,.2))', margin: '12px 0 8px' }} />
-          {gen === 'queued' ? (
-            <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.85 }}>
-              <Check size={13} style={{ verticalAlign: '-2px' }} /> Задача поставлена — субтитры и главы появятся через несколько минут (обновите позже).
+          {job && (job.status === 'queued' || job.status === 'processing') ? (
+            <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.85, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Loader2 size={13} className="spin" /> {job.status === 'processing' ? 'Распознаём речь… для длинного видео это может занять до получаса.' : 'В очереди на распознавание…'}
+            </div>
+          ) : job && job.status === 'error' ? (
+            <>
+              <div className="studio-login__error" style={{ marginBottom: 6 }}>Не удалось распознать речь{job.error ? `: ${job.error}` : ''}.</div>
+              <button type="button" className="studio-btn studio-btn--ghost" onClick={genAuto} disabled={gen === 'busy'}>
+                {gen === 'busy' ? <Loader2 size={14} className="spin" /> : <Captions size={14} />} Попробовать снова
+              </button>
+            </>
+          ) : gen === 'queued' ? (
+            <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.85, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Loader2 size={13} className="spin" /> Задача поставлена — распознаём речь…
             </div>
           ) : (
             <>
