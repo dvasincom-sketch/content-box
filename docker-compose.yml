@@ -210,6 +210,13 @@ services:
       POLL_INTERVAL_MS: ${VIDEO_POLL_INTERVAL_MS:-5000}
       MAX_ATTEMPTS: ${VIDEO_MAX_ATTEMPTS:-3}
       WORKER_HEALTH_PORT: "3001"
+      # Авто-субтитры (whisper.cpp). Бинарник и модель уже в образе (Dockerfile);
+      # здесь только тумблер и параметры. WHISPER_ENABLED=0 — выключить.
+      WHISPER_ENABLED: ${WHISPER_ENABLED:-1}
+      WHISPER_LANG: ${WHISPER_LANG:-ru}
+      WHISPER_THREADS: ${WHISPER_THREADS:-4}
+      WHISPER_MODEL_PATH: ${WHISPER_MODEL_PATH:-/opt/models/ggml-small.bin}
+      WHISPER_TIMEOUT_MS: ${WHISPER_TIMEOUT_MS:-7200000}
     # ПЕРЕОПРЕДЕЛЯЕМ healthcheck из Dockerfile (там curl :3000/api/health — веб
     # приложения). У воркера веб-сервера на 3000 нет, поэтому тот healthcheck
     # падал и оркестратор убивал контейнер каждые ~7 мин ПОСРЕДИ транскода.

@@ -38,6 +38,16 @@ const MAX_ATTEMPTS = process.env.MAX_ATTEMPTS || '3'
 // зависший процесс блокирует очередь навсегда — конкурентность 1).
 const FFMPEG_TIMEOUT_MS = Number(process.env.FFMPEG_TIMEOUT_MS || 2 * 60 * 60 * 1000)
 
+// Авто-субтитры: self-hosted whisper.cpp (без платных API). Бинарник и ggml-модель
+// кладёт Dockerfile (отдельная стадия). Стадия НЕобязательная: при ошибке или
+// WHISPER_ENABLED=0 видео всё равно готово, просто без авто-дорожки.
+const WHISPER_ENABLED = (process.env.WHISPER_ENABLED || '1') !== '0'
+const WHISPER_BIN = process.env.WHISPER_BIN || 'whisper-cli'
+const WHISPER_MODEL_PATH = process.env.WHISPER_MODEL_PATH || '/opt/models/ggml-small.bin'
+const WHISPER_LANG = process.env.WHISPER_LANG || 'ru'
+const WHISPER_THREADS = process.env.WHISPER_THREADS || '4'
+const WHISPER_TIMEOUT_MS = Number(process.env.WHISPER_TIMEOUT_MS || 2 * 60 * 60 * 1000)
+
 const log = (...a) => console.log(new Date().toISOString(), '[worker]', ...a)
 
 // Health-сервер. Воркер использует ТОТ ЖЕ образ, что и app, и наследует его
@@ -296,6 +306,24 @@ async function finishJob(id, status, error) {
   await pool.query(`UPDATE video_jobs SET status=$2, error=$3, updated_at=now() WHERE id=$1`, [id, status, error ? String(error).slice(0, 1000) : null])
 }
 
+// Авто-субтитры через whisper.cpp: извлекаем 16кГц mono WAV (требование whisper),
+// гоним распознавание в VTT, заливаем в subs/{pid}/{lang}.vtt. Возвращает
+// дескриптор дорожки { lang, label, key } или бросает (ловим выше как non-fatal).
+async function generateSubtitles(input, playbackId, work) {
+  const wav = join(work, 'audio.wav')
+  await run('ffmpeg', ['-y', '-i', input, '-vn', '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le', wav], {}, FFMPEG_TIMEOUT_MS)
+  const outBase = join(work, 'auto')
+  await run(
+    WHISPER_BIN,
+    ['-m', WHISPER_MODEL_PATH, '-f', wav, '-l', WHISPER_LANG, '-t', String(WHISPER_THREADS), '-ovtt', '-of', outBase],
+    {},
+    WHISPER_TIMEOUT_MS,
+  )
+  const key = `subs/${playbackId}/${WHISPER_LANG}.vtt`
+  await uploadFile(`${outBase}.vtt`, key)
+  return { lang: WHISPER_LANG, label: `Авто (${WHISPER_LANG.toUpperCase()})`, key }
+}
+
 async function processJob(job) {
   const playbackId = job.playback_id
   log(`job ${job.id} → playback ${playbackId} (attempt ${job.attempts})`)
@@ -349,6 +377,17 @@ async function processJob(job) {
     const gifKey = `preview/${playbackId}.gif`
     try { await uploadFile(join(work, 'preview.gif'), gifKey); assetBytes += await fileBytes(join(work, 'preview.gif')) } catch { /* нет gif — ок */ }
 
+    // Авто-субтитры (whisper.cpp) — необязательная стадия, не валит задачу.
+    let autoSubs = null
+    if (WHISPER_ENABLED && meta.hasAudio) {
+      try {
+        t = Date.now()
+        log(`job ${job.id} whisper: генерирую субтитры (${WHISPER_LANG})…`)
+        autoSubs = await generateSubtitles(input, playbackId, work)
+        log(`job ${job.id} whisper готово за ${secs(t)}s`)
+      } catch (e) { log('whisper failed (non-fatal):', e.message) }
+    }
+
     await postWebhook({
       playbackId,
       videoId: job.video_id,
@@ -360,6 +399,7 @@ async function processJob(job) {
       spriteKey,
       gifKey,
       assetBytes,
+      subtitles: autoSubs ? [autoSubs] : undefined,
     })
     await finishJob(job.id, 'done', null)
     // Оригинал больше не нужен — HLS собран и залит в S3. Удаляем исходник,

@@ -3,6 +3,24 @@
 # работает `payload migrate` — ему нужны payload.config, src/migrations и CLI
 # (в standalone-образе их нет). Медиа — во внешних R2/Kinescope, в образ не едет.
 
+# ── Стадия сборки whisper.cpp: self-hosted распознавание речи для авто-субтитров
+#    (worker/transcode.mjs). Отдельная стадия — build-инструменты (git/cmake/gcc)
+#    в финальный образ НЕ едут; копируем только статический бинарник + ggml-модель.
+#    Модель выбирается build-аргументом WHISPER_MODEL: small ≈ 466МБ — разумный
+#    CPU-дефолт для русского; base ≈ 140МБ легче/быстрее, но грубее.
+FROM debian:bookworm-slim AS whisper
+ARG WHISPER_MODEL=small
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git build-essential cmake ca-certificates wget \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /opt
+RUN git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git
+WORKDIR /opt/whisper.cpp
+RUN cmake -B build -DBUILD_SHARED_LIBS=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON \
+  && cmake --build build -j --config Release
+RUN sh ./models/download-ggml-model.sh ${WHISPER_MODEL}
+
+
 FROM node:20-bookworm-slim
 
 # ca-certificates/openssl — для TLS к Postgres/R2/Kinescope.
@@ -13,6 +31,14 @@ FROM node:20-bookworm-slim
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates openssl curl ffmpeg \
   && rm -rf /var/lib/apt/lists/*
+
+# whisper.cpp: статический бинарник + ggml-модель для авто-субтитров (worker).
+# WHISPER_MODEL_PATH по умолчанию указывает на small; при смене build-аргумента
+# WHISPER_MODEL обнови и WHISPER_MODEL_PATH (рантайм-переменной воркера).
+COPY --from=whisper /opt/whisper.cpp/build/bin/whisper-cli /usr/local/bin/whisper-cli
+COPY --from=whisper /opt/whisper.cpp/models/ggml-*.bin /opt/models/
+ENV WHISPER_BIN=/usr/local/bin/whisper-cli
+ENV WHISPER_MODEL_PATH=/opt/models/ggml-small.bin
 
 # Дальше всё от непривилегированного `node`, а COPY идут с --chown.
 # Отдельный `RUN chown -R /app` не годится: слой overlayfs копирует затронутые

@@ -52,6 +52,18 @@ export async function POST(req: NextRequest) {
     const video = found.docs[0]
     if (!video) return NextResponse.json({ error: 'Видео не найдено' }, { status: 404 })
 
+    // Авто-субтитры от воркера (whisper): добавляем дорожку, НЕ затирая ручные
+    // треки автора того же языка (dedup по lang).
+    let subsPatch: unknown = undefined
+    if (Array.isArray(data.subtitles) && data.subtitles.length) {
+      const existing = Array.isArray((video as any).subtitles) ? ((video as any).subtitles as any[]) : []
+      const langs = new Set(existing.map((sx) => String(sx?.lang)))
+      const add = data.subtitles
+        .filter((sx: any) => sx && sx.lang && sx.key && !langs.has(String(sx.lang)))
+        .map((sx: any) => ({ lang: String(sx.lang), label: String(sx.label || sx.lang), key: String(sx.key) }))
+      if (add.length) subsPatch = [...existing, ...add]
+    }
+
     const patch: Record<string, unknown> =
       data.status === 'error'
         ? { assetStatus: 'error', assetError: String(data.error || 'Ошибка транскодинга').slice(0, 500) }
@@ -63,6 +75,7 @@ export async function POST(req: NextRequest) {
             gifKey: data.gifKey || null,
             ...(data.assetBytes ? { assetBytes: Number(data.assetBytes) } : {}),
             ...(data.durationSec ? { durationSec: Number(data.durationSec) } : {}),
+            ...(subsPatch ? { subtitles: subsPatch } : {}),
           }
 
     await payload.update({ collection: 'videos', id: video.id, data: patch as any, overrideAccess: true, depth: 0 })
