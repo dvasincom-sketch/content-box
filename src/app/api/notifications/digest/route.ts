@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { publishedWhere } from '@/lib/published'
 import { emailBrandForTenant, digestEmail, type DigestItem } from '@/emails'
+import { listmonkSendEnabled, sendDigestCampaign } from '@/lib/listmonkSend'
 
 /**
  * Планировщик дайджеста. Дёргается по расписанию (внешний cron) с секретом
@@ -171,7 +172,27 @@ export async function POST(req: NextRequest) {
       const brand = emailBrandForTenant(tenant, settings)
       const siteUrl = `https://${domain}`
 
-      for (const sub of subsRes.docs as any[]) {
+      // Сначала пробуем отправить кампанией через Listmonk (трекинг + история
+      // выпусков). Кампания — одно письмо на всех: берём общие новинки (items).
+      // Персонализация по подпискам на книги в этом пути опускается. При любой
+      // осечке sendDigestCampaign вернёт false — падаем на прежнюю рассылку.
+      let sentViaListmonk = false
+      if (!dryRun && listmonkSendEnabled() && items.length > 0) {
+        const optIn = (subsRes.docs as any[])
+          .filter((sx) => sx.email)
+          .map((sx) => ({ email: String(sx.email), name: String(sx.name || sx.displayName || '') }))
+        const mail = digestEmail({ brand, siteUrl, items, unsubscribeUrl: '{{ UnsubscribeURL }}' })
+        sentViaListmonk = await sendDigestCampaign({
+          tenantId,
+          tenantName: String((tenant.name as string) || brand.title || domain),
+          subscribers: optIn,
+          subject: mail.subject,
+          html: mail.html,
+        })
+        if (sentViaListmonk) sent = optIn.length
+      }
+
+      for (const sub of (sentViaListmonk ? [] : (subsRes.docs as any[]))) {
         if (!sub.email) continue
         // Персональные позиции: общие публикации + новые главы книг, за которыми
         // следит этот читатель.

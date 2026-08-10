@@ -64,6 +64,13 @@ services:
       UMAMI_API_TOKEN: ${UMAMI_API_TOKEN:-}
       UMAMI_API_USER: ${UMAMI_API_USER:-}
       UMAMI_API_PASSWORD: ${UMAMI_API_PASSWORD:-}
+      # Listmonk (рассылки): чтение статистики выпусков и отправка дайджеста
+      # кампанией. Внутренний адрес сервиса listmonk. Без этих переменных
+      # приложение НЕ видит Listmonk (Timeweb пробрасывает только объявленное здесь).
+      LISTMONK_API_URL: ${LISTMONK_API_URL:-http://listmonk:9000}
+      LISTMONK_API_USER: ${LISTMONK_API_USER:-}
+      LISTMONK_API_TOKEN: ${LISTMONK_API_TOKEN:-}
+      LISTMONK_FROM_EMAIL: ${LISTMONK_FROM_EMAIL:-noreply@contentbox.site}
     depends_on:
       # service_started, а НЕ service_healthy — сознательно.
       #
