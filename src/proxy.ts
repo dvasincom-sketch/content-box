@@ -198,7 +198,8 @@ export async function proxy(request: NextRequest) {
     // который вообще не резолвится.
     const url = request.nextUrl.clone()
     url.pathname = '/domain-not-found'
-    const res = NextResponse.rewrite(url, { request: { headers: safeHeaders } })
+    // status 404 — иначе неизвестный домен отдаёт 200 (плохо для SEO/поисковиков).
+    const res = NextResponse.rewrite(url, { status: 404, request: { headers: safeHeaders } })
     res.headers.set('x-tenant-status', 'unresolved')
     return res
   }
