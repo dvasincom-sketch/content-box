@@ -4,11 +4,17 @@
  * несколько служебных слов фронта. Уникальность — в рамках тенанта (проверка
  * в API + партиал-уникальный индекс БД).
  */
-import { isValidSubdomain, RESERVED_SUBDOMAINS, normalizeSubdomain } from './subdomain'
+import { isValidSubdomain, normalizeSubdomain } from './subdomain'
 import { slugify } from './slugify'
 
-const EXTRA_RESERVED = new Set<string>([
+// Адрес /u/<handle> — это ПУТЬ, а не поддомен, поэтому инфраструктурные резервы
+// поддоменов (www, api, cdn, mail, static…) здесь не нужны: они не конфликтуют
+// с маршрутом /u/. Резервируем только служебные пути рядом и слова, которыми
+// удобно выдавать себя за площадку/модерацию.
+const RESERVED_HANDLES = new Set<string>([
   'u', 'me', 'settings', 'profile', 'account', 'login', 'logout', 'register',
+  'admin', 'studio', 'api', 'support', 'help', 'official', 'contentbox', 'root',
+  'moderator', 'mod', 'staff',
 ])
 
 export function normalizeHandle(input: string): string {
@@ -24,7 +30,7 @@ export function handleError(h: string): string | null {
   if (!isValidHandle(h)) {
     return 'Адрес: 3–30 символов, латиница, цифры и дефис (не по краям).'
   }
-  if (RESERVED_SUBDOMAINS.has(h) || EXTRA_RESERVED.has(h)) {
+  if (RESERVED_HANDLES.has(h)) {
     return 'Этот адрес зарезервирован. Выберите другой.'
   }
   return null
