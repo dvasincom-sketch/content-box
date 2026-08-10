@@ -3265,6 +3265,49 @@ select.studio-input {
 }
 .videdit__used-arrow { color: var(--st-text-faint); flex-shrink: 0; }
 
+/* ── Страница-редактор видео с табами (/studio/videos/<id>) ──────────────── */
+.vidpage { max-width: 760px; }
+.vidpage__top { margin-bottom: var(--st-space-3); }
+.vidpage__back {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--st-text-sm); font-weight: 500; color: var(--st-text-muted);
+  text-decoration: none; transition: color var(--st-dur) var(--st-ease);
+}
+.vidpage__back:hover { color: var(--st-text); }
+.vidpage__head { margin-bottom: var(--st-space-4); }
+.vidpage__title { overflow-wrap: anywhere; }
+
+.vidtabs {
+  display: flex; flex-wrap: wrap; gap: 2px;
+  border-bottom: 1px solid var(--st-border);
+  margin-bottom: var(--st-space-5);
+}
+.vidtabs__tab {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 10px 14px; margin-bottom: -1px;
+  font: inherit; font-size: var(--st-text-sm); font-weight: 500;
+  color: var(--st-text-muted); background: none; border: none;
+  border-bottom: 2px solid transparent; cursor: pointer;
+  transition: color var(--st-dur) var(--st-ease), border-color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease);
+}
+.vidtabs__tab:hover { color: var(--st-text); background: var(--st-surface-hover); border-radius: var(--st-radius-sm) var(--st-radius-sm) 0 0; }
+.vidtabs__tab.is-active { color: var(--st-text); border-bottom-color: var(--st-accent); font-weight: 600; }
+.vidtabs__tab svg { flex: none; }
+
+.vidpage__panel { margin-bottom: var(--st-space-5); }
+.vidpage__overview { display: flex; flex-direction: column; gap: var(--st-space-4); }
+.vidpage__foot {
+  display: flex; align-items: center; justify-content: flex-end; gap: var(--st-space-3);
+  padding-top: var(--st-space-4); border-top: 1px solid var(--st-border);
+}
+
+@media (max-width: 640px) {
+  .vidtabs { gap: 0; }
+  .vidtabs__tab { padding: 9px 10px; }
+  .vidtabs__tab span { font-size: 13px; }
+}
+
+
 .vidtable__row {
   border-bottom: 1px solid var(--st-border);
   transition: background var(--st-dur) var(--st-ease);

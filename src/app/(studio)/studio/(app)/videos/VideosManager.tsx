@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { StudioSelect } from '../_ui/StudioSelect'
-import { VideoEditModal, type EditableVideo } from './VideoEditModal'
 
 type Tier = { id: number | string; name: string }
 type FolderItem = { id: number | string; title: string; parentId: number | string | null }
@@ -154,7 +153,6 @@ export function VideosManager({
 
   const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState<string>(FILTER_ALL) // FILTER_ALL | FILTER_NONE | categoryId
-  const [editingVideo, setEditingVideo] = useState<EditableVideo | null>(null)
 
   const flatCategories = useMemo(() => flattenFolders(categories), [categories])
   // id категории → полный путь: «Смотреть › Шоу и проекты › In the SOOP».
@@ -291,9 +289,7 @@ export function VideosManager({
                   key={v.id}
                   video={v}
                   categoryPath={v.categoryId ? catPathById.get(String(v.categoryId)) || null : null}
-                  onEdit={() =>
-                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, season: v.season, episode: v.episode, categoryId: v.categoryId, tags: v.tags, usedIn: v.usedIn, provider: v.provider, embedProvider: v.embedProvider ?? null, embedSrc: v.embedSrc ?? null, playbackId: v.playbackId ?? null, subtitles: v.subtitles ?? [], summary: v.summary ?? null, chapters: v.chapters ?? [] })
-                  }
+                  onEdit={() => router.push(`/studio/videos/${v.id}`)}
                 />
               ))}
             </tbody>
@@ -301,17 +297,6 @@ export function VideosManager({
         </div>
       )}
 
-      {editingVideo && (
-        <VideoEditModal
-          video={editingVideo}
-          tiers={tiers}
-          onClose={() => setEditingVideo(null)}
-          onSaved={() => {
-            setEditingVideo(null)
-            router.refresh()
-          }}
-        />
-      )}
     </>
   )
 }
