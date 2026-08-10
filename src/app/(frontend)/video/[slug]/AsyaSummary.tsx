@@ -18,6 +18,17 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
   const [state, setState] = useState<'idle' | 'error' | 'upsell'>('idle')
   const [errMsg, setErrMsg] = useState('')
   const [typed, setTyped] = useState(0)
+  const [copied, setCopied] = useState(false)
+
+  async function copySummary() {
+    if (!data) return
+    const text = [String(data.tldr || ''), ...(data.points || []).map((p) => `• ${p}`)].filter(Boolean).join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch { /* clipboard недоступен — тихо игнорируем */ }
+  }
 
   // Сегменты для «печатной машинки»: [tldr, ...points]. Между сегментами — 1 «шаг».
   // Пункты ограничиваем до 4 — блок должен читаться как короткий единый список.
@@ -156,7 +167,27 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
               })}
             </ul>
           )}
-          {done && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--brand-muted)' }}>Краткое содержание сгенерировала Ася по субтитрам — возможны неточности.</div>}
+          {done && (
+            <>
+              <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={copySummary}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: copied ? '#fff' : 'var(--brand-text)', background: copied ? 'linear-gradient(135deg, #7e3a67, #4c3c9c)' : 'color-mix(in srgb, var(--brand-text) 7%, transparent)', border: '1px solid var(--brand-border)' }}
+                >
+                  {copied ? 'Скопировано ✓' : 'Копировать'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--brand-muted)', background: 'transparent', border: '1px solid var(--brand-border)' }}
+                >
+                  Свернуть
+                </button>
+              </div>
+              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--brand-muted)' }}>Краткое содержание сгенерировала Ася по субтитрам — возможны неточности.</div>
+            </>
+          )}
         </div>
       )}
     </div>

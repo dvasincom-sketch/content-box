@@ -84,17 +84,21 @@ function Avatar({
   color,
   size = 36,
   avatarUrl,
+  paid = false,
 }: {
   name: string
   color?: string | null
   size?: number
   avatarUrl?: string | null
+  /** Активная подписка → окантовка аватара (работает и с буквенным). */
+  paid?: boolean
 }) {
+  const cls = `cm-av${paid ? ' cm-av--ring' : ''}`
   if (avatarUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        className="cm-av"
+        className={cls}
         src={avatarUrl}
         alt={name}
         style={{ width: size, height: size, objectFit: 'cover' }}
@@ -103,7 +107,7 @@ function Avatar({
   }
   return (
     <div
-      className="cm-av"
+      className={cls}
       style={{
         width: size,
         height: size,
@@ -302,7 +306,7 @@ function Comment({
   const replies = !isReply ? node.replies ?? [] : []
   return (
     <div className="cm-item">
-      <Avatar name={node.authorName} color={node.authorColor} avatarUrl={node.authorAvatarUrl} size={isReply ? 28 : 36} />
+      <Avatar name={node.authorName} color={node.authorColor} avatarUrl={node.authorAvatarUrl} size={isReply ? 28 : 36} paid={node.authorPaid} />
       <div className="cm-body">
         <div className="cm-meta">
           {node.authorHandle ? (

@@ -1,7 +1,7 @@
 import Link from '@/components/AppLink'
 import React from 'react'
 import Image from 'next/image'
-import { Lock, MessageCircle, Heart, Video, Images } from 'lucide-react'
+import { Lock, MessageCircle, Heart, Video, Images, Calendar } from 'lucide-react'
 import { relativeDayLabel } from '@/lib/relativeDate'
 import { HoverPreviewImage } from '@/components/HoverPreviewImage'
 
@@ -65,12 +65,9 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
                     alt={(typeof p.cover === "object" && p.cover?.alt) || p.title}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
-                  {evLabel ? (
-                    <span className="absolute top-3 left-3 text-sm font-bold px-3 py-1 rounded-full"
-                      style={{ background: '#ea580c', color: '#fff', boxShadow: '0 2px 8px rgba(234,88,12,.45)' }}>
-                      {evLabel}
-                    </span>
-                  ) : badge ? (
+                  {/* Дата события больше не рисуется поверх обложки — она уходит в тело
+                      карточки над заголовком (не перекрывает арт). Тут только относительная дата. */}
+                  {badge ? (
                     <span className="absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full"
                       style={{ background: 'rgba(0,0,0,0.45)', color: '#fff' }}>
                       {badge}
@@ -87,10 +84,17 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
                 </Link>
               )}
               <div className="p-5 flex flex-col gap-3 flex-1">
-                {/* Без обложки — дата и «замок» уходят в текст */}
-                {!(coverUrl(p.cover) || p.posterFallback) && (badge || p.minTierName || evLabel) && (
+                {/* Дата события — оранжевая подпись над заголовком (вариант «в теле»). */}
+                {evLabel && (
+                  <div className="inline-flex items-center gap-1.5" style={{ color: '#ea580c', fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '.4px' }}>
+                    <Calendar size={13} />
+                    {evLabel}
+                  </div>
+                )}
+                {/* Без обложки — относительная дата и «замок» уходят в текст */}
+                {!(coverUrl(p.cover) || p.posterFallback) && (badge || p.minTierName) && (
                   <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--brand-muted)' }}>
-                    {evLabel ? <span style={{ color: '#ea580c', fontWeight: 700 }}>{evLabel}</span> : badge ? <span>{badge}</span> : null}
+                    {badge ? <span>{badge}</span> : null}
                     {p.minTierName && (
                       <span className="inline-flex items-center gap-1">
                         <Lock size={12} />

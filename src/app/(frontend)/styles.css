@@ -1113,6 +1113,8 @@ svg {
   color: #fff;
   font-weight: 600;
 }
+/* Окантовка аватара автора с активной подпиской (в т.ч. буквенного). */
+.cm-av--ring { box-shadow: 0 0 0 2px var(--brand-bg, #fff), 0 0 0 4px color-mix(in srgb, var(--brand-accent) 88%, #f2b23a); }
 
 /* ── Комментарии ── */
 .cm-head {
