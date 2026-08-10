@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { ExternalLink, Settings as SettingsIcon, Check, Sparkles } from 'lucide-react'
+import { ExternalLink, Settings as SettingsIcon, Check, Sparkles, Crown, CalendarClock } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
@@ -31,6 +31,11 @@ export default async function AccountOverviewPage() {
   const points = Number(full?.points) || 0
   const prog = levelProgress(points)
   const hasPaid = Boolean(full?.activeTier)
+  const tier = full?.activeTier && typeof full.activeTier === 'object' ? full.activeTier : null
+  const subUntil = full?.subscriptionUntil ? new Date(full.subscriptionUntil) : null
+  const subActive = Boolean(tier && subUntil && subUntil.getTime() > Date.now())
+  const subUntilStr = subUntil ? subUntil.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Moscow' }) : null
+  const subDaysLeft = subUntil ? Math.max(0, Math.ceil((subUntil.getTime() - Date.now()) / 86400000)) : null
 
   const commentCount = await payload
     .count({ collection: 'comments', where: { and: [{ author: { equals: sub.id } }, { status: { equals: 'published' } }] }, overrideAccess: true })
@@ -64,6 +69,30 @@ export default async function AccountOverviewPage() {
           </Link>
         )}
       </div>
+
+      {/* Статус подписки */}
+      {subActive ? (
+        <div className="c-card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 16%, var(--brand-surface)), var(--brand-surface))', border: '1px solid color-mix(in srgb, var(--brand-primary) 35%, var(--brand-border))' }}>
+          <span style={{ display: 'inline-flex', width: 48, height: 48, borderRadius: 14, flexShrink: 0, alignItems: 'center', justifyContent: 'center', background: 'var(--brand-primary)', color: '#fff' }}>
+            <Crown size={24} />
+          </span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--brand-text)' }}>Подписка «{String(tier.name || '')}»</div>
+            <div style={{ fontSize: 14, color: 'var(--brand-muted)', display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 2, flexWrap: 'wrap' }}>
+              <CalendarClock size={15} /> Активна · действует до {subUntilStr}
+              {subDaysLeft != null && subDaysLeft <= 14 ? (
+                <span style={{ marginLeft: 4, padding: '1px 8px', borderRadius: 999, fontWeight: 700, fontSize: 12, background: 'color-mix(in srgb, var(--brand-primary) 18%, transparent)', color: 'var(--brand-primary)' }}>осталось {subDaysLeft} дн.</span>
+              ) : null}
+            </div>
+          </div>
+          <Link href="/subscribe" className="c-btn c-btn--surface" style={{ flexShrink: 0 }}>Продлить</Link>
+        </div>
+      ) : (
+        <div className="c-card" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          <span style={{ color: 'var(--brand-muted)' }}>У вас нет активной подписки{subUntilStr ? ' (истекла ' + subUntilStr + ')' : ''}.</span>
+          <Link href="/subscribe" className="c-btn c-btn--primary">Оформить подписку</Link>
+        </div>
+      )}
 
       {/* Уровень */}
       <div className="c-card lvl" style={{ marginBottom: 16 }}>
