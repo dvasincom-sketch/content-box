@@ -3,6 +3,7 @@ import React from 'react'
 import Image from 'next/image'
 import { Lock, MessageCircle, Heart, Video, Images } from 'lucide-react'
 import { relativeDayLabel } from '@/lib/relativeDate'
+import { HoverPreviewImage } from '@/components/HoverPreviewImage'
 
 export type PublicationCard = {
   id: string | number
@@ -13,6 +14,7 @@ export type PublicationCard = {
   cover?: { url?: string | null; alt?: string | null } | string | number | null
   /** Автопостер связанного своего видео — обложка, когда своей нет. */
   posterFallback?: string | null
+  previewGif?: string | null
   commentCount?: number
   reactionCount?: number
   hasVideo?: boolean
@@ -47,11 +49,10 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
               {/* Обложка — только при наличии картинки; без неё блок не выводим (без градиента) */}
               {(coverUrl(p.cover) || p.posterFallback) && (
                 <Link href={`/publication/${p.slug}`} prefetch={false} className="relative block aspect-video">
-                  <Image
-                    src={(coverUrl(p.cover) || p.posterFallback) as string}
-                    alt={(typeof p.cover === 'object' && p.cover?.alt) || p.title}
-                    fill
-                    className="object-cover"
+                  <HoverPreviewImage
+                    poster={(coverUrl(p.cover) || p.posterFallback) as string}
+                    gif={p.previewGif ?? null}
+                    alt={(typeof p.cover === "object" && p.cover?.alt) || p.title}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
                   {badge && (

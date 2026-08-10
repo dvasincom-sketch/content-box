@@ -49,6 +49,11 @@ export async function presignGet(key: string, expiresIn = 120): Promise<string> 
   return getSignedUrl(s3(), new GetObjectCommand({ Bucket: S3_BUCKET, Key: key }), { expiresIn })
 }
 
+/** Прямая заливка небольшого объекта (напр. VTT-субтитры) из приложения. */
+export async function putObject(key: string, body: string | Buffer, contentType: string): Promise<void> {
+  await s3().send(new PutObjectCommand({ Bucket: S3_BUCKET, Key: key, Body: body, ContentType: contentType }))
+}
+
 /** Проверка, что объект реально загружен (перед созданием записи). Размер/тип или null. */
 export async function headObject(key: string): Promise<{ size: number; contentType: string | null } | null> {
   try {

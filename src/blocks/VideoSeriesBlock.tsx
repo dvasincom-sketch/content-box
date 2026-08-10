@@ -18,6 +18,7 @@ export type SeriesEpisode = {
   title: string
   slug: string
   coverUrl: string | null
+  previewGif?: string | null
   season: number | null
   episode: number | null
   durationSec: number | null

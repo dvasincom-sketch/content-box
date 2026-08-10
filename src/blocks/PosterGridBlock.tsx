@@ -3,6 +3,7 @@ import React from 'react'
 import Image from 'next/image'
 import { Lock } from 'lucide-react'
 import type { PublicationCard } from './LatestPublicationsBlock'
+import { HoverPreviewImage } from '@/components/HoverPreviewImage'
 
 /**
  * PosterGridBlock — сетка афиш 2:3 из публикаций источника секции
@@ -56,12 +57,11 @@ export function PosterGridBlock({ heading = 'Афиша', items }: PosterGridBlo
             >
               <div className="poster-card__frame">
                 {url ? (
-                  <Image
-                    src={url}
+                  <HoverPreviewImage
+                    poster={url}
+                    gif={p.previewGif ?? null}
                     alt={(typeof p.cover === 'object' && p.cover?.alt) || p.title}
-                    fill
                     sizes="(max-width: 640px) 45vw, (max-width: 1024px) 22vw, 180px"
-                    className="poster-card__img"
                   />
                 ) : (
                   <div className="poster-card__placeholder" aria-hidden>

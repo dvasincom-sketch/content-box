@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Lock, MessageCircle, Heart, Video, Images } from 'lucide-react'
 import { relativeDayLabel } from '@/lib/relativeDate'
 import type { PublicationCard } from './LatestPublicationsBlock'
+import { HoverPreviewImage } from '@/components/HoverPreviewImage'
 
 /**
  * CarouselBlock — кураторская карусель: один горизонтально прокручиваемый ряд
@@ -55,11 +56,10 @@ export function CarouselBlock({ heading = 'Подборка', items }: CarouselB
             >
               {url && (
                 <div className="relative h-40">
-                  <Image
-                    src={url}
+                  <HoverPreviewImage
+                    poster={url}
+                    gif={p.previewGif ?? null}
                     alt={(typeof p.cover === 'object' && p.cover?.alt) || p.title}
-                    fill
-                    className="object-cover"
                     sizes="280px"
                   />
                   {badge && (

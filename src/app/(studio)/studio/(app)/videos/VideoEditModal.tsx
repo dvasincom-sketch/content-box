@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { X, Loader2, Check, FileText, ArrowUpRight, Trash2, Link as LinkIcon } from 'lucide-react'
+import { X, Loader2, Check, FileText, ArrowUpRight, Trash2, Link as LinkIcon, Captions, Upload, Plus } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { TagInput } from '../_ui/TagInput'
 
@@ -22,6 +22,8 @@ export type EditableVideo = {
   provider?: string
   embedProvider?: string | null
   embedSrc?: string | null
+  playbackId?: string | null
+  subtitles?: { lang: string; label: string }[]
 }
 
 /**
@@ -263,6 +265,10 @@ export function VideoEditModal({
               <TagInput value={tags} onChange={setTags} placeholder="Тег и Enter" />
             </div>
 
+            {video.provider === 'self' && (
+              <SubtitlesSection videoId={video.id} playbackId={video.playbackId ?? null} initial={video.subtitles || []} />
+            )}
+
             {error && <div className="studio-login__error">{error}</div>}
 
             <div className="videdit__used">
@@ -339,5 +345,102 @@ export function VideoEditModal({
       </div>
     </div>,
     document.body,
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Субтитры своего видео: загрузка VTT/SRT + список дорожек                     */
+/* -------------------------------------------------------------------------- */
+function SubtitlesSection({
+  videoId,
+  playbackId,
+  initial,
+}: {
+  videoId: number | string
+  playbackId: string | null
+  initial: { lang: string; label: string }[]
+}) {
+  const [tracks, setTracks] = useState<{ lang: string; label: string }[]>(initial)
+  const [lang, setLang] = useState('')
+  const [label, setLabel] = useState('')
+  const [content, setContent] = useState<string | null>(null)
+  const [fileName, setFileName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) { setErr('Файл больше 2 МБ'); return }
+    const text = await file.text()
+    setContent(text)
+    setFileName(file.name)
+    if (!lang) { const m = file.name.toLowerCase().match(/[._-]([a-z]{2,3})\.(vtt|srt)$/); if (m) setLang(m[1]) }
+    setErr(null)
+  }
+
+  async function add() {
+    setErr(null)
+    if (!content) { setErr('Выберите файл .vtt или .srt'); return }
+    if (!/^[a-z]{2,3}(-[a-z]{2,4})?$/.test(lang.trim().toLowerCase())) { setErr('Код языка: ru, en, pt-br…'); return }
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/videos/subtitles', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ videoId, action: 'add', lang: lang.trim().toLowerCase(), label: label.trim(), content }),
+      })
+      const j = await res.json()
+      if (!res.ok) setErr(j.error || 'Не удалось сохранить')
+      else { setTracks(j.subtitles || []); setContent(null); setFileName(''); setLang(''); setLabel('') }
+    } catch { setErr('Ошибка соединения') } finally { setBusy(false) }
+  }
+
+  async function remove(l: string) {
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/videos/subtitles', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ videoId, action: 'remove', lang: l }),
+      })
+      const j = await res.json()
+      if (res.ok) setTracks(j.subtitles || [])
+    } catch { /* no-op */ } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="studio-field">
+      <span className="studio-field__label">Субтитры</span>
+      {!playbackId ? (
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7 }}>Дорожки можно добавить, когда видео обработается.</div>
+      ) : (
+        <>
+          {tracks.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+              {tracks.map((t) => (
+                <div key={t.lang} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Captions size={14} />
+                  <span style={{ fontSize: 13 }}>{t.label} <span style={{ opacity: 0.6 }}>({t.lang})</span></span>
+                  <span style={{ flex: 1 }} />
+                  <button type="button" className="catmgr__icon-btn catmgr__icon-btn--danger" onClick={() => remove(t.lang)} disabled={busy} title="Удалить"><Trash2 size={14} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+            <label className="studio-btn studio-btn--ghost" style={{ cursor: 'pointer' }}>
+              <Upload size={14} /> {fileName || 'Файл .vtt / .srt'}
+              <input type="file" accept=".vtt,.srt,text/vtt" onChange={onFile} style={{ display: 'none' }} />
+            </label>
+            <input className="studio-input" style={{ width: 90 }} placeholder="ru" value={lang} onChange={(e) => setLang(e.target.value)} />
+            <input className="studio-input" style={{ width: 150 }} placeholder="Русские" value={label} onChange={(e) => setLabel(e.target.value)} />
+            <button type="button" className="studio-btn studio-btn--primary" onClick={add} disabled={busy || !content}>
+              {busy ? <Loader2 size={14} className="spin" /> : <Plus size={14} />} Добавить
+            </button>
+          </div>
+          {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
+          <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Формат VTT или SRT (SRT конвертируется автоматически). Код языка — ru, en и т.п.</div>
+        </>
+      )}
+    </div>
   )
 }

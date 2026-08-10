@@ -48,7 +48,7 @@ export function VideoPlayer({
 }) {
   const [src, setSrc] = useState<string | null>(null)
   // Своё HLS-видео (provider='self'): master-URL с токеном + постер.
-  const [selfSrc, setSelfSrc] = useState<{ master: string; poster: string | null; watermark: string | null } | null>(null)
+  const [selfSrc, setSelfSrc] = useState<{ master: string; poster: string | null; watermark: string | null; sprite: string | null; subtitles: { lang: string; label: string; url: string }[] | null } | null>(null)
   // Своё видео ещё обрабатывается воркером — отдельное «доброе» состояние.
   const [processing, setProcessing] = useState(false)
   const [aspect, setAspect] = useState<'16:9' | '9:16'>(initialAspect)
@@ -108,7 +108,7 @@ export function VideoPlayer({
           }
         } else if (json.provider === 'self') {
           if (json.status === 'ready' && typeof json.master === 'string') {
-            setSelfSrc({ master: json.master, poster: typeof json.poster === 'string' ? json.poster : null, watermark: typeof json.watermark === 'string' ? json.watermark : null })
+            setSelfSrc({ master: json.master, poster: typeof json.poster === 'string' ? json.poster : null, watermark: typeof json.watermark === 'string' ? json.watermark : null, sprite: typeof json.sprite === 'string' ? json.sprite : null, subtitles: Array.isArray(json.subtitles) ? json.subtitles : null })
           } else {
             setProcessing(true)
           }
@@ -239,7 +239,7 @@ export function VideoPlayer({
             <span>{error}</span>
           </div>
         ) : selfSrc ? (
-          <SelfHostedPlayer master={selfSrc.master} poster={selfSrc.poster} watermarkText={selfSrc.watermark} />
+          <SelfHostedPlayer master={selfSrc.master} poster={selfSrc.poster} watermarkText={selfSrc.watermark} sprite={selfSrc.sprite} subtitles={selfSrc.subtitles} />
         ) : !src ? (
           <div
             className="absolute inset-0 flex items-center justify-center"

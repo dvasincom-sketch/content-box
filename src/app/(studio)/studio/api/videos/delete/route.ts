@@ -76,6 +76,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         await deletePrefix(`sprites/${pid}/`)
         await deleteObject(`posters/${pid}.jpg`).catch(() => {})
         await deleteObject(`preview/${pid}.gif`).catch(() => {})
+        await deletePrefix(`subs/${pid}/`)
       }
       await sqlRows(payload, `DELETE FROM "video_jobs" WHERE video_id = $1`, [Number(videoId)]).catch(() => {})
     }

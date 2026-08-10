@@ -39,6 +39,8 @@ type Vid = {
   categoryId: string
   tags: string[]
   usedIn: { id: number | string; title: string }[]
+  playbackId?: string | null
+  subtitles?: { lang: string; label: string }[]
 }
 
 const FILTER_ALL = '__all__'
@@ -287,7 +289,7 @@ export function VideosManager({
                   video={v}
                   categoryPath={v.categoryId ? catPathById.get(String(v.categoryId)) || null : null}
                   onEdit={() =>
-                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, season: v.season, episode: v.episode, categoryId: v.categoryId, tags: v.tags, usedIn: v.usedIn, provider: v.provider, embedProvider: v.embedProvider ?? null, embedSrc: v.embedSrc ?? null })
+                    setEditingVideo({ id: v.id, title: v.title, minTierId: v.minTierId, season: v.season, episode: v.episode, categoryId: v.categoryId, tags: v.tags, usedIn: v.usedIn, provider: v.provider, embedProvider: v.embedProvider ?? null, embedSrc: v.embedSrc ?? null, playbackId: v.playbackId ?? null, subtitles: v.subtitles ?? [] })
                   }
                 />
               ))}

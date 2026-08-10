@@ -321,6 +321,15 @@ export const Videos: CollectionConfig = {
       admin: { condition: (data) => data?.provider === 'self', readOnly: true },
     },
     {
+      name: 'subtitles',
+      type: 'json',
+      label: 'Субтитры',
+      admin: {
+        condition: (data) => data?.provider === 'self',
+        description: 'Дорожки субтитров [{ lang, label, key }] — управляются из студии.',
+      },
+    },
+    {
       name: 'durationSec',
       type: 'number',
       label: 'Длительность, сек',

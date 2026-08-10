@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { videoThumbUrl } from '@/lib/videoThumb'
+import { videoThumbUrl, videoGifUrl } from '@/lib/videoThumb'
+import { HoverPreviewImage } from '@/components/HoverPreviewImage'
 import { notFound } from 'next/navigation'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
@@ -134,8 +135,7 @@ export default async function TagPage({ params }: { params: Promise<Params> }) {
                   <Link key={v.id} href={`/video/${v.slug}`} className="tag-vidcard">
                     <div className="tag-vidcard__frame">
                       {url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={url} alt={v.title || ''} loading="lazy" />
+                        <HoverPreviewImage poster={url} gif={videoGifUrl(v)} alt={v.title || ''} sizes="(max-width: 640px) 100vw, 200px" />
                       ) : (
                         <div className="tag-vidcard__placeholder" aria-hidden>
                           {(v.title || '?').slice(0, 1).toUpperCase()}

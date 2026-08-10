@@ -85,6 +85,11 @@ function toCard(p: Publication, stats?: { comments: number; reactions: number })
       const v = rel.find((x) => x && typeof x === 'object' && (x as any).provider === 'self' && (x as any).posterKey)
       return v ? publicUrl(String((v as any).posterKey)) : null
     })(),
+    previewGif: (() => {
+      const rel = Array.isArray(p.relatedVideos) ? p.relatedVideos : []
+      const v = rel.find((x) => x && typeof x === "object" && (x as any).provider === "self" && (x as any).gifKey)
+      return v ? publicUrl(String((v as any).gifKey)) : null
+    })(),
     commentCount: stats?.comments ?? 0,
     reactionCount: stats?.reactions ?? 0,
     hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,

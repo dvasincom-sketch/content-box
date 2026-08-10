@@ -85,6 +85,10 @@ export default async function VideosPage() {
       ? (v.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0)
       : [],
     usedIn: usedInByVideo.get(String(v.id)) || [],
+    playbackId: (v.playbackId as string) || null,
+    subtitles: Array.isArray(v.subtitles)
+      ? (v.subtitles as any[]).map((sx) => ({ lang: String(sx.lang || ''), label: String(sx.label || sx.lang || '') })).filter((sx) => sx.lang)
+      : [],
   }))
 
   // уровни подписки для селектора доступа

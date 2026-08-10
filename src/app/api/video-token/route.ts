@@ -92,6 +92,19 @@ export async function GET(req: NextRequest) {
     if (access.video.posterKey) {
       poster = await presignGet(String(access.video.posterKey), 2 * 60 * 60).catch(() => null)
     }
+    // Сториборд (scrub-preview): VTT-таблица кадров, подписанная тем же токеном.
+    const sprite = access.video.spriteKey
+      ? `/api/video-sprite/${playbackId}/storyboard.vtt?t=${encodeURIComponent(token)}`
+      : null
+    // Дорожки субтитров: подписанные тем же токеном URL VTT (браузерный <track>).
+    const subsRaw = Array.isArray(access.video.subtitles) ? (access.video.subtitles as any[]) : []
+    const subtitles = subsRaw
+      .filter((sx) => sx && sx.lang)
+      .map((sx) => ({
+        lang: String(sx.lang),
+        label: String(sx.label || sx.lang),
+        url: `/api/video-subtitle/${playbackId}/${encodeURIComponent(String(sx.lang))}?t=${encodeURIComponent(token)}`,
+      }))
     // Динамический watermark: подпись зрителя поверх видео (антипиратство).
     // Показываем email подписчика — если запись утечёт, на ней виден источник.
     const wmEmail = access.subscriber && typeof access.subscriber === 'object'
@@ -104,6 +117,8 @@ export async function GET(req: NextRequest) {
       master: `/api/hls/${playbackId}/master.m3u8?t=${encodeURIComponent(token)}`,
       poster,
       watermark: wmEmail || null,
+      sprite,
+      subtitles,
     })
   }
 

@@ -1,6 +1,6 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { videoThumbUrl } from '@/lib/videoThumb'
+import { videoThumbUrl, videoGifUrl } from '@/lib/videoThumb'
 import { notFound } from 'next/navigation'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { getTenantFromHeaders } from '@/lib/tenant'
@@ -188,6 +188,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
         title: v.title || 'Без названия',
         slug: v.slug || '',
         coverUrl,
+        previewGif: videoGifUrl(v),
         season: v.season ?? null,
         episode: v.episode ?? null,
         durationSec: v.durationSec ?? null,

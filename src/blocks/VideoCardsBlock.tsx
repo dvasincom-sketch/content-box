@@ -1,5 +1,6 @@
 import React from 'react'
 import { Play, Lock } from 'lucide-react'
+import { HoverPreviewImage } from '@/components/HoverPreviewImage'
 import type { SeriesEpisode } from './VideoSeriesBlock'
 
 function fmtDur(sec: number | null): string | null {
@@ -28,8 +29,7 @@ export function VideoCardsBlock({ episodes, heading }: { episodes: SeriesEpisode
             <a key={v.id} href={`/video/${v.slug}`} className="vcard" title={v.title}>
               <div className="vcard__frame">
                 {v.coverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={v.coverUrl} alt={v.title} loading="lazy" className="vcard__img" />
+                  <HoverPreviewImage poster={v.coverUrl} gif={v.previewGif ?? null} alt={v.title} sizes="(max-width: 640px) 100vw, 33vw" />
                 ) : (
                   <div className="vcard__ph" aria-hidden><Play size={28} /></div>
                 )}
