@@ -3340,6 +3340,10 @@ select.studio-input {
 .sdate__foot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--st-border); }
 .sdate__foot-btn { border: none; background: transparent; color: var(--st-accent); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
 .sdate__foot-btn:hover { background: var(--st-surface-hover); }
+
+/* Список видео: скрываем колонку «Раздел» — таблица компактнее и читаемее.
+   Раздел/сезон/эпизод по-прежнему правятся в модалке видео. */
+.vidtable__th-folder, .vidtable__folder-cell { display: none; }
 .vidtable__thumb-empty {
   display: flex;
   align-items: center;

@@ -141,7 +141,7 @@ export function SiteHeader({
                     <div className="acct-menu__panel" role="menu">
                       {/* Кликабельная карточка профиля вместо неактивного имени. */}
                       <Link href="/account" className="acct-menu__card" onClick={() => setMenuOpen(false)}>
-                        <span className="acct-menu__ava">
+                        <span className={`acct-menu__ava${subscriber.isSubscriber ? ' c-avatar--ring' : ''}`}>
                           {avatarUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

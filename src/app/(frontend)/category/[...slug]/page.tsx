@@ -241,9 +241,34 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         {/* Хлебные крошки */}
         <Breadcrumbs crumbs={crumbs as any} lastIsCurrent className="mb-6" />
 
-        <h1 className="text-3xl lg:text-5xl font-extrabold mb-2" style={{ color: 'var(--brand-text)' }}>
-          {category.title}
-        </h1>
+        <div className="evhead">
+          <h1 className="text-3xl lg:text-5xl font-extrabold" style={{ color: 'var(--brand-text)' }}>
+            {category.title}
+          </h1>
+          {isEvent && (
+            <form method="get" className="evfilter">
+              <label className="evfilter__field">
+                <span className="evfilter__lbl">Сортировка</span>
+                <select name="sort" defaultValue={evSort} className="c-input evfilter__ctl">
+                  <option value="new">Сначала новые</option>
+                  <option value="old">Сначала старые</option>
+                </select>
+              </label>
+              <label className="evfilter__field">
+                <span className="evfilter__lbl">С даты</span>
+                <input type="date" name="from" defaultValue={evFrom} className="c-input evfilter__ctl" />
+              </label>
+              <label className="evfilter__field">
+                <span className="evfilter__lbl">По дату</span>
+                <input type="date" name="to" defaultValue={evTo} className="c-input evfilter__ctl" />
+              </label>
+              <button type="submit" className="c-btn c-btn--primary evfilter__go">Показать</button>
+              {(evFrom || evTo || evSort === 'old') && (
+                <a href="?" className="evfilter__reset" title="Сбросить фильтр">Сбросить</a>
+              )}
+            </form>
+          )}
+        </div>
 
         {category.description ? (
           <div className="max-w-3xl mx-auto mb-12">
@@ -323,29 +348,6 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           )
         ) : (
           <>
-            {isEvent && (
-              <form method="get" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end', marginBottom: 20 }}>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--brand-muted)' }}>
-                  Сортировка
-                  <select name="sort" defaultValue={evSort} className="c-input" style={{ minWidth: 160 }}>
-                    <option value="new">Сначала новые</option>
-                    <option value="old">Сначала старые</option>
-                  </select>
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--brand-muted)' }}>
-                  С даты
-                  <input type="date" name="from" defaultValue={evFrom} className="c-input" />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13, color: 'var(--brand-muted)' }}>
-                  По дату
-                  <input type="date" name="to" defaultValue={evTo} className="c-input" />
-                </label>
-                <button type="submit" className="c-btn c-btn--primary">Показать</button>
-                {(evFrom || evTo || evSort === 'old') && (
-                  <a href="?" className="c-btn c-btn--surface">Сбросить</a>
-                )}
-              </form>
-            )}
             {pubs.length === 0 ? (
               <p style={{ color: 'var(--brand-muted)' }}>{evFrom || evTo ? 'По заданным датам ничего не найдено.' : 'В этой категории пока нет материалов.'}</p>
             ) : (

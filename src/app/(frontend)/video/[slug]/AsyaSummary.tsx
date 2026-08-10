@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { ThumbsUp, ThumbsDown } from 'lucide-react'
 
 type Summary = { tldr?: string; points?: string[]; text?: string }
 
@@ -18,16 +19,26 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
   const [state, setState] = useState<'idle' | 'error' | 'upsell'>('idle')
   const [errMsg, setErrMsg] = useState('')
   const [typed, setTyped] = useState(0)
-  const [copied, setCopied] = useState(false)
+  const [vote, setVote] = useState<'up' | 'down' | null>(null)
 
-  async function copySummary() {
-    if (!data) return
-    const text = [String(data.tldr || ''), ...(data.points || []).map((p) => `• ${p}`)].filter(Boolean).join('\n')
+  // Восстанавливаем прошлый голос (чтобы не голосовать повторно).
+  useEffect(() => {
     try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    } catch { /* clipboard недоступен — тихо игнорируем */ }
+      const v = localStorage.getItem(`asya-vote-${videoId}`)
+      if (v === 'up' || v === 'down') setVote(v)
+    } catch { /* no-op */ }
+  }, [videoId])
+
+  async function rate(v: 'up' | 'down') {
+    if (vote) return // уже голосовал
+    setVote(v)
+    try { localStorage.setItem(`asya-vote-${videoId}`, v) } catch { /* no-op */ }
+    try {
+      await fetch('/api/video-summary/feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ videoId, vote: v }),
+      })
+    } catch { /* оценка не критична */ }
   }
 
   // Сегменты для «печатной машинки»: [tldr, ...points]. Между сегментами — 1 «шаг».
@@ -169,20 +180,25 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
           )}
           {done && (
             <>
-              <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+              <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: 'var(--brand-muted)' }}>{vote ? 'Спасибо за оценку!' : 'Полезное саммари?'}</span>
                 <button
                   type="button"
-                  onClick={copySummary}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: copied ? '#fff' : 'var(--brand-text)', background: copied ? 'linear-gradient(135deg, #7e3a67, #4c3c9c)' : 'color-mix(in srgb, var(--brand-text) 7%, transparent)', border: '1px solid var(--brand-border)' }}
+                  onClick={() => rate('up')}
+                  aria-label="Полезно"
+                  disabled={!!vote}
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: '50%', cursor: vote ? 'default' : 'pointer', color: vote === 'up' ? '#fff' : 'var(--brand-text)', background: vote === 'up' ? '#22c55e' : 'color-mix(in srgb, var(--brand-text) 7%, transparent)', border: '1px solid var(--brand-border)', opacity: vote && vote !== 'up' ? 0.4 : 1 }}
                 >
-                  {copied ? 'Скопировано ✓' : 'Копировать'}
+                  <ThumbsUp size={16} />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--brand-muted)', background: 'transparent', border: '1px solid var(--brand-border)' }}
+                  onClick={() => rate('down')}
+                  aria-label="Не очень"
+                  disabled={!!vote}
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: '50%', cursor: vote ? 'default' : 'pointer', color: vote === 'down' ? '#fff' : 'var(--brand-text)', background: vote === 'down' ? '#ef4444' : 'color-mix(in srgb, var(--brand-text) 7%, transparent)', border: '1px solid var(--brand-border)', opacity: vote && vote !== 'down' ? 0.4 : 1 }}
                 >
-                  Свернуть
+                  <ThumbsDown size={16} />
                 </button>
               </div>
               <div style={{ marginTop: 10, fontSize: 12, color: 'var(--brand-muted)' }}>Краткое содержание сгенерировала Ася по субтитрам — возможны неточности.</div>
