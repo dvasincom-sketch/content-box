@@ -1835,6 +1835,15 @@ function EmbedFields({
         нужен именно код вставки — в обычной ссылке нет ключа доступа.
       </p>
       <label className="studio-field">
+        <span className="studio-field__label">Название</span>
+        <input
+          className="studio-input"
+          placeholder="Можно оставить пустым — подставим по площадке"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </label>
+      <label className="studio-field">
         <span className="studio-field__label">Ссылка или код вставки</span>
         <textarea
           className="studio-input"
@@ -1843,15 +1852,6 @@ function EmbedFields({
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           autoFocus
-        />
-      </label>
-      <label className="studio-field">
-        <span className="studio-field__label">Название</span>
-        <input
-          className="studio-input"
-          placeholder="Можно оставить пустым — подставим по площадке"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
         />
       </label>
       <div className="vid__form-hint" style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
