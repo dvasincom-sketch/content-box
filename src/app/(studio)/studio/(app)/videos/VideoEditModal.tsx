@@ -485,14 +485,14 @@ function SubtitlesSection({
 /* Аналитика просмотров своего видео: кривая удержания / тепловая карта         */
 /* -------------------------------------------------------------------------- */
 function AnalyticsSection({ videoId }: { videoId: number | string }) {
-  const [data, setData] = useState<{ buckets: number[]; starts: number; plays: number } | null>(null)
+  const [data, setData] = useState<{ buckets: number[]; starts: number; plays: number; viewers: number } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let stop = false
     fetch(`/studio/api/videos/heatmap?videoId=${videoId}`, { credentials: 'include' })
       .then((r) => r.json())
-      .then((j) => { if (!stop && Array.isArray(j?.buckets)) setData({ buckets: j.buckets, starts: j.starts || 0, plays: j.plays || 0 }) })
+      .then((j) => { if (!stop && Array.isArray(j?.buckets)) setData({ buckets: j.buckets, starts: j.starts || 0, plays: j.plays || 0, viewers: j.viewers || 0 }) })
       .catch(() => {})
       .finally(() => { if (!stop) setLoading(false) })
     return () => { stop = true }
@@ -501,24 +501,26 @@ function AnalyticsSection({ videoId }: { videoId: number | string }) {
   const max = data ? Math.max(1, ...data.buckets) : 1
   const avgPct = data && data.starts > 0 ? Math.round(data.plays / data.starts) : 0
   const at = (p: number) => (data && data.starts > 0 ? Math.round((data.buckets[p] / data.starts) * 100) : 0)
+  const hasData = !!data && (data.starts > 0 || data.viewers > 0)
 
   return (
     <div className="studio-field">
       <span className="studio-field__label">Аналитика просмотров</span>
       {loading ? (
         <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7 }}>Загрузка…</div>
-      ) : !data || data.starts === 0 ? (
+      ) : !hasData ? (
         <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7 }}>Пока нет данных о просмотрах. Появятся, когда видео начнут смотреть.</div>
       ) : (
         <>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginBottom: 10 }}>
-            <div><div style={{ fontSize: 18, fontWeight: 700 }}>{data.starts}</div><div style={{ fontSize: 12, opacity: 0.7 }}>запусков</div></div>
+            <div><div style={{ fontSize: 18, fontWeight: 700 }}>{data!.viewers}</div><div style={{ fontSize: 12, opacity: 0.7 }}>зрителей</div></div>
+            <div><div style={{ fontSize: 18, fontWeight: 700 }}>{data!.starts}</div><div style={{ fontSize: 12, opacity: 0.7 }}>проигрываний</div></div>
             <div><div style={{ fontSize: 18, fontWeight: 700 }}>{avgPct}%</div><div style={{ fontSize: 12, opacity: 0.7 }}>ср. досмотр</div></div>
             <div><div style={{ fontSize: 18, fontWeight: 700 }}>{at(50)}%</div><div style={{ fontSize: 12, opacity: 0.7 }}>до середины</div></div>
             <div><div style={{ fontSize: 18, fontWeight: 700 }}>{at(99)}%</div><div style={{ fontSize: 12, opacity: 0.7 }}>до конца</div></div>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1, height: 64, background: 'var(--surface-2, rgba(128,128,128,0.08))', borderRadius: 8, padding: '6px 6px 0', overflow: 'hidden' }}>
-            {data.buckets.map((v, i) => (
+            {data!.buckets.map((v, i) => (
               <div key={i} title={`${i}% — ${v}`} style={{ flex: 1, height: `${Math.max(3, (v / max) * 100)}%`, background: 'var(--brand-primary, #7c3aed)', opacity: 0.35 + 0.65 * (v / max), borderRadius: '2px 2px 0 0' }} />
             ))}
           </div>
@@ -575,22 +577,70 @@ function SummarySection({ videoId, initial, hasSubtitles }: { videoId: number | 
 }
 
 /* -------------------------------------------------------------------------- */
-/* Главы: полировка авто-заголовков через Асю                                  */
+/* Главы: ручная правка + полировка авто-заголовков через Асю                   */
 /* -------------------------------------------------------------------------- */
 function fmtTs(sec: number): string {
   const s = Math.max(0, Math.round(sec))
-  const m = Math.floor(s / 60)
-  return `${m}:${String(s % 60).padStart(2, '0')}`
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const ss = String(s % 60).padStart(2, '0')
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`
 }
 
+// "m:ss" | "h:mm:ss" | "123" → секунды (или NaN).
+function parseTs(str: string): number {
+  const t = String(str).trim()
+  if (/^\d+$/.test(t)) return Number(t)
+  const m = t.match(/^(?:(\d+):)?(\d{1,2}):(\d{1,2})$/)
+  if (!m) return NaN
+  const h = m[1] ? Number(m[1]) : 0
+  return h * 3600 + Number(m[2]) * 60 + Number(m[3])
+}
+
+type ChapterRow = { startStr: string; title: string }
+
 function ChaptersSection({ videoId, initial }: { videoId: number | string; initial: { start: number; title: string }[] }) {
-  const [chapters, setChapters] = useState<{ start: number; title: string }[]>(initial)
+  const [rows, setRows] = useState<ChapterRow[]>(initial.map((c) => ({ startStr: fmtTs(c.start), title: c.title })))
+  const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [polishing, setPolishing] = useState(false)
   const [err, setErr] = useState<string | null>(null)
-  const hasChapters = chapters.length >= 2
+  const [saved, setSaved] = useState(false)
+
+  const setRow = (i: number, patch: Partial<ChapterRow>) => {
+    setRows((rs) => rs.map((r, k) => (k === i ? { ...r, ...patch } : r)))
+    setDirty(true); setSaved(false)
+  }
+  const removeRow = (i: number) => { setRows((rs) => rs.filter((_, k) => k !== i)); setDirty(true); setSaved(false) }
+  const addRow = () => { setRows((rs) => [...rs, { startStr: fmtTs(0), title: '' }]); setDirty(true); setSaved(false) }
+
+  async function save() {
+    // Собираем и валидируем на клиенте (тайминги парсим из строк).
+    const chapters: { start: number; title: string }[] = []
+    for (const r of rows) {
+      const title = r.title.trim()
+      if (!title) continue
+      const start = parseTs(r.startStr)
+      if (!Number.isFinite(start)) { setErr(`Неверное время: «${r.startStr}» (формат мм:сс)`); return }
+      chapters.push({ start, title })
+    }
+    setBusy(true); setErr(null); setSaved(false)
+    try {
+      const res = await fetch('/studio/api/videos/chapters', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ videoId, chapters }),
+      })
+      const j = await res.json()
+      if (!res.ok) setErr(j.error || 'Не удалось сохранить')
+      else if (Array.isArray(j.chapters)) {
+        setRows(j.chapters.map((c: any) => ({ startStr: fmtTs(c.start), title: c.title })))
+        setDirty(false); setSaved(true)
+      }
+    } catch { setErr('Ошибка соединения') } finally { setBusy(false) }
+  }
 
   async function polish() {
-    setBusy(true); setErr(null)
+    setPolishing(true); setErr(null); setSaved(false)
     try {
       const res = await fetch('/studio/api/videos/polish-chapters', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
@@ -598,31 +648,63 @@ function ChaptersSection({ videoId, initial }: { videoId: number | string; initi
       })
       const j = await res.json()
       if (!res.ok) setErr(j.error || 'Не удалось')
-      else if (Array.isArray(j.chapters)) setChapters(j.chapters)
-    } catch { setErr('Ошибка соединения') } finally { setBusy(false) }
+      else if (Array.isArray(j.chapters)) {
+        setRows(j.chapters.map((c: any) => ({ startStr: fmtTs(c.start), title: c.title })))
+        setDirty(false) // роут уже записал результат в видео
+      }
+    } catch { setErr('Ошибка соединения') } finally { setPolishing(false) }
   }
+
+  const anyBusy = busy || polishing
 
   return (
     <div className="studio-field">
       <span className="studio-field__label">Главы</span>
-      {hasChapters ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-          {chapters.slice(0, 12).map((c, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, fontSize: 13, opacity: 0.9 }}>
-              <span style={{ opacity: 0.55, minWidth: 42 }}>{fmtTs(c.start)}</span>
-              <span>{c.title}</span>
+      {rows.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+          {rows.map((r, i) => (
+            <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input
+                className="studio-input"
+                style={{ width: 78, textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}
+                value={r.startStr}
+                onChange={(e) => setRow(i, { startStr: e.target.value })}
+                placeholder="0:00"
+                aria-label="Время начала главы"
+              />
+              <input
+                className="studio-input"
+                style={{ flex: 1 }}
+                value={r.title}
+                onChange={(e) => setRow(i, { title: e.target.value })}
+                placeholder="Название главы"
+                maxLength={120}
+              />
+              <button type="button" className="catmgr__icon-btn catmgr__icon-btn--danger" onClick={() => removeRow(i)} disabled={anyBusy} title="Удалить главу"><Trash2 size={14} /></button>
             </div>
           ))}
         </div>
       ) : (
-        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>Главы появятся после генерации субтитров (Whisper).</div>
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>Глав пока нет — сгенерируйте субтитры (Whisper) или добавьте вручную.</div>
       )}
-      <button type="button" className="studio-btn studio-btn--ghost" onClick={polish} disabled={busy || !hasChapters} title={!hasChapters ? 'Сначала нужны субтитры и главы' : undefined}>
-        {busy ? <Loader2 size={14} className="spin" /> : <List size={14} />} Улучшить названия глав (Ася)
-      </button>
-      <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-        Авто-главы берут первую фразу из распознанной речи — Ася заменит их короткими осмысленными заголовками. Тайминги не меняются.
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <button type="button" className="studio-btn studio-btn--ghost" onClick={addRow} disabled={anyBusy}>
+          <Plus size={14} /> Добавить главу
+        </button>
+        <button type="button" className="studio-btn studio-btn--primary" onClick={save} disabled={anyBusy || !dirty}>
+          {busy ? <Loader2 size={14} className="spin" /> : <Check size={14} />} Сохранить
+        </button>
+        <span style={{ flex: 1 }} />
+        <button type="button" className="studio-btn studio-btn--ghost" onClick={polish} disabled={anyBusy || dirty || rows.length < 2} title={dirty ? 'Сначала сохраните изменения' : rows.length < 2 ? 'Нужны субтитры и главы' : undefined}>
+          {polishing ? <Loader2 size={14} className="spin" /> : <List size={14} />} Улучшить через Асю
+        </button>
       </div>
+
+      <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
+        Время — в формате мм:сс (или ч:мм:сс). Первая глава автоматически ставится с 0:00. «Улучшить через Асю» заменит заголовки короткими осмысленными (по субтитрам).
+      </div>
+      {saved && <div style={{ marginTop: 6, fontSize: 13, color: 'var(--success, #22c55e)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Сохранено</div>}
       {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
     </div>
   )

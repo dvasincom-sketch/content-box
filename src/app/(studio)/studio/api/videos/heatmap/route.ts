@@ -2,10 +2,11 @@ import { withAuthor, apiOk, apiError } from '@/app/(studio)/studio/api/_lib'
 
 /**
  * Тепловая карта/удержание своего видео для студии.
- * GET ?videoId=123 → { buckets:number[100], starts, plays }
+ * GET ?videoId=123 → { buckets:number[100], starts, plays, viewers }
  *  - buckets[b] — сколько раз проигран процентный слот b (0..99);
- *  - starts     — buckets[0], база для кривой удержания;
- *  - plays      — суммарно проигранных слотов (объём просмотра).
+ *  - starts     — buckets[0], база для кривой удержания (проигрываний, с ре-вотчами);
+ *  - plays      — суммарно проигранных слотов (объём просмотра);
+ *  - viewers    — уникальные зрители (по подписчикам, из истории просмотров `views`).
  */
 export const runtime = 'nodejs'
 
@@ -34,5 +35,13 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
   }
   const starts = buckets[0] || 0
   const plays = buckets.reduce((a, b) => a + b, 0)
-  return apiOk({ buckets, starts, plays })
+
+  // Уникальные зрители: `views` апсертит одну строку на подписчика+объект,
+  // поэтому число строк по видео = число уникальных зрителей (без ре-вотчей).
+  const viewers = await payload
+    .count({ collection: 'views', where: { and: [{ video: { equals: videoId } }, { targetType: { equals: 'video' } }] }, overrideAccess: true })
+    .then((r: any) => r.totalDocs)
+    .catch(() => 0)
+
+  return apiOk({ buckets, starts, plays, viewers })
 })
