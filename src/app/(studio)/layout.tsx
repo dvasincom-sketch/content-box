@@ -13,6 +13,7 @@ import './fonts.css'
 import { THEME_INIT } from '@/lib/themeInit'
 import { UmamiTracker } from '@/components/UmamiTracker'
 import { UMAMI_STUDIO_WEBSITE_ID } from '@/lib/umami'
+import { PWARegister } from '@/components/PWARegister'
 
 // Студия — авторизованное приложение (auth + БД), не статика. Рендерим на каждый
 // запрос, иначе `next build` пытается пререндерить и упирается в недоступную на
@@ -41,6 +42,9 @@ export default function StudioRootLayout({ children }: { children: React.ReactNo
         <UmamiTracker websiteId={UMAMI_STUDIO_WEBSITE_ID} />
       </head>
       <body style={{ margin: 0 }}>
+        {/* Регистрируем service worker и в студии: во время деплоя апстрим лежит,
+            и SW показывает «обновляемся» вместо белого экрана. */}
+        <PWARegister />
         <div className="studio-root">{children}</div>
       </body>
     </html>

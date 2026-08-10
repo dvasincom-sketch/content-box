@@ -4,7 +4,7 @@
  * API, студию, админку, видео и оптимизацию картинок — НИКОГДА не кэшируем.
  * SW скоупится по origin, поэтому кэш разных тенантов не смешивается.
  */
-const VERSION = 'v4';
+const VERSION = 'v5';
 const STATIC_CACHE = `static-${VERSION}`;
 const OFFLINE_URL = '/offline';
 
@@ -31,6 +31,17 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
+  // Навигации ЛЮБОЙ страницы (в т.ч. /studio, /admin, /account, /video):
+  // во время деплоя апстрим отдаёт 5xx/недоступен — вместо белого экрана
+  // показываем самовосстанавливающийся экран «идёт обновление». Обрабатываем
+  // ДО bypass, иначе студия/админка белеют при рестарте контейнера.
+  if (req.mode === 'navigate') {
+    event.respondWith(handleNavigate(req));
+    return;
+  }
+
+  // Не-навигационные запросы к приватным/динамическим префиксам не трогаем
+  // (никогда не кэшируем API/студию/админку/аккаунт/видео/оптимизацию картинок).
   const bypass = ['/api', '/studio', '/admin', '/account', '/video', '/_next/image', '/manifest.webmanifest', '/pwa-icon'];
   if (bypass.some((pfx) => url.pathname === pfx || url.pathname.startsWith(pfx + '/'))) {
     return;
@@ -52,10 +63,6 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
-
-  if (req.mode === 'navigate') {
-    event.respondWith(handleNavigate(req));
-  }
 });
 
 /*
@@ -68,6 +75,8 @@ self.addEventListener('fetch', (event) => {
  * на всех попытках) — офлайн-заглушка.
  */
 async function handleNavigate(req) {
+  let isStudio = false;
+  try { const p = new URL(req.url).pathname; isStudio = p.startsWith('/studio') || p.startsWith('/admin'); } catch (e) {}
   const delays = [0, 500, 1200];
   let sawServerError = false;
   for (let i = 0; i < delays.length; i++) {
@@ -80,15 +89,22 @@ async function handleNavigate(req) {
       /* сетевой сбой — ретраим */
     }
   }
-  if (sawServerError) return reconnecting();
+  if (sawServerError) return reconnecting(isStudio);
   const offline = await caches.match(OFFLINE_URL);
-  return offline || reconnecting();
+  return offline || reconnecting(isStudio);
 }
 
-function reconnecting() {
+function reconnecting(isStudio) {
+  const title = 'Идёт обновление';
+  const text = isStudio
+    ? 'Выкатываем обновление — через пару минут студия вернётся и будет работать быстрее и стабильнее. И появились новые функции. Страница обновится сама, как только сервер ответит.'
+    : 'Обновляем сайт — через пару минут всё вернётся и станет работать быстрее. Страница обновится сама, как только сервер ответит.';
+  const updateLink = isStudio
+    ? '<a class="upd" href="https://contentbox.site/update" target="_blank" rel="noopener">Что нового в этом обновлении →</a>'
+    : '';
   const html = `<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Переподключаемся…</title>
+<title>${title}…</title>
 <script>
 (function(){try{var m=localStorage.getItem('theme');if(m!=='light'&&m!=='dark')m='dark';var d={};try{d=JSON.parse(localStorage.getItem('cb-brand')||'{}')||{};}catch(e){}var v=d[m]||{};var st=document.documentElement.style;if(v.bg)st.setProperty('--rbg',v.bg);if(v.text)st.setProperty('--rtext',v.text);if(v.primary)st.setProperty('--racc',v.primary);}catch(e){}})();
 </script>
@@ -96,17 +112,20 @@ function reconnecting() {
 html,body{height:100%;margin:0}
 :root{--rbg:#0F0A1E;--rtext:#EDE9FE;--racc:#7C3AED}
 body{display:flex;align-items:center;justify-content:center;background:var(--rbg);color:var(--rtext);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-.box{max-width:360px;text-align:center;padding:24px}
+.box{max-width:380px;text-align:center;padding:24px}
 .sp{width:34px;height:34px;margin:0 auto 18px;border:3px solid rgba(128,128,128,.28);border-top-color:var(--racc);border-radius:50%;animation:s 1s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}
-h1{font-size:18px;margin:0 0 8px;font-weight:700}
-p{margin:0 0 18px;color:var(--rtext);opacity:.65;font-size:14px;line-height:1.5}
+h1{font-size:19px;margin:0 0 8px;font-weight:700}
+p{margin:0 0 16px;color:var(--rtext);opacity:.7;font-size:14px;line-height:1.55}
+.upd{display:inline-block;margin:0 0 18px;color:var(--racc);font-size:14px;font-weight:600;text-decoration:none}
+.upd:hover{text-decoration:underline}
 button{background:var(--racc);color:#fff;border:0;border-radius:10px;padding:10px 18px;font-size:14px;cursor:pointer}
 </style></head><body><div class="box">
 <div class="sp"></div>
-<h1>Переподключаемся к серверу</h1>
-<p>Секундочку — восстанавливаем соединение. Страница обновится сама, как только сервер ответит.</p>
-<button onclick="location.reload()">Обновить сейчас</button>
+<h1>${title}</h1>
+<p>${text}</p>
+${updateLink}
+<div><button onclick="location.reload()">Обновить сейчас</button></div>
 </div><script>
 function ping(){fetch('/api/health?cb='+Math.random(),{cache:'no-store'}).then(function(r){if(r.ok){location.reload();}else{setTimeout(ping,2000);}}).catch(function(){setTimeout(ping,2000);});}
 setTimeout(ping,1500);
