@@ -71,6 +71,11 @@ export async function POST(req: NextRequest) {
             .map((c: any) => ({ start: Math.max(0, Math.floor(Number(c.start))), title: String(c.title || '').slice(0, 120) }))
         : undefined
 
+    // Субтитры реально поменялись → старое саммари Аси устарело (оно строилось по
+    // прежнему транскрипту). Сбрасываем его в null, чтобы пересобралось по свежим
+    // субтитрам при следующем запросе. Только если саммари было (без лишних записей).
+    const invalidateSummary = subsPatch && (video as any).summary ? { summary: null } : {}
+
     // status='subtitles' — on-demand генерация для готового видео: обновляем ТОЛЬКО
     // дорожки/главы, не трогая assetStatus и ключи артефактов.
     let patch: Record<string, unknown>
@@ -80,6 +85,7 @@ export async function POST(req: NextRequest) {
       patch = {
         ...(subsPatch ? { subtitles: subsPatch } : {}),
         ...(chaptersPatch ? { chapters: chaptersPatch } : {}),
+        ...invalidateSummary,
       }
       if (!Object.keys(patch).length) return NextResponse.json({ ok: true }) // нечего обновлять
     } else {
@@ -93,6 +99,7 @@ export async function POST(req: NextRequest) {
         ...(data.durationSec ? { durationSec: Number(data.durationSec) } : {}),
         ...(subsPatch ? { subtitles: subsPatch } : {}),
         ...(chaptersPatch ? { chapters: chaptersPatch } : {}),
+        ...invalidateSummary,
       }
     }
 
