@@ -185,6 +185,11 @@ export function VideoSeriesBlock({
                         <Play size={18} fill="currentColor" />
                       </span>
                     )}
+                    {ep.previewGif && (
+                      // Hover-превью: короткий gif проявляется при наведении на серию.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={ep.previewGif} alt="" aria-hidden loading="lazy" className="vseries__ep-gif" />
+                    )}
                     {isActive && (
                       <span className="vseries__ep-playing" aria-hidden>
                         <Play size={16} fill="currentColor" />

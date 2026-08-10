@@ -3307,6 +3307,15 @@ select.studio-input {
   object-fit: cover;
   display: block;
 }
+/* Hover-превью в таблице: gif поверх обложки, проявляется при наведении. */
+.vidtable__thumb-gif {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--st-dur) var(--st-ease);
+  pointer-events: none;
+}
+.vidtable__thumb:hover:not(:disabled) .vidtable__thumb-gif { opacity: 1; }
 .vidtable__thumb-empty {
   display: flex;
   align-items: center;

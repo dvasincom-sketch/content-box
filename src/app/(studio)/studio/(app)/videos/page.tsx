@@ -1,7 +1,7 @@
 import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { videoThumbUrl } from '@/lib/videoThumb'
+import { videoThumbUrl, videoGifUrl } from '@/lib/videoThumb'
 import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { can } from '@/access'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
@@ -77,6 +77,7 @@ export default async function VideosPage() {
       : '',
     durationSec: v.durationSec || null,
     coverUrl: videoThumbUrl(v),
+    previewGif: videoGifUrl(v),
     addedAt: v.publishedAt || v.createdAt || null,
     season: v.season ?? null,
     episode: v.episode ?? null,

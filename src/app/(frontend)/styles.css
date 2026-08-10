@@ -2497,6 +2497,15 @@ svg {
   object-fit: cover;
   display: block;
 }
+/* Hover-превью серии: gif поверх обложки, проявляется при наведении. */
+.vseries__ep-gif {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.vseries__ep:hover .vseries__ep-gif { opacity: 1; }
 .vseries__ep-num {
   color: var(--brand-muted);
   font-weight: 700;

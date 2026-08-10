@@ -33,6 +33,7 @@ type Vid = {
   minTierId: string
   durationSec: number | null
   coverUrl: string | null
+  previewGif?: string | null
   addedAt: string | null
   season: number | null
   episode: number | null
@@ -480,6 +481,10 @@ function VideoRow({
             <img src={video.coverUrl} alt="" />
           ) : (
             <span className="vidtable__thumb-empty"><VideoIcon size={16} /></span>
+          )}
+          {video.previewGif && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={video.previewGif} alt="" aria-hidden loading="lazy" className="vidtable__thumb-gif" />
           )}
           {ready === true && (
             <span className="vidtable__thumb-play"><Play size={14} /></span>
