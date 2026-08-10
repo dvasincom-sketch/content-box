@@ -60,7 +60,7 @@ function relID(val: any): string | number | null {
 export type EngagementData = {
   isAuthed: boolean
   canModerate: boolean
-  currentUser: { name: string; color?: string | null; avatarUrl?: string | null } | null
+  currentUser: { name: string; color?: string | null; avatarUrl?: string | null; paid?: boolean } | null
   reactions: PublicationReaction[]
   comments: CommentNode[]
   commentCount: number
