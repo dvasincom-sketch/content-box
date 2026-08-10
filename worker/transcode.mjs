@@ -9,7 +9,7 @@
 
 import { spawn } from 'node:child_process'
 import { createWriteStream, createReadStream } from 'node:fs'
-import { mkdtemp, rm, readdir, stat, mkdir } from 'node:fs/promises'
+import { mkdtemp, rm, readdir, stat, mkdir, readFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, extname } from 'node:path'
 import { pipeline } from 'node:stream/promises'
@@ -306,6 +306,54 @@ async function finishJob(id, status, error) {
   await pool.query(`UPDATE video_jobs SET status=$2, error=$3, updated_at=now() WHERE id=$1`, [id, status, error ? String(error).slice(0, 1000) : null])
 }
 
+// Авто-главы из VTT-транскрипта. Новая глава при паузе >= GAP и достигнутом MIN,
+// либо при превышении MAX; заголовок — первая фраза. Возвращает [{start,title}]
+// или [] (слишком короткое/мало реплик — глав не делаем).
+function chapParseTs(x) {
+  const m = String(x).trim().match(/(?:(\d+):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?/)
+  if (!m) return NaN
+  const h = m[1] ? Number(m[1]) : 0
+  return h * 3600 + Number(m[2]) * 60 + Number(m[3]) + (m[4] ? Number(m[4].padEnd(3, '0')) / 1000 : 0)
+}
+function chapParseVtt(t) {
+  const lines = String(t).replace(/\r/g, '').split('\n')
+  const cues = []
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].includes('-->')) continue
+    const [a, b] = lines[i].split('-->')
+    const start = chapParseTs(a), end = chapParseTs(b)
+    let j = i + 1; const txt = []
+    while (j < lines.length && lines[j].trim() !== '') { if (!lines[j].includes('-->')) txt.push(lines[j].trim()); j++ }
+    if (Number.isFinite(start)) cues.push({ start, end: Number.isFinite(end) ? end : start, text: txt.join(' ').trim() })
+    i = j
+  }
+  return cues
+}
+function chapTitle(str) {
+  const s0 = (str || '').replace(/\s+/g, ' ').trim()
+  const sent = s0.split(/(?<=[.!?…])\s/)[0] || s0
+  const t = sent.length > 60 ? sent.slice(0, 57).trim() + '…' : sent
+  return t.charAt(0).toUpperCase() + t.slice(1)
+}
+function chaptersFromVtt(vtt, opts = {}) {
+  const MIN = opts.min ?? 45, MAX = opts.max ?? 180, GAP = opts.gap ?? 2.5, MAXN = opts.maxN ?? 12
+  const cues = chapParseVtt(vtt).filter((c) => c.text)
+  if (cues.length < 4) return []
+  if (cues[cues.length - 1].end < 90) return []
+  const chapters = []
+  let chStart = cues[0].start, chFirst = cues[0].text
+  for (let i = 1; i < cues.length; i++) {
+    const gap = cues[i].start - cues[i - 1].end
+    const len = cues[i].start - chStart
+    if ((gap >= GAP && len >= MIN) || len >= MAX) { chapters.push({ start: chStart, title: chapTitle(chFirst) }); chStart = cues[i].start; chFirst = cues[i].text }
+  }
+  chapters.push({ start: chStart, title: chapTitle(chFirst) })
+  let out = chapters
+  if (out.length > MAXN) { const step = out.length / MAXN; out = Array.from({ length: MAXN }, (_, k) => chapters[Math.floor(k * step)]) }
+  if (out.length) out[0] = { ...out[0], start: 0 }
+  return out.length >= 2 ? out.map((c) => ({ start: Math.round(c.start), title: c.title })) : []
+}
+
 // Авто-субтитры через whisper.cpp: извлекаем 16кГц mono WAV (требование whisper),
 // гоним распознавание в VTT, заливаем в subs/{pid}/{lang}.vtt. Возвращает
 // дескриптор дорожки { lang, label, key } или бросает (ловим выше как non-fatal).
@@ -321,7 +369,8 @@ async function generateSubtitles(input, playbackId, work) {
   )
   const key = `subs/${playbackId}/${WHISPER_LANG}.vtt`
   await uploadFile(`${outBase}.vtt`, key)
-  return { lang: WHISPER_LANG, label: `Авто (${WHISPER_LANG.toUpperCase()})`, key }
+  const vttText = await readFile(`${outBase}.vtt`, 'utf8').catch(() => '')
+  return { lang: WHISPER_LANG, label: `Авто (${WHISPER_LANG.toUpperCase()})`, key, vttText }
 }
 
 async function processJob(job) {
@@ -379,12 +428,14 @@ async function processJob(job) {
 
     // Авто-субтитры (whisper.cpp) — необязательная стадия, не валит задачу.
     let autoSubs = null
+    let chapters = []
     if (WHISPER_ENABLED && meta.hasAudio) {
       try {
         t = Date.now()
         log(`job ${job.id} whisper: генерирую субтитры (${WHISPER_LANG})…`)
         autoSubs = await generateSubtitles(input, playbackId, work)
-        log(`job ${job.id} whisper готово за ${secs(t)}s`)
+        chapters = chaptersFromVtt(autoSubs.vttText || '')
+        log(`job ${job.id} whisper готово за ${secs(t)}s, глав: ${chapters.length}`)
       } catch (e) { log('whisper failed (non-fatal):', e.message) }
     }
 
@@ -399,7 +450,8 @@ async function processJob(job) {
       spriteKey,
       gifKey,
       assetBytes,
-      subtitles: autoSubs ? [autoSubs] : undefined,
+      subtitles: autoSubs ? [{ lang: autoSubs.lang, label: autoSubs.label, key: autoSubs.key }] : undefined,
+      chapters: chapters.length ? chapters : undefined,
     })
     await finishJob(job.id, 'done', null)
     // Оригинал больше не нужен — HLS собран и залит в S3. Удаляем исходник,

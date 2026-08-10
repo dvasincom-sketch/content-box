@@ -76,6 +76,9 @@ export async function POST(req: NextRequest) {
             ...(data.assetBytes ? { assetBytes: Number(data.assetBytes) } : {}),
             ...(data.durationSec ? { durationSec: Number(data.durationSec) } : {}),
             ...(subsPatch ? { subtitles: subsPatch } : {}),
+            ...(Array.isArray(data.chapters) && data.chapters.length
+              ? { chapters: data.chapters.filter((c: any) => c && typeof c.start === 'number').map((c: any) => ({ start: Math.max(0, Math.floor(Number(c.start))), title: String(c.title || '').slice(0, 120) })) }
+              : {}),
           }
 
     await payload.update({ collection: 'videos', id: video.id, data: patch as any, overrideAccess: true, depth: 0 })

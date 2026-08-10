@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Play, Pause, Maximize, Minimize, Volume2, VolumeX, Loader2, Captions } from 'lucide-react'
+import { Play, Pause, Maximize, Minimize, Volume2, VolumeX, Loader2, Captions, ListVideo } from 'lucide-react'
 
 /**
  * Плеер собственного HLS-видео (provider='self') с кастомными контролами и
@@ -73,6 +73,7 @@ export function SelfHostedPlayer({
   sprite,
   subtitles,
   videoId,
+  chapters: chapters_,
 }: {
   master: string
   poster?: string | null
@@ -80,6 +81,7 @@ export function SelfHostedPlayer({
   sprite?: string | null
   subtitles?: { lang: string; label: string; url: string }[] | null
   videoId?: number | string | null
+  chapters?: { start: number; title: string }[] | null
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -100,6 +102,8 @@ export function SelfHostedPlayer({
   const [hover, setHover] = useState<{ ratio: number; time: number } | null>(null)
   const [activeTrack, setActiveTrack] = useState(-1) // -1 = субтитры выключены
   const [ccOpen, setCcOpen] = useState(false)
+  const [chOpen, setChOpen] = useState(false)
+  const chapters = Array.isArray(chapters_) ? chapters_ : []
   const tracks = Array.isArray(subtitles) ? subtitles : []
 
   // Применяем режим текстовых дорожек: показываем только активную.
@@ -305,6 +309,7 @@ export function SelfHostedPlayer({
     return cues.find((c) => hover.time >= c.start && hover.time < c.end) || cues[cues.length - 1] || null
   }, [hover, cues])
 
+  const curChapIdx = chapters.length ? chapters.reduce((acc, c, i) => (current >= c.start ? i : acc), -1) : -1
   const playedPct = duration > 0 ? (current / duration) * 100 : 0
   const bufferedPct = duration > 0 ? Math.min(100, (buffered / duration) * 100) : 0
 
@@ -417,6 +422,9 @@ export function SelfHostedPlayer({
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${bufferedPct}%`, background: 'rgba(255,255,255,.35)', borderRadius: 3 }} />
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${playedPct}%`, background: 'var(--brand-primary, #7c3aed)', borderRadius: 3 }} />
             <div style={{ position: 'absolute', left: `${playedPct}%`, top: '50%', transform: 'translate(-50%,-50%)', width: 12, height: 12, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,.5)' }} />
+            {duration > 0 && chapters.map((c, i) => (c.start > 0 && c.start < duration ? (
+              <div key={i} title={c.title} style={{ position: 'absolute', left: `${(c.start / duration) * 100}%`, top: -1, bottom: -1, width: 2, background: 'rgba(255,255,255,.75)', pointerEvents: 'none' }} />
+            ) : null))}
           </div>
         </div>
 
@@ -431,7 +439,26 @@ export function SelfHostedPlayer({
           <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums', opacity: 0.9 }}>
             {fmtTime(current)} / {fmtTime(duration)}
           </span>
+          {curChapIdx >= 0 && (
+            <span style={{ fontSize: 12, opacity: 0.8, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>· {chapters[curChapIdx].title}</span>
+          )}
           <span style={{ flex: 1 }} />
+          {chapters.length > 0 && (
+            <div style={{ position: 'relative' }}>
+              <button type="button" aria-label="Главы" onClick={() => setChOpen((o) => !o)} style={btnStyle}>
+                <ListVideo size={20} />
+              </button>
+              {chOpen && (
+                <div style={{ ...ccMenuStyle, minWidth: 200, maxHeight: 240, overflowY: 'auto' }}>
+                  {chapters.map((c, i) => (
+                    <button key={i} type="button" onClick={() => { seekTo(c.start); setChOpen(false) }} style={ccItemStyle(i === curChapIdx)}>
+                      <span style={{ opacity: 0.6, marginRight: 8, fontVariantNumeric: 'tabular-nums' }}>{fmtTime(c.start)}</span>{c.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {tracks.length > 0 && (
             <div style={{ position: 'relative' }}>
               <button

@@ -330,6 +330,15 @@ export const Videos: CollectionConfig = {
       },
     },
     {
+      name: 'chapters',
+      type: 'json',
+      label: 'Главы',
+      admin: {
+        condition: (data) => data?.provider === 'self',
+        description: 'Авто-главы из транскрипта [{ start, title }] — генерит воркер.',
+      },
+    },
+    {
       name: 'durationSec',
       type: 'number',
       label: 'Длительность, сек',

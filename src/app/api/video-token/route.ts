@@ -105,6 +105,13 @@ export async function GET(req: NextRequest) {
         label: String(sx.label || sx.lang),
         url: `/api/video-subtitle/${playbackId}/${encodeURIComponent(String(sx.lang))}?t=${encodeURIComponent(token)}`,
       }))
+    // Авто-главы (из транскрипта) — тайм-коды для плеера.
+    const chaptersRaw = Array.isArray((access.video as any).chapters) ? ((access.video as any).chapters as any[]) : []
+    const chapters = chaptersRaw
+      .filter((c) => c && typeof c.start === 'number')
+      .map((c) => ({ start: Number(c.start), title: String(c.title || '') }))
+      .sort((a, b) => a.start - b.start)
+
     // Динамический watermark: подпись зрителя поверх видео (антипиратство).
     // Показываем email подписчика — если запись утечёт, на ней виден источник.
     const wmEmail = access.subscriber && typeof access.subscriber === 'object'
@@ -119,6 +126,7 @@ export async function GET(req: NextRequest) {
       watermark: wmEmail || null,
       sprite,
       subtitles,
+      chapters,
     })
   }
 
