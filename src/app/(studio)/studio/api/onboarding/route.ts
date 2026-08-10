@@ -78,6 +78,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     }
     patch.subdomain = sub
     patch.domain = domainFromSubdomain(sub)
+    // Поддомен *.contentbox.site — наш апекс, отдельная DNS-TXT верификация не
+    // нужна: сразу помечаем домен подтверждённым и активируем тенант, чтобы сайт
+    // автора заработал сам, без ручного участия персонала.
+    patch.domainVerified = true
+    patch.status = 'active'
   }
 
   if (typeof body.step === 'number' && Number.isFinite(body.step)) {
