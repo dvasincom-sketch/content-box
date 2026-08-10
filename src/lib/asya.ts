@@ -32,6 +32,8 @@ export async function summarizeTranscript(args: {
   source?: string
   lang?: string
   refresh?: boolean
+  /** Доп. контекст видео (участники/тема) — помогает Асе точнее назвать людей. */
+  context?: string
 }): Promise<AsyaSummary> {
   if (!asyaEnabled()) throw new Error('ASYA_SUMMARY_KEY не задан')
   const res = await fetch(ASYA_URL, {
@@ -43,6 +45,7 @@ export async function summarizeTranscript(args: {
       source: args.source,
       lang: args.lang,
       refresh: args.refresh === true,
+      context: args.context,
     }),
   })
   const j: any = await res.json().catch(() => null)
