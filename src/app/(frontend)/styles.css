@@ -2310,7 +2310,8 @@ svg {
 .lvl-step:first-child::before { top: 25px; }
 .lvl-step:last-child::before { bottom: calc(100% - 25px); }
 .lvl-step--link::before { background: color-mix(in srgb, var(--brand-primary) 45%, var(--brand-border)); }
-.lvl-step__badge { position: relative; z-index: 1; flex: none; width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 700; line-height: 1; color: var(--brand-muted); background: color-mix(in srgb, var(--brand-text) 9%, transparent); }
+.lvl-step__badge { position: relative; z-index: 1; flex: none; width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: 12px; font-weight: 700; line-height: 1; color: var(--brand-muted); background: color-mix(in srgb, var(--brand-text) 10%, var(--brand-surface)); box-shadow: 0 0 0 3px var(--brand-surface); }
+.lvl-step.is-current .lvl-step__badge { box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 10%, var(--brand-surface)); }
 .lvl-step__badge.is-reached { color: #fff; background: var(--brand-primary); }
 .lvl-step__body { min-width: 0; flex: 1; padding-top: 2px; }
 .lvl-step__title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

@@ -25,9 +25,19 @@ const NAV_SECONDARY: NavItem[] = [
   { href: '/subscribe', label: 'Подписка', Icon: CreditCard },
 ]
 
-export function AccountSidebar({ name, email, avatarUrl }: { name: string; email: string; avatarUrl: string | null }) {
+export function AccountSidebar({
+  name, email, avatarUrl, showLibrary = true, showHistory = true,
+}: { name: string; email: string; avatarUrl: string | null; showLibrary?: boolean; showHistory?: boolean }) {
   const pathname = usePathname()
   const [moreOpen, setMoreOpen] = useState(false)
+
+  // Прячем пустые разделы (Библиотека/История), но не когда пользователь уже на них.
+  const primary = NAV_PRIMARY.filter((n) => {
+    if (pathname.startsWith(n.href)) return true
+    if (n.href === '/account/library') return showLibrary
+    if (n.href === '/account/history') return showHistory
+    return true
+  })
 
   async function logout() {
     try { await fetch('/api/subscribers/logout', { method: 'POST' }) } catch {}
@@ -82,7 +92,7 @@ export function AccountSidebar({ name, email, avatarUrl }: { name: string; email
           мобильном становится строкой «лента + ⋯». */}
       <div className="acct__navbar">
         <nav className="acct__nav">
-          {NAV_PRIMARY.map((n) => renderLink(n))}
+          {primary.map((n) => renderLink(n))}
         </nav>
 
         <div className="acct__more">

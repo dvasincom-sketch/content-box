@@ -1,14 +1,32 @@
 import React from 'react'
 import Link from 'next/link'
-import { ExternalLink, Settings as SettingsIcon, Check, Sparkles, Crown, CalendarClock } from 'lucide-react'
+import {
+  ExternalLink, Settings as SettingsIcon, Check, Sparkles, Crown, CalendarClock,
+  MessageCircle, MessagesSquare, PenLine, Heart, Users, Shield, Medal, Bug, Target, Star, Lock,
+} from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { levelProgress, LEVELS, POINT_WEIGHTS } from '@/lib/reputation'
-import { earnedBadges } from '@/lib/badges'
+import { allBadges } from '@/lib/badges'
 
 /** Витрина профиля: уровень с понятной лестницей, значки, статистика. */
 export const dynamic = 'force-dynamic'
+
+/** Иконки значков: ключ из badges.ts → компонент lucide. */
+const BADGE_ICONS: Record<string, React.ComponentType<any>> = {
+  'message-circle': MessageCircle, messages: MessagesSquare, pen: PenLine, heart: Heart,
+  users: Users, shield: Shield, medal: Medal, crown: Crown, bug: Bug, target: Target, star: Star,
+}
+
+/** Правильное склонение «балл» для числа. */
+function ballWord(n: number): string {
+  const a = Math.abs(n) % 100
+  const b = a % 10
+  if (a > 10 && a < 20) return 'баллов'
+  if (b === 1) return 'балл'
+  if (b >= 2 && b <= 4) return 'балла'
+  return 'баллов'
+}
 
 // Что даёт каждый уровень (по порядку LEVELS).
 const PERKS = [
@@ -52,7 +70,10 @@ export default async function AccountOverviewPage() {
   const confirmedBugs = await payload
     .count({ collection: 'bug-reports', where: { and: [{ subscriber: { equals: sub.id } }, { status: { in: ['confirmed', 'fixed'] } }] }, overrideAccess: true })
     .then((r: any) => r.totalDocs).catch(() => 0)
-  const badges = earnedBadges({ commentCount, reactionsReceived, level: Number(full?.level) || 0, hasPaidTier: hasPaid, confirmedBugs })
+  const publicationCount = await payload
+    .count({ collection: 'publications', where: { author: { equals: sub.id } }, overrideAccess: true })
+    .then((r: any) => r.totalDocs).catch(() => 0)
+  const badges = allBadges({ commentCount, reactionsReceived, level: Number(full?.level) || 0, hasPaidTier: hasPaid, confirmedBugs, followerCount, publicationCount })
 
   return (
     <>
@@ -103,14 +124,14 @@ export default async function AccountOverviewPage() {
         </div>
         <div className="lvl__bar"><div className="lvl__bar-fill" style={{ width: `${prog.pct}%` }} /></div>
         <div className="lvl__pts">
-          {points} очков{prog.nextName ? ` · до «${prog.nextName}» — ${prog.toNext}` : ' · максимальный уровень'}
+          {points} {ballWord(points)}{prog.nextName ? ` · до «${prog.nextName}» — ${prog.toNext}` : ' · максимальный уровень'}
         </div>
 
-        {/* Как заработать очки */}
+        {/* Как заработать баллы */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 14, fontSize: 14, color: 'var(--brand-muted)', lineHeight: 1.5 }}>
           <Sparkles size={16} style={{ color: 'var(--brand-primary)', flex: 'none', marginTop: 2 }} />
           <span>
-            Очки — за активность: <b style={{ color: 'var(--brand-text)' }}>+{POINT_WEIGHTS.comment}</b> за одобренный комментарий,{' '}
+            Баллы — за активность: <b style={{ color: 'var(--brand-text)' }}>+{POINT_WEIGHTS.comment}</b> за одобренный комментарий,{' '}
             <b style={{ color: 'var(--brand-text)' }}>+{POINT_WEIGHTS.reaction_received}</b> за реакцию на ваш комментарий.
           </span>
         </div>
@@ -129,8 +150,7 @@ export default async function AccountOverviewPage() {
                 <div className="lvl-step__body">
                   <div className="lvl-step__title">
                     <span className={`lvl-step__name${reached ? ' is-reached' : ''}${isCurrent ? ' is-current' : ''}`}>{l.name}</span>
-                    <span className="lvl-step__pts">· {l.min} очков</span>
-                    {isCurrent && <span className="lvl-step__here">вы здесь</span>}
+                    <span className="lvl-step__pts">· {l.min} {ballWord(l.min)}</span>
                   </div>
                   <div className="lvl-step__perk">{PERKS[i]}</div>
                 </div>
@@ -152,18 +172,40 @@ export default async function AccountOverviewPage() {
         )}
       </div>
 
-      {badges.length > 0 && (
-        <div className="c-card" style={{ padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-text)', marginBottom: 10 }}>Значки</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {badges.map((b) => (
-              <span key={b.id} title={b.desc} style={{ fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 999, color: b.exclusive ? 'var(--brand-accent)' : 'var(--brand-text)', background: b.exclusive ? 'color-mix(in srgb, var(--brand-accent) 14%, transparent)' : 'color-mix(in srgb, var(--brand-text) 8%, transparent)' }}>
-                {b.name}
-              </span>
-            ))}
-          </div>
+      <div className="c-card" style={{ padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-text)', marginBottom: 14 }}>Значки</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
+          {badges.map((b) => {
+            const Icon = BADGE_ICONS[b.icon] || Star
+            return (
+              <div
+                key={b.id}
+                title={b.earned ? b.desc : `Как получить: ${b.desc}`}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, width: 76, textAlign: 'center', cursor: 'help' }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    position: 'relative', width: 52, height: 52, borderRadius: 999, display: 'grid', placeItems: 'center',
+                    background: b.earned ? `color-mix(in srgb, ${b.color} 18%, transparent)` : 'color-mix(in srgb, var(--brand-text) 6%, transparent)',
+                    color: b.earned ? b.color : 'var(--brand-muted)',
+                    border: `1px solid ${b.earned ? `color-mix(in srgb, ${b.color} 38%, transparent)` : 'var(--brand-border)'}`,
+                    opacity: b.earned ? 1 : 0.6,
+                  }}
+                >
+                  <Icon size={23} />
+                  {!b.earned && (
+                    <span style={{ position: 'absolute', right: -3, bottom: -3, width: 19, height: 19, borderRadius: 999, background: 'var(--brand-surface)', border: '1px solid var(--brand-border)', display: 'grid', placeItems: 'center', color: 'var(--brand-muted)' }}>
+                      <Lock size={10} />
+                    </span>
+                  )}
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 600, lineHeight: 1.2, color: b.earned ? 'var(--brand-text)' : 'var(--brand-muted)' }}>{b.name}</span>
+              </div>
+            )
+          })}
         </div>
-      )}
+      </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         {[{ k: 'Подписчики', v: followerCount }, { k: 'Подписки', v: followingCount }, { k: 'Комментарии', v: commentCount }, { k: 'Реакции', v: reactionsReceived }].map((s) => (
