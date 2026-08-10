@@ -60,7 +60,7 @@ function relID(val: any): string | number | null {
 export type EngagementData = {
   isAuthed: boolean
   canModerate: boolean
-  currentUser: { name: string; color?: string | null; avatarUrl?: string | null; paid?: boolean } | null
+  currentUser: { name: string; color?: string | null; avatarUrl?: string | null; paid?: boolean; handle?: string | null } | null
   reactions: PublicationReaction[]
   comments: CommentNode[]
   commentCount: number
@@ -97,7 +97,7 @@ export async function getPublicationEngagement(
     isAuthed,
     canModerate: viewerCanModerate,
     currentUser: isAuthed
-      ? { name: subName(subscriber), color: avatarColor(meId as string | number), avatarUrl: meAvatarUrl, paid: Boolean((subscriber as any).activeTier) }
+      ? { name: subName(subscriber), color: avatarColor(meId as string | number), avatarUrl: meAvatarUrl, paid: Boolean((subscriber as any).activeTier), handle: (subscriber as any).handle || null }
       : null,
     reactions: REACTION_KEYS.map((key) => ({ key, count: 0, reactors: [], mine: false })),
     comments: [],
@@ -205,7 +205,7 @@ export async function getPublicationEngagement(
         id: doc.id,
         authorName: subName(typeof authorSub === 'object' ? authorSub : null),
         authorHandle:
-          typeof authorSub === 'object' && authorSub && !authorSub.profilePrivate && !authorSub.isBlocked && authorSub.handle
+          typeof authorSub === 'object' && authorSub && !authorSub.isBlocked && authorSub.handle && (!authorSub.profilePrivate || aid === meId)
             ? authorSub.handle
             : null,
         authorLevel: typeof authorSub === 'object' && authorSub ? Number(authorSub.level) || 0 : 0,
