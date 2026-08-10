@@ -11,6 +11,9 @@
 #    реестра копировали из одинаковых путей.
 #    WHISPER_MODEL_URL — необязательный прямой URL модели (напр. ваш Timeweb S3):
 #    быстрее и надёжнее, чем каждый раз тянуть с HuggingFace. Пусто → качаем с HF.
+# Глобальный ARG (до первого FROM) — иначе его нельзя подставить в FROM ниже.
+ARG WHISPER_IMAGE=whisper-build
+
 FROM debian:bookworm-slim AS whisper-build
 ARG WHISPER_MODEL=small
 ARG WHISPER_MODEL_URL=
@@ -35,7 +38,6 @@ RUN mkdir -p /whisper/models \
 # /whisper/models/*.bin один раз, запушь, и задай build-arg
 # WHISPER_IMAGE=<registry>/whisper:tag → деплой БЕЗ компиляции и скачивания.
 # По умолчанию — локальная стадия whisper-build (компилируем как обычно).
-ARG WHISPER_IMAGE=whisper-build
 FROM ${WHISPER_IMAGE} AS whisper
 
 # ── База: node + ffmpeg + сборка приложения. Общая для app и worker. ──
