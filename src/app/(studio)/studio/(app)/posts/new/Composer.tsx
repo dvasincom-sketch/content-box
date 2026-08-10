@@ -3,7 +3,7 @@
 import React, { useState, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ImagePlus, X, Loader2, Trash2, Newspaper, Sparkles, Video, Music, Plus } from 'lucide-react'
+import { ArrowLeft, ImagePlus, X, Loader2, Trash2, Newspaper, Sparkles, Video, Music, Plus, ExternalLink } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
 import { CategoryMultiPicker } from '../../settings/CategoryMultiPicker'
@@ -277,6 +277,11 @@ export function Composer({
           К публикациям
         </Link>
         <div className="composer__actions">
+          {isEdit && initial!.slug && (
+            <a href={`/publication/${initial!.slug}`} target="_blank" rel="noopener" className="studio-btn studio-btn--ghost" title="Открыть публикацию на сайте">
+              <ExternalLink size={16} /> На сайте
+            </a>
+          )}
           {isEdit ? (
             <>
               <button

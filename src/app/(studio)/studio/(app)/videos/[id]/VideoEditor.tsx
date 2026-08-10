@@ -142,7 +142,8 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
         </div>
       </div>
 
-      {/* Меню-табы */}
+      {/* Меню-табы — если доступен только «Обзор», панель вкладок не показываем. */}
+      {tabs.length > 1 && (
       <div className="vidtabs" role="tablist" aria-label="Разделы редактора видео">
         {tabs.map((t) => (
           <button
@@ -158,6 +159,7 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
           </button>
         ))}
       </div>
+      )}
 
       <div className="vidpage__panel">
         {tab === 'overview' && (
