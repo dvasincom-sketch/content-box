@@ -16,6 +16,8 @@ import { buildMetadata } from '@/lib/seo'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
+import { AsyaSummary } from '../../video/[slug]/AsyaSummary'
+import { ASYA_MIN_TIER_PRICE } from '@/lib/asya'
 import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
 import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
@@ -425,6 +427,11 @@ export default async function PublicationPage({ params }: { params: Promise<Para
                         requiredTierName={(access as any).requiredTierName}
                       />
                     )}
+                    {allowed && video?.provider === 'self' && ((Array.isArray(video.subtitles) && video.subtitles.length > 0) || video.summary) ? (
+                      <div style={{ marginTop: 16 }}>
+                        <AsyaSummary videoId={video.id} minPrice={ASYA_MIN_TIER_PRICE} />
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>

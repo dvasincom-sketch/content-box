@@ -272,7 +272,7 @@ export function VideoEditModal({
 
             {video.provider === 'self' && <AnalyticsSection videoId={video.id} />}
 
-            {video.provider === 'self' && <SummarySection videoId={video.id} initial={video.summary ?? null} />}
+            {video.provider === 'self' && <SummarySection videoId={video.id} initial={video.summary ?? null} hasSubtitles={(video.subtitles || []).length > 0} />}
 
             {error && <div className="studio-login__error">{error}</div>}
 
@@ -532,7 +532,7 @@ function AnalyticsSection({ videoId }: { videoId: number | string }) {
 /* -------------------------------------------------------------------------- */
 /* Саммари от Аси: (пере)генерация краткого содержания по субтитрам             */
 /* -------------------------------------------------------------------------- */
-function SummarySection({ videoId, initial }: { videoId: number | string; initial: { tldr?: string; at?: string } | null }) {
+function SummarySection({ videoId, initial, hasSubtitles }: { videoId: number | string; initial: { tldr?: string; at?: string } | null; hasSubtitles: boolean }) {
   const [summary, setSummary] = useState<{ tldr?: string; at?: string } | null>(initial)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -556,13 +556,17 @@ function SummarySection({ videoId, initial }: { videoId: number | string; initia
       {summary?.tldr ? (
         <div className="videdit__hint" style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>{summary.tldr}</div>
       ) : (
-        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>Саммари ещё не сгенерировано.</div>
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 8 }}>{hasSubtitles ? 'Саммари ещё не сгенерировано.' : 'Саммари появится, когда будут субтитры.'}</div>
       )}
-      <button type="button" className="studio-btn studio-btn--ghost" onClick={refresh} disabled={busy}>
+      <button type="button" className="studio-btn studio-btn--ghost" onClick={refresh} disabled={busy || !hasSubtitles} title={!hasSubtitles ? 'Сначала нужны субтитры' : undefined}>
         {busy ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} {summary?.tldr ? 'Обновить саммари' : 'Сгенерировать саммари'}
       </button>
+      <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+        {hasSubtitles
+          ? 'Ася делает краткое содержание по субтитрам. Обновите после смены или дозагрузки субтитров.'
+          : 'Сначала сгенерируйте автоматические субтитры или загрузите файл выше — затем можно собрать саммари.'}
+      </div>
       {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
-      <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>Ася делает краткое содержание по субтитрам. Обновите после смены или дозагрузки субтитров.</div>
     </div>
   )
 }
