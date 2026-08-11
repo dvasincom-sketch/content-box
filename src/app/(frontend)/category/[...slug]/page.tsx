@@ -9,6 +9,7 @@ import { buildMetadata } from '@/lib/seo'
 import type { Metadata } from 'next'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
+import { ListPagination } from '@/components/ListPagination'
 import { RichText } from '@/components/RichText'
 import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
@@ -81,6 +82,10 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   const evSort: 'new' | 'old' = String(sp?.sort || '') === 'old' ? 'old' : 'new'
   const evFrom = typeof sp?.from === 'string' ? sp.from : ''
   const evTo = typeof sp?.to === 'string' ? sp.to : ''
+  // Пагинация списка: размер страницы 25/50/100 (дефолт 25) и номер страницы.
+  const PER = [25, 50, 100]
+  const per = PER.includes(Number(sp?.per)) ? Number(sp?.per) : 25
+  const page = Math.max(1, Number(sp?.page) || 1)
   const ctx = await getTenantFromHeaders()
   if (!ctx) return <div className="p-8">Тенант не определён.</div>
 
@@ -120,6 +125,8 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   // Для контейнера не нужны (показываем афиши детей), поэтому не запрашиваем.
   let pubs: any[] = []
   let cardStats = new Map<string, { comments: number; reactions: number }>()
+  let pubTotal = 0
+  let pubPages = 1
   if (!isPosterContainer && !isVideoSeries) {
     const branchRes = await payload.find({
       collection: 'categories',
@@ -171,10 +178,13 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       // События: по умолчанию сначала новые (-eventDate), опц. сначала старые (eventDate).
       sort: isEvent ? (evSort === 'old' ? 'eventDate' : '-eventDate') : '-publishedAt',
       depth: 1,
-      limit: 50,
+      limit: per,
+      page,
       overrideAccess: true,
     })
     pubs = pubsRes.docs as any[]
+    pubTotal = pubsRes.totalDocs || pubs.length
+    pubPages = pubsRes.totalPages || 1
 
     // Счётчики комментариев и реакций для карточек — один агрегирующий запрос.
     cardStats = await getPublicationCardStats(
@@ -354,6 +364,11 @@ export default async function CategoryPage({ params, searchParams }: { params: P
               }
             })}
           />
+            )}
+            {pubs.length > 0 && (
+              <ListPagination page={page} totalPages={pubPages} per={per} total={pubTotal}
+                basePath={`/category/${(Array.isArray(slug) ? slug : [slug]).join('/')}`}
+                query={{ sort: isEvent && evSort === 'old' ? 'old' : undefined, from: evFrom || undefined, to: evTo || undefined }} />
             )}
           </>
         )}
