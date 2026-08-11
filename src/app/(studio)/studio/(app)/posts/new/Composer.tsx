@@ -3,7 +3,7 @@
 import React, { useState, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ImagePlus, X, Loader2, Trash2, Newspaper, Sparkles, Video, Music, Plus, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ImagePlus, ImageOff, X, Loader2, Trash2, Newspaper, Sparkles, Video, Music, Plus, ExternalLink } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
 import { CategoryMultiPicker } from '../../settings/CategoryMultiPicker'
@@ -89,6 +89,7 @@ export function Composer({
 
   const [coverId, setCoverId] = useState<number | null>(initial?.coverId ?? null)
   const [coverUrl, setCoverUrl] = useState<string | null>(initial?.coverUrl ?? null)
+  const [coverBroken, setCoverBroken] = useState(false)
   const [uploading, setUploading] = useState(false)
 
   // Медиа-записи (видео + аудио — одна коллекция videos, аудио = provider 'audio').
@@ -152,6 +153,7 @@ export function Composer({
       else {
         setCoverId(json.id)
         setCoverUrl(json.url)
+        setCoverBroken(false)
       }
     } catch {
       setError('Ошибка загрузки обложки')
@@ -164,6 +166,7 @@ export function Composer({
   function removeCover() {
     setCoverId(null)
     setCoverUrl(null)
+    setCoverBroken(false)
   }
 
   // publish: true → опубликовать/сохранить как опубл.; false → черновик/снять
@@ -402,12 +405,26 @@ export function Composer({
             </div>
           )}
 
-          {coverUrl ? (
+          {coverUrl && !coverBroken ? (
             <div className="composer__cover">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={coverUrl} alt="Обложка" />
+              <img src={coverUrl} alt="Обложка" onError={() => setCoverBroken(true)} />
               <button className="composer__cover-remove" onClick={removeCover} title="Убрать">
                 <X size={16} />
+              </button>
+            </div>
+          ) : coverUrl && coverBroken ? (
+            <div className="composer__cover-broken">
+              <ImageOff size={22} className="composer__cover-broken-ic" />
+              <div className="composer__cover-broken-txt">
+                <div className="composer__cover-broken-title">Обложка не загрузилась</div>
+                <div className="composer__cover-broken-sub">Файл повреждён или недоступен. Удалите её или загрузите заново.</div>
+              </div>
+              <button type="button" className="studio-btn studio-btn--ghost" onClick={() => fileInput.current?.click()} disabled={uploading}>
+                {uploading ? <Loader2 size={16} className="spin" /> : <ImagePlus size={16} />} Заменить
+              </button>
+              <button type="button" className="studio-btn studio-btn--danger" onClick={removeCover}>
+                <X size={16} /> Удалить
               </button>
             </div>
           ) : (

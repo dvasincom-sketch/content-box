@@ -5543,3 +5543,14 @@ a.session-expired__btn {
 .nl-row:last-child { border-bottom: 0; }
 .nl-row--head { font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; color: var(--st-text-muted); }
 .nl-row__subj { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+
+/* Битая обложка (ошибка загрузки/недоступный файл) — явный блок с удалением. */
+.composer__cover-broken {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+  border: 1px dashed var(--st-border); border-radius: 12px;
+  background: var(--st-surface-2, rgba(128,128,128,.06)); flex-wrap: wrap;
+}
+.composer__cover-broken-ic { color: var(--st-text-faint, #8a8a8a); flex: none; }
+.composer__cover-broken-txt { flex: 1; min-width: 160px; }
+.composer__cover-broken-title { font-weight: 600; font-size: 14px; color: var(--st-text); }
+.composer__cover-broken-sub { font-size: 12.5px; color: var(--st-text-muted); margin-top: 2px; }
