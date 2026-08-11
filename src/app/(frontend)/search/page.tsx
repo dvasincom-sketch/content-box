@@ -5,6 +5,7 @@ import { resolveViewerTenantSSR } from '@/search/tenant'
 import { runSearch } from '@/search/query'
 import { rateLimit, clientIp } from '@/lib/rateLimit'
 import { SearchBox } from '@/components/search/SearchBox'
+import { ListPagination } from '@/components/ListPagination'
 import { highlight } from '@/components/search/highlight'
 import styles from '@/components/search/search.module.css'
 
@@ -41,6 +42,8 @@ export default async function SearchPage({
   const type = str(sp.type)
   const category = str(sp.category)
   const page = Math.max(1, Number(str(sp.page) ?? '1') || 1)
+  const PER = [25, 50, 100]
+  const per = PER.includes(Number(str(sp.per))) ? Number(str(sp.per)) : 25
   const includeLocked = (str(sp.locked) ?? '1') !== '0'
 
   // Reads x-tenant-id injected by proxy.ts for this frontend request.
@@ -59,6 +62,7 @@ export default async function SearchPage({
           type,
           category,
           page,
+          limit: per,
           includeLocked,
         })
       : null
@@ -159,23 +163,14 @@ export default async function SearchPage({
             </ul>
           )}
 
-          {result.totalPages > 1 && (
-            <nav className={styles.pager} aria-label="Пагинация">
-              {page > 1 ? (
-                <Link href={hrefWith({ page: String(page - 1) })}>← Назад</Link>
-              ) : (
-                <span className={styles.pagerDisabled}>← Назад</span>
-              )}
-              <span>
-                Стр. {result.page} из {result.totalPages}
-              </span>
-              {page < result.totalPages ? (
-                <Link href={hrefWith({ page: String(page + 1) })}>Вперёд →</Link>
-              ) : (
-                <span className={styles.pagerDisabled}>Вперёд →</span>
-              )}
-            </nav>
-          )}
+          <ListPagination
+            page={result.page}
+            totalPages={result.totalPages}
+            per={per}
+            total={result.totalHits}
+            basePath="/search"
+            query={{ q: q || undefined, type: type || undefined, category: category || undefined, locked: includeLocked ? undefined : '0' }}
+          />
 
           {result.totalHits > 0 && (
             <div className={styles.resultsFooter}>

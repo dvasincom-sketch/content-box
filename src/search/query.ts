@@ -82,7 +82,7 @@ export async function runSearch(args: SearchArgs): Promise<SearchResult> {
 
   // Number(...) на входе может дать NaN — он бы прошёл сквозь Math.max.
   const page = safeInt(args.page, 1, 1, 10_000)
-  const hitsPerPage = safeInt(args.limit, 20, 1, 50)
+  const hitsPerPage = safeInt(args.limit, 25, 1, 100)
   const includeLocked = args.includeLocked ?? true
 
   const filter = [`tenant = ${filterLiteral(args.tenantId)}`, notScheduledFilter()]

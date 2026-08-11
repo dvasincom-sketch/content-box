@@ -9,6 +9,7 @@ import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import { publishedWhere } from '@/lib/published'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
+import { ListPagination } from '@/components/ListPagination'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import type { Metadata } from 'next'
 import '../../styles.css'
@@ -37,8 +38,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   })
 }
 
-export default async function TagPage({ params }: { params: Promise<Params> }) {
+export default async function TagPage({ params, searchParams }: { params: Promise<Params>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { slug } = await params
+  const sp = await searchParams
+  const PER = [25, 50, 100]
+  const per = PER.includes(Number(sp?.per)) ? Number(sp?.per) : 25
+  const page = Math.max(1, Number(sp?.page) || 1)
   const ctx = await getTenantFromHeaders()
   if (!ctx) return <div className="p-8">Тенант не определён.</div>
   const { tenant, settings } = ctx
@@ -57,7 +62,8 @@ export default async function TagPage({ params }: { params: Promise<Params> }) {
         ],
       },
       sort: '-publishedAt',
-      limit: 50,
+      limit: per,
+      page,
       depth: 1,
       overrideAccess: true,
     }),
@@ -77,7 +83,9 @@ export default async function TagPage({ params }: { params: Promise<Params> }) {
   const videos = vidsRes.docs as any[]
 
   // Тег без материалов не должен давать пустую индексируемую страницу.
-  if (pubs.length === 0 && videos.length === 0) notFound()
+  const pubTotal = pubsRes.totalDocs || pubs.length
+  const pubPages = pubsRes.totalPages || 1
+  if (pubTotal === 0 && videos.length === 0) notFound()
 
   const label = labelFor(pubs.length ? pubs : videos, slug)
 
@@ -120,6 +128,12 @@ export default async function TagPage({ params }: { params: Promise<Params> }) {
                 }
               })}
             />
+          </div>
+        )}
+
+        {pubTotal > 0 && (
+          <div className="mb-14">
+            <ListPagination page={page} totalPages={pubPages} per={per} total={pubTotal} basePath={`/tag/${slug}`} />
           </div>
         )}
 
