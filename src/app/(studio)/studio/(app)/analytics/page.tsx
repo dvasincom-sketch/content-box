@@ -99,6 +99,7 @@ export default async function StudioAnalytics({ searchParams }: { searchParams: 
         <div className="settings__tabs" style={{ marginTop: '.7rem', marginBottom: 0 }}>
           <Link href="/studio/analytics" className="settings__tab is-active" style={{ textDecoration: 'none' }}>Посещаемость</Link>
           <Link href="/studio/analytics/newsletters" className="settings__tab" style={{ textDecoration: 'none' }}>Рассылки</Link>
+          <Link href="/studio/analytics/videos" className="settings__tab" style={{ textDecoration: 'none' }}>Видео</Link>
         </div>
       </div>
       {umamiApiEnabled() && websiteId && (

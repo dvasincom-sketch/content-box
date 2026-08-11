@@ -682,13 +682,18 @@ export function AddPanel({
           </button>
           <button
             type="button"
-            className={`vid__provider-opt${provider === 'stream' ? ' is-active' : ''}`}
-            onClick={() => setProvider('stream')}
+            className="vid__provider-opt is-muted"
+            onClick={() => {}}
+            disabled
+            aria-disabled="true"
+            title="Доступно по запросу"
+            style={{ opacity: 0.55, cursor: 'not-allowed' }}
           >
             <span className="vid__provider-title">
               <Globe size={15} className="vid__provider-icon" /> Для заграницы
+              <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, padding: '1px 8px', borderRadius: 999, background: 'var(--st-surface-2, rgba(128,128,128,.16))', color: 'var(--st-text-muted, #8a8a8a)', textTransform: 'uppercase', letterSpacing: '.04em', verticalAlign: 'middle' }}>по запросу</span>
             </span>
-            <span className="vid__provider-hint">Для зарубежной аудитории. В РФ нужен VPN.</span>
+            <span className="vid__provider-hint">Для зарубежной аудитории. В РФ нужен VPN. Подключается по запросу.</span>
           </button>
           <button
             type="button"
