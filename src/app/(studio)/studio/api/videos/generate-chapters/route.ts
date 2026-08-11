@@ -1,6 +1,6 @@
 import { withAuthor, readJson, apiOk, apiError, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { getObjectText } from '@/lib/s3'
-import { asyaEnabled, buildChapters, vttToCues } from '@/lib/asya'
+import { asyaEnabled, buildChapters, vttToCues, pushVideoKnowledge } from '@/lib/asya'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -37,6 +37,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     const chapters = await buildChapters({ cues, title: String(video.title || ''), lang: String(track.lang || 'ru') })
     if (chapters.length < 2) return apiError('Ася не смогла собрать главы — попробуйте ещё раз')
     await payload.update({ collection: 'videos', id: videoId, data: { chapters } as any, overrideAccess: true })
+
+    // Пополняем знание Аси главами с таймкодами (best-effort).
+    const url = video.slug ? `/video/${video.slug}` : undefined
+    const kSummary = video.summary && typeof video.summary === 'object' ? String((video.summary as any).text || (video.summary as any).tldr || '') : undefined
+    await pushVideoKnowledge({ source: `video:${videoId}`, title: String(video.title || ''), url, summary: kSummary, chapters })
     return apiOk({ chapters })
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось собрать главы'), 500)

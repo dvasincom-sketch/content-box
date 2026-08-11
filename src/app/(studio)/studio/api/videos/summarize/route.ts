@@ -1,6 +1,6 @@
 import { withAuthor, readJson, apiOk, apiError, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { getObjectText } from '@/lib/s3'
-import { asyaEnabled, summarizeTranscript, vttToPlainText } from '@/lib/asya'
+import { asyaEnabled, summarizeTranscript, vttToPlainText, pushVideoKnowledge } from '@/lib/asya'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -37,6 +37,12 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     const r = await summarizeTranscript({ transcript, title: String(video.title || ''), source: `video:${videoId}`, lang: String(track.lang || 'ru'), refresh: true })
     const summary = { tldr: r.tldr, points: r.points, text: r.text, hash: r.hash, lang: r.lang, at: new Date().toISOString() }
     await payload.update({ collection: 'videos', id: videoId, data: { summary } as any, overrideAccess: true })
+
+    // Пополняем знание Аси по видео (для ответов «где посмотреть …»).
+    const url = video.slug ? `/video/${video.slug}` : undefined
+    const kSummary = [r.tldr, ...(r.points || [])].filter(Boolean).join(' ')
+    const kChapters = Array.isArray(video.chapters) ? video.chapters.map((c: any) => ({ start: Number(c?.start) || 0, title: String(c?.title || '') })) : undefined
+    await pushVideoKnowledge({ source: `video:${videoId}`, title: String(video.title || ''), url, summary: kSummary, chapters: kChapters })
     return apiOk({ summary })
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось обновить саммари'), 500)

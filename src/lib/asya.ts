@@ -198,3 +198,57 @@ export async function buildChapters(args: {
         .filter((c: Chapter) => c.title)
     : []
 }
+
+/* -------------------------------------------------------------------------- */
+/* Обратная связь и знание Аси (обучение из студии + контекст-память по видео)  */
+/* -------------------------------------------------------------------------- */
+const ASYA_BASE = ASYA_URL.replace(/\/summary\/?$/, '')
+const ASYA_FEEDBACK_URL = process.env.ASYA_FEEDBACK_URL || `${ASYA_BASE}/feedback`
+const ASYA_KNOWLEDGE_URL = process.env.ASYA_KNOWLEDGE_URL || `${ASYA_BASE}/knowledge/video`
+
+/**
+ * Отправить Асе правку саммари как обучающий пример (best-effort: ошибки не
+ * ломают студийный поток). Ася хранит правку и подмешивает как few-shot.
+ */
+export async function sendCorrection(a: {
+  source?: string
+  title?: string
+  url?: string
+  before?: string
+  after: string
+  kind?: string
+}): Promise<void> {
+  if (!asyaEnabled()) return
+  try {
+    await fetch(ASYA_FEEDBACK_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${ASYA_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(a),
+    })
+  } catch {
+    /* обучение не критично */
+  }
+}
+
+/**
+ * Пополнить знание Аси по видео (саммари + главы с таймкодами) для ответов
+ * «где посмотреть …». Best-effort.
+ */
+export async function pushVideoKnowledge(a: {
+  source: string
+  title?: string
+  url?: string
+  summary?: string
+  chapters?: Chapter[]
+}): Promise<void> {
+  if (!asyaEnabled()) return
+  try {
+    await fetch(ASYA_KNOWLEDGE_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${ASYA_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: a.source, title: a.title, url: a.url, summary: a.summary, chapters: a.chapters }),
+    })
+  } catch {
+    /* знание не критично */
+  }
+}

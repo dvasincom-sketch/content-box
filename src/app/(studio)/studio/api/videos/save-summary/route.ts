@@ -1,4 +1,5 @@
 import { withAuthor, readJson, apiOk, apiError, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
+import { sendCorrection, pushVideoKnowledge } from '@/lib/asya'
 
 /**
  * Ручное редактирование саммари в студии. Автор правит краткое содержание от Аси
@@ -38,5 +39,12 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     at: new Date().toISOString(),
   }
   await payload.update({ collection: 'videos', id: videoId, data: { summary } as any, overrideAccess: true })
+
+  // Обучаем Асю на правке + пополняем знание по видео (best-effort).
+  const url = video.slug ? `/video/${video.slug}` : undefined
+  const beforeText = String((prev as any).text || (prev as any).tldr || '')
+  const chapters = Array.isArray(video.chapters) ? video.chapters.map((c: any) => ({ start: Number(c?.start) || 0, title: String(c?.title || '') })) : undefined
+  await sendCorrection({ source: `video:${videoId}`, title: String(video.title || ''), url, before: beforeText, after: text, kind: 'summary' })
+  await pushVideoKnowledge({ source: `video:${videoId}`, title: String(video.title || ''), url, summary: text, chapters })
   return apiOk({ summary })
 })
