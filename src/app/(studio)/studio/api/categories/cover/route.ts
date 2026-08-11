@@ -1,4 +1,5 @@
 import { withAuthor, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
+import { sanitizeFilename } from '@/lib/safeFileName'
 import { errorMessage } from '@/lib/errorMessage'
 import { logActivity } from '@/lib/logActivity'
 
@@ -43,7 +44,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       data: { tenant: tenantId } as any,
       file: {
         data: buffer,
-        name: (blob as any).name || `cat-cover-${Date.now()}`,
+        name: sanitizeFilename(String((blob as any).name || ''), { mime: blob.type, fallbackBase: 'cat-cover' }),
         mimetype: blob.type,
         size: blob.size,
       },

@@ -1,4 +1,5 @@
 import { withAuthor, apiError, apiOk, belongsToTenant, hasCapability } from '@/app/(studio)/studio/api/_lib'
+import { sanitizeFilename } from '@/lib/safeFileName'
 import { slugify } from '@/lib/slugify'
 import { errorMessage } from '@/lib/errorMessage'
 
@@ -57,7 +58,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       data: { tenant: tenantId, alt: title } as any,
       file: {
         data: buffer,
-        name: (blob as any).name || `audio-${Date.now()}.mp3`,
+        name: sanitizeFilename(String((blob as any).name || ''), { mime: blob.type || 'audio/mpeg', fallbackBase: 'audio' }),
         mimetype: blob.type || 'audio/mpeg',
         size: blob.size,
       },

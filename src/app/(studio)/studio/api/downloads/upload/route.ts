@@ -1,4 +1,5 @@
 import { withAuthor, apiError, apiOk, belongsToTenant, hasCapability, authorCan } from '@/app/(studio)/studio/api/_lib'
+import { sanitizeFilename } from '@/lib/safeFileName'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -87,7 +88,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       } as any,
       file: {
         data: buffer,
-        name: (blob as any).name || `file-${Date.now()}`,
+        name: sanitizeFilename(String((blob as any).name || ''), { mime: blob.type, fallbackBase: 'file' }),
         mimetype: blob.type || 'application/octet-stream',
         size: blob.size,
       },
