@@ -11,9 +11,9 @@ import { ListPagination } from '@/components/ListPagination'
 
 /**
  * Лента публикаций автора. Список постов ТОЛЬКО своего тенанта (тенант из
- * сессии автора, не из заголовка). Сверху — фильтры (поиск по названию,
- * категория в иерархии, сортировка новые/старые по добавлению), снизу —
- * пагинация с размером страницы 25/50/100.
+ * сессии автора). Сверху в одну строку — поиск по названию, переключатель
+ * сортировки (новые/старые по добавлению) и фильтр по категориям (иерархия +
+ * мультивыбор), снизу — пагинация 25/50/100.
  */
 export const dynamic = 'force-dynamic'
 
@@ -30,30 +30,11 @@ type PubDoc = {
 
 const PER = [25, 50, 100]
 
-// Категории тенанта → плоский список с глубиной (для иерархичного селекта).
-function buildCategoryOptions(cats: any[]): { id: string; label: string; depth: number }[] {
-  const byParent = new Map<string, any[]>()
-  for (const c of cats) {
-    const p = c.parent == null ? 'root' : String(typeof c.parent === 'object' ? c.parent.id : c.parent)
-    if (!byParent.has(p)) byParent.set(p, [])
-    byParent.get(p)!.push(c)
-  }
-  for (const arr of byParent.values()) arr.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'ru'))
-  const out: { id: string; label: string; depth: number }[] = []
-  const walk = (pid: string, depth: number) => {
-    for (const c of byParent.get(pid) || []) {
-      out.push({ id: String(c.id), label: String(c.title || '—'), depth })
-      walk(String(c.id), depth + 1)
-    }
-  }
-  walk('root', 0)
-  return out
-}
-
 export default async function StudioPostsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams
   const q = typeof sp?.q === 'string' ? sp.q.trim().slice(0, 100) : ''
-  const categoryId = typeof sp?.category === 'string' ? sp.category : ''
+  const categoryParam = typeof sp?.category === 'string' ? sp.category : ''
+  const categoryIds = categoryParam ? categoryParam.split(',').map((s) => s.trim()).filter(Boolean) : []
   const sort: 'new' | 'old' = String(sp?.sort || '') === 'old' ? 'old' : 'new'
   const per = PER.includes(Number(sp?.per)) ? Number(sp?.per) : 25
   const page = Math.max(1, Number(sp?.page) || 1)
@@ -63,7 +44,7 @@ export default async function StudioPostsPage({ searchParams }: { searchParams: 
   const ownFilter = contributorOwnerFilter(author!, 'posts')
   const payload = await getPayload({ config: await config })
 
-  // Категории для фильтра (иерархия).
+  // Категории тенанта для фильтра (иерархический мультивыбор).
   const catsRes = await payload.find({
     collection: 'categories',
     where: { tenant: { equals: author!.tenantId } },
@@ -72,11 +53,15 @@ export default async function StudioPostsPage({ searchParams }: { searchParams: 
     depth: 0,
     overrideAccess: true,
   })
-  const categoryOptions = buildCategoryOptions(catsRes.docs as any[])
+  const categoryItems = (catsRes.docs as any[]).map((c) => ({
+    id: c.id,
+    title: String(c.title || '—'),
+    parentId: c.parent != null ? (typeof c.parent === 'object' ? c.parent.id : c.parent) : null,
+  }))
 
   const and: any[] = [{ tenant: { equals: author!.tenantId } }, ...(ownFilter ? [ownFilter] : [])]
   if (q) and.push({ title: { like: q } })
-  if (categoryId) and.push({ or: [{ category: { equals: categoryId } }, { categories: { in: [categoryId] } }] })
+  if (categoryIds.length) and.push({ or: [{ category: { in: categoryIds } }, { categories: { in: categoryIds } }] })
 
   const res = await payload.find({
     collection: 'publications',
@@ -91,7 +76,7 @@ export default async function StudioPostsPage({ searchParams }: { searchParams: 
   const docs = res.docs as PubDoc[]
   const total = res.totalDocs || docs.length
   const totalPages = res.totalPages || 1
-  const hasFilters = Boolean(q || categoryId)
+  const hasFilters = Boolean(q || categoryIds.length)
 
   return (
     <>
@@ -110,14 +95,14 @@ export default async function StudioPostsPage({ searchParams }: { searchParams: 
         )}
       </div>
 
-      <PostsToolbar q={q} categoryId={categoryId} sort={sort} categories={categoryOptions} />
+      <PostsToolbar q={q} categoryIds={categoryIds} sort={sort} categories={categoryItems} />
 
       {docs.length === 0 ? (
         hasFilters ? (
           <div className="studio-empty">
             <div className="studio-empty__icon"><SearchX size={28} /></div>
             <div className="studio-empty__title">Ничего не найдено</div>
-            <div className="studio-empty__text">Измените запрос, категорию или сбросьте фильтры.</div>
+            <div className="studio-empty__text">Измените запрос, категории или сбросьте фильтры.</div>
           </div>
         ) : (
           <div className="studio-empty">
@@ -146,7 +131,7 @@ export default async function StudioPostsPage({ searchParams }: { searchParams: 
             total={total}
             basePath="/studio/posts"
             tone="studio"
-            query={{ q: q || undefined, category: categoryId || undefined, sort: sort === 'old' ? 'old' : undefined }}
+            query={{ q: q || undefined, category: categoryIds.length ? categoryIds.join(',') : undefined, sort: sort === 'old' ? 'old' : undefined }}
           />
         </>
       )}

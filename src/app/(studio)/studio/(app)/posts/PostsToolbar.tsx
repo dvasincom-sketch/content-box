@@ -2,34 +2,36 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { Search, X } from 'lucide-react'
+import { Search, X, ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, ListFilter } from 'lucide-react'
+import { CategoryMultiPicker, type CatItem } from '../settings/CategoryMultiPicker'
 
 /**
- * Панель фильтров ленты публикаций студии: быстрый поиск по названию (дебаунс),
- * фильтр по категории (иерархия — отступами), сортировка (новые/старые). Меняет
- * query-параметры адреса; список пересобирается на сервере. Смена любого фильтра
- * сбрасывает страницу на первую.
+ * Панель ленты публикаций студии в одну строку: быстрый поиск по названию
+ * (дебаунс), переключатель сортировки (новые/старые — toggle, не dropdown),
+ * фильтр по категориям через тот же иерархический мультивыбор, что и в
+ * редакторе публикации (поповер). Меняет query-параметры; список — на сервере.
  */
-type Cat = { id: string; label: string; depth: number }
-
 export function PostsToolbar({
-  q, categoryId, sort, categories,
+  q, categoryIds, sort, categories,
 }: {
   q: string
-  categoryId: string
+  categoryIds: string[]
   sort: 'new' | 'old'
-  categories: Cat[]
+  categories: CatItem[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
   const [term, setTerm] = useState(q)
+  const [catOpen, setCatOpen] = useState(false)
+  const [sel, setSel] = useState<string[]>(categoryIds)
+  const boxRef = useRef<HTMLDivElement>(null)
   const first = useRef(true)
 
   function push(patch: Record<string, string | undefined>) {
     const sp = new URLSearchParams(Array.from(params.entries()))
     for (const [k, v] of Object.entries(patch)) { if (v) sp.set(k, v); else sp.delete(k) }
-    sp.delete('page') // при смене фильтра — на первую страницу
+    sp.delete('page')
     const qs = sp.toString()
     router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
   }
@@ -42,9 +44,30 @@ export function PostsToolbar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [term])
 
+  // Синхронизация выбранного при навигации.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setSel(categoryIds) }, [categoryIds.join(',')])
+
+  function applyCats() {
+    setCatOpen(false)
+    const next = sel.join(',')
+    if (categoryIds.join(',') !== next) push({ category: next || undefined })
+  }
+
+  // Закрытие поповера по клику вне — с применением выбора.
+  useEffect(() => {
+    if (!catOpen) return
+    function onDoc(e: MouseEvent) { if (boxRef.current && !boxRef.current.contains(e.target as Node)) applyCats() }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catOpen, sel])
+
+  function toggleSort() { push({ sort: sort === 'new' ? 'old' : undefined }) }
+
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 16 }}>
-      <div style={{ position: 'relative', flex: '1 1 240px', minWidth: 200 }}>
+      <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 180 }}>
         <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--st-text-faint)', pointerEvents: 'none' }} />
         <input
           className="studio-input"
@@ -61,17 +84,27 @@ export function PostsToolbar({
         )}
       </div>
 
-      <select className="studio-input" value={categoryId} onChange={(e) => push({ category: e.target.value || undefined })} style={{ flex: '0 1 240px', minWidth: 180 }} aria-label="Категория">
-        <option value="">Все категории</option>
-        {categories.map((c) => (
-          <option key={c.id} value={c.id}>{'  '.repeat(c.depth) + (c.depth ? '└ ' : '') + c.label}</option>
-        ))}
-      </select>
+      <button type="button" onClick={toggleSort} className="studio-btn studio-btn--ghost" style={{ whiteSpace: 'nowrap', flex: '0 0 auto' }} title="Порядок по дате добавления">
+        {sort === 'new' ? <ArrowDownWideNarrow size={16} /> : <ArrowUpNarrowWide size={16} />}
+        {sort === 'new' ? 'Сначала новые' : 'Сначала старые'}
+      </button>
 
-      <select className="studio-input" value={sort} onChange={(e) => push({ sort: e.target.value === 'old' ? 'old' : undefined })} style={{ flex: '0 0 auto', minWidth: 150 }} aria-label="Сортировка">
-        <option value="new">Сначала новые</option>
-        <option value="old">Сначала старые</option>
-      </select>
+      <div ref={boxRef} style={{ position: 'relative', flex: '0 0 auto' }}>
+        <button type="button" onClick={() => (catOpen ? applyCats() : setCatOpen(true))} className="studio-btn studio-btn--ghost" style={{ whiteSpace: 'nowrap' }}>
+          <ListFilter size={16} />
+          {sel.length ? `Категории: ${sel.length}` : 'Все категории'}
+          <ChevronDown size={14} style={{ opacity: 0.6 }} />
+        </button>
+        {catOpen && (
+          <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 30, width: 320, maxWidth: '86vw', background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,.25)', padding: 10 }}>
+            <CategoryMultiPicker categories={categories} value={sel} onChange={setSel} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 10 }}>
+              <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setSel([])} disabled={!sel.length}>Сбросить</button>
+              <button type="button" className="studio-btn studio-btn--primary" onClick={applyCats}>Применить</button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
