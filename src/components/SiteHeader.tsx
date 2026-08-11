@@ -82,7 +82,8 @@ export function SiteHeader({
               <img
                 src={logoUrl}
                 alt={logoAlt || brandName}
-                style={{ height: '36px', width: 'auto', maxHeight: '36px', objectFit: 'contain', display: 'block' }}
+                className="h-12 lg:h-14 w-auto"
+                style={{ objectFit: 'contain', display: 'block' }}
               />
             ) : (
               <span className="text-lg lg:text-xl font-extrabold tracking-tight" style={{ color: 'var(--brand-text)' }}>
