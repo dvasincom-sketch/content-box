@@ -66,7 +66,7 @@ export function PostsToolbar({
   function toggleSort() { push({ sort: sort === 'new' ? 'old' : undefined }) }
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 16 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 16, maxWidth: 900 }}>
       <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 180 }}>
         <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--st-text-faint)', pointerEvents: 'none' }} />
         <input

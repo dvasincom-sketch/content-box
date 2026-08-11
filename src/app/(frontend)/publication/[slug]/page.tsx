@@ -420,6 +420,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
                       <VideoLockInline
                         reason={(access as any).reason}
                         requiredTierName={(access as any).requiredTierName}
+                        loginRedirect={`/publication/${slug}`}
                       />
                     )}
                     {allowed && video?.provider === 'self' && ((Array.isArray(video.subtitles) && video.subtitles.length > 0) || video.summary) ? (
@@ -552,9 +553,11 @@ function PublicationLock({
 function VideoLockInline({
   reason,
   requiredTierName,
+  loginRedirect,
 }: {
   reason: string
   requiredTierName?: string | null
+  loginRedirect?: string
 }) {
   const text =
     reason === 'need-login' ? 'Видео доступно подписчикам — войдите или оформите подписку.'
@@ -574,6 +577,11 @@ function VideoLockInline({
           style={{ background: '#fff', color: 'var(--brand-primary)' }}>
           Оформить подписку
         </Link>
+        {reason === 'need-login' && (
+          <div style={{ marginTop: 12 }}>
+            <Link href={`/login?redirect=${encodeURIComponent(loginRedirect || '/')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#fff', opacity: 0.85, fontSize: 13.5, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 4 }}>Есть подписка — войти →</Link>
+          </div>
+        )}
       </div>
     </div>
   )

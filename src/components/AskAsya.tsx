@@ -125,8 +125,8 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
         <button className="askasya-fab" onClick={() => setOpen(true)} aria-label={label}
           style={{ position: 'fixed', right: 22, bottom: 22, zIndex: 40, display: 'inline-flex', alignItems: 'center', gap: collapsed ? 0 : 11,
             padding: collapsed ? 13 : '13px 20px 13px 15px', border: 'none', cursor: 'pointer', borderRadius: 32, color: '#fff', fontWeight: 700, fontSize: 15,
-            background: 'linear-gradient(135deg, #7e3a67, #4c3c9c)', boxShadow: '0 16px 40px -14px #7a52c8', animation: 'asya-fab 3.6s ease-in-out infinite', transition: 'padding .2s, gap .2s' }}>
-          {orb(24)}{!collapsed && <span>{label}</span>}
+            background: 'linear-gradient(135deg, #7e3a67, #4c3c9c)', boxShadow: '0 16px 40px -14px #7a52c8', animation: 'asya-fab 3.6s ease-in-out infinite', transition: 'padding .45s cubic-bezier(.22,1,.36,1), gap .45s cubic-bezier(.22,1,.36,1)' }}>
+          {orb(24)}<span style={{ maxWidth: collapsed ? 0 : 220, opacity: collapsed ? 0 : 1, overflow: 'hidden', whiteSpace: 'nowrap', transition: 'max-width .45s cubic-bezier(.22,1,.36,1), opacity .3s ease' }}>{label}</span>
         </button>
       )}
 
