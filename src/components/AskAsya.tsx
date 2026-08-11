@@ -3,12 +3,14 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { X, ArrowUp, Lock } from 'lucide-react'
+import { getAsyaVideo, subAsyaVideo, type AsyaVideo } from '@/lib/asyaVideo'
 
 /**
- * Панель «Спросить Асю» — ассистент по видео проекта (перк подписки).
- * Плавающая кнопка справа снизу → выезжающая панель. Право доступа и сам ответ
- * решает сервер (/api/ask): активному платному подписчику — чат, остальным —
- * апселл. Ключ Аси не покидает сервер.
+ * Единая точка входа Аси — плавающая кнопка справа снизу → выезжающая панель.
+ * Заголовок кнопки динамический: на странице видео — «Что в этом видео», на
+ * подписке — «Выбрать подписку», иначе — «Спросить Асю». При скролле кнопка
+ * сжимается до круга. На странице видео панель показывает саммари (открыто всем
+ * как тизер), а интерактивные вопросы — по подписке (/api/ask).
  */
 type Match = { title: string | null; url: string | null; source: string }
 type Msg = { role: 'me' | 'asya'; text: string; matches?: Match[] }
@@ -25,10 +27,27 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  const [video, setVideo] = useState<AsyaVideo>(null)
+  const [sum, setSum] = useState<{ tldr?: string; points?: string[] } | null>(null)
+  const [sumStatus, setSumStatus] = useState<'idle' | 'loading' | 'ready' | 'upsell' | 'none'>('idle')
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const pathname = usePathname()
 
-  // Право доступа спрашиваем лениво — при первом открытии (без затрат на страницах, где панель не трогают).
+  useEffect(() => {
+    setVideo(getAsyaVideo())
+    return subAsyaVideo(() => setVideo(getAsyaVideo()))
+  }, [])
+
+  useEffect(() => { setSum(null); setSumStatus('idle') }, [video?.id])
+
+  useEffect(() => {
+    const onScroll = () => setCollapsed(window.scrollY > 60)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   useEffect(() => {
     if (!open || eligible !== null) return
     let stop = false
@@ -38,6 +57,23 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
       .catch(() => { if (!stop) setEligible(false) })
     return () => { stop = true }
   }, [open, eligible])
+
+  useEffect(() => {
+    if (!open || !video || sumStatus !== 'idle') return
+    let stop = false
+    setSumStatus('loading')
+    fetch('/api/video-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ videoId: video.id }) })
+      .then(async (r) => {
+        if (stop) return
+        if (r.status === 402) { setSumStatus('upsell'); return }
+        const j = await r.json().catch(() => null)
+        if (r.ok && j?.ok && j.summary && (j.summary.tldr || (j.summary.points && j.summary.points.length))) {
+          setSum({ tldr: j.summary.tldr, points: j.summary.points }); setSumStatus('ready')
+        } else { setSumStatus('none') }
+      })
+      .catch(() => { if (!stop) setSumStatus('none') })
+    return () => { stop = true }
+  }, [open, video, sumStatus])
 
   useEffect(() => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight }, [msgs, loading])
 
@@ -54,11 +90,8 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
       })
       if (r.status === 402) { setEligible(false); return }
       const j = await r.json().catch(() => null)
-      if (!r.ok || !j?.ok) {
-        setMsgs((m) => [...m, { role: 'asya', text: 'Не получилось ответить сейчас — попробуйте ещё раз чуть позже.' }])
-      } else {
-        setMsgs((m) => [...m, { role: 'asya', text: String(j.answer || ''), matches: Array.isArray(j.matches) ? j.matches : [] }])
-      }
+      if (!r.ok || !j?.ok) setMsgs((m) => [...m, { role: 'asya', text: 'Не получилось ответить сейчас — попробуйте ещё раз чуть позже.' }])
+      else setMsgs((m) => [...m, { role: 'asya', text: String(j.answer || ''), matches: Array.isArray(j.matches) ? j.matches : [] }])
     } catch {
       setMsgs((m) => [...m, { role: 'asya', text: 'Ошибка соединения.' }])
     } finally {
@@ -77,6 +110,8 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
       animation: 'asya-orb 3s ease-in-out infinite' }} />
   )
 
+  const label = video ? 'Что в этом видео' : (pathname && pathname.startsWith('/subscribe') ? 'Выбрать подписку' : 'Спросить Асю')
+
   return (
     <>
       <style>{`
@@ -87,19 +122,17 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
       `}</style>
 
       {!open && (
-        <button className="askasya-fab" onClick={() => setOpen(true)} aria-label="Спросить Асю"
-          style={{ position: 'fixed', right: 22, bottom: 22, zIndex: 40, display: 'inline-flex', alignItems: 'center', gap: 11,
-            padding: '13px 20px 13px 15px', border: 'none', cursor: 'pointer', borderRadius: 32, color: '#fff', fontWeight: 700, fontSize: 15,
-            background: 'linear-gradient(135deg, #7e3a67, #4c3c9c)', boxShadow: '0 16px 40px -14px #7a52c8', animation: 'asya-fab 3.6s ease-in-out infinite' }}>
-          {orb(24)} Спросить Асю
+        <button className="askasya-fab" onClick={() => setOpen(true)} aria-label={label}
+          style={{ position: 'fixed', right: 22, bottom: 22, zIndex: 40, display: 'inline-flex', alignItems: 'center', gap: collapsed ? 0 : 11,
+            padding: collapsed ? 13 : '13px 20px 13px 15px', border: 'none', cursor: 'pointer', borderRadius: 32, color: '#fff', fontWeight: 700, fontSize: 15,
+            background: 'linear-gradient(135deg, #7e3a67, #4c3c9c)', boxShadow: '0 16px 40px -14px #7a52c8', animation: 'asya-fab 3.6s ease-in-out infinite', transition: 'padding .2s, gap .2s' }}>
+          {orb(24)}{!collapsed && <span>{label}</span>}
         </button>
       )}
 
-      {/* затемнение */}
       <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(20,14,25,.30)', backdropFilter: 'blur(2px)',
         opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', transition: 'opacity .25s', zIndex: 50 }} />
 
-      {/* панель */}
       <aside aria-hidden={!open} style={{ position: 'fixed', top: 0, right: 0, height: '100%', width: 420, maxWidth: '92vw', zIndex: 60,
         background: 'var(--brand-surface, #fff)', borderLeft: '1px solid var(--brand-border, rgba(0,0,0,.1))',
         boxShadow: '-24px 0 60px -30px rgba(0,0,0,.5)', transform: open ? 'none' : 'translateX(102%)',
@@ -111,10 +144,27 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
           <button onClick={() => setOpen(false)} aria-label="Закрыть" style={{ marginLeft: 'auto', width: 34, height: 34, border: 'none', background: 'transparent', color: 'var(--brand-muted)', borderRadius: 9, cursor: 'pointer', display: 'grid', placeItems: 'center' }}><X size={18} /></button>
         </div>
 
-        {/* тело */}
         <div ref={bodyRef} style={{ flex: 1, overflow: 'auto', padding: '18px 16px' }}>
+          {video && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 14, color: 'var(--brand-text)', marginBottom: 8 }}>{orb(20)} Что в этом видео</div>
+              {sumStatus === 'loading' && <div style={{ fontSize: 14, color: 'var(--brand-muted)' }}>Ася читает субтитры…</div>}
+              {sumStatus === 'ready' && sum && (
+                <div style={{ background: 'color-mix(in srgb, var(--brand-accent, #5b57c9) 6%, #f6f5fb)', borderRadius: 14, padding: '12px 14px', fontSize: 14, lineHeight: 1.5, color: 'var(--brand-text)' }}>
+                  {sum.tldr && <div style={{ marginBottom: sum.points && sum.points.length ? 8 : 0 }}>{sum.tldr}</div>}
+                  {sum.points && sum.points.length > 0 && (
+                    <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>{sum.points.slice(0, 5).map((pt, i) => <li key={i}>{pt}</li>)}</ul>
+                  )}
+                </div>
+              )}
+              {sumStatus === 'upsell' && <div style={{ fontSize: 13.5, color: 'var(--brand-muted)', lineHeight: 1.5 }}>Краткое содержание собирает Ася по субтитрам — оформите подписку ниже, и она расскажет суть этого видео.</div>}
+              {sumStatus === 'none' && <div style={{ fontSize: 13.5, color: 'var(--brand-muted)' }}>Саммари появится, когда будут субтитры.</div>}
+              <div style={{ height: 1, background: 'var(--brand-border, rgba(0,0,0,.08))', margin: '16px 0 2px' }} />
+            </div>
+          )}
+
           {eligible === null && (
-            <div style={{ textAlign: 'center', color: 'var(--brand-muted)', fontSize: 14, paddingTop: 30 }}>Загрузка…</div>
+            <div style={{ textAlign: 'center', color: 'var(--brand-muted)', fontSize: 14, paddingTop: video ? 8 : 30 }}>Загрузка…</div>
           )}
 
           {eligible === false && (
@@ -135,7 +185,7 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
           {eligible === true && msgs.length === 0 && (
             <div>
               <div style={{ textAlign: 'center', padding: '10px 0 4px' }}>
-                <div style={{ margin: '0 auto 12px' }}>{orb(52)}</div>
+                {!video && <div style={{ margin: '0 auto 12px' }}>{orb(52)}</div>}
                 <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--brand-text)' }}>Чем помочь?</div>
                 <p style={{ margin: '4px 0 0', color: 'var(--brand-muted)', fontSize: 14 }}>Спросите про любое видео — найду момент и тайм-код.</p>
               </div>
@@ -174,7 +224,6 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
           )}
         </div>
 
-        {/* низ: композер только для подписчика */}
         {eligible === true && (
           <div style={{ borderTop: '1px solid var(--brand-border, rgba(0,0,0,.1))', padding: '12px 14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--brand-border, rgba(0,0,0,.1))', borderRadius: 14, padding: '8px 8px 8px 14px', background: 'var(--brand-surface, #fff)' }}>
