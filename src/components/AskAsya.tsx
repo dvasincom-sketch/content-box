@@ -66,10 +66,15 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
     }
   }
 
-  const orb = (size: number) => (
+  const orb = (size: number, strong = false) => (
     <span aria-hidden style={{ width: size, height: size, borderRadius: '50%', flex: 'none', display: 'inline-block',
-      background: 'radial-gradient(circle at 34% 30%, #ffffff, #ffb3cc 42%, #c3a0f2 70%, #8fb8ff)',
-      boxShadow: '0 0 12px 2px rgba(255,214,238,.85), 0 0 0 1px rgba(255,255,255,.5)', animation: 'asya-orb 3s ease-in-out infinite' }} />
+      background: strong
+        ? 'radial-gradient(circle at 34% 30%, #ffffff, #f78fb3 40%, #8a5cf0 68%, #4f6fd8)'
+        : 'radial-gradient(circle at 34% 30%, #ffffff, #ffb3cc 42%, #c3a0f2 70%, #8fb8ff)',
+      boxShadow: strong
+        ? '0 0 0 1.5px rgba(74,58,150,.6), 0 0 10px 1px rgba(150,108,240,.5)'
+        : '0 0 12px 2px rgba(255,214,238,.85), 0 0 0 1px rgba(255,255,255,.5)',
+      animation: 'asya-orb 3s ease-in-out infinite' }} />
   )
 
   return (
@@ -100,9 +105,9 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
         boxShadow: '-24px 0 60px -30px rgba(0,0,0,.5)', transform: open ? 'none' : 'translateX(102%)',
         transition: 'transform .32s cubic-bezier(.22,1,.36,1)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '16px 16px 14px', borderBottom: '1px solid var(--brand-border, rgba(0,0,0,.1))' }}>
-          {orb(30)}
-          <div><div style={{ fontWeight: 800, fontSize: 15, color: 'var(--brand-text)' }}>Ася</div>
-            <div style={{ fontSize: 12, color: 'var(--brand-muted)' }}>Помощник по видео</div></div>
+          {orb(30, true)}
+          <div style={{ lineHeight: 1.15 }}><div style={{ fontWeight: 800, fontSize: 15, color: 'var(--brand-text)' }}>Ася</div>
+            <div style={{ fontSize: 12, color: 'var(--brand-muted)', marginTop: 1 }}>Виртуальная поддержка</div></div>
           <button onClick={() => setOpen(false)} aria-label="Закрыть" style={{ marginLeft: 'auto', width: 34, height: 34, border: 'none', background: 'transparent', color: 'var(--brand-muted)', borderRadius: 9, cursor: 'pointer', display: 'grid', placeItems: 'center' }}><X size={18} /></button>
         </div>
 
@@ -116,9 +121,9 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
             <div style={{ textAlign: 'center', padding: '10px 4px' }}>
               <div style={{ width: 60, height: 60, margin: '8px auto 14px', borderRadius: '50%', display: 'grid', placeItems: 'center', color: '#fff',
                 background: 'linear-gradient(135deg, var(--brand-primary, #e86a33), var(--brand-accent, #5b57c9))' }}><Lock size={24} /></div>
-              <div style={{ fontWeight: 800, fontSize: 19, marginBottom: 6, color: 'var(--brand-text)' }}>Спросите Асю о любом видео</div>
+              <div style={{ fontWeight: 800, fontSize: 19, marginBottom: 6, color: 'var(--brand-text)' }}>Ася знает этот сайт</div>
               <p style={{ margin: '0 auto 16px', maxWidth: 300, color: 'var(--brand-muted)', fontSize: 14, lineHeight: 1.55 }}>
-                Ася находит нужный момент, подсказывает тайм-код и отвечает по содержанию роликов. Помощник входит в подписку.
+                Ася понимает наше фан-сообщество и как устроен сайт. Подскажет по видео и материалам, найдёт нужный момент, поможет войти или что-то отыскать. Входит в подписку.
               </p>
               <a href={subscribeHref} style={{ display: 'inline-block', padding: '12px 22px', borderRadius: 26, color: '#fff', fontWeight: 700, textDecoration: 'none', fontSize: 14.5, background: 'linear-gradient(135deg, var(--brand-primary, #e86a33), #f19a5b)' }}>Оформить подписку</a>
               <div style={{ marginTop: 14 }}>
