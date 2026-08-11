@@ -357,18 +357,76 @@ function chaptersFromVtt(vtt, opts = {}) {
 // Авто-субтитры через whisper.cpp: извлекаем 16кГц mono WAV (требование whisper),
 // гоним распознавание в VTT, заливаем в subs/{pid}/{lang}.vtt. Возвращает
 // дескриптор дорожки { lang, label, key } или бросает (ловим выше как non-fatal).
+// ── Склейка VTT из чанков: сдвигаем таймкоды каждого чанка на его смещение ──
+function vttTsToSec(ts) {
+  const m = String(ts).trim().match(/^(?:(\d+):)?(\d{1,2}):(\d{2})\.(\d{3})$/)
+  if (!m) return null
+  return (m[1] ? Number(m[1]) * 3600 : 0) + Number(m[2]) * 60 + Number(m[3]) + Number(m[4]) / 1000
+}
+function secToVttTs(s) {
+  const t = Math.max(0, s)
+  const ms = Math.round((t - Math.floor(t)) * 1000)
+  const w = Math.floor(t)
+  const p2 = (n) => String(n).padStart(2, '0')
+  return `${p2(Math.floor(w / 3600))}:${p2(Math.floor((w % 3600) / 60))}:${p2(w % 60)}.${String(ms).padStart(3, '0')}`
+}
+function shiftVtt(vttText, offsetSec) {
+  return String(vttText).split(/\r?\n/).map((line) => {
+    const m = line.match(/^\s*(\S+)\s+-->\s+(\S+)(.*)$/)
+    if (m) {
+      const a = vttTsToSec(m[1]), b = vttTsToSec(m[2])
+      if (a != null && b != null) return `${secToVttTs(a + offsetSec)} --> ${secToVttTs(b + offsetSec)}${m[3] || ''}`
+    }
+    return line
+  }).join('\n')
+}
+function mergeVttChunks(chunks) {
+  const bodies = []
+  for (const { text, offset } of chunks) {
+    const body = shiftVtt(text, offset).replace(/^﻿?WEBVTT[^\n]*\n?/, '').trim()
+    if (body) bodies.push(body)
+  }
+  return 'WEBVTT\n\n' + bodies.join('\n\n') + '\n'
+}
+
+// Распознавание длинного аудио БЕЗ упора в один общий таймаут: режем на чанки
+// (WHISPER_CHUNK_SEC, по умолчанию 15 мин), гоним whisper по каждому со СВОИМ
+// коротким таймаутом (WHISPER_CHUNK_TIMEOUT_MS, по умолчанию 30 мин) и склеиваем
+// VTT со смещением. Так 2-часовое видео не висит 7200s одним куском и не
+// зависает на одном месте — в худшем случае падает один чанк, а не вся задача.
 async function transcribeToVtt(wav, playbackId, work) {
-  const outBase = join(work, 'auto')
+  const chunkSec = Math.max(60, Number(process.env.WHISPER_CHUNK_SEC || 900))
+  const perChunkMs = Math.max(60000, Number(process.env.WHISPER_CHUNK_TIMEOUT_MS || 30 * 60 * 1000))
+  const chunkDir = join(work, 'chunks')
+  await mkdir(chunkDir, { recursive: true })
+  // Режем 16кГц mono WAV на равные сегменты (reset_timestamps → каждый с 0:00).
   await run(
-    WHISPER_BIN,
-    ['-m', WHISPER_MODEL_PATH, '-f', wav, '-l', WHISPER_LANG, '-t', String(WHISPER_THREADS), '-ovtt', '-of', outBase],
+    'ffmpeg',
+    ['-y', '-i', wav, '-f', 'segment', '-segment_time', String(chunkSec), '-c:a', 'pcm_s16le', '-ar', '16000', '-ac', '1', '-reset_timestamps', '1', join(chunkDir, 'part-%03d.wav')],
     {},
-    WHISPER_TIMEOUT_MS,
+    FFMPEG_TIMEOUT_MS,
   )
+  const parts = (await readdir(chunkDir)).filter((f) => /^part-\d+\.wav$/.test(f)).sort()
+  if (!parts.length) throw new Error('не удалось разбить аудио на чанки')
+  log(`whisper: ${parts.length} чанк(ов) по ~${Math.round(chunkSec / 60)} мин, потоков ${WHISPER_THREADS}`)
+  const chunks = []
+  for (let i = 0; i < parts.length; i++) {
+    const outBase = join(chunkDir, `out-${i}`)
+    await run(
+      WHISPER_BIN,
+      ['-m', WHISPER_MODEL_PATH, '-f', join(chunkDir, parts[i]), '-l', WHISPER_LANG, '-t', String(WHISPER_THREADS), '-ovtt', '-of', outBase],
+      {},
+      perChunkMs,
+    )
+    const text = await readFile(`${outBase}.vtt`, 'utf8').catch(() => '')
+    chunks.push({ text, offset: i * chunkSec })
+  }
+  const merged = mergeVttChunks(chunks)
+  const outVtt = join(work, 'auto.vtt')
+  await writeFile(outVtt, merged)
   const key = `subs/${playbackId}/${WHISPER_LANG}.vtt`
-  await uploadFile(`${outBase}.vtt`, key)
-  const vttText = await readFile(`${outBase}.vtt`, 'utf8').catch(() => '')
-  return { lang: WHISPER_LANG, label: `Авто (${WHISPER_LANG.toUpperCase()})`, key, vttText }
+  await uploadFile(outVtt, key)
+  return { lang: WHISPER_LANG, label: `Авто (${WHISPER_LANG.toUpperCase()})`, key, vttText: merged }
 }
 
 async function generateSubtitles(input, playbackId, work) {

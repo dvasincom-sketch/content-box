@@ -226,6 +226,9 @@ services:
       WHISPER_THREADS: ${WHISPER_THREADS:-}
       WHISPER_MODEL_PATH: ${WHISPER_MODEL_PATH:-/opt/models/ggml-small.bin}
       WHISPER_TIMEOUT_MS: ${WHISPER_TIMEOUT_MS:-7200000}
+      # Длинное аудио режется на чанки: размер чанка и таймаут на чанк (пусто → дефолты кода: 15 мин / 30 мин).
+      WHISPER_CHUNK_SEC: ${WHISPER_CHUNK_SEC:-}
+      WHISPER_CHUNK_TIMEOUT_MS: ${WHISPER_CHUNK_TIMEOUT_MS:-}
     # ПЕРЕОПРЕДЕЛЯЕМ healthcheck из Dockerfile (там curl :3000/api/health — веб
     # приложения). У воркера веб-сервера на 3000 нет, поэтому тот healthcheck
     # падал и оркестратор убивал контейнер каждые ~7 мин ПОСРЕДИ транскода.
