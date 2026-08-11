@@ -139,3 +139,32 @@ export function verifyEmail(params: {
     }),
   }
 }
+
+/**
+ * Код подтверждения передачи прав владельца проекта (на email текущего
+ * владельца). Показываем крупный код; действует 5 минут.
+ */
+export function ownerTransferCodeEmail(params: { brand?: EmailBrand; code: string; projectName: string; targetName: string }): RenderedEmail {
+  const brand = params.brand || PLATFORM_BRAND
+  const bodyHtml =
+    p(`Вы запросили передачу прав владельца проекта <b>${esc(params.projectName)}</b> участнику <b>${esc(params.targetName)}</b>.`) +
+    p('Введите код подтверждения в студии:') +
+    `<p style="margin:6px 0 16px; text-align:center;"><span style="display:inline-block; font-size:30px; font-weight:800; letter-spacing:6px; padding:12px 22px; border-radius:12px; background:#f4f4f5; color:#18181b; font-family:monospace;">${esc(params.code)}</span></p>` +
+    p('<span style="color:#71717a; font-size:13px;">Код действует 5 минут. После подтверждения вы станете администратором, а владельцем — выбранный участник. Если вы НЕ запрашивали передачу — не вводите код и смените пароль.</span>')
+  return {
+    subject: `Код передачи прав · ${params.projectName}`,
+    html: renderLayout({ brand, preheader: 'Код подтверждения передачи прав владельца', heading: 'Передача прав владельца', bodyHtml }),
+  }
+}
+
+/** Уведомление НОВОМУ владельцу, что права переданы ему. */
+export function ownerTransferDoneEmail(params: { brand?: EmailBrand; projectName: string; studioUrl: string }): RenderedEmail {
+  const brand = params.brand || PLATFORM_BRAND
+  const bodyHtml =
+    p(`Вам передали права владельца проекта <b>${esc(params.projectName)}</b>.`) +
+    p('Теперь вы управляете настройками, командой, подпиской и всем контентом проекта.')
+  return {
+    subject: `Вы — владелец проекта · ${params.projectName}`,
+    html: renderLayout({ brand, preheader: 'Вам переданы права владельца', heading: 'Вы теперь владелец', bodyHtml, cta: { label: 'Открыть студию', url: params.studioUrl } }),
+  }
+}

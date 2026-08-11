@@ -7,6 +7,7 @@ import type { Member } from './SettingsView'
 import { ActivityFeed } from './ActivityFeed'
 import { ConfirmDialog } from './ConfirmDialog'
 import { PermissionsModal } from './PermissionsModal'
+import { OwnerTransferPanel } from './OwnerTransferPanel'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { matchPreset, PRESET_LABELS, ASSIGNABLE_PRESETS } from '@/lib/permissions'
 
@@ -35,6 +36,7 @@ export function AccessPanel({ members }: { members: Member[] }) {
   const [revoking, setRevoking] = useState<string | number | null>(null)
   const [confirm, setConfirm] = useState<{ message: string; onYes: () => void } | null>(null)
   const [permMember, setPermMember] = useState<Member | null>(null)
+  const transferTargets = members.filter((m) => !m.isSelf && m.status !== 'pending' && m.status !== 'expired' && m.status !== 'disabled').map((m) => ({ id: String(m.id), label: m.name || m.email }))
 
   async function invite() {
     setError(null); setLink(null); setReactivated(false)
@@ -208,6 +210,7 @@ export function AccessPanel({ members }: { members: Member[] }) {
         })}
       </div>
     </div>
+    <OwnerTransferPanel targets={transferTargets} />
     <ActivityFeed />
     {permMember && (
       <PermissionsModal member={permMember} onClose={() => { setPermMember(null); router.refresh() }} />
