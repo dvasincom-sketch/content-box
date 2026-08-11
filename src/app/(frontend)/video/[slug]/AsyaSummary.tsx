@@ -179,8 +179,8 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
             </ul>
           )}
           {done && (
-            <>
-              <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+            <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <span style={{ fontSize: 13, color: 'var(--brand-muted)' }}>{vote ? 'Спасибо за оценку!' : 'Полезное саммари?'}</span>
                 <button
                   type="button"
@@ -201,8 +201,8 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
                   <ThumbsDown size={16} />
                 </button>
               </div>
-              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--brand-muted)' }}>Краткое содержание сгенерировала <a href="https://ася.online" target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>Ася</a> по субтитрам — возможны неточности.</div>
-            </>
+              <div style={{ fontSize: 12, color: 'var(--brand-muted)', flex: '1 1 200px', textAlign: 'right', minWidth: 160 }}>Краткое содержание сгенерировала <a href="https://ася.online" target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>Ася</a> по субтитрам — возможны неточности.</div>
+            </div>
           )}
         </div>
       )}

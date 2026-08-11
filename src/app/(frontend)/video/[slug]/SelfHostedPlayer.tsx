@@ -449,12 +449,17 @@ export function SelfHostedPlayer({
                 <ListVideo size={20} />
               </button>
               {chOpen && (
-                <div style={{ ...ccMenuStyle, minWidth: 200, maxHeight: 240, overflowY: 'auto' }}>
-                  {chapters.map((c, i) => (
-                    <button key={i} type="button" onClick={() => { seekTo(c.start); setChOpen(false) }} style={ccItemStyle(i === curChapIdx)}>
-                      <span style={{ opacity: 0.6, marginRight: 8, fontVariantNumeric: 'tabular-nums' }}>{fmtTime(c.start)}</span>{c.title}
-                    </button>
-                  ))}
+                <div style={{ ...ccMenuStyle, minWidth: 300, maxWidth: 380, maxHeight: 'min(60vh, 420px)', overflowY: 'auto', padding: 8 }}>
+                  {chapters.map((c, i) => {
+                    const active = i === curChapIdx
+                    return (
+                      <button key={i} type="button" onClick={() => { seekTo(c.start); setChOpen(false) }}
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer', borderRadius: 8, padding: '9px 12px', background: active ? 'rgba(255,255,255,.16)' : 'transparent', color: '#fff' }}>
+                        <span style={{ flex: 'none', width: 56, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, color: active ? '#fff' : 'rgba(255,255,255,.6)', fontWeight: active ? 700 : 500, paddingTop: 1 }}>{fmtTime(c.start)}</span>
+                        <span style={{ flex: 1, fontSize: 14, lineHeight: 1.35, fontWeight: active ? 600 : 400, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.title}</span>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
