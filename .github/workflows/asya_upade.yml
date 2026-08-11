@@ -30,12 +30,12 @@ jobs:
       TZ: Europe/Moscow
     steps:
       - name: Checkout (полная история — нужна для git log за вчера)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
 
