@@ -3296,3 +3296,15 @@ select.dn-input {
 .dpreset__label { flex: 1; }
 .dpreset__del { flex-shrink: 0; padding: .5rem; }
 .dpreset__add { margin-bottom: .4rem; }
+
+/* iOS Safari зумит страницу при фокусе на поле, если у него font-size < 16px.
+   На узких экранах принудительно 16px для всех полей ввода — зума при фокусе
+   не будет. !important — чтобы перекрыть инлайновые размеры. Радиус/остальное
+   не трогаем. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

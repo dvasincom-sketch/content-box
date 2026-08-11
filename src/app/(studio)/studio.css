@@ -5554,3 +5554,14 @@ a.session-expired__btn {
 .composer__cover-broken-txt { flex: 1; min-width: 160px; }
 .composer__cover-broken-title { font-weight: 600; font-size: 14px; color: var(--st-text); }
 .composer__cover-broken-sub { font-size: 12.5px; color: var(--st-text-muted); margin-top: 2px; }
+
+/* iOS: гарантированно без автозума при фокусе — глобально для ЛЮБЫХ полей
+   (включая инлайновые размеры и поля без класса). !important перебивает
+   инлайн-стили. Дополняет точечное правило выше по .studio-input. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
