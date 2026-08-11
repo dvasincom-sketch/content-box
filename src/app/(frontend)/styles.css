@@ -3308,3 +3308,20 @@ select.dn-input {
     font-size: 16px !important;
   }
 }
+
+/* Логотип в шапке: высота задаётся здесь (не Tailwind-классами — те не всегда
+   генерируются под произвольные img), чтобы лого точно не вылезал за бар
+   (h-16=64px / lg h-20=80px) и не раздувал ширину шапки. */
+.site-logo {
+  height: 44px;
+  max-height: 44px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+@media (min-width: 1024px) {
+  .site-logo {
+    height: 52px;
+    max-height: 52px;
+  }
+}
