@@ -96,7 +96,7 @@ export function PostsToolbar({
           <ChevronDown size={14} style={{ opacity: 0.6 }} />
         </button>
         {catOpen && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 30, width: 320, maxWidth: '86vw', background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,.25)', padding: 10 }}>
+          <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 1000, width: 320, maxWidth: '86vw', background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,.25)', padding: 10 }}>
             <CategoryMultiPicker categories={categories} value={sel} onChange={setSel} />
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 10 }}>
               <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setSel([])} disabled={!sel.length}>Сбросить</button>

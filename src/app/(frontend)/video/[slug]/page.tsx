@@ -176,10 +176,9 @@ function VideoLock({
         {reason !== 'blocked' && (
           <div className="flex flex-col items-center gap-3">
             <Link href="/subscribe"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold hover:opacity-90"
-              style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: '4px' }}>
+              className="inline-block text-sm font-semibold px-6 py-3 rounded-xl transition-transform hover:-translate-y-0.5"
+              style={{ background: '#fff', color: 'var(--brand-primary)' }}>
               {reason === 'expired' ? 'Продлить подписку' : 'Оформить подписку'}
-              <ArrowRight size={16} />
             </Link>
             {reason === 'need-login' && (
               <Link href={`/login?redirect=${encodeURIComponent(loginRedirect || '/')}`}

@@ -57,8 +57,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     const uTenant = u.tenant && typeof u.tenant === 'object' ? u.tenant.id : u.tenant
     const sameTenant = Number(uTenant) === Number(tenantId)
     // Реактивировать можно только приглашённого участника этого тенанта.
-    if (!sameTenant || u.tenantRole !== 'contributor') {
-      return apiError('Пользователь с таким email уже существует')
+    if (!sameTenant) {
+      return apiError('Этот email уже используется на платформе (в другом проекте или как отдельный аккаунт) — добавить его участником нельзя. Используйте другой email.')
+    }
+    if (u.tenantRole !== 'contributor') {
+      return apiError('Этот участник уже в проекте с расширенной ролью — найдите его в списке ниже.')
     }
     try {
       await payload.update({
