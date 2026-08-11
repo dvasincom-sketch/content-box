@@ -22,3 +22,6 @@ _to_delete/
 _tsc-*.json
 _tsc-*.tsbuildinfo
 *.tsbuildinfo
+
+# Артефакты FUSE-монтирования (появляются при правках через удалённый доступ)
+.fuse_hidden*

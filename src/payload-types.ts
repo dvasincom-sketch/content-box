@@ -232,6 +232,10 @@ export interface Tenant {
    */
   subdomain?: string | null;
   category?: ('blogger' | 'musician' | 'podcaster' | 'streamer' | 'artist' | 'education' | 'other') | null;
+  /**
+   * Выбирается в мастере онбординга. Задаёт оформление и подсказки. «course» — пока «Скоро».
+   */
+  archetype?: ('writer' | 'video' | 'course' | 'podcast' | 'expert' | 'studio') | null;
   description?: string | null;
   /**
    * Индекс шага мастера для возобновления. 0 — не начат.
@@ -612,6 +616,10 @@ export interface Category {
    */
   posterLayout?: boolean | null;
   /**
+   * Публикации этого раздела получают «Дату события» (напр. дата лайв-трансляции). Список сортируется по дате события (новые сверху), а на обложке и в публикации показывается оранжевая плашка с датой.
+   */
+  eventTemplate?: boolean | null;
+  /**
    * Пусто = сгенерируется автоматически из названия и описания при сохранении.
    */
   seo?: {
@@ -661,6 +669,10 @@ export interface Publication {
   slug: string;
   cover?: (number | null) | Media;
   publishedAt?: string | null;
+  /**
+   * Для разделов-событий: дата лайва/мероприятия. По ней сортируется список и рисуется оранжевая плашка.
+   */
+  eventDate?: string | null;
   category?: (number | null) | Category;
   /**
    * Публикация появится и в этих разделах. Основная категория — отдельное поле выше.
@@ -943,6 +955,43 @@ export interface Video {
     | boolean
     | null;
   assetError?: string | null;
+  assetBytes?: number | null;
+  /**
+   * Дорожки субтитров [{ lang, label, key }] — управляются из студии.
+   */
+  subtitles?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Авто-главы из транскрипта [{ start, title }] — генерит воркер.
+   */
+  chapters?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Кэш краткого содержания от Аси {tldr, points, text, hash, lang, at}.
+   */
+  summary?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   durationSec?: number | null;
   /**
    * Номер сезона в видео-плейлисте. Пусто = вне сезона.
@@ -1858,6 +1907,7 @@ export interface TenantsSelect<T extends boolean = true> {
   umamiWebsiteId?: T;
   subdomain?: T;
   category?: T;
+  archetype?: T;
   description?: T;
   onboardingStep?: T;
   onboardingComplete?: T;
@@ -2018,6 +2068,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   showInFooter?: T;
   videoSeries?: T;
   posterLayout?: T;
+  eventTemplate?: T;
   seo?:
     | T
     | {
@@ -2054,6 +2105,7 @@ export interface PublicationsSelect<T extends boolean = true> {
   slug?: T;
   cover?: T;
   publishedAt?: T;
+  eventDate?: T;
   category?: T;
   extraCategories?: T;
   watchCategory?: T;
@@ -2281,6 +2333,10 @@ export interface VideosSelect<T extends boolean = true> {
   gifKey?: T;
   renditions?: T;
   assetError?: T;
+  assetBytes?: T;
+  subtitles?: T;
+  chapters?: T;
+  summary?: T;
   durationSec?: T;
   season?: T;
   episode?: T;
