@@ -26,7 +26,7 @@ export type EditableVideo = {
   embedSrc?: string | null
   playbackId?: string | null
   subtitles?: { lang: string; label: string; at?: string; v?: number }[]
-  summary?: { tldr?: string; at?: string } | null
+  summary?: { tldr?: string; points?: string[]; at?: string; edited?: boolean } | null
   chapters?: { start: number; title: string }[]
 }
 
@@ -252,13 +252,22 @@ export function AnalyticsSection({ videoId }: { videoId: number | string }) {
 /* -------------------------------------------------------------------------- */
 /* Саммари от Аси: (пере)генерация краткого содержания по субтитрам             */
 /* -------------------------------------------------------------------------- */
-export function SummarySection({ videoId, initial, hasSubtitles }: { videoId: number | string; initial: { tldr?: string; at?: string } | null; hasSubtitles: boolean }) {
-  const [summary, setSummary] = useState<{ tldr?: string; at?: string } | null>(initial)
-  const [busy, setBusy] = useState(false)
+export function SummarySection({ videoId, initial, hasSubtitles }: { videoId: number | string; initial: { tldr?: string; points?: string[]; at?: string; edited?: boolean } | null; hasSubtitles: boolean }) {
+  const [tldr, setTldr] = useState<string>(initial?.tldr || '')
+  const [points, setPoints] = useState<string[]>(Array.isArray(initial?.points) ? initial!.points! : [])
+  const [busy, setBusy] = useState(false) // регенерация Асей
+  const [saving, setSaving] = useState(false) // сохранение правок
+  const [dirty, setDirty] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
+  const hasSummary = !!(tldr.trim() || points.some((p) => p.trim()))
+  const setPoint = (i: number, v: string) => { setPoints((ps) => ps.map((p, k) => (k === i ? v : p))); setDirty(true); setSaved(false) }
+  const addPoint = () => { setPoints((ps) => [...ps, '']); setDirty(true); setSaved(false) }
+  const removePoint = (i: number) => { setPoints((ps) => ps.filter((_, k) => k !== i)); setDirty(true); setSaved(false) }
+
   async function refresh() {
-    setBusy(true); setErr(null)
+    setBusy(true); setErr(null); setSaved(false)
     try {
       const res = await fetch('/studio/api/videos/summarize', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
@@ -266,31 +275,68 @@ export function SummarySection({ videoId, initial, hasSubtitles }: { videoId: nu
       })
       const j = await res.json()
       if (!res.ok) setErr(j.error || 'Не удалось')
-      else setSummary(j.summary)
+      else if (j.summary) { setTldr(j.summary.tldr || ''); setPoints(Array.isArray(j.summary.points) ? j.summary.points : []); setDirty(false) }
     } catch { setErr('Ошибка соединения') } finally { setBusy(false) }
   }
 
+  async function save() {
+    setSaving(true); setErr(null); setSaved(false)
+    try {
+      const res = await fetch('/studio/api/videos/save-summary', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ videoId, tldr: tldr.trim(), points: points.map((p) => p.trim()).filter(Boolean) }),
+      })
+      const j = await res.json()
+      if (!res.ok) setErr(j.error || 'Не удалось сохранить')
+      else if (j.summary) { setDirty(false); setSaved(true) }
+    } catch { setErr('Ошибка соединения') } finally { setSaving(false) }
+  }
+
+  const anyBusy = busy || saving
+
   return (
     <div className="studio-field">
-      {/* Отдельная сущность — своя карточка с фирменным акцентом Аси. */}
       <div style={{ borderRadius: 14, border: '1px solid color-mix(in srgb, #b79aef 42%, var(--brand-border, rgba(128,128,128,.25)))', background: 'linear-gradient(135deg, rgba(247,161,188,.07), rgba(183,154,239,.07))', padding: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 10 }}>
           <span aria-hidden style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, background: 'radial-gradient(circle at 34% 30%, #ffffff, #ffb3cc 42%, #c3a0f2 70%, #8fb8ff)', boxShadow: '0 0 9px 1px rgba(199,150,240,.75), 0 0 0 1px rgba(255,255,255,.5)' }} />
           <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--brand-text)' }}>Саммари от <a href="https://ася.online" target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>Аси</a></span>
         </div>
-        {summary?.tldr ? (
-          <div className="videdit__hint" style={{ fontSize: 13, opacity: 0.9, marginBottom: 10 }}>{summary.tldr}</div>
+
+        {hasSummary || hasSubtitles ? (
+          <>
+            <span className="studio-field__label" style={{ fontSize: 12, opacity: 0.75 }}>Краткое содержание</span>
+            <textarea
+              className="studio-input"
+              style={{ width: '100%', minHeight: 64, resize: 'vertical', marginBottom: 10 }}
+              value={tldr}
+              onChange={(e) => { setTldr(e.target.value); setDirty(true); setSaved(false) }}
+              placeholder={hasSubtitles ? 'Одно-два предложения о сути видео…' : 'Саммари появится, когда будут субтитры'}
+              maxLength={1200}
+            />
+            <span className="studio-field__label" style={{ fontSize: 12, opacity: 0.75 }}>Ключевые пункты</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8, marginTop: 4 }}>
+              {points.map((p, i) => (
+                <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input className="studio-input" style={{ flex: 1 }} value={p} onChange={(e) => setPoint(i, e.target.value)} placeholder="Пункт" maxLength={300} />
+                  <button type="button" className="catmgr__icon-btn catmgr__icon-btn--danger" onClick={() => removePoint(i)} disabled={anyBusy} title="Удалить пункт"><Trash2 size={14} /></button>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+              <button type="button" className="studio-btn studio-btn--ghost" onClick={addPoint} disabled={anyBusy}><Plus size={14} /> Пункт</button>
+              <button type="button" className="studio-btn studio-btn--primary" onClick={save} disabled={anyBusy || !dirty}>{saving ? <Loader2 size={14} className="spin" /> : <Check size={14} />} Сохранить</button>
+              <span style={{ flex: 1 }} />
+              <button type="button" className="studio-btn studio-btn--ghost" onClick={refresh} disabled={anyBusy || !hasSubtitles} title={!hasSubtitles ? 'Сначала нужны субтитры' : undefined}>{busy ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} {hasSummary ? 'Пересобрать Асей' : 'Сгенерировать'}</button>
+            </div>
+          </>
         ) : (
-          <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginBottom: 10 }}>{hasSubtitles ? 'Саммари ещё не сгенерировано.' : 'Саммари появится, когда будут субтитры.'}</div>
+          <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7 }}>Саммари появится, когда будут субтитры.</div>
         )}
-        <button type="button" className="studio-btn studio-btn--ghost" onClick={refresh} disabled={busy || !hasSubtitles} title={!hasSubtitles ? 'Сначала нужны субтитры' : undefined}>
-          {busy ? <Loader2 size={14} className="spin" /> : <Sparkles size={14} />} {summary?.tldr ? 'Обновить саммари' : 'Сгенерировать саммари'}
-        </button>
-        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
-          {hasSubtitles
-            ? 'Ася делает краткое содержание по субтитрам. Обновите после смены или дозагрузки субтитров.'
-            : 'Сначала сгенерируйте автоматические субтитры или загрузите файл выше — затем можно собрать саммари.'}
+
+        <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>
+          Ася собирает черновик по субтитрам — его можно отредактировать вручную. Ваши правки видят подписчики, и они важнее авто-генерации. «Пересобрать Асей» перезапишет текст заново.
         </div>
+        {saved && <div style={{ marginTop: 6, fontSize: 13, color: 'var(--success, #22c55e)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Сохранено</div>}
         {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}
       </div>
     </div>
@@ -363,7 +409,7 @@ export function ChaptersSection({ videoId, initial }: { videoId: number | string
   async function polish() {
     setPolishing(true); setErr(null); setSaved(false)
     try {
-      const res = await fetch('/studio/api/videos/polish-chapters', {
+      const res = await fetch('/studio/api/videos/generate-chapters', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify({ videoId }),
       })
@@ -380,7 +426,7 @@ export function ChaptersSection({ videoId, initial }: { videoId: number | string
 
   return (
     <div className="studio-field">
-      <span className="studio-field__label">Главы</span>
+      <span className="studio-field__label">Таймкоды</span>
       {rows.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
           {rows.map((r, i) => (
@@ -417,13 +463,13 @@ export function ChaptersSection({ videoId, initial }: { videoId: number | string
           {busy ? <Loader2 size={14} className="spin" /> : <Check size={14} />} Сохранить
         </button>
         <span style={{ flex: 1 }} />
-        <button type="button" className="studio-btn studio-btn--ghost" onClick={polish} disabled={anyBusy || dirty || rows.length < 2} title={dirty ? 'Сначала сохраните изменения' : rows.length < 2 ? 'Нужны субтитры и главы' : undefined}>
-          {polishing ? <Loader2 size={14} className="spin" /> : <List size={14} />} Улучшить через Асю
+        <button type="button" className="studio-btn studio-btn--ghost" onClick={polish} disabled={anyBusy || dirty} title={dirty ? 'Сначала сохраните изменения' : undefined}>
+          {polishing ? <Loader2 size={14} className="spin" /> : <List size={14} />} Собрать через Асю
         </button>
       </div>
 
       <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>
-        Время — в формате мм:сс (или ч:мм:сс). Первая глава автоматически ставится с 0:00. «Улучшить через Асю» заменит заголовки короткими осмысленными (по субтитрам).
+        Время — в формате мм:сс (или ч:мм:сс). Первая глава автоматически ставится с 0:00. «Собрать через Асю» разложит видео на осмысленные главы по субтитрам (перезапишет текущие).
       </div>
       {saved && <div style={{ marginTop: 6, fontSize: 13, color: 'var(--success, #22c55e)', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Сохранено</div>}
       {err && <div className="studio-login__error" style={{ marginTop: 6 }}>{err}</div>}

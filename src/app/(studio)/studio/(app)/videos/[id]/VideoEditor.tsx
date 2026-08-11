@@ -34,7 +34,7 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
   const TABS: { key: TabKey; label: string; icon: React.ReactNode; self?: boolean }[] = [
     { key: 'overview', label: 'Обзор', icon: <Info size={15} /> },
     { key: 'subtitles', label: 'Субтитры', icon: <Captions size={15} />, self: true },
-    { key: 'chapters', label: 'Главы', icon: <List size={15} />, self: true },
+    { key: 'chapters', label: 'Таймкод', icon: <List size={15} />, self: true },
     { key: 'analytics', label: 'Аналитика', icon: <BarChart3 size={15} />, self: true },
     { key: 'summary', label: 'Саммари', icon: <Sparkles size={15} />, self: true },
   ]

@@ -41,7 +41,7 @@ type Vid = {
   usedIn: { id: number | string; title: string }[]
   playbackId?: string | null
   subtitles?: { lang: string; label: string }[]
-  summary?: { tldr?: string; at?: string } | null
+  summary?: { tldr?: string; points?: string[]; at?: string; edited?: boolean } | null
   chapters?: { start: number; title: string }[]
 }
 

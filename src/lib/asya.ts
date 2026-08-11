@@ -144,3 +144,57 @@ export function vttToPlainText(vtt: string): string {
   }
   return out.join(' ').replace(/\s+/g, ' ').trim()
 }
+
+/**
+ * VTT → реплики с таймкодами для построения глав, прорежённые в окна ~windowSec
+ * секунд (склеиваем текст соседних cue в одно окно), чтобы уложиться в лимит
+ * промпта на длинных видео. Возвращает [{ start, text }] по возрастанию времени.
+ */
+export function vttToCues(vtt: string, windowSec = 25, cap = 600): { start: number; text: string }[] {
+  const cues = parseVttCues(vtt)
+  if (!cues.length) return []
+  const windows: { start: number; text: string }[] = []
+  let curStart = cues[0].start
+  let buf: string[] = []
+  for (const c of cues) {
+    if (buf.length && c.start - curStart >= windowSec) {
+      windows.push({ start: Math.round(curStart), text: buf.join(' ').replace(/\s+/g, ' ').trim() })
+      curStart = c.start
+      buf = []
+    }
+    buf.push(c.text)
+  }
+  if (buf.length) windows.push({ start: Math.round(curStart), text: buf.join(' ').replace(/\s+/g, ' ').trim() })
+  // Прореживаем, если окон всё ещё слишком много (равномерно).
+  if (windows.length > cap) {
+    const step = windows.length / cap
+    return Array.from({ length: cap }, (_, k) => windows[Math.floor(k * step)])
+  }
+  return windows
+}
+
+/**
+ * Построение глав «с нуля» через Асю: отдаём полную расшифровку с таймкодами,
+ * Ася сама делит видео на осмысленные главы и возвращает [{ start, title }]
+ * (границы по возрастанию, первая с 0).
+ */
+export async function buildChapters(args: {
+  cues: { start: number; text: string }[]
+  title?: string
+  lang?: string
+  context?: string
+}): Promise<Chapter[]> {
+  if (!asyaEnabled()) throw new Error('ASYA_SUMMARY_KEY не задан')
+  const res = await fetch(ASYA_CHAPTERS_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${ASYA_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: 'build', cues: args.cues, title: args.title, lang: args.lang, context: args.context }),
+  })
+  const j: any = await res.json().catch(() => null)
+  if (!res.ok || !j?.ok) throw new Error(j?.error || `Ася: HTTP ${res.status}`)
+  return Array.isArray(j.chapters)
+    ? j.chapters
+        .map((c: any) => ({ start: Math.max(0, Math.floor(Number(c?.start) || 0)), title: String(c?.title || '').slice(0, 120) }))
+        .filter((c: Chapter) => c.title)
+    : []
+}

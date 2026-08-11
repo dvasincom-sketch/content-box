@@ -5,7 +5,7 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { notFound } from 'next/navigation'
-import { Lock } from 'lucide-react'
+import { Lock, ArrowRight } from 'lucide-react'
 import { VideoPlayer } from './VideoPlayer'
 import { AsyaSummary } from './AsyaSummary'
 import { ASYA_MIN_TIER_PRICE } from '@/lib/asya'
@@ -102,7 +102,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
         {access.allowed ? (
           <VideoPlayer videoId={video.id} initialAspect={video.embedAspect === '9:16' ? '9:16' : '16:9'} />
         ) : (
-          <VideoLock reason={access.reason} requiredTierName={access.requiredTierName} cover={video.cover} settings={settings} />
+          <VideoLock reason={access.reason} requiredTierName={access.requiredTierName} cover={video.cover} settings={settings} loginRedirect={`/video/${slug}`} />
         )}
 
         {video.provider === 'self' && ((Array.isArray(video.subtitles) && video.subtitles.length > 0) || video.summary) ? (
@@ -128,11 +128,13 @@ function VideoLock({
   requiredTierName,
   cover,
   settings: _settings,
+  loginRedirect,
 }: {
   reason: 'not-found' | 'need-login' | 'need-subscription' | 'expired' | 'blocked'
   requiredTierName?: string | null
   cover?: any
   settings?: any
+  loginRedirect?: string
 }) {
   const coverUrl = cover && typeof cover === 'object' && cover.url ? cover.url : null
 
@@ -172,11 +174,22 @@ function VideoLock({
         <div className="text-2xl font-bold mb-2" style={{ color: '#fff' }}>{heading}</div>
         <p className="mb-6 text-sm" style={{ color: '#fff', opacity: 0.9 }}>{text}</p>
         {reason !== 'blocked' && (
-          <Link href="/subscribe"
-            className="inline-block text-sm font-semibold px-6 py-3 rounded-xl transition-transform hover:-translate-y-0.5"
-            style={{ background: '#fff', color: 'var(--brand-primary)' }}>
-            {reason === 'expired' ? 'Продлить подписку' : reason === 'need-login' ? 'Войти или подписаться' : 'Оформить подписку'}
-          </Link>
+          <div className="flex flex-col items-center gap-3">
+            <Link href="/subscribe"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold hover:opacity-90"
+              style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: '4px' }}>
+              {reason === 'expired' ? 'Продлить подписку' : 'Оформить подписку'}
+              <ArrowRight size={16} />
+            </Link>
+            {reason === 'need-login' && (
+              <Link href={`/login?redirect=${encodeURIComponent(loginRedirect || '/')}`}
+                className="inline-flex items-center gap-1.5 text-sm hover:opacity-100"
+                style={{ color: '#fff', opacity: 0.82, textDecoration: 'underline', textUnderlineOffset: '4px' }}>
+                Есть подписка — войти
+                <ArrowRight size={15} />
+              </Link>
+            )}
+          </div>
         )}
       </div>
     </div>
