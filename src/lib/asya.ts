@@ -252,3 +252,27 @@ export async function pushVideoKnowledge(a: {
     /* знание не критично */
   }
 }
+
+/** Эндпоинт вопрос-ответа по видео проекта (панель «Спросить Асю»). */
+const ASYA_ASK_URL = process.env.ASYA_ASK_URL || `${ASYA_BASE}/ask`
+
+/**
+ * Спросить Асю по знанию проекта (сервер-к-серверу, ключ — секрет). Возвращает
+ * ответ и найденные видео (для ссылок в панели).
+ */
+export async function askAsya(q: string): Promise<{ answer: string; matches: { title: string | null; url: string | null; source: string }[] }> {
+  if (!asyaEnabled()) throw new Error('ASYA_SUMMARY_KEY не задан')
+  const res = await fetch(ASYA_ASK_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${ASYA_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q }),
+  })
+  const j: any = await res.json().catch(() => null)
+  if (!res.ok || !j?.ok) throw new Error(j?.error || `Ася: HTTP ${res.status}`)
+  return {
+    answer: String(j.answer || ''),
+    matches: Array.isArray(j.matches)
+      ? j.matches.map((m: any) => ({ title: m?.title ?? null, url: m?.url ?? null, source: String(m?.source || '') }))
+      : [],
+  }
+}

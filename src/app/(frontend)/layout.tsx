@@ -32,6 +32,8 @@ import { presetThemeCss, getPreset } from '@/lib/themePresets'
 import { getBgDecor } from '@/lib/bgDecors'
 import { PWARegister } from '@/components/PWARegister'
 import { BugReportWidget } from '@/components/BugReportWidget'
+import { AskAsya } from '@/components/AskAsya'
+import { asyaEnabled } from '@/lib/asya'
 import { UmamiTracker } from '@/components/UmamiTracker'
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
@@ -199,6 +201,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         )}
         {/* Баг-баунти: плашка «Нашёл баг» только на реальном тенанте. */}
         {ctx && <BugReportWidget authed={!!subscriber} source="site" loginHref="/account" />}
+        {/* Ассистент «Спросить Асю» — перк подписки; гейт и ответ решает сервер. */}
+        {ctx && asyaEnabled() && <AskAsya subscribeHref="/subscribe" loginHref="/login" />}
       </body>
     </html>
   )
