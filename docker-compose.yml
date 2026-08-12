@@ -75,6 +75,11 @@ services:
       LISTMONK_API_USER: ${LISTMONK_API_USER:-}
       LISTMONK_API_TOKEN: ${LISTMONK_API_TOKEN:-}
       LISTMONK_FROM_EMAIL: ${LISTMONK_FROM_EMAIL:-noreply@contentbox.site}
+      # SMS-вход/регистрация авторов (sms.ru). Без SMSRU_API_ID роут OTP
+      # отдаёт «Вход по SMS недоступен». Timeweb пробрасывает только то,
+      # что объявлено здесь, — значения задаются в панели «Переменные».
+      SMSRU_API_ID: ${SMSRU_API_ID:-}
+      SMSRU_FROM: ${SMSRU_FROM:-}
     depends_on:
       # service_started, а НЕ service_healthy — сознательно.
       #

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { formatPhoneInput } from '@/lib/phone'
 import Link from 'next/link'
 
 export function LoginForm() {
@@ -103,9 +104,9 @@ export function LoginForm() {
                 autoComplete="tel"
                 inputMode="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
                 onKeyDown={(e) => onKeyDown(e, sendCode)}
-                placeholder="+7 900 000-00-00"
+                placeholder="+7 900 000 00 00"
                 disabled={loading}
               />
             </label>

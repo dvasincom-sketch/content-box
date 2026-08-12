@@ -3,6 +3,7 @@ import './signup.css'
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { formatPhoneInput } from '@/lib/phone'
 
 /**
  * Регистрация автора (/signup) по НОМЕРУ ТЕЛЕФОНА (основной ID). Два шага:
@@ -104,9 +105,9 @@ export default function SignupPage() {
                 inputMode="tel"
                 autoComplete="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
                 onKeyDown={(e) => onKeyDown(e, sendCode)}
-                placeholder="+7 900 000-00-00"
+                placeholder="+7 900 000 00 00"
                 disabled={loading}
                 required
               />

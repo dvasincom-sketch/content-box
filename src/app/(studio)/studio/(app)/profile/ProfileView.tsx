@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { formatPhoneInput } from '@/lib/phone'
 import { Mail, Phone, Shield, Building2, LogOut, Check, Loader2 } from 'lucide-react'
 
 export function ProfileView({
@@ -123,7 +124,7 @@ function PhoneBlock({ currentPhone }: { currentPhone: string | null }) {
           <>
             <label className="studio-field">
               <span className="studio-field__label">{currentPhone ? 'Новый номер' : 'Номер телефона'}</span>
-              <input className="studio-input" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 900 000-00-00" />
+              <input className="studio-input" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(formatPhoneInput(e.target.value))} placeholder="+7 900 000 00 00" />
             </label>
             {error && <div className="settings__err">{error}</div>}
             <div className="settings__save-row">

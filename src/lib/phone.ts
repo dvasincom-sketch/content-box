@@ -20,3 +20,25 @@ export function formatPhone(normalized: string): string {
   const p = d.slice(1)
   return `+7 (${p.slice(0, 3)}) ${p.slice(3, 6)}-${p.slice(6, 8)}-${p.slice(8, 10)}`
 }
+
+/**
+ * Живая маска ввода РФ-номера: любое состояние строки → «+7 900 000 00 00».
+ * Берём только цифры, нормализуем код страны (8/7 в начале — это код, не номер)
+ * и группируем как 3-3-2-2. Пустая строка → пусто (чтобы показывался плейсхолдер).
+ */
+export function formatPhoneInput(input: string): string {
+  let digits = (input || '').replace(/\D/g, '')
+  if (!digits) return ''
+  if (digits[0] === '8' || digits[0] === '7') digits = digits.slice(1)
+  digits = digits.slice(0, 10)
+  const a = digits.slice(0, 3)
+  const b = digits.slice(3, 6)
+  const c = digits.slice(6, 8)
+  const d = digits.slice(8, 10)
+  let out = '+7'
+  if (a) out += ' ' + a
+  if (b) out += ' ' + b
+  if (c) out += ' ' + c
+  if (d) out += ' ' + d
+  return out
+}
