@@ -43,6 +43,7 @@ export default async function VideosAnalytics() {
             <Link href="/studio/analytics" className="settings__tab" style={{ textDecoration: 'none' }}>Посещаемость</Link>
             <Link href="/studio/analytics/newsletters" className="settings__tab" style={{ textDecoration: 'none' }}>Рассылки</Link>
             <Link href="/studio/analytics/videos" className="settings__tab is-active" style={{ textDecoration: 'none' }}>Видео</Link>
+            <Link href="/studio/analytics/search" className="settings__tab" style={{ textDecoration: 'none' }}>Поиск</Link>
             <Link href="/studio/analytics/team" className="settings__tab" style={{ textDecoration: 'none' }}>Команда</Link>
           </div>
         </div>

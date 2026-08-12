@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { runSearch } from '@/search/query'
 import { resolveViewerTenantFromRequest } from '@/search/tenant'
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
+import { getPayload } from 'payload'
+import config from '@/payload.config'
+import { logSearchQuery } from '@/lib/searchStats'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,16 +27,27 @@ export async function GET(req: NextRequest) {
   const tenant = await resolveViewerTenantFromRequest(req.headers)
   if (!tenant) return NextResponse.json({ error: 'unknown tenant' }, { status: 404 })
 
+  const q = (sp.get('q') ?? '').trim().slice(0, MAX_QUERY_LEN)
+  const page = Number(sp.get('page') ?? '1')
   const result = await runSearch({
     tenantId: tenant.id,
     viewerTier: tenant.viewerTier,
-    q: (sp.get('q') ?? '').trim().slice(0, MAX_QUERY_LEN),
+    q,
     type: sp.get('type'),
     category: sp.get('category'),
-    page: Number(sp.get('page') ?? '1'),
+    page,
     limit: Number(sp.get('limit') ?? '20'),
     includeLocked: (sp.get('locked') ?? '1') !== '0',
   })
+
+  // Логируем только первую страницу запроса — чтобы пагинация не удваивала счётчик.
+  if (q && page <= 1) {
+    try {
+      const payload = await getPayload({ config: await config })
+      const n = typeof (result as { total?: number }).total === 'number' ? (result as { total: number }).total : 0
+      await logSearchQuery(payload, tenant.id as number, q, n)
+    } catch { /* лог не критичен */ }
+  }
 
   return NextResponse.json(result)
 }
