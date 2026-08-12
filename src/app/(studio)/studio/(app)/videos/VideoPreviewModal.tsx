@@ -3,13 +3,25 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Loader2, AlertCircle } from 'lucide-react'
+import { SelfHostedPlayer } from '@/app/(frontend)/video/[slug]/SelfHostedPlayer'
 
 /**
  * Модальный плеер превью для автора. Запрашивает данные с роута token, который
  * возвращает провайдера. Ветвление:
- *   - stream:    CF-iframe с signed-токеном
+ *   - self:      собственный HLS → SelfHostedPlayer (кастомные контролы)
+ *   - embed:     внешняя вставка (VK/Дзен) → iframe по сохранённому src
  *   - kinescope: iframe kinescope.io/embed/<embedId>
+ *   - stream:    CF-iframe с signed-токеном
  */
+type SelfData = {
+  master: string
+  poster?: string | null
+  sprite?: string | null
+  subtitles?: { lang: string; label: string; url: string }[]
+  chapters?: { start: number; title: string }[]
+}
+type Player = { kind: 'iframe'; src: string } | { kind: 'self'; data: SelfData }
+
 export function VideoPreviewModal({
   videoId,
   title,
@@ -19,7 +31,7 @@ export function VideoPreviewModal({
   title: string
   onClose: () => void
 }) {
-  const [src, setSrc] = useState<string | null>(null)
+  const [player, setPlayer] = useState<Player | null>(null)
   const [error, setError] = useState<string | null>(null)
   // Портал в body работает только на клиенте — монтируемся после гидрации.
   const [mounted, setMounted] = useState(false)
@@ -38,10 +50,20 @@ export function VideoPreviewModal({
           setError(json.error || 'Не удалось получить доступ к видео')
           return
         }
-        if (json.provider === 'kinescope') {
-          setSrc(json.embedId ? `https://kinescope.io/embed/${json.embedId}` : null)
+        if (json.provider === 'self') {
+          if (json.status !== 'ready' || !json.master) {
+            setError(json.status === 'error' ? 'Обработка видео завершилась ошибкой' : 'Видео ещё обрабатывается — превью будет доступно после кодирования')
+            return
+          }
+          setPlayer({ kind: 'self', data: { master: json.master, poster: json.poster, sprite: json.sprite, subtitles: json.subtitles, chapters: json.chapters } })
+        } else if (json.provider === 'embed') {
+          if (!json.src) { setError('У видео нет корректной ссылки'); return }
+          setPlayer({ kind: 'iframe', src: String(json.src) })
+        } else if (json.provider === 'kinescope') {
+          if (!json.embedId) { setError('Не удалось собрать плеер'); return }
+          setPlayer({ kind: 'iframe', src: `https://kinescope.io/embed/${json.embedId}` })
         } else if (json.token && json.customerCode) {
-          setSrc(`https://customer-${json.customerCode}.cloudflarestream.com/${json.token}/iframe`)
+          setPlayer({ kind: 'iframe', src: `https://customer-${json.customerCode}.cloudflarestream.com/${json.token}/iframe` })
         } else {
           setError('Не удалось собрать плеер')
         }
@@ -74,14 +96,22 @@ export function VideoPreviewModal({
                 <AlertCircle size={22} />
                 <span>{error}</span>
               </div>
-            ) : !src ? (
+            ) : !player ? (
               <div className="vidplay__msg">
                 <Loader2 size={22} className="spin" />
                 <span>Загрузка плеера…</span>
               </div>
+            ) : player.kind === 'self' ? (
+              <SelfHostedPlayer
+                master={player.data.master}
+                poster={player.data.poster}
+                sprite={player.data.sprite}
+                subtitles={player.data.subtitles}
+                chapters={player.data.chapters}
+              />
             ) : (
               <iframe
-                src={src}
+                src={player.src}
                 style={{ border: 'none', position: 'absolute', inset: 0, width: '100%', height: '100%' }}
                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                 allowFullScreen
