@@ -5587,3 +5587,10 @@ a.session-expired__btn {
   border-radius: 9px; font-size: 11px; font-weight: 700; line-height: 1;
   background: #dc2626; color: #fff;
 }
+
+/* Кнопка-«ссылка» на экранах входа (переключение способов входа) */
+.studio-linklike {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--st-accent, inherit); font: inherit; text-decoration: underline;
+}
+.studio-linklike:disabled { opacity: .6; cursor: default; }

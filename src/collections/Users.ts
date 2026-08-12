@@ -59,6 +59,22 @@ export const Users: CollectionConfig = {
       admin: { description: 'Отображаемое имя автора (заполняется при регистрации).' },
     },
     {
+      // Основной ID для входа по SMS. Уникален глобально (как email в auth).
+      // У старых email-авторов пуст; заполняется при регистрации по телефону.
+      name: 'phone',
+      type: 'text',
+      unique: true,
+      index: true,
+      label: 'Телефон',
+      admin: { description: 'Вход по SMS. Уникален глобально.' },
+    },
+    {
+      name: 'phoneVerified',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { hidden: true },
+    },
+    {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',
