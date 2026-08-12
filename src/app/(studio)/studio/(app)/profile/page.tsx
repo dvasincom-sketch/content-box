@@ -2,6 +2,7 @@ import React from 'react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor } from '@/lib/currentAuthor'
+import { formatPhone } from '@/lib/phone'
 import { ProfileView } from './ProfileView'
 
 /**
@@ -39,6 +40,7 @@ export default async function ProfilePage() {
   return (
     <ProfileView
       email={author!.user.email}
+      phone={(author!.user as any).phone ? formatPhone(String((author!.user as any).phone)) : null}
       roleLabel={ROLE_LABELS[role] || role}
       tenantName={tenantName}
     />

@@ -2,14 +2,16 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Mail, Shield, Building2, LogOut, Check, Loader2 } from 'lucide-react'
+import { Mail, Phone, Shield, Building2, LogOut, Check, Loader2 } from 'lucide-react'
 
 export function ProfileView({
   email,
+  phone,
   roleLabel,
   tenantName,
 }: {
   email: string
+  phone: string | null
   roleLabel: string
   tenantName: string
 }) {
@@ -23,7 +25,8 @@ export function ProfileView({
       </div>
 
       <div className="settings">
-        <InfoBlock email={email} roleLabel={roleLabel} tenantName={tenantName} />
+        <InfoBlock email={email} phone={phone} roleLabel={roleLabel} tenantName={tenantName} />
+        <PhoneBlock currentPhone={phone} />
         <PasswordBlock />
         <EmailBlock currentEmail={email} />
         <LogoutBlock />
@@ -33,7 +36,7 @@ export function ProfileView({
 }
 
 /* Инфо (просмотр) */
-function InfoBlock({ email, roleLabel, tenantName }: { email: string; roleLabel: string; tenantName: string }) {
+function InfoBlock({ email, phone, roleLabel, tenantName }: { email: string; phone: string | null; roleLabel: string; tenantName: string }) {
   return (
     <section className="settings__block">
       <div className="settings__block-head">
@@ -47,6 +50,11 @@ function InfoBlock({ email, roleLabel, tenantName }: { email: string; roleLabel:
           <span className="profile__info-value">{email}</span>
         </div>
         <div className="profile__info-row">
+          <Phone size={16} className="profile__info-icon" />
+          <span className="profile__info-label">Телефон</span>
+          <span className="profile__info-value">{phone || 'не привязан'}</span>
+        </div>
+        <div className="profile__info-row">
           <Shield size={16} className="profile__info-icon" />
           <span className="profile__info-label">Роль</span>
           <span className="profile__info-value">{roleLabel}</span>
@@ -57,6 +65,88 @@ function InfoBlock({ email, roleLabel, tenantName }: { email: string; roleLabel:
             <span className="profile__info-label">Сайт</span>
             <span className="profile__info-value">{tenantName}</span>
           </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+/* Телефон: привязка/смена по SMS-коду */
+function PhoneBlock({ currentPhone }: { currentPhone: string | null }) {
+  const router = useRouter()
+  const [phone, setPhone] = useState('')
+  const [code, setCode] = useState('')
+  const [step, setStep] = useState<'phone' | 'code'>('phone')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+
+  async function sendCode() {
+    setError(null); setDone(false)
+    if (!phone.trim()) { setError('Введите номер телефона'); return }
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/auth/phone/request', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ phone, mode: 'register' }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(json.error || 'Не удалось отправить код'); setBusy(false); return }
+      setStep('code'); setBusy(false)
+    } catch { setError('Ошибка соединения'); setBusy(false) }
+  }
+
+  async function saveCode() {
+    setError(null)
+    if (code.replace(/\D/g, '').length < 4) { setError('Введите код из SMS'); return }
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/profile/phone', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ phone, code }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(json.error || 'Не удалось сохранить'); setBusy(false); return }
+      setDone(true); setStep('phone'); setCode(''); setPhone(''); setBusy(false)
+      router.refresh()
+    } catch { setError('Ошибка соединения'); setBusy(false) }
+  }
+
+  return (
+    <section className="settings__block">
+      <div className="settings__block-head">
+        <h2>Телефон</h2>
+        <p>{currentPhone ? 'Вход в студию по SMS-коду. Можно изменить номер.' : 'Привяжите номер, чтобы входить в студию по SMS-коду.'}</p>
+      </div>
+      <div className="profile__form">
+        {step === 'phone' ? (
+          <>
+            <label className="studio-field">
+              <span className="studio-field__label">{currentPhone ? 'Новый номер' : 'Номер телефона'}</span>
+              <input className="studio-input" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 900 000-00-00" />
+            </label>
+            {error && <div className="settings__err">{error}</div>}
+            <div className="settings__save-row">
+              {done && <span className="settings__saved"><Check size={15} /> Телефон привязан</span>}
+              <button className="studio-btn studio-btn--primary" onClick={sendCode} disabled={busy}>
+                {busy ? <Loader2 size={16} className="spin" /> : null} Получить код
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <label className="studio-field">
+              <span className="studio-field__label">Код из SMS</span>
+              <input className="studio-input" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} placeholder="______" autoFocus />
+            </label>
+            {error && <div className="settings__err">{error}</div>}
+            <div className="settings__save-row">
+              <button className="studio-btn studio-btn--ghost" onClick={() => { setStep('phone'); setError(null) }} disabled={busy}>Изменить номер</button>
+              <button className="studio-btn studio-btn--primary" onClick={saveCode} disabled={busy}>
+                {busy ? <Loader2 size={16} className="spin" /> : null} Подтвердить
+              </button>
+            </div>
+          </>
         )}
       </div>
     </section>
