@@ -36,7 +36,7 @@ const POLL_INTERVAL_MS = process.env.POLL_INTERVAL_MS || '5000'
 const MAX_ATTEMPTS = process.env.MAX_ATTEMPTS || '3'
 // Жёсткий предохранитель: один ffmpeg-прогон не может длиться вечно (иначе
 // зависший процесс блокирует очередь навсегда — конкурентность 1).
-const FFMPEG_TIMEOUT_MS = Number(process.env.FFMPEG_TIMEOUT_MS || 2 * 60 * 60 * 1000)
+const FFMPEG_TIMEOUT_MS = Number(process.env.FFMPEG_TIMEOUT_MS || 4 * 60 * 60 * 1000)
 
 // Авто-субтитры: self-hosted whisper.cpp (без платных API). Бинарник и ggml-модель
 // кладёт Dockerfile (отдельная стадия). Стадия НЕобязательная: при ошибке или
@@ -69,10 +69,15 @@ const s3 = new S3Client({
 })
 
 // Лесенка качеств. Рендишены выше исходника отбрасываем (не апскейлим).
+// Кодируем по КАЧЕСТВУ (CRF, как HandBrake), а не по фиксированному битрету:
+// кодек тратит биты только там, где нужно → простые ролики (разговоры/фанкамы)
+// становятся заметно легче без видимой потери. maxrate/bufsize — только ПОТОЛОК
+// для стабильного ABR (capped CRF). peak (кбит/с) идёт в BANDWIDTH мастер-плейлиста.
+// Профиль «максимальное сжатие»: CRF 23/24/25 + preset slow.
 const LADDER = [
-  { height: 1080, vb: 5000, maxrate: '5350k', bufsize: '7500k', ab: 128 },
-  { height: 720, vb: 2800, maxrate: '2996k', bufsize: '4200k', ab: 128 },
-  { height: 480, vb: 1400, maxrate: '1498k', bufsize: '2100k', ab: 96 },
+  { height: 1080, crf: 23, maxrate: '6000k', bufsize: '9000k', peak: 6000, ab: 128 },
+  { height: 720, crf: 24, maxrate: '3500k', bufsize: '5000k', peak: 3500, ab: 128 },
+  { height: 480, crf: 25, maxrate: '1800k', bufsize: '2700k', peak: 1800, ab: 96 },
 ]
 
 const CT = {
@@ -206,14 +211,14 @@ async function buildHls(input, outDir, meta) {
 
   const args = ['-y', '-i', input, '-filter_complex', filter]
   renditions.forEach((r, i) => {
-    args.push('-map', `[v${i}out]`, `-c:v:${i}`, 'libx264', `-b:v:${i}`, `${r.vb}k`, `-maxrate:v:${i}`, r.maxrate, `-bufsize:v:${i}`, r.bufsize)
+    args.push('-map', `[v${i}out]`, `-c:v:${i}`, 'libx264', `-crf:v:${i}`, String(r.crf), `-maxrate:v:${i}`, r.maxrate, `-bufsize:v:${i}`, r.bufsize)
   })
   if (meta.hasAudio) {
     renditions.forEach((r, i) => args.push('-map', 'a:0', `-c:a:${i}`, 'aac', `-b:a:${i}`, `${r.ab}k`, '-ac', '2'))
   }
   const vsm = renditions.map((_, i) => (meta.hasAudio ? `v:${i},a:${i}` : `v:${i}`)).join(' ')
   args.push(
-    '-preset', 'veryfast', '-g', '48', '-keyint_min', '48', '-sc_threshold', '0',
+    '-preset', 'slow', '-g', '48', '-keyint_min', '48', '-sc_threshold', '0',
     '-hls_time', '6', '-hls_playlist_type', 'vod', '-hls_flags', 'independent_segments',
     '-hls_segment_type', 'mpegts', '-master_pl_name', 'master.m3u8',
     '-var_stream_map', vsm,
@@ -222,7 +227,7 @@ async function buildHls(input, outDir, meta) {
   )
   await run('nice', ['-n', '10', 'ffmpeg', ...args], {}, FFMPEG_TIMEOUT_MS)
 
-  return renditions.map((r, i) => ({ height: r.height, bandwidth: (r.vb + (meta.hasAudio ? r.ab : 0)) * 1000, index: i }))
+  return renditions.map((r, i) => ({ height: r.height, bandwidth: (r.peak + (meta.hasAudio ? r.ab : 0)) * 1000, index: i }))
 }
 
 async function makePoster(input, out, t) {
