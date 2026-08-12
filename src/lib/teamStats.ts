@@ -83,7 +83,7 @@ export async function getTeamStats(payload: Payload, tenantId: number | string, 
     // C. Участники тенанта (без суперадминов).
     const usersSql = `
       SELECT id, COALESCE(name, '') AS name, COALESCE(email, '') AS email,
-             COALESCE(tenant_role, '') AS role, COALESCE(disabled, false) AS disabled
+             COALESCE(tenant_role::text, '') AS role, COALESCE(disabled, false) AS disabled
       FROM users
       WHERE tenant_id = $1 AND (platform_role IS NULL OR platform_role <> 'superadmin')
       ORDER BY tenant_role, name`
