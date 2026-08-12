@@ -273,13 +273,21 @@ export default async function HomePage() {
   // Маппинг type → рендер секции. Пропсы собраны ровно как в прежнем JSX;
   // авто-скрытие при пустых данных остаётся внутри блок-компонентов.
   const renderers: Partial<Record<HomeSectionType, (inst: HomeSectionConfig) => ReactNode>> = {
-    hero: () => (
-      <HeroBlock
-        eyebrow={settings?.hero?.eyebrow || undefined}
-        titleLines={resolveHeroTitleLines(settings?.hero?.titleLines, tenant?.name)}
-        slides={heroSlides}
-      />
-    ),
+    hero: () => {
+      // Категории-чипсы Hero — под заголовком (см. HeroBlock), настраиваются в
+      // конструкторе главной, секция «Заголовок (Hero)».
+      const heroChipList = ((settings?.heroChips ?? []) as any[])
+        .filter((c) => c && typeof c === 'object' && c.slug)
+        .map((c) => ({ title: c.title, href: categoryHref(c) }))
+      return (
+        <HeroBlock
+          eyebrow={settings?.hero?.eyebrow || undefined}
+          titleLines={resolveHeroTitleLines(settings?.hero?.titleLines, tenant?.name)}
+          chips={heroChipList}
+          slides={heroSlides}
+        />
+      )
+    },
     heroTeam: () => (
       <HeroTeamBlock
         members={(settings?.heroTeam?.members ?? []) as any[]}
@@ -288,15 +296,12 @@ export default async function HomePage() {
       />
     ),
     search: () => {
-      // Быстрые чипсы: популярные разделы (авто); если их нет — фолбэк на
-      // hero-чипсы тенанта, чтобы ряд не пропадал.
+      // Быстрые чипсы под поиском — только «популярные разделы» (авто).
+      // Hero-чипсы теперь живут под заголовком Hero (см. рендер hero выше).
       const popular = feed.popularCategories
         .slice(0, 6)
         .map((c) => ({ title: c.title, href: c.href }))
-      const heroChipList = ((settings?.heroChips ?? []) as any[])
-        .filter((c) => c && typeof c === 'object' && c.slug)
-        .map((c) => ({ title: c.title, href: categoryHref(c) }))
-      return <SearchBlock chips={popular.length ? popular : heroChipList} />
+      return <SearchBlock chips={popular} />
     },
     posterRows: () => (
       <>
