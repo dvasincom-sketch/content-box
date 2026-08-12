@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     try {
       const payload = await getPayload({ config: await config })
       const n = typeof result.totalHits === 'number' ? result.totalHits : 0
-      await logSearchQuery(payload, tenant.id as number, q, n)
+      await logSearchQuery(payload, Number(tenant.id), q, n)
     } catch { /* лог не критичен */ }
   }
 
