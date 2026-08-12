@@ -8,7 +8,7 @@ import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
   Upload, X, Play, Folder, Pencil, ChevronRight, ChevronDown,
   ChevronLeft, Search, MapPin, Globe, AlertTriangle,
-  ArrowDownWideNarrow, ArrowUpNarrowWide, Settings,
+  ArrowDownWideNarrow, ArrowUpNarrowWide, Settings, Info,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { StudioSelect } from '../_ui/StudioSelect'
@@ -889,7 +889,7 @@ export function AddPanel({
           {profileOpen && profilePos && typeof document !== 'undefined' && createPortal(
             <>
               <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1200 }} />
-              <div style={{ position: 'fixed', left: profilePos.left, top: profilePos.top, width: 300, maxHeight: 'min(80vh, 580px)', overflowY: 'auto', zIndex: 1201, background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 14px 44px rgba(0,0,0,.24)', padding: 12 }}>
+              <div className="studio-portal" style={{ position: 'fixed', left: profilePos.left, top: profilePos.top, width: 300, maxHeight: 'min(80vh, 580px)', overflowY: 'auto', zIndex: 1201, background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 14px 44px rgba(0,0,0,.24)', padding: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--st-text)' }}>Профиль сжатия</span>
                   <button type="button" onClick={() => setProfileOpen(false)} aria-label="Закрыть" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--st-text-muted)', display: 'grid', placeItems: 'center', padding: 2 }}><X size={16} /></button>
@@ -910,7 +910,10 @@ export function AddPanel({
                           {active && <Check size={14} style={{ color: 'var(--st-accent)', marginLeft: 'auto' }} />}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--st-text)', opacity: 0.85, marginTop: 2 }}>{pr.opt}</div>
-                        <div style={{ fontSize: 11.5, color: 'var(--st-text-muted)', marginTop: 1 }}>Ценой: {pr.cost}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--st-text-muted)', marginTop: 3 }}>
+                          <Info size={12} style={{ flex: 'none', opacity: 0.8 }} />
+                          <span>{pr.cost}</span>
+                        </div>
                       </button>
                     )
                   })}
