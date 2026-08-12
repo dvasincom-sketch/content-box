@@ -88,10 +88,20 @@ export async function getTeamStats(payload: Payload, tenantId: number | string, 
       WHERE tenant_id = $1 AND (platform_role IS NULL OR platform_role <> 'superadmin')
       ORDER BY tenant_role, name`
 
+    // Каждый запрос — со своим catch: если журнал studio_activity недоступен,
+    // список участников (usersSql) всё равно покажем. Ошибку логируем.
+    const q = async (label: string, text: string, params: unknown[]) => {
+      try {
+        return await pool.query(text, params)
+      } catch (e) {
+        console.error(`[teamStats] ${label}:`, (e as Error)?.message || e)
+        return { rows: [] as Array<Record<string, unknown>> }
+      }
+    }
     const [dailyR, prodR, usersR] = await Promise.all([
-      pool.query(dailySql, [tenantId, since]),
-      pool.query(prodSql, [tenantId, since]),
-      pool.query(usersSql, [tenantId]),
+      q('daily', dailySql, [tenantId, since]),
+      q('prod', prodSql, [tenantId, since]),
+      q('users', usersSql, [tenantId]),
     ])
 
     const dailyByUser = new Map<number, { day: string; minutes: number }[]>()
@@ -141,7 +151,8 @@ export async function getTeamStats(payload: Payload, tenantId: number | string, 
     // Активные — вперёд (по числу материалов, затем по времени).
     members.sort((a, b) => b.materials - a.materials || b.activeMinutes - a.activeMinutes)
     return { periodDays: period, members }
-  } catch {
+  } catch (e) {
+    console.error('[teamStats] fatal:', (e as Error)?.message || e)
     return null
   }
 }

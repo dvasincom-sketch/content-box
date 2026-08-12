@@ -423,6 +423,9 @@ export default async function PublicationPage({ params }: { params: Promise<Para
                         loginRedirect={`/publication/${slug}`}
                       />
                     )}
+                    {/* Просмотр видео внутри публикации (в т.ч. VK-embed) — иначе
+                        в аналитике «Зрителей» по видео всегда 0. */}
+                    {allowed && <ViewTracker targetType="video" targetId={video.id} />}
                     {allowed && video?.provider === 'self' && ((Array.isArray(video.subtitles) && video.subtitles.length > 0) || video.summary) ? (
                       <div style={{ marginTop: 16 }}>
                         <AsyaSummary videoId={video.id} minPrice={ASYA_MIN_TIER_PRICE} />

@@ -88,11 +88,19 @@ export async function getVideoAggStats(payload: Payload, tenantId: number | stri
       ORDER BY starts DESC NULLS LAST, viewers DESC NULLS LAST
       LIMIT 50`
 
+    // Каждый запрос — со своим catch: отсутствие одной таблицы (напр. views до
+    // миграции) не должно обнулять весь раздел. Ошибку логируем — иначе
+    // «нет данных» невозможно отличить от упавшего запроса.
+    const q = async (label: string, text: string) => {
+      try {
+        return await pool.query(text, [tenantId])
+      } catch (e) {
+        console.error(`[videoAggStats] ${label}:`, (e as Error)?.message || e)
+        return { rows: [] as Array<Record<string, unknown>> }
+      }
+    }
     const [totalsR, viewersR, countR, rowsR] = await Promise.all([
-      pool.query(totalsSql, [tenantId]),
-      pool.query(viewersSql, [tenantId]),
-      pool.query(countSql, [tenantId]),
-      pool.query(rowsSql, [tenantId]),
+      q('totals', totalsSql), q('viewers', viewersSql), q('count', countSql), q('rows', rowsSql),
     ])
 
     const t = totalsR.rows[0] || {}
@@ -122,7 +130,8 @@ export async function getVideoAggStats(payload: Payload, tenantId: number | stri
       end: pct(num(t.ends)),
       rows,
     }
-  } catch {
+  } catch (e) {
+    console.error('[videoAggStats] fatal:', (e as Error)?.message || e)
     return null
   }
 }
