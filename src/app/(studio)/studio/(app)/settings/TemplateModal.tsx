@@ -57,7 +57,7 @@ export function TemplateModal({
 
   const sections = tpl.sections.filter((s) => s.enabled !== false)
 
-  async function apply(mode: 'overwrite' | 'merge') {
+  async function apply(mode: 'overwrite' | 'merge' | 'theme') {
     setError(null)
     setBusy(mode)
     try {
@@ -177,15 +177,32 @@ export function TemplateModal({
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end', padding: '14px 20px', borderTop: '1px solid var(--st-border)' }}>
           <button className="studio-btn studio-btn--ghost" onClick={onClose} disabled={!!busy}>Отмена</button>
-          {tpl.source === 'base' && (
-            <button className="studio-btn studio-btn--ghost" onClick={() => apply('merge')} disabled={!!busy} title="Добавить секции шаблона, которых нет; тему и тексты не трогать">
-              {busy === 'merge' ? <Loader2 size={16} className="spin" /> : null} Добавить недостающее
+          {tpl.source === 'base' ? (
+            <>
+              <button
+                className="studio-btn studio-btn--ghost"
+                onClick={() => apply('theme')}
+                disabled={!!busy}
+                title="Только оформление: цвета, шрифты, фон. Секции конструктора главной не меняются."
+              >
+                {busy === 'theme' ? <Loader2 size={16} className="spin" /> : null} Применить оформление
+              </button>
+              <button
+                className="studio-btn studio-btn--primary"
+                onClick={() => apply('merge')}
+                disabled={!!busy}
+                title="Оформление + недостающие секции добавляются в конструктор главной. Существующие секции и тексты не удаляются."
+              >
+                {busy === 'merge' ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
+                Оформление и секции
+              </button>
+            </>
+          ) : (
+            <button className="studio-btn studio-btn--primary" onClick={() => apply('overwrite')} disabled={!!busy}>
+              {busy === 'overwrite' ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
+              Применить
             </button>
           )}
-          <button className="studio-btn studio-btn--primary" onClick={() => apply('overwrite')} disabled={!!busy}>
-            {busy === 'overwrite' ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
-            {tpl.source === 'user' ? 'Применить' : 'Применить шаблон'}
-          </button>
         </div>
       </div>
     </div>

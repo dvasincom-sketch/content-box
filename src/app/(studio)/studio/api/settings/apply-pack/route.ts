@@ -7,9 +7,10 @@ import { logActivity } from '@/lib/logActivity'
 
 /**
  * Применение пака (шаблона) главной. SiteSettings — одна запись на тенант.
- * Body: { packId, mode: 'overwrite' | 'merge' }.
- *  - overwrite: тема + секции + стартовые тексты заменяют текущие;
- *  - merge: к текущим секциям добавляются недостающие из пака (тема/тексты — как есть).
+ * Body: { packId, mode: 'theme' | 'merge' | 'overwrite', themePreset? }.
+ *  - theme: применяем только оформление (тему), секции/тексты не трогаем;
+ *  - merge: тема + к текущим секциям добавляются недостающие из пака (существующие не удаляются);
+ *  - overwrite: тема + секции + стартовые тексты полностью заменяют текущие.
  */
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (!(authorCan(author, 'appearance', 'manage') && authorCan(author, 'home', 'manage'))) return apiError('Недостаточно прав', 403)
@@ -18,7 +19,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
   const pack = getHomePack(String(data.packId || ''))
   if (!pack) return apiError('Неизвестный шаблон')
-  const mode: 'overwrite' | 'merge' = data.mode === 'merge' ? 'merge' : 'overwrite'
+  const mode: 'theme' | 'merge' | 'overwrite' =
+    data.mode === 'merge' ? 'merge' : data.mode === 'theme' ? 'theme' : 'overwrite'
   // Тема, выбранная в окне шаблона (переопределяет рекомендованную паком).
   const themeOverride = typeof data.themePreset === 'string' ? data.themePreset : null
 
@@ -42,12 +44,15 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
   const patch: Record<string, unknown> = {}
 
+  // Тема (оформление): переопределение из окна > рекомендованная паком. Применяется
+  // во всех режимах — и «только оформление», и «оформление + секции».
+  const theme = themeOverride && PRESET_IDS.includes(themeOverride)
+    ? themeOverride
+    : (PRESET_IDS.includes(pack.themePreset) ? pack.themePreset : null)
+  if (theme) patch.themePreset = theme
+  patch.appliedTemplate = pack.id
+
   if (mode === 'overwrite') {
-    const theme = themeOverride && PRESET_IDS.includes(themeOverride)
-      ? themeOverride
-      : (PRESET_IDS.includes(pack.themePreset) ? pack.themePreset : null)
-    if (theme) patch.themePreset = theme
-    patch.appliedTemplate = pack.id
     patch.homeSections = packSections
     if (pack.content?.hero) {
       const cur = ((settings as { hero?: Record<string, unknown> }).hero) ?? {}
@@ -57,9 +62,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       const cur = ((settings as { banner?: Record<string, unknown> }).banner) ?? {}
       patch.banner = { ...cur, ...pack.content.banner }
     }
-  } else {
-    // merge: за базу берём ЭФФЕКТИВНЫЙ текущий набор (пусто → дефолт), добавляем
-    // недостающие секции пака в конец. Тему и тексты не трогаем.
+  } else if (mode === 'merge') {
+    // За базу — ЭФФЕКТИВНЫЙ текущий набор (пусто → дефолт), добавляем недостающие
+    // секции пака в конец. Существующие секции и тексты не трогаем.
     const current = normalizeHomeSections((settings as { homeSections?: unknown }).homeSections)
     const seen = new Set<HomeSectionType>(current.map((s) => s.type))
     const merged = [...current]
@@ -71,6 +76,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     }
     patch.homeSections = merged
   }
+  // mode === 'theme': только оформление — секции/тексты не трогаем (patch уже с темой).
 
   try {
     await payload.update({
