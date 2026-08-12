@@ -61,6 +61,20 @@ const SEG_WRAP: React.CSSProperties = {
   display: 'inline-flex', border: '1px solid var(--st-border)', borderRadius: 8,
   overflow: 'hidden', background: 'var(--st-surface)',
 }
+const COUNT_PILL: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 18, height: 18,
+  padding: '0 5px', borderRadius: 9, fontSize: 11, fontWeight: 700, color: '#fff', lineHeight: 1,
+}
+/** Уровень статуса для счётчиков/фильтра «проблемные»:
+ *  broken (красный) — недоступно/ошибка; processing (оранжевый) — идёт обработка. */
+function videoState(v: Vid): 'ok' | 'broken' | 'processing' {
+  if (v.embedStatus === 'unavailable') return 'broken'
+  if (v.provider === 'self') {
+    if (v.assetStatus === 'error') return 'broken'
+    if (v.assetStatus && v.assetStatus !== 'ready') return 'processing'
+  }
+  return 'ok'
+}
 const PAGER_BTN: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32,
   borderRadius: 8, border: '1px solid var(--st-border)', background: 'var(--st-surface)', color: 'var(--st-text)', cursor: 'pointer',
@@ -186,6 +200,7 @@ export function VideosManager({
   const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState<string>(FILTER_ALL) // FILTER_ALL | FILTER_NONE | categoryId
   const [providerFilter, setProviderFilter] = useState<string>(PROVIDER_ALL)
+  const [problemFilter, setProblemFilter] = useState(false)
   const [sortDir, setSortDir] = useState<'new' | 'old'>('new')
   const [per, setPer] = useState<number>(25)
   const [page, setPage] = useState<number>(1)
@@ -217,6 +232,10 @@ export function VideosManager({
     () => videos.filter((v) => v.embedStatus === 'unavailable').length,
     [videos],
   )
+  // Счётчики по ВСЕЙ библиотеке для чипа «Проблемные»: broken (красный),
+  // processing (оранжевый — идёт обработка/загрузка).
+  const brokenCount = useMemo(() => videos.filter((v) => videoState(v) === 'broken').length, [videos])
+  const processingCount = useMemo(() => videos.filter((v) => videoState(v) === 'processing').length, [videos])
 
   const filteredVideos = useMemo(() => {
     let out = videos
@@ -225,8 +244,9 @@ export function VideosManager({
     else if (filter !== FILTER_ALL) out = out.filter((v) => String(v.categoryId) === filter)
     if (providerFilter === PROVIDER_SELF) out = out.filter((v) => v.provider === 'self')
     else if (providerFilter === PROVIDER_EXTERNAL) out = out.filter((v) => v.provider !== 'self')
+    if (problemFilter) out = out.filter((v) => videoState(v) !== 'ok')
     return out
-  }, [videos, filter, providerFilter])
+  }, [videos, filter, providerFilter, problemFilter])
 
   const sortedVideos = useMemo(() => {
     const arr = [...filteredVideos]
@@ -246,7 +266,7 @@ export function VideosManager({
     [sortedVideos, curPage, per],
   )
   // Смена фильтра/сортировки/размера страницы — сбрасываем на первую страницу.
-  useEffect(() => { setPage(1) }, [filter, providerFilter, sortDir, per])
+  useEffect(() => { setPage(1) }, [filter, providerFilter, problemFilter, sortDir, per])
 
   const sectionFilterLabel = useMemo(() => {
     if (filter === FILTER_ALL) return `Все видео (${videos.length})`
@@ -314,6 +334,24 @@ export function VideosManager({
         </div>
 
         <div className="folderbar__filter" style={{ marginLeft: 'auto', flexWrap: 'wrap' }}>
+          {(brokenCount > 0 || processingCount > 0) && (
+            <button
+              type="button"
+              onClick={() => setProblemFilter((v) => !v)}
+              title={`Требуют внимания — недоступны/ошибка: ${brokenCount}, в обработке: ${processingCount}. Клик — показать только их.`}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                border: `1px solid ${problemFilter ? 'transparent' : 'var(--st-border)'}`,
+                background: problemFilter ? 'var(--st-accent)' : 'var(--st-surface)',
+                color: problemFilter ? 'var(--st-accent-text, #fff)' : 'var(--st-text)',
+              }}
+            >
+              <AlertTriangle size={14} />
+              Проблемные
+              {brokenCount > 0 && <span style={{ ...COUNT_PILL, background: '#dc2626' }}>{brokenCount}</span>}
+              {processingCount > 0 && <span style={{ ...COUNT_PILL, background: '#f59e0b' }}>{processingCount}</span>}
+            </button>
+          )}
           <div style={SEG_WRAP}>
             {[{ v: PROVIDER_ALL, l: 'Все' }, { v: PROVIDER_EXTERNAL, l: 'Внешние' }, { v: PROVIDER_SELF, l: 'Загруженные' }].map((o) => (
               <button key={o.v} type="button" onClick={() => setProviderFilter(o.v)} style={segBtn(providerFilter === o.v)}>{o.l}</button>
@@ -621,12 +659,12 @@ function VideoRow({
           ) : video.assetStatus === 'error' ? (
             <span className="vid__status" style={{ color: '#dc2626' }}><AlertTriangle size={13} /> Ошибка</span>
           ) : (
-            <span className="vid__status vid__status--wait"><Loader2 size={13} className="spin" /> Обрабатывается</span>
+            <span className="vid__status" style={{ color: '#f59e0b' }}><Loader2 size={13} className="spin" /> Обрабатывается</span>
           )
         ) : isEmbed ? (
           <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
         ) : ready === false ? (
-          <span className="vid__status vid__status--wait"><Loader2 size={13} className="spin" /> Кодируется{pct ? ` ${pct}%` : ''}</span>
+          <span className="vid__status" style={{ color: '#f59e0b' }}><Loader2 size={13} className="spin" /> Кодируется{pct ? ` ${pct}%` : ''}</span>
         ) : ready === true ? (
           <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
         ) : ready === null && video.videoRef ? (

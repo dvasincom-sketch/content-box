@@ -56,6 +56,30 @@ export default async function StudioAppLayout({ children }: { children: React.Re
   } catch {
     /* дефолт при ошибке */
   }
+
+  // Красный бейдж «Видео» в сайдбаре: число битых видео тенанта
+  // (внешняя вставка недоступна или ошибка транскодинга своего видео).
+  let videosBadge = 0
+  try {
+    const payload = await getPayload({ config: await config })
+    const r = await payload.count({
+      collection: 'videos',
+      where: {
+        and: [
+          { tenant: { equals: author.tenantId } },
+          { provider: { not_equals: 'audio' } },
+          { or: [
+            { embedStatus: { equals: 'unavailable' } },
+            { and: [{ provider: { equals: 'self' } }, { assetStatus: { equals: 'error' } }] },
+          ] },
+        ],
+      },
+      overrideAccess: true,
+    })
+    videosBadge = r.totalDocs || 0
+  } catch {
+    /* бейдж не критичен */
+  }
   const nav = { books: canUse(ent, 'books'), media: canUse(ent, 'media'), frozen: !!ent?.studioFrozen }
   const isOwner = (author.user as { tenantRole?: string | null }).tenantRole !== 'contributor'
   const abilities = capabilitiesOf(author.user as any)
@@ -76,6 +100,7 @@ export default async function StudioAppLayout({ children }: { children: React.Re
         isOwner={isOwner}
         isSuperadmin={author.isSuperadmin}
         abilities={abilities}
+        videosBadge={videosBadge}
       />
       <main className="studio-main">
         {nav.frozen && (

@@ -38,7 +38,7 @@ function isActive(pathname: string, item: NavItem): boolean {
   return pathname === item.href || pathname.startsWith(item.href + '/')
 }
 
-export function StudioNav({ authorEmail, brandName, nav, isOwner = true, isSuperadmin = false, abilities }: { authorEmail: string; brandName: string; nav?: { books: boolean; media: boolean; frozen: boolean }; isOwner?: boolean; isSuperadmin?: boolean; abilities?: CapMatrix }) {
+export function StudioNav({ authorEmail, brandName, nav, isOwner = true, isSuperadmin = false, abilities, videosBadge = 0 }: { authorEmail: string; brandName: string; nav?: { books: boolean; media: boolean; frozen: boolean }; isOwner?: boolean; isSuperadmin?: boolean; abilities?: CapMatrix; videosBadge?: number }) {
   const pathname = usePathname()
   const canSettings = isOwner || SETTINGS_MANAGE_KEYS.some((k) => hasCap(abilities, k, 'manage'))
 
@@ -137,6 +137,9 @@ export function StudioNav({ authorEmail, brandName, nav, isOwner = true, isSuper
                 >
                   <span className="studio-nav__icon">{item.icon}</span>
                   <span>{item.label}</span>
+                  {item.href === '/studio/videos' && videosBadge > 0 && (
+                    <span className="studio-nav__badge" title={`${videosBadge} видео требуют внимания`}>{videosBadge > 99 ? '99+' : videosBadge}</span>
+                  )}
                 </Link>
               )
             })}
