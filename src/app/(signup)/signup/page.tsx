@@ -5,50 +5,35 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 /**
- * Регистрация автора (/signup) — визуальный «брат» экрана /studio/login:
- * тот же фон, стеклянная карточка и элементы формы студии (классы .studio-*).
- *
- * Два поля (имя, email). Пароль генерирует сервер (/api/register-author) и
- * возвращает один раз — показываем на экране (позже продублируем письмом).
- * После успеха: автологин (/api/users/login) → «Продолжить настройку» → /studio.
+ * Регистрация автора (/signup) по НОМЕРУ ТЕЛЕФОНА (основной ID). Два шага:
+ *   1) имя + телефон → отправляем SMS-код (/studio/api/auth/phone/request, register);
+ *   2) код → создаём проект+автора (/api/register-author-phone), автологин куки → /studio.
+ * Email автор укажет позже в профиле (для уведомлений). Пароль не нужен — вход по SMS.
  */
 export default function SignupPage() {
   const router = useRouter()
+  const [step, setStep] = useState<'form' | 'code'>('form')
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [created, setCreated] = useState<{ email: string; password: string } | null>(null)
-  const [copied, setCopied] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function sendCode(e?: React.FormEvent) {
+    if (e) e.preventDefault()
     setError(null)
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Укажите корректный email.')
-      return
-    }
+    if (!phone.trim()) { setError('Укажите номер телефона.'); return }
     setLoading(true)
     try {
-      const regRes = await fetch('/api/register-author', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name }),
-      })
-      const regData = await regRes.json().catch(() => ({}))
-      if (!regRes.ok) {
-        setError(regData.error || 'Не удалось зарегистрироваться.')
-        setLoading(false)
-        return
-      }
-      const password: string = regData.password
-      await fetch('/api/users/login', {
+      const res = await fetch('/studio/api/auth/phone/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email: regData.email, password }),
-      }).catch(() => {})
-      setCreated({ email: regData.email, password })
+        body: JSON.stringify({ phone, mode: 'register' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Не удалось отправить код.'); setLoading(false); return }
+      setStep('code')
       setLoading(false)
     } catch {
       setError('Сетевая ошибка. Попробуйте ещё раз.')
@@ -56,19 +41,31 @@ export default function SignupPage() {
     }
   }
 
-  async function copyPassword() {
-    if (!created) return
+  async function createProject(e?: React.FormEvent) {
+    if (e) e.preventDefault()
+    setError(null)
+    if (code.replace(/\D/g, '').length < 4) { setError('Введите код из SMS.'); return }
+    setLoading(true)
     try {
-      await navigator.clipboard.writeText(created.password)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      const res = await fetch('/api/register-author-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, phone, code }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Не удалось создать проект.'); setLoading(false); return }
+      // Сессия уже выставлена сервером — идём в студию (онбординг).
+      router.replace('/studio')
+      router.refresh()
     } catch {
-      /* clipboard недоступен */
+      setError('Сетевая ошибка. Попробуйте ещё раз.')
+      setLoading(false)
     }
   }
 
-  function onKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter') handleSubmit(e as unknown as React.FormEvent)
+  function onKeyDown(e: React.KeyboardEvent, fn: () => void) {
+    if (e.key === 'Enter') fn()
   }
 
   return (
@@ -78,100 +75,87 @@ export default function SignupPage() {
       </div>
 
       <div className="studio-login__card">
-        {!created ? (
-          <>
-            <div className="studio-login__head">
-              <h1>Создать проект</h1>
-              <p>Контент Бокс · регистрация автора</p>
-            </div>
+        <div className="studio-login__head">
+          <h1>Создать проект</h1>
+          <p>Контент Бокс · регистрация автора</p>
+        </div>
 
-            <form className="studio-login__form" onSubmit={handleSubmit}>
-              <label className="studio-field">
-                <span className="studio-field__label">Имя</span>
-                <input
-                  className="studio-input"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={onKeyDown}
-                  placeholder="Как к вам обращаться"
-                  autoComplete="name"
-                  disabled={loading}
-                  autoFocus
-                />
-              </label>
-
-              <label className="studio-field">
-                <span className="studio-field__label">Почта</span>
-                <input
-                  className="studio-input"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={onKeyDown}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  disabled={loading}
-                  required
-                />
-              </label>
-
-              {error && <div className="studio-login__error">{error}</div>}
-
-              <button
-                className="studio-btn studio-btn--primary studio-login__submit"
-                type="submit"
+        {step === 'form' ? (
+          <form className="studio-login__form" onSubmit={sendCode}>
+            <label className="studio-field">
+              <span className="studio-field__label">Имя</span>
+              <input
+                className="studio-input"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Как к вам обращаться"
+                autoComplete="name"
                 disabled={loading}
-              >
-                {loading ? 'Создаём…' : 'Создать проект'}
-              </button>
+                autoFocus
+              />
+            </label>
 
-              <p className="su-note">Пароль сгенерируем автоматически и покажем на следующем шаге — сохраните его.</p>
-            </form>
+            <label className="studio-field">
+              <span className="studio-field__label">Телефон</span>
+              <input
+                className="studio-input"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                onKeyDown={(e) => onKeyDown(e, sendCode)}
+                placeholder="+7 900 000-00-00"
+                disabled={loading}
+                required
+              />
+            </label>
 
-            <div className="su-alt">
-              Уже есть аккаунт? <a href="/studio/login">Войти</a>
-            </div>
-          </>
-        ) : (
-          <div className="su-done">
-            <div className="studio-login__head">
-              <h1>Проект создан</h1>
-              <p>Сохраните пароль — показываем один раз</p>
-            </div>
+            {error && <div className="studio-login__error">{error}</div>}
 
-            <div className="su-creds">
-              <div className="su-cred">
-                <span className="studio-field__label">Почта</span>
-                <div className="su-val">{created.email}</div>
-              </div>
-              <div className="su-cred">
-                <span className="studio-field__label">Пароль</span>
-                <div className="su-row">
-                  <code className="su-val su-pass">{created.password}</code>
-                  <button type="button" className="studio-btn su-copy" onClick={copyPassword}>
-                    {copied ? 'Скопировано' : 'Копировать'}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="su-warn">
-              Запишите пароль в надёжное место. Позже его можно сменить в настройках студии.
-            </div>
-
-            <button
-              className="studio-btn studio-btn--primary studio-login__submit"
-              type="button"
-              onClick={() => {
-                router.replace('/studio')
-                router.refresh()
-              }}
-            >
-              Продолжить настройку →
+            <button className="studio-btn studio-btn--primary studio-login__submit" type="submit" disabled={loading}>
+              {loading ? 'Отправляем…' : 'Получить код'}
             </button>
-          </div>
+
+            <p className="su-note">Подтвердим номер по SMS. Email добавите позже в профиле — для уведомлений.</p>
+          </form>
+        ) : (
+          <form className="studio-login__form" onSubmit={createProject}>
+            <label className="studio-field">
+              <span className="studio-field__label">Код из SMS</span>
+              <input
+                className="studio-input"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                onKeyDown={(e) => onKeyDown(e, createProject)}
+                placeholder="______"
+                maxLength={6}
+                disabled={loading}
+                autoFocus
+              />
+            </label>
+
+            {error && <div className="studio-login__error">{error}</div>}
+
+            <button className="studio-btn studio-btn--primary studio-login__submit" type="submit" disabled={loading}>
+              {loading ? 'Создаём…' : 'Создать проект'}
+            </button>
+
+            <p style={{ marginTop: 12, fontSize: 13, textAlign: 'center' }}>
+              <button type="button" className="studio-linklike" onClick={() => { setStep('form'); setError(null) }} disabled={loading}>
+                Изменить номер
+              </button>
+            </p>
+          </form>
         )}
+
+        <div className="su-alt">
+          Уже есть аккаунт? <a href="/studio/login">Войти</a>
+        </div>
       </div>
     </div>
   )
