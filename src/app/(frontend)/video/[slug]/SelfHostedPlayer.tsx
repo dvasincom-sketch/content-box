@@ -505,13 +505,13 @@ export function SelfHostedPlayer({
                   onMouseEnter={() => setChHover(i)}
                   onMouseLeave={() => setChHover((h) => (h === i ? -1 : h))}
                   style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%', textAlign: 'left',
+                    display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',
                     border: 'none', cursor: 'pointer', borderRadius: 8, padding: '10px 12px',
                     background: active ? 'rgba(255,255,255,.18)' : hovered ? 'rgba(255,255,255,.08)' : 'transparent',
                     color: '#fff', transition: 'background .15s ease',
                   }}
                 >
-                  <span style={{ flex: 'none', width: 52, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, color: active ? '#fff' : 'rgba(255,255,255,.6)', fontWeight: active ? 700 : 500, paddingTop: 1 }}>{fmtTime(c.start)}</span>
+                  <span style={{ flex: 'none', width: 52, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, color: active ? '#fff' : 'rgba(255,255,255,.6)', fontWeight: active ? 700 : 500 }}>{fmtTime(c.start)}</span>
                   <span style={{ flex: 1, fontSize: 14, lineHeight: 1.4, fontWeight: active ? 600 : 400 }}>{c.title}</span>
                 </button>
               )

@@ -40,6 +40,8 @@ export default function StudioRootLayout({ children }: { children: React.ReactNo
         {/* Продуктовая аналитика студии (Umami, отдельный website «студия»).
             No-op, пока не задан UMAMI_STUDIO_WEBSITE_ID и UMAMI_SCRIPT_URL. */}
         <UmamiTracker websiteId={UMAMI_STUDIO_WEBSITE_ID} />
+        {/* Своя иконка вкладки для студии (публичный сайт использует /pwa-icon тенанта). */}
+        <link rel="icon" type="image/svg+xml" href="/studio-icon.svg" />
       </head>
       <body style={{ margin: 0 }}>
         {/* Регистрируем service worker и в студии: во время деплоя апстрим лежит,

@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Search, X, ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, ListFilter } from 'lucide-react'
 import { CategoryMultiPicker, type CatItem } from '../settings/CategoryMultiPicker'
@@ -26,6 +27,9 @@ export function PostsToolbar({
   const [catOpen, setCatOpen] = useState(false)
   const [sel, setSel] = useState<string[]>(categoryIds)
   const boxRef = useRef<HTMLDivElement>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const popRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null)
   const first = useRef(true)
 
   function push(patch: Record<string, string | undefined>) {
@@ -48,6 +52,30 @@ export function PostsToolbar({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setSel(categoryIds) }, [categoryIds.join(',')])
 
+  // Позиция поповера (fixed, привязка к правому краю кнопки). Портал в body —
+  // чтобы дропдаун не резался overflow/стекингом списка публикаций.
+  useLayoutEffect(() => {
+    if (!catOpen || !btnRef.current) return
+    const r = btnRef.current.getBoundingClientRect()
+    const width = 320
+    const left = Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8))
+    setPos({ left, top: r.bottom + 6 })
+  }, [catOpen])
+
+  // Закрытие при скролле вне поповера / ресайзе.
+  useEffect(() => {
+    if (!catOpen) return
+    const onScroll = (e: Event) => {
+      const t = e.target as Node | null
+      if (t instanceof Element && t.closest('.posts-catpop')) return
+      setCatOpen(false)
+    }
+    const onResize = () => setCatOpen(false)
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onResize)
+    return () => { window.removeEventListener('scroll', onScroll, true); window.removeEventListener('resize', onResize) }
+  }, [catOpen])
+
   function applyCats() {
     setCatOpen(false)
     const next = sel.join(',')
@@ -57,7 +85,11 @@ export function PostsToolbar({
   // Закрытие поповера по клику вне — с применением выбора.
   useEffect(() => {
     if (!catOpen) return
-    function onDoc(e: MouseEvent) { if (boxRef.current && !boxRef.current.contains(e.target as Node)) applyCats() }
+    function onDoc(e: MouseEvent) {
+      const t = e.target as Node
+      if (boxRef.current?.contains(t) || popRef.current?.contains(t)) return
+      applyCats()
+    }
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,19 +122,20 @@ export function PostsToolbar({
       </button>
 
       <div ref={boxRef} style={{ position: 'relative', flex: '0 0 auto' }}>
-        <button type="button" onClick={() => (catOpen ? applyCats() : setCatOpen(true))} className="studio-btn studio-btn--ghost" style={{ whiteSpace: 'nowrap' }}>
+        <button type="button" ref={btnRef} onClick={() => (catOpen ? applyCats() : setCatOpen(true))} className="studio-btn studio-btn--ghost" style={{ whiteSpace: 'nowrap' }}>
           <ListFilter size={16} />
           {sel.length ? `Категории: ${sel.length}` : 'Все категории'}
           <ChevronDown size={14} style={{ opacity: 0.6 }} />
         </button>
-        {catOpen && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 1000, width: 320, maxWidth: '86vw', background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,.25)', padding: 10 }}>
+        {catOpen && pos && typeof document !== 'undefined' && createPortal(
+          <div ref={popRef} className="posts-catpop" style={{ position: 'fixed', left: pos.left, top: pos.top, zIndex: 2000, width: 320, maxWidth: '86vw', background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,.25)', padding: 10 }}>
             <CategoryMultiPicker categories={categories} value={sel} onChange={setSel} />
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginTop: 10 }}>
               <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setSel([])} disabled={!sel.length}>Сбросить</button>
               <button type="button" className="studio-btn studio-btn--primary" onClick={applyCats}>Применить</button>
             </div>
-          </div>
+          </div>,
+          document.body,
         )}
       </div>
     </div>
