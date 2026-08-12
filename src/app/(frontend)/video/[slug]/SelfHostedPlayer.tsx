@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Play, Pause, Maximize, Minimize, Volume2, VolumeX, Loader2, Captions, ListVideo } from 'lucide-react'
+import { Play, Pause, Maximize, Minimize, Volume2, VolumeX, Loader2, Captions, ListVideo, X } from 'lucide-react'
 
 /**
  * Плеер собственного HLS-видео (provider='self') с кастомными контролами и
@@ -103,6 +103,7 @@ export function SelfHostedPlayer({
   const [activeTrack, setActiveTrack] = useState(-1) // -1 = субтитры выключены
   const [ccOpen, setCcOpen] = useState(false)
   const [chOpen, setChOpen] = useState(false)
+  const [chHover, setChHover] = useState(-1)
   const chapters = Array.isArray(chapters_) ? chapters_ : []
   const tracks = Array.isArray(subtitles) ? subtitles : []
 
@@ -444,25 +445,9 @@ export function SelfHostedPlayer({
           )}
           <span style={{ flex: 1 }} />
           {chapters.length > 0 && (
-            <div style={{ position: 'relative' }}>
-              <button type="button" aria-label="Главы" onClick={() => setChOpen((o) => !o)} style={btnStyle}>
-                <ListVideo size={20} />
-              </button>
-              {chOpen && (
-                <div style={{ ...ccMenuStyle, minWidth: 300, maxWidth: 380, maxHeight: 'min(60vh, 420px)', overflowY: 'auto', padding: 8 }}>
-                  {chapters.map((c, i) => {
-                    const active = i === curChapIdx
-                    return (
-                      <button key={i} type="button" onClick={() => { seekTo(c.start); setChOpen(false) }}
-                        style={{ display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%', textAlign: 'left', border: 'none', cursor: 'pointer', borderRadius: 8, padding: '9px 12px', background: active ? 'rgba(255,255,255,.16)' : 'transparent', color: '#fff' }}>
-                        <span style={{ flex: 'none', width: 56, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, color: active ? '#fff' : 'rgba(255,255,255,.6)', fontWeight: active ? 700 : 500, paddingTop: 1 }}>{fmtTime(c.start)}</span>
-                        <span style={{ flex: 1, fontSize: 14, lineHeight: 1.35, fontWeight: active ? 600 : 400, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{c.title}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+            <button type="button" aria-label="Таймкоды" onClick={() => setChOpen((o) => !o)} style={{ ...btnStyle, opacity: chOpen ? 1 : 0.85 }}>
+              <ListVideo size={20} />
+            </button>
           )}
           {tracks.length > 0 && (
             <div style={{ position: 'relative' }}>
@@ -489,6 +474,51 @@ export function SelfHostedPlayer({
           </button>
         </div>
       </div>
+
+      {/* Панель таймкодов — правая половина плеера, на всю высоту, со скроллом */}
+      {chapters.length > 0 && chOpen && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute', top: 0, right: 0, bottom: 0, zIndex: 6,
+            width: 'clamp(260px, 50%, 480px)',
+            background: 'rgba(12,12,16,.86)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            borderLeft: '1px solid rgba(255,255,255,.12)',
+            display: 'flex', flexDirection: 'column',
+          }}
+        >
+          <div style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 8px 12px 16px', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
+            <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Таймкоды</span>
+            <button type="button" aria-label="Закрыть" onClick={() => setChOpen(false)} style={{ ...btnStyle, padding: 6 }}>
+              <X size={18} />
+            </button>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
+            {chapters.map((c, i) => {
+              const active = i === curChapIdx
+              const hovered = i === chHover
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => seekTo(c.start)}
+                  onMouseEnter={() => setChHover(i)}
+                  onMouseLeave={() => setChHover((h) => (h === i ? -1 : h))}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 12, width: '100%', textAlign: 'left',
+                    border: 'none', cursor: 'pointer', borderRadius: 8, padding: '10px 12px',
+                    background: active ? 'rgba(255,255,255,.18)' : hovered ? 'rgba(255,255,255,.08)' : 'transparent',
+                    color: '#fff', transition: 'background .15s ease',
+                  }}
+                >
+                  <span style={{ flex: 'none', width: 52, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, color: active ? '#fff' : 'rgba(255,255,255,.6)', fontWeight: active ? 700 : 500, paddingTop: 1 }}>{fmtTime(c.start)}</span>
+                  <span style={{ flex: 1, fontSize: 14, lineHeight: 1.4, fontWeight: active ? 600 : 400 }}>{c.title}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
