@@ -33,6 +33,7 @@ type Vid = {
   minTierId: string
   durationSec: number | null
   assetBytes?: number | null
+  procPct?: number
   coverUrl: string | null
   previewGif?: string | null
   addedAt: string | null
@@ -179,12 +180,16 @@ export function VideosManager({
         if (!res.ok || cancelled) return
         const json = await res.json()
         const statuses = (json?.statuses || {}) as Record<string, string | null>
+        const progress = (json?.progress || {}) as Record<string, number>
         setVideos((prev) => {
           let changed = false
           const next = prev.map((v) => {
             const st = statuses[String(v.id)]
-            if (st && st !== v.assetStatus) { changed = true; return { ...v, assetStatus: st } }
-            return v
+            const pct = progress[String(v.id)]
+            let nv = v
+            if (st && st !== v.assetStatus) { nv = { ...nv, assetStatus: st }; changed = true }
+            if (pct != null && pct !== v.procPct) { nv = { ...nv, procPct: pct }; changed = true }
+            return nv
           })
           return changed ? next : prev
         })
@@ -192,7 +197,7 @@ export function VideosManager({
         /* сеть — не критично, повторим */
       }
     }
-    const id = setInterval(poll, 8000)
+    const id = setInterval(poll, 5000)
     return () => { cancelled = true; clearInterval(id) }
   }, [videos])
   useEffect(() => setCategories(initialCategories), [initialCategories])
@@ -659,7 +664,14 @@ function VideoRow({
           ) : video.assetStatus === 'error' ? (
             <span className="vid__status" style={{ color: '#dc2626' }}><AlertTriangle size={13} /> Ошибка</span>
           ) : (
-            <span className="vid__status" style={{ color: '#f59e0b' }}><Loader2 size={13} className="spin" /> Обрабатывается</span>
+            <span className="vid__status" style={{ color: '#f59e0b', display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Loader2 size={13} className="spin" /> Обрабатывается{video.procPct ? ` ${video.procPct}%` : ''}</span>
+              {video.procPct ? (
+                <span style={{ display: 'block', width: 96, height: 3, borderRadius: 2, background: 'var(--st-surface-2, rgba(128,128,128,.2))', overflow: 'hidden' }}>
+                  <span style={{ display: 'block', height: '100%', width: `${video.procPct}%`, background: '#f59e0b', borderRadius: 2, transition: 'width .4s ease' }} />
+                </span>
+              ) : null}
+            </span>
           )
         ) : isEmbed ? (
           <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>

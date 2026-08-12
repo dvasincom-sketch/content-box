@@ -110,6 +110,40 @@ function run(cmd, args, opts = {}, timeoutMs = 0) {
   })
 }
 
+// Как run(), но парсит `-progress pipe:1` ffmpeg и зовёт onProgress(pct 0..99)
+// по ходу кодирования (out_time / durationSec). Для живого индикатора в студии.
+function runProgress(cmd, args, { timeoutMs = 0, durationSec = 0, onProgress } = {}) {
+  return new Promise((resolve, reject) => {
+    const p = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    let err = '', buf = '', timer = null
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        try { p.kill('SIGKILL') } catch { /* мёртв */ }
+        reject(new Error(`${cmd} timeout after ${Math.round(timeoutMs / 1000)}s`))
+      }, timeoutMs)
+    }
+    p.stdout.on('data', (d) => {
+      buf += d.toString()
+      let nl
+      while ((nl = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, nl); buf = buf.slice(nl + 1)
+        const m = line.match(/^out_time=(\d+):(\d+):([\d.]+)/)
+        if (m && durationSec > 0 && typeof onProgress === 'function') {
+          const sec = Number(m[1]) * 3600 + Number(m[2]) * 60 + parseFloat(m[3])
+          onProgress(Math.max(0, Math.min(99, Math.round((sec / durationSec) * 100))))
+        }
+      }
+    })
+    p.stderr.on('data', (d) => { err += d.toString(); if (err.length > 8000) err = err.slice(-8000) })
+    p.on('error', (e) => { if (timer) clearTimeout(timer); reject(e) })
+    p.on('close', (code) => {
+      if (timer) clearTimeout(timer)
+      if (code === 0) resolve()
+      else reject(new Error(`${cmd} exit ${code}: ${err.slice(-1200)}`))
+    })
+  })
+}
+
 function runJson(cmd, args) {
   return new Promise((resolve, reject) => {
     const p = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] })
@@ -199,7 +233,7 @@ async function fileBytes(path) {
   try { return (await stat(path)).size } catch { return 0 }
 }
 
-async function buildHls(input, outDir, meta) {
+async function buildHls(input, outDir, meta, onProgress) {
   const renditions = LADDER.filter((r) => r.height <= meta.height)
   if (!renditions.length) renditions.push({ ...LADDER[LADDER.length - 1], height: Math.max(144, meta.height || 480) })
   for (let i = 0; i < renditions.length; i++) await mkdir(join(outDir, String(i)), { recursive: true })
@@ -219,13 +253,14 @@ async function buildHls(input, outDir, meta) {
   const vsm = renditions.map((_, i) => (meta.hasAudio ? `v:${i},a:${i}` : `v:${i}`)).join(' ')
   args.push(
     '-preset', 'slow', '-g', '48', '-keyint_min', '48', '-sc_threshold', '0',
+    '-progress', 'pipe:1', '-nostats',
     '-hls_time', '6', '-hls_playlist_type', 'vod', '-hls_flags', 'independent_segments',
     '-hls_segment_type', 'mpegts', '-master_pl_name', 'master.m3u8',
     '-var_stream_map', vsm,
     '-hls_segment_filename', join(outDir, '%v', 'seg_%03d.ts'),
     join(outDir, '%v', 'index.m3u8'),
   )
-  await run('nice', ['-n', '10', 'ffmpeg', ...args], {}, FFMPEG_TIMEOUT_MS)
+  await runProgress('nice', ['-n', '10', 'ffmpeg', ...args], { timeoutMs: FFMPEG_TIMEOUT_MS, durationSec: meta.duration || 0, onProgress })
 
   return renditions.map((r, i) => ({ height: r.height, bandwidth: (r.peak + (meta.hasAudio ? r.ab : 0)) * 1000, index: i }))
 }
@@ -531,7 +566,16 @@ async function processJob(job) {
 
     t = Date.now()
     log(`job ${job.id} transcoding HLS…`)
-    const renditions = await buildHls(input, hlsDir, meta)
+    // Живой прогресс кодирования → video_jobs.progress (throttle ~1.5с, только рост).
+    let lastPct = -1, lastAt = 0
+    const onProgress = (pct) => {
+      const now = Date.now()
+      if (pct <= lastPct || now - lastAt < 1500) return
+      lastPct = pct; lastAt = now
+      pool.query(`UPDATE video_jobs SET progress=$2, updated_at=now() WHERE id=$1`, [job.id, pct]).catch(() => {})
+    }
+    await pool.query(`UPDATE video_jobs SET progress=0, updated_at=now() WHERE id=$1`, [job.id]).catch(() => {})
+    const renditions = await buildHls(input, hlsDir, meta, onProgress)
     log(`job ${job.id} transcoded ${renditions.length} rendition(s) in ${secs(t)}s`)
 
     await makePoster(input, join(work, 'poster.jpg'), posterT)

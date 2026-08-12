@@ -92,6 +92,7 @@ import * as migration_20260810_140000_video_jobs_kind from './20260810_140000_vi
 import * as migration_20260810_150000_event_category from './20260810_150000_event_category';
 import * as migration_20260810_160000_video_summary from './20260810_160000_video_summary';
 import * as migration_20260811_120000_add_tenant_archetype from './20260811_120000_add_tenant_archetype';
+import * as migration_20260812_100000_video_jobs_progress from './20260812_100000_video_jobs_progress';
 
 export const migrations = [
   {
@@ -563,5 +564,10 @@ export const migrations = [
     up: migration_20260811_120000_add_tenant_archetype.up,
     down: migration_20260811_120000_add_tenant_archetype.down,
     name: '20260811_120000_add_tenant_archetype',
+  },
+  {
+    up: migration_20260812_100000_video_jobs_progress.up,
+    down: migration_20260812_100000_video_jobs_progress.down,
+    name: '20260812_100000_video_jobs_progress',
   },
 ];
