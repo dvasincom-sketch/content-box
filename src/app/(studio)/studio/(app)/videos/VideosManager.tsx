@@ -828,22 +828,12 @@ export function AddPanel({
   // Профиль сжатия (дефолт проекта для НОВЫХ загрузок) — редактируется шестерёнкой.
   const [videoProfile, setVideoProfile] = useState<string>('balanced')
   const [profileOpen, setProfileOpen] = useState(false)
-  const [profilePos, setProfilePos] = useState<{ left: number; top: number } | null>(null)
   const [profileRecent, setProfileRecent] = useState<Array<{ title: string; profile: string | null; durationSec: number | null; originalBytes: number | null; assetBytes: number | null; encodeMs: number | null }>>([])
   const gearRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     fetch('/studio/api/settings/video-profile', { credentials: 'include' })
       .then((r) => r.json()).then((j) => { if (j?.profile) setVideoProfile(j.profile); if (Array.isArray(j?.recent)) setProfileRecent(j.recent) }).catch(() => {})
   }, [])
-  useLayoutEffect(() => {
-    if (!profileOpen || !gearRef.current) return
-    const r = gearRef.current.getBoundingClientRect()
-    const W = 300
-    let left = r.right + 8
-    if (left + W > window.innerWidth - 8) left = Math.max(8, r.left - W - 8)
-    const top = Math.max(8, Math.min(r.top, window.innerHeight - 300))
-    setProfilePos({ left, top })
-  }, [profileOpen])
   async function pickProfile(id: string) {
     setVideoProfile(id)
     try {
@@ -886,56 +876,59 @@ export function AddPanel({
               <Settings size={16} />
             </button>
           </div>
-          {profileOpen && profilePos && typeof document !== 'undefined' && createPortal(
-            <>
-              <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1200 }} />
-              <div className="studio-portal" style={{ position: 'fixed', left: profilePos.left, top: profilePos.top, width: 300, maxHeight: 'min(80vh, 580px)', overflowY: 'auto', zIndex: 1201, background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 14px 44px rgba(0,0,0,.24)', padding: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--st-text)' }}>Профиль сжатия</span>
-                  <button type="button" onClick={() => setProfileOpen(false)} aria-label="Закрыть" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--st-text-muted)', display: 'grid', placeItems: 'center', padding: 2 }}><X size={16} /></button>
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--st-text-muted)', marginBottom: 10, lineHeight: 1.4 }}>Действует для новых загрузок. Уже обработанные видео не меняются.</div>
-                <div style={{ display: 'grid', gap: 6 }}>
-                  {VIDEO_PROFILES.map((pr) => {
-                    const active = videoProfile === pr.id
-                    return (
-                      <button
-                        key={pr.id}
-                        type="button"
-                        onClick={() => pickProfile(pr.id)}
-                        style={{ textAlign: 'left', border: `1px solid ${active ? 'var(--st-accent)' : 'var(--st-border)'}`, background: active ? 'color-mix(in srgb, var(--st-accent) 10%, transparent)' : 'transparent', borderRadius: 10, padding: '9px 11px', cursor: 'pointer' }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--st-text)' }}>{pr.title}</span>
-                          {active && <Check size={14} style={{ color: 'var(--st-accent)', marginLeft: 'auto' }} />}
-                        </div>
-                        <div style={{ fontSize: 12, color: 'var(--st-text)', opacity: 0.85, marginTop: 2 }}>{pr.opt}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--st-text-muted)', marginTop: 3 }}>
-                          <Info size={12} style={{ flex: 'none', opacity: 0.8 }} />
-                          <span>{pr.cost}</span>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-                {profileRecent.length > 0 && (
-                  <div style={{ marginTop: 12, borderTop: '1px solid var(--st-border)', paddingTop: 10 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--st-text)', marginBottom: 2 }}>Как кодировались прошлые видео</div>
-                    <div style={{ fontSize: 11, color: 'var(--st-text-muted)', marginBottom: 8 }}>профиль · длительность · исходник → итог · время</div>
-                    <div style={{ display: 'grid', gap: 9 }}>
-                      {profileRecent.map((v, i) => (
-                        <div key={i} style={{ lineHeight: 1.35 }}>
-                          <div style={{ fontSize: 12, color: 'var(--st-text)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={v.title}>{v.title}</div>
-                          <div style={{ fontSize: 11.5, color: 'var(--st-text-muted)' }}>
-                            {(VIDEO_PROFILES.find((p) => p.id === v.profile)?.title) || '—'} · {fmtDurHM(v.durationSec)} · {fmtBytes(v.originalBytes) || '—'} → {fmtBytes(v.assetBytes) || '—'} · {v.encodeMs ? `${Math.max(1, Math.round(v.encodeMs / 60000))} мин` : '—'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+          {profileOpen && typeof document !== 'undefined' && createPortal(
+            <div className="uk-overlay" role="dialog" aria-modal="true" onClick={() => setProfileOpen(false)}>
+              <div className="uk-drawer" onClick={(e) => e.stopPropagation()}>
+                <div className="uk-drawer__head">
+                  <div className="uk-drawer__headmain">
+                    <h3>Профиль сжатия</h3>
+                    <div className="uk-drawer__sub">Действует для новых загрузок. Уже обработанные видео не меняются.</div>
                   </div>
-                )}
+                  <button type="button" className="catmgr__icon-btn" onClick={() => setProfileOpen(false)} aria-label="Закрыть"><X size={18} /></button>
+                </div>
+                <div className="uk-drawer__body">
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {VIDEO_PROFILES.map((pr) => {
+                      const active = videoProfile === pr.id
+                      return (
+                        <button
+                          key={pr.id}
+                          type="button"
+                          onClick={() => pickProfile(pr.id)}
+                          style={{ textAlign: 'left', border: `1px solid ${active ? 'var(--st-accent)' : 'var(--st-border)'}`, background: active ? 'color-mix(in srgb, var(--st-accent) 10%, transparent)' : 'transparent', borderRadius: 10, padding: '11px 13px', cursor: 'pointer' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--st-text)' }}>{pr.title}</span>
+                            {active && <Check size={15} style={{ color: 'var(--st-accent)', marginLeft: 'auto' }} />}
+                          </div>
+                          <div style={{ fontSize: 12.5, color: 'var(--st-text)', opacity: 0.85, marginTop: 3 }}>{pr.opt}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--st-text-muted)', marginTop: 4 }}>
+                            <Info size={13} style={{ flex: 'none', opacity: 0.8 }} />
+                            <span>{pr.cost}</span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {profileRecent.length > 0 && (
+                    <div style={{ marginTop: 18, borderTop: '1px solid var(--st-border)', paddingTop: 14 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--st-text)', marginBottom: 2 }}>Как кодировались прошлые видео</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--st-text-muted)', marginBottom: 10 }}>профиль · длительность · исходник → итог · время</div>
+                      <div style={{ display: 'grid', gap: 12 }}>
+                        {profileRecent.map((v, i) => (
+                          <div key={i} style={{ lineHeight: 1.4 }}>
+                            <div style={{ fontSize: 13, color: 'var(--st-text)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={v.title}>{v.title}</div>
+                            <div style={{ fontSize: 12, color: 'var(--st-text-muted)' }}>
+                              {(VIDEO_PROFILES.find((p) => p.id === v.profile)?.title) || '—'} · {fmtDurHM(v.durationSec)} · {fmtBytes(v.originalBytes) || '—'} → {fmtBytes(v.assetBytes) || '—'} · {v.encodeMs ? `${Math.max(1, Math.round(v.encodeMs / 60000))} мин` : '—'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </>,
+            </div>,
             document.body,
           )}
           <button
