@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   if (q && page <= 1) {
     try {
       const payload = await getPayload({ config: await config })
-      const n = typeof (result as { total?: number }).total === 'number' ? (result as { total: number }).total : 0
+      const n = typeof result.totalHits === 'number' ? result.totalHits : 0
       await logSearchQuery(payload, tenant.id as number, q, n)
     } catch { /* лог не критичен */ }
   }
