@@ -199,7 +199,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   if (!isPosterContainer) {
     const vidsRes = await payload.find({
       collection: 'videos',
-      where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: category.id } }] },
+      where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: category.id } }, { or: [{ embedStatus: { not_equals: 'unavailable' } }, { embedStatus: { exists: false } }] }] },
       sort: 'episode',
       depth: 1,
       limit: 500,

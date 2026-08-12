@@ -100,7 +100,13 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
 
         {/* Плеер (если доступ) или замок (если нет) */}
         {access.allowed ? (
-          <VideoPlayer videoId={video.id} initialAspect={video.embedAspect === '9:16' ? '9:16' : '16:9'} />
+          video.embedStatus === 'unavailable' ? (
+            <div className="rounded-xl px-4 py-6 text-center" style={{ background: 'color-mix(in srgb, var(--brand-text) 5%, transparent)', color: 'var(--brand-muted)', fontSize: '.92rem', lineHeight: 1.5 }}>
+              Это видео сейчас недоступно у источника — возможно, оно удалено или ссылка изменилась. Мы уже знаем о проблеме.
+            </div>
+          ) : (
+            <VideoPlayer videoId={video.id} initialAspect={video.embedAspect === '9:16' ? '9:16' : '16:9'} />
+          )
         ) : (
           <VideoLock reason={access.reason} requiredTierName={access.requiredTierName} cover={video.cover} settings={settings} loginRedirect={`/video/${slug}`} />
         )}

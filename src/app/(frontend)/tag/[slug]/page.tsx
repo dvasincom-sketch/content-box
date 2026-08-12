@@ -70,7 +70,7 @@ export default async function TagPage({ params, searchParams }: { params: Promis
     payload.find({
       collection: 'videos',
       where: {
-        and: [{ tenant: { equals: tenant.id } }, { 'tags.slug': { equals: slug } }],
+        and: [{ tenant: { equals: tenant.id } }, { 'tags.slug': { equals: slug } }, { or: [{ embedStatus: { not_equals: 'unavailable' } }, { embedStatus: { exists: false } }] }],
       },
       sort: '-createdAt',
       limit: 50,
