@@ -17,6 +17,7 @@ export function LoginForm() {
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [phoneStep, setPhoneStep] = useState<'phone' | 'code'>('phone')
+  const [notRegistered, setNotRegistered] = useState(false)
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -45,7 +46,7 @@ export function LoginForm() {
   }
 
   async function sendCode() {
-    setError(null)
+    setError(null); setNotRegistered(false)
     if (!phone.trim()) { setError('Введите номер телефона'); return }
     setLoading(true)
     try {
@@ -56,7 +57,7 @@ export function LoginForm() {
         body: JSON.stringify({ phone, mode: 'login' }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(json?.error || 'Не удалось отправить код'); setLoading(false); return }
+      if (!res.ok) { if (res.status === 404) setNotRegistered(true); setError(json?.error || 'Не удалось отправить код'); setLoading(false); return }
       setPhoneStep('code')
       setLoading(false)
     } catch {
@@ -84,7 +85,7 @@ export function LoginForm() {
   }
 
   function switchMode(next: 'password' | 'phone') {
-    setMode(next); setError(null); setPhoneStep('phone'); setCode('')
+    setMode(next); setError(null); setPhoneStep('phone'); setCode(''); setNotRegistered(false)
   }
 
   function onKeyDown(e: React.KeyboardEvent, fn: () => void) {
@@ -114,6 +115,11 @@ export function LoginForm() {
             <button className="studio-btn studio-btn--primary studio-login__submit" onClick={sendCode} disabled={loading}>
               {loading ? 'Отправляем…' : 'Получить код'}
             </button>
+            {notRegistered && (
+              <p style={{ marginTop: 10, fontSize: 13, textAlign: 'center' }}>
+                Аккаунта с этим номером нет. <a className="studio-linklike" href="/signup">Зарегистрироваться</a>
+              </p>
+            )}
           </>
         ) : (
           <>

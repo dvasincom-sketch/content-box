@@ -94,22 +94,53 @@ function IdentityBlock({ currentName, currentEmail, canEditEmail, emailVerified 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const [vStep, setVStep] = useState<'idle' | 'code'>('idle')
+  const [vCode, setVCode] = useState('')
+  const [vBusy, setVBusy] = useState(false)
+  const [vMsg, setVMsg] = useState<string | null>(null)
 
   async function submit() {
     setError(null); setDone(false)
-    const payload: { name: string; email?: string } = { name: name.trim() }
-    if (canEditEmail) payload.email = email.trim()
+    const payloadBody: { name: string; email?: string } = { name: name.trim() }
+    if (canEditEmail) payloadBody.email = email.trim()
     setBusy(true)
     try {
       const res = await fetch('/studio/api/profile/identity', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadBody),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) { setError(json.error || 'Не удалось сохранить'); setBusy(false); return }
       setDone(true); setBusy(false); router.refresh()
     } catch { setError('Ошибка соединения'); setBusy(false) }
   }
+
+  async function requestVerify() {
+    setVMsg(null); setVBusy(true)
+    try {
+      const res = await fetch('/studio/api/profile/email-verify/request', { method: 'POST', credentials: 'include' })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { setVMsg(json.error || 'Не удалось отправить код'); setVBusy(false); return }
+      setVStep('code'); setVBusy(false)
+    } catch { setVMsg('Ошибка соединения'); setVBusy(false) }
+  }
+
+  async function confirmVerify() {
+    setVMsg(null)
+    if (vCode.replace(/\D/g, '').length < 4) { setVMsg('Введите код с почты'); return }
+    setVBusy(true)
+    try {
+      const res = await fetch('/studio/api/profile/email-verify/verify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ code: vCode }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { setVMsg(json.error || 'Неверный код'); setVBusy(false); return }
+      setVStep('idle'); setVCode(''); setVBusy(false); router.refresh()
+    } catch { setVMsg('Ошибка соединения'); setVBusy(false) }
+  }
+
+  const showVerify = canEditEmail && !!currentEmail && !emailVerified
 
   return (
     <section className="settings__block">
@@ -135,6 +166,33 @@ function IdentityBlock({ currentName, currentEmail, canEditEmail, emailVerified 
             {busy ? <Loader2 size={16} className="spin" /> : null} Сохранить
           </button>
         </div>
+
+        {showVerify && (
+          <div style={{ marginTop: 14, borderTop: '1px solid var(--st-border)', paddingTop: 14 }}>
+            {vStep === 'idle' ? (
+              <div className="settings__save-row">
+                <span style={{ fontSize: 13, color: 'var(--st-text-muted)' }}>E-mail не подтверждён</span>
+                <button className="studio-btn studio-btn--ghost" onClick={requestVerify} disabled={vBusy}>
+                  {vBusy ? <Loader2 size={16} className="spin" /> : null} Подтвердить e-mail
+                </button>
+              </div>
+            ) : (
+              <>
+                <label className="studio-field">
+                  <span className="studio-field__label">Код с почты</span>
+                  <input className="studio-input" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={vCode} onChange={(e) => setVCode(e.target.value)} placeholder="______" autoFocus />
+                </label>
+                <div className="settings__save-row">
+                  <button className="studio-btn studio-btn--ghost" onClick={() => { setVStep('idle'); setVMsg(null) }} disabled={vBusy}>Отмена</button>
+                  <button className="studio-btn studio-btn--primary" onClick={confirmVerify} disabled={vBusy}>
+                    {vBusy ? <Loader2 size={16} className="spin" /> : null} Подтвердить
+                  </button>
+                </div>
+              </>
+            )}
+            {vMsg && <div className="settings__err">{vMsg}</div>}
+          </div>
+        )}
       </div>
     </section>
   )

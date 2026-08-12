@@ -9,6 +9,7 @@ import { StudioNav } from './StudioNav'
 import { capabilitiesOf } from '@/access'
 import { SessionGuard } from './SessionGuard'
 import { BugReportWidget } from '@/components/BugReportWidget'
+import { ProfileCompletePrompt } from './ProfileCompletePrompt'
 import { canUse, type Entitlements } from '@/lib/studioEntitlements'
 
 /**
@@ -108,6 +109,7 @@ export default async function StudioAppLayout({ children }: { children: React.Re
             Студия заморожена. Публикация и загрузка недоступны. <a href="/studio/upgrade" style={{ textDecoration: 'underline' }}>Подробнее</a>
           </div>
         )}
+        <ProfileCompletePrompt name={String((author.user as { name?: string | null }).name || '')} email={author.user.email} />
         {children}
       </main>
       {/* Клиентский сторож сессии: показывает экран «Сессия истекла» при
