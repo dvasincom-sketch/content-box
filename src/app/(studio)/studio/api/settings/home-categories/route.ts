@@ -51,11 +51,18 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     return apiError('Настройки сайта не найдены', 404)
   }
 
+  // categories — integer-ключ: relationship-валидация Payload отвергает строковые
+  // id («поле недействительно»). Приводим числовые id к number.
+  const toId = (v: number | string) => {
+    const n = Number(v)
+    return Number.isInteger(n) && String(n) === String(v) ? n : v
+  }
+
   try {
     await payload.update({
       collection: 'site-settings',
       id: settings.id,
-      data: { homeCategories: allowed } as any,
+      data: { homeCategories: allowed.map(toId) } as any,
       overrideAccess: true,
     })
     return apiOk()
