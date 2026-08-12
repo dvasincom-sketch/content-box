@@ -5565,3 +5565,16 @@ a.session-expired__btn {
     font-size: 16px !important;
   }
 }
+
+/* Кликабельное название видео в таблице → переход в редактирование */
+.vidtable__title--link { cursor: pointer; }
+.vidtable__title--link:hover { color: var(--st-accent); text-decoration: underline; }
+
+/* Клиентский пагинатор списка видео (размер страницы + переключение страниц) */
+.vidpager {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--st-border);
+}
+.vidpager__per { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.vidpager__pages { display: flex; align-items: center; gap: 8px; }
+.vidpager__pages .folderbar__select-btn[disabled] { opacity: .45; cursor: default; pointer-events: none; }

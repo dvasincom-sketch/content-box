@@ -8,6 +8,7 @@ import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
   Upload, X, Play, Folder, Pencil, ChevronRight, ChevronDown,
   ChevronLeft, Search, MapPin, Globe, AlertTriangle,
+  ArrowDownWideNarrow, ArrowUpNarrowWide,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { StudioSelect } from '../_ui/StudioSelect'
@@ -48,6 +49,24 @@ type Vid = {
 const FILTER_ALL = '__all__'
 const FILTER_NONE = '__none__'
 const FILTER_UNAVAILABLE = '__unavailable__'
+
+// Фильтр по источнику: все / внешние вставки / загруженные на сервер (self).
+const PROVIDER_ALL = 'all'
+const PROVIDER_SELF = 'self'
+const PROVIDER_EXTERNAL = 'external'
+const PER_OPTIONS = [25, 50, 100]
+
+const SEG_WRAP: React.CSSProperties = {
+  display: 'inline-flex', border: '1px solid var(--st-border)', borderRadius: 8,
+  overflow: 'hidden', background: 'var(--st-surface)',
+}
+function segBtn(active: boolean): React.CSSProperties {
+  return {
+    padding: '6px 12px', fontSize: 13, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+    background: active ? 'var(--st-accent)' : 'transparent',
+    color: active ? 'var(--st-accent-text, #fff)' : 'var(--st-text)', fontWeight: active ? 600 : 500,
+  }
+}
 
 function fmtDur(sec: number | null): string {
   if (!sec) return ''
@@ -153,6 +172,10 @@ export function VideosManager({
 
   const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState<string>(FILTER_ALL) // FILTER_ALL | FILTER_NONE | categoryId
+  const [providerFilter, setProviderFilter] = useState<string>(PROVIDER_ALL)
+  const [sortDir, setSortDir] = useState<'new' | 'old'>('new')
+  const [per, setPer] = useState<number>(25)
+  const [page, setPage] = useState<number>(1)
 
   const flatCategories = useMemo(() => flattenFolders(categories), [categories])
   // id категории → полный путь: «Смотреть › Шоу и проекты › In the SOOP».
@@ -182,12 +205,35 @@ export function VideosManager({
     [videos],
   )
 
-  const visibleVideos = useMemo(() => {
-    if (filter === FILTER_ALL) return videos
-    if (filter === FILTER_NONE) return videos.filter((v) => !v.categoryId)
-    if (filter === FILTER_UNAVAILABLE) return videos.filter((v) => v.embedStatus === 'unavailable')
-    return videos.filter((v) => String(v.categoryId) === filter)
-  }, [videos, filter])
+  const filteredVideos = useMemo(() => {
+    let out = videos
+    if (filter === FILTER_NONE) out = out.filter((v) => !v.categoryId)
+    else if (filter === FILTER_UNAVAILABLE) out = out.filter((v) => v.embedStatus === 'unavailable')
+    else if (filter !== FILTER_ALL) out = out.filter((v) => String(v.categoryId) === filter)
+    if (providerFilter === PROVIDER_SELF) out = out.filter((v) => v.provider === 'self')
+    else if (providerFilter === PROVIDER_EXTERNAL) out = out.filter((v) => v.provider !== 'self')
+    return out
+  }, [videos, filter, providerFilter])
+
+  const sortedVideos = useMemo(() => {
+    const arr = [...filteredVideos]
+    arr.sort((a, b) => {
+      const ta = a.addedAt ? new Date(a.addedAt).getTime() : 0
+      const tb = b.addedAt ? new Date(b.addedAt).getTime() : 0
+      return sortDir === 'new' ? tb - ta : ta - tb
+    })
+    return arr
+  }, [filteredVideos, sortDir])
+
+  const total = sortedVideos.length
+  const totalPages = Math.max(1, Math.ceil(total / per))
+  const curPage = Math.min(page, totalPages)
+  const visibleVideos = useMemo(
+    () => sortedVideos.slice((curPage - 1) * per, curPage * per),
+    [sortedVideos, curPage, per],
+  )
+  // Смена фильтра/сортировки/размера страницы — сбрасываем на первую страницу.
+  useEffect(() => { setPage(1) }, [filter, providerFilter, sortDir, per])
 
   const sectionFilterLabel = useMemo(() => {
     if (filter === FILTER_ALL) return `Все видео (${videos.length})`
@@ -253,6 +299,18 @@ export function VideosManager({
             onSelect={setFilter}
           />
         </div>
+
+        <div className="folderbar__filter" style={{ marginLeft: 'auto', flexWrap: 'wrap' }}>
+          <div style={SEG_WRAP}>
+            {[{ v: PROVIDER_ALL, l: 'Все' }, { v: PROVIDER_EXTERNAL, l: 'Внешние' }, { v: PROVIDER_SELF, l: 'Загруженные' }].map((o) => (
+              <button key={o.v} type="button" onClick={() => setProviderFilter(o.v)} style={segBtn(providerFilter === o.v)}>{o.l}</button>
+            ))}
+          </div>
+          <button type="button" className="folderbar__select-btn" onClick={() => setSortDir((d) => (d === 'new' ? 'old' : 'new'))} title="Порядок по дате добавления">
+            {sortDir === 'new' ? <ArrowDownWideNarrow size={15} /> : <ArrowUpNarrowWide size={15} />}
+            <span className="folderbar__select-label">{sortDir === 'new' ? 'Сначала новые' : 'Сначала старые'}</span>
+          </button>
+        </div>
       </div>
 
       {videos.length === 0 ? (
@@ -261,7 +319,7 @@ export function VideosManager({
           <div className="studio-empty__title">Видео пока нет</div>
           <div className="studio-empty__text">Добавьте первое видео по ссылке из вашего хранилища.</div>
         </div>
-      ) : visibleVideos.length === 0 ? (
+      ) : total === 0 ? (
         <div className="studio-empty">
           <div className="studio-empty__icon"><Folder size={28} /></div>
           <div className="studio-empty__title">В этом разделе пусто</div>
@@ -294,6 +352,27 @@ export function VideosManager({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {total > PER_OPTIONS[0] && (
+        <div className="vidpager">
+          <div className="vidpager__per">
+            <span style={{ color: 'var(--st-text-muted)', fontSize: 13 }}>Показывать по:</span>
+            <div style={SEG_WRAP}>
+              {PER_OPTIONS.map((pp) => (
+                <button key={pp} type="button" onClick={() => setPer(pp)} style={segBtn(per === pp)}>{pp}</button>
+              ))}
+            </div>
+            <span style={{ color: 'var(--st-text-muted)', fontSize: 13 }}>из {total}</span>
+          </div>
+          {totalPages > 1 && (
+            <div className="vidpager__pages">
+              <button type="button" className="folderbar__select-btn" disabled={curPage <= 1} onClick={() => setPage(curPage - 1)} aria-label="Назад"><ChevronLeft size={16} /></button>
+              <span style={{ fontSize: 13, color: 'var(--st-text)', minWidth: 74, textAlign: 'center' }}>{curPage} из {totalPages}</span>
+              <button type="button" className="folderbar__select-btn" disabled={curPage >= totalPages} onClick={() => setPage(curPage + 1)} aria-label="Вперёд"><ChevronRight size={16} /></button>
+            </div>
+          )}
         </div>
       )}
 
@@ -340,12 +419,20 @@ function FolderDropdown({
 
   useEffect(() => {
     if (!open) return
-    const close = () => setOpen(false)
-    window.addEventListener('scroll', close, true)
-    window.addEventListener('resize', close)
+    // Скролл ВНУТРИ меню (у .vidmenu overflow-y:auto) не должен его закрывать —
+    // раньше capture-хендлер ловил внутренний скролл, и меню схлопывалось при
+    // первой же прокрутке длинного списка разделов.
+    const onScroll = (e: Event) => {
+      const t = e.target as Node | null
+      if (t instanceof Element && t.closest('.vidmenu')) return
+      setOpen(false)
+    }
+    const onResize = () => setOpen(false)
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onResize)
     return () => {
-      window.removeEventListener('scroll', close, true)
-      window.removeEventListener('resize', close)
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('resize', onResize)
     }
   }, [open])
 
@@ -480,14 +567,16 @@ function VideoRow({
         </button>
       </td>
 
-      {/* Название */}
+      {/* Название — клик открывает страницу редактирования видео */}
       <td className="vidtable__title-cell">
-        <span className="vidtable__title" title={video.title}>{video.title}</span>
-        {video.embedStatus === 'unavailable' && (
-          <span className="vid-badge-unavail" title="Внешняя вставка недоступна — VK удалил видео или ограничил доступ">
-            <AlertTriangle size={11} /> недоступно
-          </span>
-        )}
+        <span
+          className="vidtable__title vidtable__title--link"
+          title={video.title}
+          role="link"
+          tabIndex={0}
+          onClick={onEdit}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit() } }}
+        >{video.title}</span>
       </td>
 
       {/* Длительность */}
@@ -504,33 +593,28 @@ function VideoRow({
         )}
       </td>
 
-      {/* Статус */}
+      {/* Статус — один общий по видео. Недоступность источника — приоритетнее. */}
       <td>
-        {isSelf ? (
+        {video.embedStatus === 'unavailable' ? (
+          <span className="vid__status" style={{ color: '#dc2626' }}><AlertTriangle size={13} /> Недоступно</span>
+        ) : isSelf ? (
           video.assetStatus === 'ready' ? (
             <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
           ) : video.assetStatus === 'error' ? (
-            <span className="vid__status vid__status--wait"><Clock size={13} /> Ошибка обработки</span>
+            <span className="vid__status" style={{ color: '#dc2626' }}><AlertTriangle size={13} /> Ошибка</span>
           ) : (
             <span className="vid__status vid__status--wait"><Loader2 size={13} className="spin" /> Обрабатывается</span>
           )
+        ) : isEmbed ? (
+          <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
+        ) : ready === false ? (
+          <span className="vid__status vid__status--wait"><Loader2 size={13} className="spin" /> Кодируется{pct ? ` ${pct}%` : ''}</span>
+        ) : ready === true ? (
+          <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
+        ) : ready === null && video.videoRef ? (
+          <span className="vid__status"><Clock size={13} /> Проверка…</span>
         ) : (
-          <>
-            {ready === true && (
-              <span className="vid__status vid__status--ok"><Check size={13} /> Готово</span>
-            )}
-            {ready === false && (
-              <span className="vid__status vid__status--wait">
-                <Loader2 size={13} className="spin" /> Кодируется{pct ? ` ${pct}%` : ''}
-              </span>
-            )}
-            {ready === null && video.videoRef && (
-              <span className="vid__status"><Clock size={13} /> Проверка…</span>
-            )}
-            {ready === null && !video.videoRef && !isEmbed && (
-              <span className="vid__status vid__status--wait"><Clock size={13} /> Нет файла</span>
-            )}
-          </>
+          <span className="vid__status vid__status--wait"><Clock size={13} /> Нет файла</span>
         )}
       </td>
 
