@@ -69,16 +69,32 @@ const s3 = new S3Client({
 })
 
 // Лесенка качеств. Рендишены выше исходника отбрасываем (не апскейлим).
-// Кодируем по КАЧЕСТВУ (CRF, как HandBrake), а не по фиксированному битрету:
-// кодек тратит биты только там, где нужно → простые ролики (разговоры/фанкамы)
-// становятся заметно легче без видимой потери. maxrate/bufsize — только ПОТОЛОК
-// для стабильного ABR (capped CRF). peak (кбит/с) идёт в BANDWIDTH мастер-плейлиста.
-// Профиль «максимальное сжатие»: CRF 23/24/25 + preset slow.
-const LADDER = [
-  { height: 1080, crf: 23, maxrate: '6000k', bufsize: '9000k', peak: 6000, ab: 128 },
-  { height: 720, crf: 24, maxrate: '3500k', bufsize: '5000k', peak: 3500, ab: 128 },
-  { height: 480, crf: 25, maxrate: '1800k', bufsize: '2700k', peak: 1800, ab: 96 },
+// Кодируем по КАЧЕСТВУ (CRF, как HandBrake): кодек тратит биты только где нужно.
+// maxrate/bufsize — потолок для стабильного ABR (capped CRF); peak (кбит/с) идёт
+// в BANDWIDTH мастер-плейлиста. Профиль (preset + CRF) выбирает автор при загрузке.
+const BASE_LADDER = [
+  { height: 1080, maxrate: '6000k', bufsize: '9000k', peak: 6000, ab: 128 },
+  { height: 720, maxrate: '3500k', bufsize: '5000k', peak: 3500, ab: 128 },
+  { height: 480, maxrate: '1800k', bufsize: '2700k', peak: 1800, ab: 96 },
 ]
+// Профили сжатия: компромисс скорость ↔ размер ↔ качество.
+//  fast     — быстро готово (файл крупнее): veryfast + CRF 23/24/25;
+//  balanced — золотая середина (по умолчанию): medium + CRF 23/24/25;
+//  compact  — минимум места (кодирует дольше): slow + CRF 24/25/26;
+//  quality  — лучшая картинка (крупнее+дольше): slow + CRF 20/21/22.
+const PROFILES = {
+  fast: { preset: 'veryfast', crf: [23, 24, 25] },
+  balanced: { preset: 'medium', crf: [23, 24, 25] },
+  compact: { preset: 'slow', crf: [24, 25, 26] },
+  quality: { preset: 'slow', crf: [20, 21, 22] },
+}
+function resolveProfile(profile) {
+  const p = PROFILES[profile] || PROFILES.balanced
+  return {
+    preset: p.preset,
+    ladder: BASE_LADDER.map((r, i) => ({ ...r, crf: p.crf[i] ?? p.crf[p.crf.length - 1] })),
+  }
+}
 
 const CT = {
   '.m3u8': 'application/vnd.apple.mpegurl',
@@ -233,9 +249,10 @@ async function fileBytes(path) {
   try { return (await stat(path)).size } catch { return 0 }
 }
 
-async function buildHls(input, outDir, meta, onProgress) {
-  const renditions = LADDER.filter((r) => r.height <= meta.height)
-  if (!renditions.length) renditions.push({ ...LADDER[LADDER.length - 1], height: Math.max(144, meta.height || 480) })
+async function buildHls(input, outDir, meta, onProgress, profile) {
+  const { preset, ladder } = resolveProfile(profile)
+  const renditions = ladder.filter((r) => r.height <= meta.height)
+  if (!renditions.length) renditions.push({ ...ladder[ladder.length - 1], height: Math.max(144, meta.height || 480) })
   for (let i = 0; i < renditions.length; i++) await mkdir(join(outDir, String(i)), { recursive: true })
 
   const n = renditions.length
@@ -252,7 +269,7 @@ async function buildHls(input, outDir, meta, onProgress) {
   }
   const vsm = renditions.map((_, i) => (meta.hasAudio ? `v:${i},a:${i}` : `v:${i}`)).join(' ')
   args.push(
-    '-preset', 'slow', '-g', '48', '-keyint_min', '48', '-sc_threshold', '0',
+    '-preset', preset, '-g', '48', '-keyint_min', '48', '-sc_threshold', '0',
     '-progress', 'pipe:1', '-nostats',
     '-hls_time', '6', '-hls_playlist_type', 'vod', '-hls_flags', 'independent_segments',
     '-hls_segment_type', 'mpegts', '-master_pl_name', 'master.m3u8',
@@ -321,7 +338,7 @@ async function claimJob() {
   try {
     await c.query('BEGIN')
     const r = await c.query(
-      `SELECT id, video_id, tenant_id, playback_id, original_key, source_url, attempts, kind
+      `SELECT id, video_id, tenant_id, playback_id, original_key, source_url, attempts, kind, profile
          FROM video_jobs
         WHERE status = 'queued'
            OR (status = 'processing' AND locked_at IS NOT NULL AND locked_at < now() - interval '30 minutes')
@@ -575,7 +592,7 @@ async function processJob(job) {
       pool.query(`UPDATE video_jobs SET progress=$2, updated_at=now() WHERE id=$1`, [job.id, pct]).catch(() => {})
     }
     await pool.query(`UPDATE video_jobs SET progress=0, updated_at=now() WHERE id=$1`, [job.id]).catch(() => {})
-    const renditions = await buildHls(input, hlsDir, meta, onProgress)
+    const renditions = await buildHls(input, hlsDir, meta, onProgress, job.profile)
     log(`job ${job.id} transcoded ${renditions.length} rendition(s) in ${secs(t)}s`)
 
     await makePoster(input, join(work, 'poster.jpg'), posterT)

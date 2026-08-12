@@ -8,7 +8,7 @@ import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
   Upload, X, Play, Folder, Pencil, ChevronRight, ChevronDown,
   ChevronLeft, Search, MapPin, Globe, AlertTriangle,
-  ArrowDownWideNarrow, ArrowUpNarrowWide,
+  ArrowDownWideNarrow, ArrowUpNarrowWide, Settings,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { StudioSelect } from '../_ui/StudioSelect'
@@ -796,6 +796,13 @@ function VideoMetaFields({
   )
 }
 
+const VIDEO_PROFILES: { id: string; title: string; opt: string; cost: string }[] = [
+  { id: 'fast', title: 'Быстро', opt: 'Приоритет скорости обработки', cost: 'файл чуть крупнее' },
+  { id: 'balanced', title: 'Баланс', opt: 'Оптимальный компромисс', cost: 'рекомендуется' },
+  { id: 'compact', title: 'Компактно', opt: 'Минимум места на диске', cost: 'кодирует дольше' },
+  { id: 'quality', title: 'Качество', opt: 'Лучшая картинка', cost: 'крупнее и кодирует дольше' },
+]
+
 export function AddPanel({
   tiers,
   categories,
@@ -812,6 +819,33 @@ export function AddPanel({
 }) {
   const [mode, setMode] = useState<'upload' | 'url' | 'library'>('upload')
   const [provider, setProvider] = useState<'self' | 'stream' | 'kinescope' | 'embed'>('self')
+  // Профиль сжатия (дефолт проекта для НОВЫХ загрузок) — редактируется шестерёнкой.
+  const [videoProfile, setVideoProfile] = useState<string>('balanced')
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [profilePos, setProfilePos] = useState<{ left: number; top: number } | null>(null)
+  const gearRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    fetch('/studio/api/settings/video-profile', { credentials: 'include' })
+      .then((r) => r.json()).then((j) => { if (j?.profile) setVideoProfile(j.profile) }).catch(() => {})
+  }, [])
+  useLayoutEffect(() => {
+    if (!profileOpen || !gearRef.current) return
+    const r = gearRef.current.getBoundingClientRect()
+    const W = 300
+    let left = r.right + 8
+    if (left + W > window.innerWidth - 8) left = Math.max(8, r.left - W - 8)
+    const top = Math.max(8, Math.min(r.top, window.innerHeight - 300))
+    setProfilePos({ left, top })
+  }, [profileOpen])
+  async function pickProfile(id: string) {
+    setVideoProfile(id)
+    try {
+      await fetch('/studio/api/settings/video-profile', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ profile: id }),
+      })
+    } catch { /* тихо */ }
+  }
   // Вкладка «Библиотека» есть только у Kinescope. При переключении на Cloudflare
   // возвращаемся к загрузке, чтобы не остаться на скрытой вкладке.
   useEffect(() => {
@@ -822,16 +856,62 @@ export function AddPanel({
       <div className="vid__provider">
         <div className="vid__provider-label">Где хранится видео</div>
         <div className="vid__provider-opts">
-          <button
-            type="button"
-            className={`vid__provider-opt${provider === 'self' ? ' is-active' : ''}`}
-            onClick={() => setProvider('self')}
-          >
-            <span className="vid__provider-title">
-              <MapPin size={15} className="vid__provider-icon" /> Для России
-            </span>
-            <span className="vid__provider-hint">Загружаем видео к себе и готовим к просмотру (HLS, качество под зрителя). Работает в РФ без VPN. Нужно подождать обработку. Рекомендуется.</span>
-          </button>
+          <div style={{ position: 'relative', display: 'flex' }}>
+            <button
+              type="button"
+              className={`vid__provider-opt${provider === 'self' ? ' is-active' : ''}`}
+              onClick={() => setProvider('self')}
+              style={{ flex: 1, paddingRight: 44 }}
+            >
+              <span className="vid__provider-title">
+                <MapPin size={15} className="vid__provider-icon" /> Для России
+              </span>
+              <span className="vid__provider-hint">Загружаем видео к себе и готовим к просмотру (HLS, качество под зрителя). Работает в РФ без VPN. Нужно подождать обработку. Рекомендуется.</span>
+            </button>
+            <button
+              ref={gearRef}
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setProfileOpen((o) => !o) }}
+              title="Профиль сжатия для новых загрузок"
+              aria-label="Профиль сжатия"
+              style={{ position: 'absolute', top: 8, right: 8, zIndex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, border: '1px solid var(--st-border)', background: 'var(--st-surface)', color: 'var(--st-text-muted)', cursor: 'pointer' }}
+            >
+              <Settings size={16} />
+            </button>
+          </div>
+          {profileOpen && profilePos && typeof document !== 'undefined' && createPortal(
+            <>
+              <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1200 }} />
+              <div style={{ position: 'fixed', left: profilePos.left, top: profilePos.top, width: 300, zIndex: 1201, background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 14px 44px rgba(0,0,0,.24)', padding: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--st-text)' }}>Профиль сжатия</span>
+                  <button type="button" onClick={() => setProfileOpen(false)} aria-label="Закрыть" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--st-text-muted)', display: 'grid', placeItems: 'center', padding: 2 }}><X size={16} /></button>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--st-text-muted)', marginBottom: 10, lineHeight: 1.4 }}>Действует для новых загрузок. Уже обработанные видео не меняются.</div>
+                <div style={{ display: 'grid', gap: 6 }}>
+                  {VIDEO_PROFILES.map((pr) => {
+                    const active = videoProfile === pr.id
+                    return (
+                      <button
+                        key={pr.id}
+                        type="button"
+                        onClick={() => pickProfile(pr.id)}
+                        style={{ textAlign: 'left', border: `1px solid ${active ? 'var(--st-accent)' : 'var(--st-border)'}`, background: active ? 'color-mix(in srgb, var(--st-accent) 10%, transparent)' : 'transparent', borderRadius: 10, padding: '9px 11px', cursor: 'pointer' }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontWeight: 600, fontSize: 13.5, color: 'var(--st-text)' }}>{pr.title}</span>
+                          {active && <Check size={14} style={{ color: 'var(--st-accent)', marginLeft: 'auto' }} />}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--st-text)', opacity: 0.85, marginTop: 2 }}>{pr.opt}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--st-text-muted)', marginTop: 1 }}>Ценой: {pr.cost}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </>,
+            document.body,
+          )}
           <button
             type="button"
             className="vid__provider-opt is-muted"

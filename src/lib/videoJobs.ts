@@ -16,18 +16,21 @@ export async function enqueueTranscode(
     originalKey?: string | null
     /** Внешний источник (импорт по ссылке, напр. Яндекс.Диск) — воркер качает сам. */
     sourceUrl?: string | null
+    /** Профиль сжатия (fast|balanced|compact|quality). Штампуется на задачу. */
+    profile?: string | null
   },
 ): Promise<void> {
   await sqlRows(
     payload,
-    `INSERT INTO "video_jobs" ("video_id","tenant_id","playback_id","original_key","source_url","status")
-     VALUES ($1,$2,$3,$4,$5,'queued')`,
+    `INSERT INTO "video_jobs" ("video_id","tenant_id","playback_id","original_key","source_url","status","profile")
+     VALUES ($1,$2,$3,$4,$5,'queued',$6)`,
     [
       Number(args.videoId),
       args.tenantId != null ? Number(args.tenantId) : null,
       args.playbackId,
       args.originalKey ?? null,
       args.sourceUrl ?? null,
+      args.profile || 'balanced',
     ],
   )
 }

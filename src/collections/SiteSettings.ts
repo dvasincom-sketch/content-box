@@ -252,6 +252,19 @@ export const SiteSettings: CollectionConfig = {
       ],
     },
     {
+      name: 'videoProfile',
+      type: 'select',
+      defaultValue: 'balanced',
+      label: 'Профиль сжатия видео',
+      options: [
+        { label: 'Баланс', value: 'balanced' },
+        { label: 'Быстро', value: 'fast' },
+        { label: 'Компактно', value: 'compact' },
+        { label: 'Качество', value: 'quality' },
+      ],
+      admin: { description: 'Профиль кодирования для новых загруженных видео. Действует на новые загрузки, уже обработанные не меняет.' },
+    },
+    {
       name: 'heroChips',
       type: 'relationship',
       relationTo: 'categories',
