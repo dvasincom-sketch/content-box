@@ -143,11 +143,6 @@ export function TariffPanel({ data }: { data: TariffPanelData | null }) {
             {tariff.trialActive && <span style={{ fontSize: 13, fontWeight: 500, opacity: 0.7, marginLeft: 8 }}>в триале</span>}
           </span>
         </div>
-
-        <p className="settings__hint" style={{ marginTop: 10 }}>
-          Себестоимость места для платформы — {formatRub(tariff.costRub)}/мес. Это расчёт для наглядности;
-          фактическое списание включится вместе с платёжным провайдером.
-        </p>
       </section>
     </>
   )
