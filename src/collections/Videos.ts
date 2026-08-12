@@ -321,6 +321,27 @@ export const Videos: CollectionConfig = {
       admin: { condition: (data) => data?.provider === 'self', readOnly: true },
     },
     {
+      name: 'originalBytes',
+      type: 'number',
+      label: 'Размер исходника (байты)',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
+    {
+      name: 'encodeMs',
+      type: 'number',
+      label: 'Время кодирования (мс)',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
+    {
+      name: 'videoProfile',
+      type: 'text',
+      label: 'Профиль кодирования',
+      access: { create: () => false, update: () => false },
+      admin: { condition: (data) => data?.provider === 'self', readOnly: true },
+    },
+    {
       name: 'subtitles',
       type: 'json',
       label: 'Субтитры',

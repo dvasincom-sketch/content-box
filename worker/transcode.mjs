@@ -580,6 +580,7 @@ async function processJob(job) {
     const meta = await probe(input)
     log(`job ${job.id} probed: ${meta.width}x${meta.height}, ${Math.round(meta.duration || 0)}s, audio=${meta.hasAudio}`)
     const posterT = Math.max(1, Math.floor((meta.duration || 10) * 0.1))
+    const originalBytes = await fileBytes(input)
 
     t = Date.now()
     log(`job ${job.id} transcoding HLS…`)
@@ -593,6 +594,7 @@ async function processJob(job) {
     }
     await pool.query(`UPDATE video_jobs SET progress=0, updated_at=now() WHERE id=$1`, [job.id]).catch(() => {})
     const renditions = await buildHls(input, hlsDir, meta, onProgress, job.profile)
+    const encodeMs = Date.now() - t
     log(`job ${job.id} transcoded ${renditions.length} rendition(s) in ${secs(t)}s`)
 
     await makePoster(input, join(work, 'poster.jpg'), posterT)
@@ -636,6 +638,9 @@ async function processJob(job) {
       videoId: job.video_id,
       status: 'ready',
       durationSec: Math.round(meta.duration || 0),
+      originalBytes,
+      encodeMs,
+      profile: job.profile || 'balanced',
       renditions: renditions.map((r) => ({ height: r.height, bandwidth: r.bandwidth, key: `hls/${playbackId}/${r.index}/index.m3u8` })),
       masterKey: `hls/${playbackId}/master.m3u8`,
       posterKey: `posters/${playbackId}.jpg`,

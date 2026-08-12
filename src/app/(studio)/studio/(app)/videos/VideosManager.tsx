@@ -102,6 +102,12 @@ function fmtBytes(n: number | null | undefined): string {
   if (mb < 1024) return `${mb >= 100 ? Math.round(mb) : mb.toFixed(1)} МБ`
   return `${(mb / 1024).toFixed(2)} ГБ`
 }
+/** Длительность в «ч м» для истории кодирования. */
+function fmtDurHM(sec: number | null | undefined): string {
+  if (!sec) return '—'
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60)
+  return h > 0 ? `${h} ч ${m} м` : `${m} м`
+}
 
 function fmtDate(iso: string | null): string {
   if (!iso) return ''
@@ -823,10 +829,11 @@ export function AddPanel({
   const [videoProfile, setVideoProfile] = useState<string>('balanced')
   const [profileOpen, setProfileOpen] = useState(false)
   const [profilePos, setProfilePos] = useState<{ left: number; top: number } | null>(null)
+  const [profileRecent, setProfileRecent] = useState<Array<{ title: string; profile: string | null; durationSec: number | null; originalBytes: number | null; assetBytes: number | null; encodeMs: number | null }>>([])
   const gearRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     fetch('/studio/api/settings/video-profile', { credentials: 'include' })
-      .then((r) => r.json()).then((j) => { if (j?.profile) setVideoProfile(j.profile) }).catch(() => {})
+      .then((r) => r.json()).then((j) => { if (j?.profile) setVideoProfile(j.profile); if (Array.isArray(j?.recent)) setProfileRecent(j.recent) }).catch(() => {})
   }, [])
   useLayoutEffect(() => {
     if (!profileOpen || !gearRef.current) return
@@ -882,7 +889,7 @@ export function AddPanel({
           {profileOpen && profilePos && typeof document !== 'undefined' && createPortal(
             <>
               <div onClick={() => setProfileOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1200 }} />
-              <div style={{ position: 'fixed', left: profilePos.left, top: profilePos.top, width: 300, zIndex: 1201, background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 14px 44px rgba(0,0,0,.24)', padding: 12 }}>
+              <div style={{ position: 'fixed', left: profilePos.left, top: profilePos.top, width: 300, maxHeight: 'min(80vh, 580px)', overflowY: 'auto', zIndex: 1201, background: 'var(--st-surface)', border: '1px solid var(--st-border)', borderRadius: 12, boxShadow: '0 14px 44px rgba(0,0,0,.24)', padding: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--st-text)' }}>Профиль сжатия</span>
                   <button type="button" onClick={() => setProfileOpen(false)} aria-label="Закрыть" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--st-text-muted)', display: 'grid', placeItems: 'center', padding: 2 }}><X size={16} /></button>
@@ -908,6 +915,22 @@ export function AddPanel({
                     )
                   })}
                 </div>
+                {profileRecent.length > 0 && (
+                  <div style={{ marginTop: 12, borderTop: '1px solid var(--st-border)', paddingTop: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--st-text)', marginBottom: 2 }}>Как кодировались прошлые видео</div>
+                    <div style={{ fontSize: 11, color: 'var(--st-text-muted)', marginBottom: 8 }}>профиль · длительность · исходник → итог · время</div>
+                    <div style={{ display: 'grid', gap: 9 }}>
+                      {profileRecent.map((v, i) => (
+                        <div key={i} style={{ lineHeight: 1.35 }}>
+                          <div style={{ fontSize: 12, color: 'var(--st-text)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={v.title}>{v.title}</div>
+                          <div style={{ fontSize: 11.5, color: 'var(--st-text-muted)' }}>
+                            {(VIDEO_PROFILES.find((p) => p.id === v.profile)?.title) || '—'} · {fmtDurHM(v.durationSec)} · {fmtBytes(v.originalBytes) || '—'} → {fmtBytes(v.assetBytes) || '—'} · {v.encodeMs ? `${Math.max(1, Math.round(v.encodeMs / 60000))} мин` : '—'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </>,
             document.body,

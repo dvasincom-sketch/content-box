@@ -11,7 +11,29 @@ const VALID = ['fast', 'balanced', 'compact', 'quality']
 export const GET = withAuthor(async ({ payload, tenantId }) => {
   const settings = await findTenantSettings(payload, tenantId)
   const profile = String((settings as any)?.videoProfile || 'balanced')
-  return apiOk({ profile: VALID.includes(profile) ? profile : 'balanced' })
+
+  // Телеметрия последних кодирований — прозрачно показываем в панели профиля.
+  let recent: unknown[] = []
+  try {
+    const res = await payload.find({
+      collection: 'videos',
+      where: { and: [{ tenant: { equals: tenantId } }, { provider: { equals: 'self' } }, { encodeMs: { exists: true } }] },
+      sort: '-createdAt',
+      limit: 12,
+      depth: 0,
+      overrideAccess: true,
+    })
+    recent = (res.docs as any[]).map((v) => ({
+      title: v.title || 'Без названия',
+      profile: v.videoProfile || null,
+      durationSec: v.durationSec || null,
+      originalBytes: v.originalBytes || null,
+      assetBytes: v.assetBytes || null,
+      encodeMs: v.encodeMs || null,
+    }))
+  } catch { /* телеметрия не критична */ }
+
+  return apiOk({ profile: VALID.includes(profile) ? profile : 'balanced', recent })
 })
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
