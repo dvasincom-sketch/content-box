@@ -62,9 +62,9 @@ jobs:
       MEILI_MASTER_KEY: ''
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: npm
@@ -99,7 +99,7 @@ jobs:
       # прогон закрывает её. На Projects-борде включи Auto-add по этой метке.
       - name: Падение → задача в баг-трекер
         if: failure()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const label = 'nightly-failure'
@@ -146,7 +146,7 @@ jobs:
 
       - name: Зелёно → закрыть задачу о падении
         if: success()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const label = 'nightly-failure'

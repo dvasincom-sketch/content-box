@@ -25,9 +25,9 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           # Та же мажорная версия, что в Dockerfile, — чтобы CI ловил то же,
           # что сломается в проде, а не «работает у меня».
