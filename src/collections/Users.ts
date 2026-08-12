@@ -75,6 +75,12 @@ export const Users: CollectionConfig = {
       admin: { hidden: true },
     },
     {
+      name: 'emailVerified',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { hidden: true, description: 'E-mail подтверждён (soft-verify, не блокирует доступ).' },
+    },
+    {
       name: 'tenant',
       type: 'relationship',
       relationTo: 'tenants',

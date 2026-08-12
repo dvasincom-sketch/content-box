@@ -96,6 +96,7 @@ import * as migration_20260812_100000_video_jobs_progress from './20260812_10000
 import * as migration_20260812_110000_users_phone from './20260812_110000_users_phone';
 import * as migration_20260812_120000_video_profile from './20260812_120000_video_profile';
 import * as migration_20260812_130000_video_encode_stats from './20260812_130000_video_encode_stats';
+import * as migration_20260812_140000_users_email_verified from './20260812_140000_users_email_verified';
 
 export const migrations = [
   {
@@ -587,5 +588,10 @@ export const migrations = [
     up: migration_20260812_130000_video_encode_stats.up,
     down: migration_20260812_130000_video_encode_stats.down,
     name: '20260812_130000_video_encode_stats',
+  },
+  {
+    up: migration_20260812_140000_users_email_verified.up,
+    down: migration_20260812_140000_users_email_verified.down,
+    name: '20260812_140000_users_email_verified',
   },
 ];

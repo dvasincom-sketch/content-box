@@ -37,10 +37,15 @@ export default async function ProfilePage() {
 
   const role = (author!.user as any).tenantRole || 'editor'
 
+  const u = author!.user as any
+  const isPhoneAuthor = Boolean(u.phone && u.phoneVerified)
   return (
     <ProfileView
+      name={u.name || ''}
       email={author!.user.email}
-      phone={(author!.user as any).phone ? formatPhone(String((author!.user as any).phone)) : null}
+      emailVerified={Boolean(u.emailVerified)}
+      isPhoneAuthor={isPhoneAuthor}
+      phone={u.phone ? formatPhone(String(u.phone)) : null}
       roleLabel={ROLE_LABELS[role] || role}
       tenantName={tenantName}
     />

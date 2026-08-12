@@ -3,19 +3,27 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatPhoneInput } from '@/lib/phone'
-import { Mail, Phone, Shield, Building2, LogOut, Check, Loader2 } from 'lucide-react'
+import { Mail, Phone, Shield, Building2, LogOut, Check, Loader2, User } from 'lucide-react'
+import { displayEmail } from '@/lib/authEmail'
 
 export function ProfileView({
+  name,
   email,
+  emailVerified,
+  isPhoneAuthor,
   phone,
   roleLabel,
   tenantName,
 }: {
+  name: string
   email: string
+  emailVerified: boolean
+  isPhoneAuthor: boolean
   phone: string | null
   roleLabel: string
   tenantName: string
 }) {
+  const emailShown = displayEmail(email)
   return (
     <>
       <div className="studio-page-head">
@@ -26,10 +34,11 @@ export function ProfileView({
       </div>
 
       <div className="settings">
-        <InfoBlock email={email} phone={phone} roleLabel={roleLabel} tenantName={tenantName} />
+        <InfoBlock name={name} email={emailShown} emailVerified={emailVerified} phone={phone} roleLabel={roleLabel} tenantName={tenantName} />
+        <IdentityBlock currentName={name} currentEmail={emailShown} canEditEmail={isPhoneAuthor} emailVerified={emailVerified} />
         <PhoneBlock currentPhone={phone} />
-        <PasswordBlock />
-        <EmailBlock currentEmail={email} />
+        {!isPhoneAuthor && <PasswordBlock />}
+        {!isPhoneAuthor && <EmailBlock currentEmail={email} />}
         <LogoutBlock />
       </div>
     </>
@@ -37,7 +46,7 @@ export function ProfileView({
 }
 
 /* Инфо (просмотр) */
-function InfoBlock({ email, phone, roleLabel, tenantName }: { email: string; phone: string | null; roleLabel: string; tenantName: string }) {
+function InfoBlock({ name, email, emailVerified, phone, roleLabel, tenantName }: { name: string; email: string | null; emailVerified: boolean; phone: string | null; roleLabel: string; tenantName: string }) {
   return (
     <section className="settings__block">
       <div className="settings__block-head">
@@ -46,9 +55,14 @@ function InfoBlock({ email, phone, roleLabel, tenantName }: { email: string; pho
       </div>
       <div className="profile__info">
         <div className="profile__info-row">
+          <User size={16} className="profile__info-icon" />
+          <span className="profile__info-label">Имя</span>
+          <span className="profile__info-value">{name || 'не указано'}</span>
+        </div>
+        <div className="profile__info-row">
           <Mail size={16} className="profile__info-icon" />
           <span className="profile__info-label">Email</span>
-          <span className="profile__info-value">{email}</span>
+          <span className="profile__info-value">{email ? (emailVerified ? email : `${email} · не подтверждён`) : 'не указан'}</span>
         </div>
         <div className="profile__info-row">
           <Phone size={16} className="profile__info-icon" />
@@ -67,6 +81,60 @@ function InfoBlock({ email, phone, roleLabel, tenantName }: { email: string; pho
             <span className="profile__info-value">{tenantName}</span>
           </div>
         )}
+      </div>
+    </section>
+  )
+}
+
+/* Имя и e-mail (без пароля) — для телефонных авторов */
+function IdentityBlock({ currentName, currentEmail, canEditEmail, emailVerified }: { currentName: string; currentEmail: string | null; canEditEmail: boolean; emailVerified: boolean }) {
+  const router = useRouter()
+  const [name, setName] = useState(currentName || '')
+  const [email, setEmail] = useState(currentEmail || '')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+
+  async function submit() {
+    setError(null); setDone(false)
+    const payload: { name: string; email?: string } = { name: name.trim() }
+    if (canEditEmail) payload.email = email.trim()
+    setBusy(true)
+    try {
+      const res = await fetch('/studio/api/profile/identity', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify(payload),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(json.error || 'Не удалось сохранить'); setBusy(false); return }
+      setDone(true); setBusy(false); router.refresh()
+    } catch { setError('Ошибка соединения'); setBusy(false) }
+  }
+
+  return (
+    <section className="settings__block">
+      <div className="settings__block-head">
+        <h2>{canEditEmail ? 'Имя и e-mail' : 'Имя'}</h2>
+        <p>{canEditEmail ? 'Как вас зовут и на какой e-mail присылать уведомления.' : 'Отображаемое имя автора.'}</p>
+      </div>
+      <div className="profile__form">
+        <label className="studio-field">
+          <span className="studio-field__label">Имя</span>
+          <input className="studio-input" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Как вас зовут" />
+        </label>
+        {canEditEmail && (
+          <label className="studio-field">
+            <span className="studio-field__label">E-mail{currentEmail && !emailVerified ? ' · не подтверждён' : ''}</span>
+            <input className="studio-input" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+          </label>
+        )}
+        {error && <div className="settings__err">{error}</div>}
+        <div className="settings__save-row">
+          {done && <span className="settings__saved"><Check size={15} /> Сохранено</span>}
+          <button className="studio-btn studio-btn--primary" onClick={submit} disabled={busy}>
+            {busy ? <Loader2 size={16} className="spin" /> : null} Сохранить
+          </button>
+        </div>
       </div>
     </section>
   )
