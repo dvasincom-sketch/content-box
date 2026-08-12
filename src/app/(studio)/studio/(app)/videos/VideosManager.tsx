@@ -32,6 +32,7 @@ type Vid = {
   minTierName: string | null
   minTierId: string
   durationSec: number | null
+  assetBytes?: number | null
   coverUrl: string | null
   previewGif?: string | null
   addedAt: string | null
@@ -60,6 +61,10 @@ const SEG_WRAP: React.CSSProperties = {
   display: 'inline-flex', border: '1px solid var(--st-border)', borderRadius: 8,
   overflow: 'hidden', background: 'var(--st-surface)',
 }
+const PAGER_BTN: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32,
+  borderRadius: 8, border: '1px solid var(--st-border)', background: 'var(--st-surface)', color: 'var(--st-text)', cursor: 'pointer',
+}
 function segBtn(active: boolean): React.CSSProperties {
   return {
     padding: '6px 12px', fontSize: 13, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -73,6 +78,14 @@ function fmtDur(sec: number | null): string {
   const m = Math.floor(sec / 60)
   const s = Math.round(sec % 60)
   return `${m}:${String(s).padStart(2, '0')}`
+}
+
+/** Полный размер self-видео (сумма рендишенов + постер/спрайт/gif) из assetBytes. */
+function fmtBytes(n: number | null | undefined): string {
+  if (!n || n <= 0) return ''
+  const mb = n / (1024 * 1024)
+  if (mb < 1024) return `${mb >= 100 ? Math.round(mb) : mb.toFixed(1)} МБ`
+  return `${(mb / 1024).toFixed(2)} ГБ`
 }
 
 function fmtDate(iso: string | null): string {
@@ -368,9 +381,9 @@ export function VideosManager({
           </div>
           {totalPages > 1 && (
             <div className="vidpager__pages">
-              <button type="button" className="folderbar__select-btn" disabled={curPage <= 1} onClick={() => setPage(curPage - 1)} aria-label="Назад"><ChevronLeft size={16} /></button>
-              <span style={{ fontSize: 13, color: 'var(--st-text)', minWidth: 74, textAlign: 'center' }}>{curPage} из {totalPages}</span>
-              <button type="button" className="folderbar__select-btn" disabled={curPage >= totalPages} onClick={() => setPage(curPage + 1)} aria-label="Вперёд"><ChevronRight size={16} /></button>
+              <button type="button" style={{ ...PAGER_BTN, opacity: curPage <= 1 ? 0.4 : 1, pointerEvents: curPage <= 1 ? 'none' : 'auto' }} disabled={curPage <= 1} onClick={() => setPage(curPage - 1)} aria-label="Назад"><ChevronLeft size={16} /></button>
+              <span style={{ fontSize: 13, color: 'var(--st-text-muted)', minWidth: 56, textAlign: 'center' }}>{curPage} / {totalPages}</span>
+              <button type="button" style={{ ...PAGER_BTN, opacity: curPage >= totalPages ? 0.4 : 1, pointerEvents: curPage >= totalPages ? 'none' : 'auto' }} disabled={curPage >= totalPages} onClick={() => setPage(curPage + 1)} aria-label="Вперёд"><ChevronRight size={16} /></button>
             </div>
           )}
         </div>
@@ -579,8 +592,13 @@ function VideoRow({
         >{video.title}</span>
       </td>
 
-      {/* Длительность */}
-      <td className="vidtable__dur-cell">{fmtDur(video.durationSec) || '—'}</td>
+      {/* Длительность + полный размер файла (для загруженных self-видео) */}
+      <td className="vidtable__dur-cell">
+        <div>{fmtDur(video.durationSec) || '—'}</div>
+        {video.assetBytes ? (
+          <div style={{ fontSize: 11, color: 'var(--st-text-muted)', marginTop: 2 }}>{fmtBytes(video.assetBytes)}</div>
+        ) : null}
+      </td>
 
       {/* Уровень */}
       <td>

@@ -76,6 +76,7 @@ export default async function VideosPage() {
       ? String(typeof v.minTier === 'object' ? v.minTier.id : v.minTier)
       : '',
     durationSec: v.durationSec || null,
+    assetBytes: (v as any).assetBytes || null,
     coverUrl: videoThumbUrl(v),
     previewGif: videoGifUrl(v),
     addedAt: v.publishedAt || v.createdAt || null,
