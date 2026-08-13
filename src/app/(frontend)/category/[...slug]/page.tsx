@@ -139,7 +139,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         ? (bpub.gallery as any[]).map((row) => { const img = row?.image; const u = img && typeof img === 'object' ? (img.sizes?.thumbnail?.url || img.url) : null; return u ? { url: u as string, caption: row?.caption || '' } : null }).filter(Boolean)
         : []
       const pfVideos = Array.isArray(bpub.relatedVideos)
-        ? (bpub.relatedVideos as any[]).map((v) => (v && typeof v === 'object' && v.slug ? { slug: String(v.slug), title: String(v.title || 'Видео'), coverUrl: videoThumbUrl(v) } : null)).filter(Boolean)
+        ? (bpub.relatedVideos as any[]).map((v) => (v && typeof v === 'object' && v.slug ? { id: v.id, slug: String(v.slug), title: String(v.title || 'Видео'), coverUrl: videoThumbUrl(v) } : null)).filter(Boolean)
         : []
       const memberDocs = await payload.find({
         collection: 'publications',

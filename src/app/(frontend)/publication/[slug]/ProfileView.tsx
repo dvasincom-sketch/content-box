@@ -4,10 +4,22 @@ import Link from '@/components/AppLink'
 import { toBlocks, BLOCK_LABEL, type ProfileData, type PBlock } from '@/lib/profileBlocks'
 import { AWARD_ICON_MAP } from '@/lib/awardIcons'
 import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
+import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
 type CategoryRow = { title: string; href?: string; items: { href: string; title: string; posterUrl?: string | null }[] }
 
 type GalleryItem = { url?: string; caption?: string }
-type VideoItem = { slug: string; title: string; coverUrl?: string | null }
+type VideoItem = { id?: number | string; slug: string; title: string; coverUrl?: string | null }
+
+function VideoTile({ id, title, coverUrl }: { id?: number | string; title: string; coverUrl?: string | null }) {
+  const [open, setOpen] = useState(false)
+  if (open && id != null) return <div className="pf__vplayer"><VideoPlayer videoId={id} autoPlay /></div>
+  return (
+    <button type="button" className="pf__rel pf__vtile" onClick={() => setOpen(true)} disabled={id == null}>
+      <div className="pf__cov">{coverUrl ? <img src={coverUrl} alt={title} loading="lazy" /> : <span>{title}</span>}<span className="pf__play" aria-hidden /></div>
+      <div className="pf__rb"><div className="tt">{title}</div></div>
+    </button>
+  )
+}
 
 const css = `
 .pf{--pf-acc:var(--brand-primary,#7c3aed);--pf-acc2:var(--brand-accent,#c084fc);
@@ -101,6 +113,12 @@ const css = `
 .pf__grid--f{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .pf__rel{border-radius:14px;overflow:hidden;border:1px solid var(--pf-line);background:var(--pf-card);transition:.18s;text-decoration:none;color:inherit}
 .pf__rel:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.3)}
+.pf__vtile{cursor:pointer;text-align:left;font:inherit;padding:0;width:100%;display:block}
+.pf__vtile .pf__cov{position:relative}
+.pf__play{position:absolute;inset:0;margin:auto;width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;transition:background .15s}
+.pf__play::before{content:'';border-style:solid;border-width:9px 0 9px 15px;border-color:transparent transparent transparent #fff;margin-left:3px}
+.pf__vtile:hover .pf__play{background:rgba(0,0,0,.72)}
+.pf__vplayer{border-radius:14px;overflow:hidden;border:1px solid var(--pf-line);background:#000}
 .pf__cov{aspect-ratio:1;display:grid;place-items:center;text-align:center;padding:12px;font-weight:800;font-size:14px;color:#fff;
   background:linear-gradient(150deg,color-mix(in srgb,var(--pf-acc) 85%,#000),color-mix(in srgb,var(--pf-acc) 40%,#000));position:relative}
 .pf__cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -436,7 +454,7 @@ export function ProfileView({
     }
     if (b.type === 'videos') return (
       <section className={`pf__sec${fullCls}`} key={b.id}>{head}
-        <div className="pf__grid pf__grid--f">{vids.map((v, i) => (<Link href={`/video/${v.slug}`} className="pf__rel" key={i}><div className="pf__cov">{v.coverUrl ? <img src={v.coverUrl} alt={v.title} loading="lazy" /> : v.title}</div><div className="pf__rb"><div className="tt">{v.title}</div></div></Link>))}</div>
+        <div className="pf__grid pf__grid--f">{vids.map((v, i) => (<VideoTile key={i} id={v.id} title={v.title} coverUrl={v.coverUrl} />))}</div>
       </section>)
     if (b.type === 'columns') { const n = Math.min(3, Math.max(1, b.cols?.length || 1)); return (
       <section className={`pf__sec${fullCls}`} key={b.id}>{head}

@@ -308,7 +308,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     const portraitUrl = coverObj?.sizes?.large?.url || coverObj?.url || null
     const pfGallery = galleryItems.map((g) => ({ url: g.thumbUrl || g.url, caption: g.caption }))
     const pfVideos = relatedVideos
-      .map(({ video }: any) => ({ slug: String(video?.slug || ''), title: String(video?.title || 'Видео'), coverUrl: videoThumbUrl(video) }))
+      .map(({ video }: any) => ({ id: video?.id, slug: String(video?.slug || ''), title: String(video?.title || 'Видео'), coverUrl: videoThumbUrl(video) }))
       .filter((v: any) => v.slug)
     // Другие участники: остальные профили тенанта — для перелинковки внизу.
     const memberDocs = await payload.find({
