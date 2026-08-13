@@ -1,7 +1,21 @@
 'use client'
 import React from 'react'
-import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus } from 'lucide-react'
 import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType } from '@/lib/profileBlocks'
+import { GalleryComposer, type GalleryItem } from './GalleryComposer'
+import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
+
+export type PEMedia = {
+  gallery: GalleryItem[]
+  setGallery: (g: GalleryItem[]) => void
+  galleryFolders?: { id: number | string; title: string; parentId: number | string | null }[]
+  videoCandidates: VideoOption[]
+  videoIds: (number | string)[]
+  setVideoIds: (v: (number | string)[]) => void
+  videoModalCats: any
+  canCreateMedia?: boolean
+  openVideoModal: () => void
+}
 
 export type { ProfileData } from '@/lib/profileBlocks'
 import type { ProfileData } from '@/lib/profileBlocks'
@@ -15,14 +29,21 @@ const ADD_MENU: { type: PBlockType; hint: string }[] = [
   { type: 'films', hint: 'Горизонтальные карточки (название · подпись · год)' },
   { type: 'awards', hint: 'Плашки с иконкой (заголовок + подпись)' },
   { type: 'factsList', hint: 'Нумерованные плитки: заголовок + текст' },
-  { type: 'gallery', hint: 'Сетка фото (загрузите ниже)' },
-  { type: 'videos', hint: 'Ролики (добавьте ниже)' },
+  { type: 'gallery', hint: 'Сетка фото (загрузите прямо в блоке)' },
+  { type: 'videos', hint: 'Ролики (выберите прямо в блоке)' },
   { type: 'columns', hint: 'Текст в 2–3 колонки' },
   { type: 'callout', hint: 'Выделенная выноска / цитата' },
   { type: 'categoryRow', hint: 'Ряд постеров выбранной категории' },
   { type: 'button', hint: 'Кнопка-ссылка (CTA)' },
   { type: 'divider', hint: 'Разделитель / отступ' },
 ]
+
+const BLOCK_ICON: Record<PBlockType, React.ComponentType<{ size?: number }>> = {
+  text: Type, timeline: Clock, relations: ListCollapse, releases: ImageIcon, films: Film,
+  awards: Award, factsList: LayoutGrid, gallery: Images, videos: Video,
+  columns: Columns3, callout: Quote, categoryRow: GalleryHorizontalEnd, button: MousePointerClick, divider: Minus,
+}
+const BlockIcon = ({ type, size = 15 }: { type: PBlockType; size?: number }) => { const I = BLOCK_ICON[type]; return <I size={size} /> }
 
 type Col = { key: string; label: string; textarea?: boolean; ph?: string; w?: number }
 
@@ -126,7 +147,7 @@ function CategoryRowEditor({ categoryId, cats, patch }: { categoryId?: number | 
   )
 }
 
-function BlockBody({ block, patch, cats }: { block: PBlock; patch: (p: Partial<PBlock>) => void; cats?: { id: number | string; title: string }[] }) {
+function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Partial<PBlock>) => void; cats?: { id: number | string; title: string }[]; media?: PEMedia }) {
   switch (block.type) {
     case 'text':
       return (
@@ -145,9 +166,19 @@ function BlockBody({ block, patch, cats }: { block: PBlock; patch: (p: Partial<P
     case 'factsList':
       return <FactsEditor items={block.items} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
     case 'gallery':
-      return <div className="pe__note">Фото галереи загружаются в блоке «Медиа» публикации. Этот блок задаёт положение галереи на странице.</div>
+      return media ? (
+        <div className="pe__rows">
+          <GalleryComposer value={media.gallery} onChange={media.setGallery} folders={media.galleryFolders} />
+          <div className="pe__note">Фото показываются сеткой на странице в этом месте. Порядок — перетаскиванием.</div>
+        </div>
+      ) : <div className="pe__note">Загрузка фото доступна в редакторе публикации.</div>
     case 'videos':
-      return <div className="pe__note">Ролики добавляются в блоке «Медиа» публикации. Этот блок задаёт положение видео на странице.</div>
+      return media ? (
+        <div className="pe__rows">
+          <VideoAttachPicker videos={media.videoCandidates} value={media.videoIds} onChange={media.setVideoIds} categoryTree={media.videoModalCats} searchPlaceholder="Поиск видео по названию…" emptyLabel="Нет загруженных видео" icon={Video} leadingButton={media.canCreateMedia ? <button type="button" className="gcomp__add" onClick={media.openVideoModal}><Plus size={16} /> Добавить видео</button> : undefined} />
+          <div className="pe__note">Ролики появятся на странице в этом месте, в указанном порядке.</div>
+        </div>
+      ) : <div className="pe__note">Добавление видео доступно в редакторе публикации.</div>
     case 'columns': {
       const cols = block.cols ?? []
       const setCols = (n: any[]) => patch({ cols: n } as Partial<PBlock>)
@@ -203,7 +234,7 @@ function BlockBody({ block, patch, cats }: { block: PBlock; patch: (p: Partial<P
   }
 }
 
-function BlockCard({ block, index, total, patch, move, remove, cats }: {
+function BlockCard({ block, index, total, patch, move, remove, cats, media }: {
   block: PBlock
   index: number
   total: number
@@ -211,12 +242,13 @@ function BlockCard({ block, index, total, patch, move, remove, cats }: {
   move: (d: number) => void
   remove: () => void
   cats?: { id: number | string; title: string }[]
+  media?: PEMedia
 }) {
   const full = (block as { full?: boolean }).full
   return (
     <div className="pe__card">
       <div className="pe__card-head">
-        <GripVertical size={15} className="pe__grip" />
+        <span className="pe__ico"><BlockIcon type={block.type} /></span>
         <span className="pe__card-kind">{BLOCK_LABEL[block.type]}</span>
         <input className="studio-input pe__title" placeholder={BLOCK_LABEL[block.type]} value={block.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />
         <div className="pe__ctrls">
@@ -226,12 +258,12 @@ function BlockCard({ block, index, total, patch, move, remove, cats }: {
           <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={remove} title="Удалить блок"><Trash2 size={15} /></button>
         </div>
       </div>
-      <div className="pe__card-body"><BlockBody block={block} patch={patch} cats={cats} /></div>
+      <div className="pe__card-body"><BlockBody block={block} patch={patch} cats={cats} media={media} /></div>
     </div>
   )
 }
 
-export function ProfileEditor({ value, onChange, cats }: { value: ProfileData | null; onChange: (v: ProfileData) => void; cats?: { id: number | string; title: string }[] }) {
+export function ProfileEditor({ value, onChange, cats, media }: { value: ProfileData | null; onChange: (v: ProfileData) => void; cats?: { id: number | string; title: string }[]; media?: PEMedia }) {
   const v: ProfileData = value || {}
   const set = (patch: Partial<ProfileData>) => onChange({ ...v, ...patch })
 
@@ -270,7 +302,7 @@ export function ProfileEditor({ value, onChange, cats }: { value: ProfileData | 
       <div className="pe__blocks-title">Блоки страницы <em>{blocks.length}</em></div>
       {blocks.length === 0 && <div className="pe__empty">Пока нет ни одного блока. Добавьте первый ниже.</div>}
       {blocks.map((b, i) => (
-        <BlockCard key={b.id} block={b} index={i} total={blocks.length} patch={(p) => patchBlock(i, p)} move={(d) => moveBlock(i, d)} remove={() => removeBlock(i)} cats={cats} />
+        <BlockCard key={b.id} block={b} index={i} total={blocks.length} patch={(p) => patchBlock(i, p)} move={(d) => moveBlock(i, d)} remove={() => removeBlock(i)} cats={cats} media={media} />
       ))}
 
       <div className="pe__addwrap">
@@ -279,7 +311,8 @@ export function ProfileEditor({ value, onChange, cats }: { value: ProfileData | 
           <div className="pe__menu">
             {ADD_MENU.map((m) => (
               <button type="button" key={m.type} className="pe__menu-item" onClick={() => { addBlock(m.type); setMenuOpen(false) }}>
-                <b>{BLOCK_LABEL[m.type]}</b><span>{m.hint}</span>
+                <span className="pe__ico"><BlockIcon type={m.type} /></span>
+                <span className="pe__menu-txt"><b>{BLOCK_LABEL[m.type]}</b><span>{m.hint}</span></span>
               </button>
             ))}
           </div>
@@ -300,6 +333,7 @@ const PE_CSS = `
 .pe__card{border:1px solid var(--st-border);border-radius:12px;margin-bottom:10px;background:var(--st-surface);overflow:hidden}
 .pe__card-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--st-border);background:color-mix(in srgb,var(--st-text) 3%,transparent)}
 .pe__grip{color:var(--st-text-muted);flex:none}
+.pe__ico{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:color-mix(in srgb,#2f6bed 12%,transparent);color:#2f6bed;flex:none}
 .pe__card-kind{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--st-text-muted);background:color-mix(in srgb,var(--st-text) 8%,transparent);border-radius:999px;padding:3px 10px;flex:none}
 .pe__title{flex:1;min-width:100px;height:32px}
 .pe__card-body{padding:12px 14px}
@@ -312,7 +346,8 @@ const PE_CSS = `
 .pe__addwrap{position:relative;margin-top:6px}
 .pe__addblock{width:100%;justify-content:center}
 .pe__menu{position:absolute;left:0;right:0;bottom:calc(100% + 6px);z-index:20;background:var(--st-surface);border:1px solid var(--st-border);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.18);padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.pe__menu-item{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;border:1px solid transparent;background:transparent;border-radius:9px;padding:8px 11px;cursor:pointer;color:var(--st-text)}
+.pe__menu-item{display:flex;flex-direction:row;gap:10px;align-items:center;text-align:left;border:1px solid transparent;background:transparent;border-radius:9px;padding:8px 11px;cursor:pointer;color:var(--st-text)}
+.pe__menu-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .pe__menu-item:hover{background:color-mix(in srgb,var(--st-accent) 12%,transparent);border-color:color-mix(in srgb,var(--st-accent) 26%,transparent)}
 .pe__menu-item b{font-size:13px;font-weight:600}
 .pe__menu-item span{font-size:11.5px;color:var(--st-text-muted)}

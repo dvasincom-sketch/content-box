@@ -45,7 +45,11 @@ const css = `
 .pf__qf{background:var(--pf-card);border:1px solid var(--pf-line);border-radius:12px;padding:8px 13px}
 .pf__qf b{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--pf-mut);font-weight:700;margin-bottom:2px}
 .pf__qf i{font-style:normal;font-size:14px;font-weight:600}
-.pf__wrap{display:grid;grid-template-columns:220px 1fr;gap:40px;align-items:start}
+.pf__wrap{display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;align-items:start}
+.pf__wrap>main{min-width:0}
+.pf p,.pf__sh,.pf__tile,.pf__callout-body,.pf__col,.pf__td,.pf__tt,.pf__lead,.pf__accb,.pf__qf i,.pf__fr i{overflow-wrap:anywhere}
+.pf__cols,.pf__col,.pf__grid,.pf__crow,.pf__tiles,.pf__badges,.pf__factsg{min-width:0}
+.pf__name,.pf__sub,.pf__eye{overflow-wrap:anywhere}
 .pf__toc{position:sticky;top:76px;max-height:calc(100vh - 96px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--pf-tx) 22%,transparent) transparent}
 .pf__toc::-webkit-scrollbar{width:6px}
 .pf__toc::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--pf-tx) 18%,transparent);border-radius:99px}
@@ -131,7 +135,7 @@ const css = `
 .pf__crow .pf__pcard{flex:0 0 auto;width:150px;scroll-snap-align:start;text-decoration:none;color:inherit}
 .pf__crow::-webkit-scrollbar{height:6px}
 .pf__crow::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--pf-tx) 18%,transparent);border-radius:99px}
-.pf__sec--full>p,.pf__sec--full>.pf__sh{max-width:none}
+.pf__sec--full>p,.pf__sec--full>.pf__sh,.pf__sec--full .pf__col>p,.pf__sec--full .pf__callout,.pf__sec--full .pf__tl,.pf__sec--full .pf__acc{max-width:none}
 .pf__sec--btn{margin-bottom:34px}
 .pf__btnwrap{display:flex}
 .pf__btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:12px;font-weight:650;font-size:15px;text-decoration:none;background:linear-gradient(135deg,var(--brand-primary,var(--pf-acc)),var(--brand-accent,var(--pf-acc2)));color:#fff;border:1px solid transparent;transition:transform .15s,box-shadow .15s}
@@ -166,11 +170,7 @@ const css = `
   .pf__toca.on::before{display:none}
   .pf__tocsub{display:none}
   .pf__factsg{grid-template-columns:1fr}
-  .pf__sec--full{margin-left:0}
   .pf__cols{grid-template-columns:1fr !important}
-}
-@media(min-width:901px){
-  .pf__sec--full{margin-left:-260px}
 }
 `
 
@@ -455,19 +455,7 @@ export function ProfileView({
         </main>
       </div>
 
-      {members && members.length > 0 && (
-        <div className="pf__members">
-          <div className="pf__members-h">Другие участники</div>
-          <div className="pf__members-row">
-            {members.map((m) => (
-              <Link key={m.slug} href={`/publication/${m.slug}`} className="pf__mem">
-                <span className="pf__mem-av">{m.portraitUrl ? <img src={m.portraitUrl} alt={m.title} loading="lazy" /> : initialsOf(m.title)}</span>
-                <span className="pf__mem-nm">{m.title}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Авто-лента «Другие участники» скрыта: для этого есть блок «Ряд-постеры». */}
     </div>
   )
 }
