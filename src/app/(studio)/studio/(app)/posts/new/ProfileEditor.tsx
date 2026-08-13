@@ -1,7 +1,8 @@
 'use client'
 import React from 'react'
-import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus } from 'lucide-react'
-import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType } from '@/lib/profileBlocks'
+import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X } from 'lucide-react'
+import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType, type PBAward } from '@/lib/profileBlocks'
+import { AWARD_ICONS, AWARD_ICON_MAP } from '@/lib/awardIcons'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
 import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 
@@ -147,6 +148,57 @@ function CategoryRowEditor({ categoryId, cats, patch }: { categoryId?: number | 
   )
 }
 
+function IconPicker({ value, onPick, onClose }: { value?: string; onPick: (key: string) => void; onClose: () => void }) {
+  const [q, setQ] = React.useState('')
+  const nq = q.trim().toLowerCase()
+  const list = nq ? AWARD_ICONS.filter((i) => i.label.toLowerCase().includes(nq) || i.key.toLowerCase().includes(nq)) : AWARD_ICONS
+  return (
+    <div className="pe__iconov" onMouseDown={onClose}>
+      <div className="pe__iconpanel" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="pe__iconhead">
+          <input className="studio-input" autoFocus placeholder="Поиск иконки…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <button type="button" className="pe__iconclose" onClick={onClose} title="Закрыть"><X size={16} /></button>
+        </div>
+        <div className="pe__icongrid">
+          <button type="button" className={'pe__iconcell' + (!value ? ' on' : '')} onClick={() => onPick('')} title="Без иконки"><Minus size={18} /></button>
+          {list.map((i) => { const I = i.Comp; return (
+            <button type="button" key={i.key} className={'pe__iconcell' + (value === i.key ? ' on' : '')} onClick={() => onPick(i.key)} title={i.label}><I size={18} /></button>
+          ) })}
+          {!list.length && <div className="pe__note">Ничего не найдено</div>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AwardsEditor({ items, onChange }: { items: PBAward[]; onChange: (n: PBAward[]) => void }) {
+  const list = Array.isArray(items) ? items : []
+  const [pick, setPick] = React.useState<number | null>(null)
+  const upd = (i: number, k: string, v: string) => onChange(list.map((r, j) => j === i ? { ...r, [k]: v } : r))
+  const move = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; const t = n[i]; n[i] = n[j]; n[j] = t; onChange(n) }
+  const del = (i: number) => onChange(list.filter((_, j) => j !== i))
+  return (
+    <div className="pe__rows">
+      {list.map((r, i) => { const Ic = r.icon ? AWARD_ICON_MAP[r.icon] : null; return (
+        <div className="pe__row" key={i}>
+          <div className="pe__fields">
+            <button type="button" className="pe__iconbtn" onClick={() => setPick(i)} title="Выбрать иконку">{Ic ? <Ic size={18} /> : <span>{r.icon || '★'}</span>}</button>
+            <input className="studio-input" style={{ flex: 2, minWidth: 90 }} placeholder="Заголовок" value={r.title ?? ''} onChange={(e) => upd(i, 'title', e.target.value)} />
+            <input className="studio-input" style={{ flex: 2, minWidth: 90 }} placeholder="Подпись" value={r.subtitle ?? ''} onChange={(e) => upd(i, 'subtitle', e.target.value)} />
+          </div>
+          <div className="pe__ctrls">
+            <button type="button" style={rowBtn} onClick={() => move(i, -1)} title="Выше"><ChevronUp size={15} /></button>
+            <button type="button" style={rowBtn} onClick={() => move(i, 1)} title="Ниже"><ChevronDown size={15} /></button>
+            <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={() => del(i)} title="Удалить"><Trash2 size={15} /></button>
+          </div>
+        </div>
+      ) })}
+      <button type="button" className="studio-btn studio-btn--ghost pe__add" onClick={() => onChange([...list, { icon: 'Trophy', title: '', subtitle: '' }])}><Plus size={15} /> Добавить</button>
+      {pick !== null && <IconPicker value={list[pick]?.icon} onPick={(k) => { upd(pick, 'icon', k); setPick(null) }} onClose={() => setPick(null)} />}
+    </div>
+  )
+}
+
 function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Partial<PBlock>) => void; cats?: { id: number | string; title: string }[]; media?: PEMedia }) {
   switch (block.type) {
     case 'text':
@@ -162,7 +214,7 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
     case 'films':
       return <ArrayEditor items={block.items} cols={[{ key: 'title', label: 'Название', w: 2 }, { key: 'meta', label: 'Тип', w: 1 }, { key: 'year', label: 'Год', w: 1 }]} blank={() => ({ title: '', meta: '', year: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
     case 'awards':
-      return <ArrayEditor items={block.items} cols={[{ key: 'icon', label: 'Эмодзи', w: 1 }, { key: 'title', label: 'Название', w: 2 }, { key: 'subtitle', label: 'Подпись', w: 2 }]} blank={() => ({ icon: '🏆', title: '', subtitle: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
+      return <AwardsEditor items={block.items} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
     case 'factsList':
       return <FactsEditor items={block.items} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
     case 'gallery':
@@ -353,6 +405,16 @@ const PE_CSS = `
 .pe__menu-item span{font-size:11.5px;color:var(--st-text-muted)}
 .pe__colsgrid{display:grid;grid-template-columns:1fr;gap:12px}
 .pe__coled{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--st-border);border-radius:10px;background:color-mix(in srgb,var(--st-text) 2%,transparent)}
+.pe__iconbtn{width:38px;height:38px;flex:none;border:1px solid var(--st-border);border-radius:8px;background:var(--st-surface);color:var(--st-text);display:grid;place-items:center;cursor:pointer;font-size:16px}
+.pe__iconbtn:hover{border-color:#2f6bed;color:#2f6bed}
+.pe__iconov{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.4)}
+.pe__iconpanel{position:fixed;left:0;top:0;bottom:0;width:340px;max-width:90vw;background:var(--st-surface);border-right:1px solid var(--st-border);box-shadow:12px 0 40px rgba(0,0,0,.25);display:flex;flex-direction:column;padding:14px}
+.pe__iconhead{display:flex;gap:8px;margin-bottom:12px;flex:none}
+.pe__iconclose{flex:none;width:36px;border:1px solid var(--st-border);border-radius:8px;background:var(--st-surface);color:var(--st-text-muted);cursor:pointer;display:grid;place-items:center}
+.pe__icongrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;overflow-y:auto;align-content:start}
+.pe__iconcell{aspect-ratio:1;border:1px solid var(--st-border);border-radius:10px;background:var(--st-surface);color:var(--st-text);display:grid;place-items:center;cursor:pointer;transition:border-color .12s,color .12s,background .12s}
+.pe__iconcell:hover{border-color:#2f6bed;color:#2f6bed;background:color-mix(in srgb,#2f6bed 8%,transparent)}
+.pe__iconcell.on{border-color:#2f6bed;color:#fff;background:#2f6bed}
 .pe__crowprev{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px}
 .pe__pcardprev{flex:0 0 auto;width:72px}
 .pe__pframe{position:relative;width:72px;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,var(--st-accent,#8b5cf6),color-mix(in srgb,var(--st-accent,#8b5cf6) 45%,#000));display:grid;place-items:center;color:#fff;font-weight:700}

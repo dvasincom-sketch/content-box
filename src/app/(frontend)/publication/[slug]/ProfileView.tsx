@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Link from '@/components/AppLink'
 import { toBlocks, BLOCK_LABEL, type ProfileData, type PBlock } from '@/lib/profileBlocks'
+import { AWARD_ICON_MAP } from '@/lib/awardIcons'
 type CategoryRow = { title: string; href?: string; items: { href: string; title: string; posterUrl?: string | null }[] }
 
 type GalleryItem = { url?: string; caption?: string }
@@ -104,7 +105,7 @@ const css = `
 .pf__chip{font-size:11px;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--pf-tx) 8%,transparent);color:var(--pf-mut)}
 .pf__badges{display:flex;flex-wrap:wrap;gap:9px}
 .pf__badge{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:12px;background:var(--pf-card);border:1px solid var(--pf-line)}
-.pf__badge em{font-style:normal;width:26px;height:26px;border-radius:8px;background:linear-gradient(120deg,var(--pf-acc),var(--pf-acc2));display:grid;place-items:center;font-size:14px;flex:none}
+.pf__badge em{font-style:normal;width:26px;height:26px;border-radius:8px;background:linear-gradient(120deg,var(--pf-acc),var(--pf-acc2));display:grid;place-items:center;font-size:14px;flex:none;color:#fff}
 .pf__badge b{font-size:14px}.pf__badge span{display:block;font-size:12px;color:var(--pf-mut)}
 .pf__tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:14px}
 .pf__tile{padding:17px 18px;border-radius:16px;background:var(--pf-card);border:1px solid var(--pf-line);display:flex;flex-direction:column}
@@ -345,7 +346,7 @@ export function ProfileView({
       </section>)
     if (b.type === 'awards') return (
       <section className={`pf__sec${fullCls}`} key={b.id}>{head}
-        <div className="pf__badges">{b.items.map((a, i) => (<div className="pf__badge" key={i}><em>{a.icon || '🏆'}</em><div><b>{a.title}</b>{a.subtitle && <span>{a.subtitle}</span>}</div></div>))}</div>
+        <div className="pf__badges">{b.items.map((a, i) => { const Ic = a.icon ? AWARD_ICON_MAP[a.icon] : null; return (<div className="pf__badge" key={i}><em>{Ic ? <Ic size={16} /> : (a.icon || '🏆')}</em><div><b>{a.title}</b>{a.subtitle && <span>{a.subtitle}</span>}</div></div>) })}</div>
       </section>)
     if (b.type === 'factsList') return (
       <section className={`pf__sec${fullCls}`} key={b.id}>{head}
