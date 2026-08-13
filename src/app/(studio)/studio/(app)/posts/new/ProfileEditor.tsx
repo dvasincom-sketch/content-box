@@ -8,7 +8,7 @@ import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 export type PEMedia = {
   gallery: GalleryItem[]
   setGallery: (g: GalleryItem[]) => void
-  galleryFolders?: { id: number | string; title: string; parentId: number | string | null }[]
+  galleryFolders: { id: number | string; title: string; parentId: number | string | null }[]
   videoCandidates: VideoOption[]
   videoIds: (number | string)[]
   setVideoIds: (v: (number | string)[]) => void
