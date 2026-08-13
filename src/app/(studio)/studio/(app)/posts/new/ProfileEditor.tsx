@@ -478,7 +478,7 @@ const PE_CSS = `
 .pe__iconpanel{position:fixed;left:0;top:0;bottom:0;width:340px;max-width:90vw;background:var(--st-surface);border-right:1px solid var(--st-border);box-shadow:12px 0 40px rgba(0,0,0,.25);display:flex;flex-direction:column;padding:14px}
 .pe__iconhead{display:flex;gap:8px;margin-bottom:12px;flex:none}
 .pe__iconclose{flex:none;width:36px;border:1px solid var(--st-border);border-radius:8px;background:var(--st-surface);color:var(--st-text-muted);cursor:pointer;display:grid;place-items:center}
-.pe__icongrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;overflow-y:auto;align-content:start}
+.pe__icongrid{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;overflow-y:auto;align-content:start}
 .pe__iconcell{aspect-ratio:1;border:1px solid var(--st-border);border-radius:10px;background:var(--st-surface);color:var(--st-text);display:grid;place-items:center;cursor:pointer;transition:border-color .12s,color .12s,background .12s}
 .pe__iconcell:hover{border-color:#2f6bed;color:#2f6bed;background:color-mix(in srgb,#2f6bed 8%,transparent)}
 .pe__iconcell.on{border-color:#2f6bed;color:#fff;background:#2f6bed}

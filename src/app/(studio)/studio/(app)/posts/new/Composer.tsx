@@ -40,7 +40,7 @@ function flattenCategories(cats: Category[]): MetaCat[] {
   return out
 }
 
-/** «13 авг 2026, 14:30» — момент прошлого снимка для панели истории версий. */
+/** «13 авг 2026, 14:30» — момент предыдущей версии для панели истории версий. */
 function fmtWhen(iso?: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
@@ -668,7 +668,7 @@ export function Composer({
             {initial?.prevVersionAt ? (
               <>
                 <div className="composer__hint" style={{ marginTop: 0 }}>
-                  Сохранён снимок от {fmtWhen(initial.prevVersionAt)}. Если это сохранение оказалось ошибкой — верните предыдущий вариант.
+                  Предыдущая версия от {fmtWhen(initial.prevVersionAt)}. Если это сохранение оказалось ошибкой — верните её.
                 </div>
                 <button
                   type="button"
@@ -680,12 +680,12 @@ export function Composer({
                   {restoring ? 'Восстановление…' : 'Восстановить предыдущую'}
                 </button>
                 <div className="composer__hint" style={{ marginTop: 8 }}>
-                  Хранится только последняя предыдущая версия. Восстановление обратимо: текущее содержимое станет новым снимком.
+                  Хранится только одна предыдущая версия. Восстановление обратимо: текущее содержимое станет предыдущей версией.
                 </div>
               </>
             ) : (
               <div className="composer__hint" style={{ marginTop: 0 }}>
-                Пока нет предыдущих версий. Снимок создаётся автоматически при каждом сохранении — сюда попадёт состояние «как было до правки».
+                Пока нет предыдущих версий. Она создаётся автоматически при каждом сохранении — сюда попадёт состояние «как было до правки».
               </div>
             )}
           </div>
