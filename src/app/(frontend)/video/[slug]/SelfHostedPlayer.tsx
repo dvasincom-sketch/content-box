@@ -105,7 +105,7 @@ export function SelfHostedPlayer({
   const [ccOpen, setCcOpen] = useState(false)
   const [chOpen, setChOpen] = useState(false)
   const [qOpen, setQOpen] = useState(false)
-  const [levels, setLevels] = useState<{ height: number; index: number }[]>([])
+  const [levels, setLevels] = useState<{ height: number; bitrate: number; index: number }[]>([])
   const [currentQuality, setCurrentQuality] = useState(-1) // -1 = авто (ABR)
   const [chHover, setChHover] = useState(-1)
   const chapters = Array.isArray(chapters_) ? chapters_ : []
@@ -126,11 +126,10 @@ export function SelfHostedPlayer({
     if (!video) return
     let hls: { destroy: () => void } | null = null
     let cancelled = false
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = master
-      return () => { video.removeAttribute('src'); video.load() }
-    }
     setLevels([]); setCurrentQuality(-1)
+    // Предпочитаем hls.js везде, где есть MSE (десктопный Safari, Chrome,
+    // Firefox) — только он даёт ручной выбор качества. Нативный HLS оставляем
+    // фолбэком там, где MSE недоступен (iOS Safari): там качеством управляет ОС.
     import('hls.js')
       .then(({ default: Hls }) => {
         if (cancelled) return
@@ -140,10 +139,9 @@ export function SelfHostedPlayer({
           inst.attachMedia(video)
           // Список доступных качеств (для ручного выбора 480/720/1080).
           inst.on(Hls.Events.MANIFEST_PARSED, () => {
-            const lv = ((inst.levels || []) as Array<{ height?: number }>)
-              .map((l, i) => ({ height: l.height || 0, index: i }))
-              .filter((l) => l.height > 0)
-              .sort((a, b) => b.height - a.height)
+            const lv = ((inst.levels || []) as Array<{ height?: number; bitrate?: number }>)
+              .map((l, i) => ({ height: l.height || 0, bitrate: l.bitrate || 0, index: i }))
+              .sort((a, b) => (b.height - a.height) || (b.bitrate - a.bitrate))
             if (!cancelled) setLevels(lv)
           })
           hls = inst
@@ -499,7 +497,7 @@ export function SelfHostedPlayer({
                 <div style={ccMenuStyle}>
                   <button type="button" onClick={() => setQuality(-1)} style={ccItemStyle(currentQuality === -1)}>Авто</button>
                   {levels.map((l) => (
-                    <button key={l.index} type="button" onClick={() => setQuality(l.index)} style={ccItemStyle(currentQuality === l.index)}>{l.height}p</button>
+                    <button key={l.index} type="button" onClick={() => setQuality(l.index)} style={ccItemStyle(currentQuality === l.index)}>{l.height > 0 ? `${l.height}p` : l.bitrate > 0 ? `${Math.round(l.bitrate / 1000)}k` : `Уровень ${l.index + 1}`}</button>
                   ))}
                 </div>
               )}
