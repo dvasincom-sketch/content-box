@@ -469,7 +469,7 @@ export function SelfHostedPlayer({
             </button>
           )}
           {tracks.length > 0 && (
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
               <button
                 type="button"
                 aria-label="Субтитры"
@@ -489,7 +489,7 @@ export function SelfHostedPlayer({
             </div>
           )}
           {levels.length > 1 && (
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
               <button type="button" aria-label="Качество" onClick={() => setQOpen((o) => !o)} style={btnStyle}>
                 <Settings size={20} />
               </button>
@@ -571,5 +571,5 @@ function ccItemStyle(active: boolean): React.CSSProperties {
 
 const btnStyle: React.CSSProperties = {
   background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 4,
-  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 0,
 }
