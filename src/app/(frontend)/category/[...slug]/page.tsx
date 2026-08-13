@@ -141,11 +141,20 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       const pfVideos = Array.isArray(bpub.relatedVideos)
         ? (bpub.relatedVideos as any[]).map((v) => (v && typeof v === 'object' && v.slug ? { slug: String(v.slug), title: String(v.title || 'Видео'), coverUrl: videoThumbUrl(v) } : null)).filter(Boolean)
         : []
+      const memberDocs = await payload.find({
+        collection: 'publications',
+        where: { and: [{ tenant: { equals: tenant.id } }, { template: { equals: 'profile' } }, { id: { not_equals: bpub.id } }, publishedWhere()] },
+        sort: 'title', limit: 12, depth: 1, overrideAccess: true,
+      })
+      const members = (memberDocs.docs as any[]).map((m) => {
+        const c = m.cover && typeof m.cover === 'object' ? (m.cover as any) : null
+        return { slug: String(m.slug || ''), title: String(m.title || ''), portraitUrl: c?.sizes?.card?.url || c?.sizes?.large?.url || c?.url || null }
+      }).filter((m: any) => m.slug)
       return (
         <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
           <div className="max-w-6xl mx-auto px-4 py-8">
             <Breadcrumbs crumbs={bcrumbs as any} lastIsCurrent className="mb-6" />
-            <ProfileView data={bpub.profile} title={bpub.title} portraitUrl={portraitUrl} gallery={pfGallery as any} videos={pfVideos as any} />
+            <ProfileView data={bpub.profile} title={bpub.title} portraitUrl={portraitUrl} gallery={pfGallery as any} videos={pfVideos as any} members={members} />
           </div>
         </main>
       )

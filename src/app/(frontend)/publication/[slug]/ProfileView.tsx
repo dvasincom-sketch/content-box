@@ -25,6 +25,16 @@ const css = `
   position:relative;box-shadow:0 24px 60px rgba(0,0,0,.35)}
 .pf__port img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pf__port span{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;color:var(--pf-mut);text-align:center;padding:12px}
+.pf__mono{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:clamp(52px,10vw,104px);color:color-mix(in srgb,#fff 85%,transparent);letter-spacing:.02em;text-shadow:0 4px 18px rgba(0,0,0,.28)}
+.pf__members{margin-top:30px;padding-top:26px;border-top:1px solid var(--pf-line)}
+.pf__members-h{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--pf-mut);font-weight:700;margin-bottom:16px}
+.pf__members-row{display:flex;flex-wrap:wrap;gap:16px}
+.pf__mem{display:flex;flex-direction:column;align-items:center;gap:9px;text-decoration:none;color:var(--pf-mut);width:88px;transition:.15s}
+.pf__mem:hover{color:var(--pf-tx)}
+.pf__mem-av{width:66px;height:66px;border-radius:50%;overflow:hidden;position:relative;display:grid;place-items:center;font-weight:800;font-size:21px;color:#fff;border:1px solid var(--pf-line);background:linear-gradient(150deg,color-mix(in srgb,var(--pf-acc) 80%,#000),color-mix(in srgb,var(--pf-acc) 35%,#000));box-shadow:0 8px 22px rgba(0,0,0,.28);transition:.15s}
+.pf__mem:hover .pf__mem-av{transform:translateY(-3px);box-shadow:0 14px 32px rgba(0,0,0,.38)}
+.pf__mem-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pf__mem-nm{font-size:13px;font-weight:600;text-align:center;line-height:1.2}
 .pf__eye{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--pf-acc2);font-weight:700}
 .pf__name{font-size:clamp(36px,6vw,72px);font-weight:800;letter-spacing:-.02em;margin:8px 0 6px}
 .pf__sub{font-size:17px;color:var(--pf-mut)}
@@ -100,14 +110,23 @@ const css = `
 }
 `
 
+type Member = { slug: string; title: string; portraitUrl?: string | null }
+
+const initialsOf = (name: string): string => {
+  const w = (name || '').trim().split(/\s+/).filter(Boolean)
+  const s = w.length >= 2 ? w[0][0] + w[1][0] : (w[0] ? (w[0].length <= 3 ? w[0] : w[0].slice(0, 2)) : '')
+  return s.toUpperCase() || '★'
+}
+
 export function ProfileView({
-  data, title, portraitUrl, gallery, videos,
+  data, title, portraitUrl, gallery, videos, members,
 }: {
   data: ProfileData
   title: string
   portraitUrl?: string | null
   gallery?: GalleryItem[]
   videos?: VideoItem[]
+  members?: Member[]
 }) {
   const qf = data.quickFacts ?? []
   const gal = gallery ?? []
@@ -200,7 +219,7 @@ export function ProfileView({
       <div className="pf__hero">
         <div className="pf__herobg" />
         <div className="pf__heroin">
-          <div className="pf__port">{portraitUrl ? <img src={portraitUrl} alt={title} /> : <span>Портрет / вертикальная обложка</span>}</div>
+          <div className="pf__port">{portraitUrl ? <img src={portraitUrl} alt={title} /> : <span className="pf__mono">{initialsOf(title)}</span>}</div>
           <div>
             {data.eyebrow && <div className="pf__eye">{data.eyebrow}</div>}
             <h1 className="pf__name">{title}</h1>
@@ -231,6 +250,20 @@ export function ProfileView({
           {blocks.map((b) => renderBlock(b))}
         </main>
       </div>
+
+      {members && members.length > 0 && (
+        <div className="pf__members">
+          <div className="pf__members-h">Другие участники</div>
+          <div className="pf__members-row">
+            {members.map((m) => (
+              <Link key={m.slug} href={`/publication/${m.slug}`} className="pf__mem">
+                <span className="pf__mem-av">{m.portraitUrl ? <img src={m.portraitUrl} alt={m.title} loading="lazy" /> : initialsOf(m.title)}</span>
+                <span className="pf__mem-nm">{m.title}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

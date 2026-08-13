@@ -310,10 +310,20 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     const pfVideos = relatedVideos
       .map(({ video }: any) => ({ slug: String(video?.slug || ''), title: String(video?.title || 'Видео'), coverUrl: videoThumbUrl(video) }))
       .filter((v: any) => v.slug)
+    // Другие участники: остальные профили тенанта — для перелинковки внизу.
+    const memberDocs = await payload.find({
+      collection: 'publications',
+      where: { and: [{ tenant: { equals: tenant.id } }, { template: { equals: 'profile' } }, { id: { not_equals: pub.id } }, publishedWhere()] },
+      sort: 'title', limit: 12, depth: 1, overrideAccess: true,
+    })
+    const members = (memberDocs.docs as any[]).map((m) => {
+      const c = m.cover && typeof m.cover === 'object' ? (m.cover as any) : null
+      return { slug: String(m.slug || ''), title: String(m.title || ''), portraitUrl: c?.sizes?.card?.url || c?.sizes?.large?.url || c?.url || null }
+    }).filter((m: any) => m.slug)
     return (
       <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-8">
-          <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} />
+          <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} members={members} />
         </div>
       </main>
     )
