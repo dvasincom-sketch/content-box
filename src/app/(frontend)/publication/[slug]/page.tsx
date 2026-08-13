@@ -508,7 +508,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
             )}
           </>
         ) : (
-          <PublicationLock reason={pubAccess.reason} requiredTierName={pubAccess.requiredTierName} />
+          <PublicationLock reason={pubAccess.reason} requiredTierName={pubAccess.requiredTierName} loginRedirect={`/publication/${slug}`} />
         )}
 
         {tagList.length > 0 && (
@@ -566,9 +566,11 @@ export default async function PublicationPage({ params }: { params: Promise<Para
 function PublicationLock({
   reason,
   requiredTierName,
+  loginRedirect,
 }: {
   reason: 'need-login' | 'need-subscription' | 'expired' | 'blocked'
   requiredTierName: string | null
+  loginRedirect?: string
 }) {
   const heading =
     reason === 'need-login' ? 'Войдите, чтобы читать'
@@ -583,19 +585,27 @@ function PublicationLock({
     : 'Эта публикация доступна подписчикам.'
 
   return (
-    <div className="rounded-2xl p-8 lg:p-12 text-center"
-      style={{ background: 'color-mix(in srgb, var(--brand-primary) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--brand-primary) 30%, transparent)' }}>
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4"
-        style={{ background: 'color-mix(in srgb, var(--brand-primary) 25%, transparent)' }}>
-        <Lock size={24} style={{ color: 'var(--brand-text)' }} />
+    <div className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center text-center px-6"
+      style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-accent))' }}>
+      <div className="py-12 lg:py-16">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-4"
+          style={{ background: 'rgba(0,0,0,.35)', backdropFilter: 'blur(6px)' }}>
+          <Lock size={24} color="#fff" />
+        </div>
+        <div className="text-2xl font-bold mb-2" style={{ color: '#fff' }}>{heading}</div>
+        <p className="text-sm max-w-md mx-auto" style={{ color: '#fff', opacity: 0.92, marginBottom: 28 }}>{text}</p>
+        {reason !== 'blocked' && (
+          <Link href="/subscribe" className="inline-block text-sm font-semibold px-5 py-2.5 rounded-xl"
+            style={{ background: '#fff', color: 'var(--brand-primary)' }}>
+            {reason === 'expired' ? 'Продлить подписку' : 'Оформить подписку'}
+          </Link>
+        )}
+        {reason === 'need-login' && (
+          <div style={{ marginTop: 12 }}>
+            <Link href={`/login?redirect=${encodeURIComponent(loginRedirect || '/')}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: '#fff', opacity: 0.85, fontSize: 13.5, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 4 }}>Есть подписка — войти →</Link>
+          </div>
+        )}
       </div>
-      <div className="text-2xl font-bold mb-2" style={{ color: 'var(--brand-text)' }}>{heading}</div>
-      <p className="mb-6 text-sm max-w-md mx-auto" style={{ color: 'var(--brand-muted)' }}>{text}</p>
-      {reason !== 'blocked' && (
-        <Link href="/subscribe" className="c-btn c-btn--primary c-spotlight c-spotlight-bright">
-          {reason === 'expired' ? 'Продлить подписку' : reason === 'need-login' ? 'Войти или подписаться' : 'Оформить подписку'}
-        </Link>
-      )}
     </div>
   )
 }

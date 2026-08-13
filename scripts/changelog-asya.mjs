@@ -26,7 +26,10 @@ import { dirname, join } from 'node:path'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO = join(__dirname, '..')
 const HTML = join(REPO, 'public', 'update.html')
-const SYSTEM_FILE = join(__dirname, 'changelog-asya.system.md')
+// Системный контекст (роль, правила, формат ответа) задан в админ-панели Аси,
+// поэтому скрипт его НЕ шлёт. При желании можно переопределить локальным файлом:
+// ASYA_SYSTEM_FILE=/путь/к/файлу.md node scripts/changelog-asya.mjs …
+const SYSTEM_FILE = process.env.ASYA_SYSTEM_FILE || ''
 
 // Якорь схемы версий: какой календарный месяц считается «месяцем 1».
 const ANCHOR_YEAR = 2026
@@ -87,7 +90,7 @@ function render(obj) {
 }
 
 // ---- вызов Asya ------------------------------------------------------------
-async function askAsya(system, input) {
+async function askAsya(input, system) {
   const base = (process.env.ASYA_API_URL || 'https://api.xn--80a8a2b.online').replace(/\/+$/, '')
   const url = base + '/generate'
   const key = process.env.ASYA_API_KEY
@@ -97,14 +100,20 @@ async function askAsya(system, input) {
         'и что шаг workflow пробрасывает его в env.',
     )
   }
-  console.log(`[changelog] Запрос к Asya: ${url} (ключ найден, длина ${key.length})`)
+  // system обычно НЕ передаём — контекст задан в админ-панели Аси.
+  const payload = { input, json: true, maxTokens: 1200 }
+  if (system) payload.system = system
+  console.log(
+    `[changelog] Запрос к Asya: ${url} (ключ найден, длина ${key.length}; ` +
+      `system ${system ? 'передан локально' : 'из админки Аси'})`,
+  )
 
   let res
   try {
     res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ system, input, json: true, maxTokens: 1200 }),
+      body: JSON.stringify(payload),
     })
   } catch (e) {
     throw new Error(`Сеть/DNS до Asya не отработали: ${e.message}`)
@@ -167,11 +176,13 @@ const main = async () => {
   if (fixture) {
     obj = JSON.parse(readFileSync(fixture, 'utf8'))
   } else {
-    const system = readFileSync(SYSTEM_FILE, 'utf8')
+    // Системный контекст — в админ-панели Аси. Локальный файл шлём, только если
+    // явно задан ASYA_SYSTEM_FILE (переопределение).
+    const system = SYSTEM_FILE ? readFileSync(SYSTEM_FILE, 'utf8') : ''
     const input =
       `Дата: ${date}\nВерсия: ${version}\nКоммиты за день:\n` +
       subjects.map((s) => '- ' + s).join('\n')
-    obj = await askAsya(system, input)
+    obj = await askAsya(input, system)
   }
 
   if (obj && obj.skip) {

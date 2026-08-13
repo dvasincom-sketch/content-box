@@ -10,14 +10,13 @@ type CategoryRow = { title: string; href?: string; items: { href: string; title:
 type GalleryItem = { url?: string; caption?: string }
 type VideoItem = { id?: number | string; slug: string; title: string; coverUrl?: string | null }
 
-function VideoTile({ id, title, coverUrl }: { id?: number | string; title: string; coverUrl?: string | null }) {
-  const [open, setOpen] = useState(false)
-  if (open && id != null) return <div className="pf__vplayer"><VideoPlayer videoId={id} autoPlay /></div>
+function VideoTile({ id, title }: { id?: number | string; title: string; coverUrl?: string | null }) {
+  if (id == null) return null
   return (
-    <button type="button" className="pf__rel pf__vtile" onClick={() => setOpen(true)} disabled={id == null}>
-      <div className="pf__cov">{coverUrl ? <img src={coverUrl} alt={title} loading="lazy" /> : <span>{title}</span>}<span className="pf__play" aria-hidden /></div>
-      <div className="pf__rb"><div className="tt">{title}</div></div>
-    </button>
+    <div className="pf__vplayer">
+      <div className="pf__vframe"><VideoPlayer videoId={id} /></div>
+      {title ? <div className="pf__vcap">{title}</div> : null}
+    </div>
   )
 }
 
@@ -118,7 +117,10 @@ const css = `
 .pf__play{position:absolute;inset:0;margin:auto;width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;transition:background .15s}
 .pf__play::before{content:'';border-style:solid;border-width:9px 0 9px 15px;border-color:transparent transparent transparent #fff;margin-left:3px}
 .pf__vtile:hover .pf__play{background:rgba(0,0,0,.72)}
-.pf__vplayer{grid-column:1/-1;border-radius:14px;overflow:hidden;max-width:900px}
+.pf__vplayer{grid-column:1/-1;max-width:900px}
+.pf__vplayer + .pf__vplayer{margin-top:18px}
+.pf__vframe{border-radius:14px;overflow:hidden}
+.pf__vcap{font-size:13px;color:var(--pf-muted,#6b6880);margin-top:8px;font-weight:500}
 .pf__cov{aspect-ratio:1;display:grid;place-items:center;text-align:center;padding:12px;font-weight:800;font-size:14px;color:#fff;
   background:linear-gradient(150deg,color-mix(in srgb,var(--pf-acc) 85%,#000),color-mix(in srgb,var(--pf-acc) 40%,#000));position:relative}
 .pf__cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}

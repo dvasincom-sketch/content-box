@@ -3836,6 +3836,7 @@ select.studio-input {
   position: fixed; inset: 0; z-index: 300;
   background: rgba(0, 0, 0, .5);
   display: flex; align-items: center; justify-content: center; padding: var(--st-space-4);
+  font-family: var(--st-font-body); color: var(--st-text);
 }
 .glib {
   width: min(920px, 100%); max-height: 88vh;

@@ -256,6 +256,15 @@ export interface User {
    */
   name?: string | null;
   /**
+   * Вход по SMS. Уникален глобально.
+   */
+  phone?: string | null;
+  phoneVerified?: boolean | null;
+  /**
+   * E-mail подтверждён (soft-verify, не блокирует доступ).
+   */
+  emailVerified?: boolean | null;
+  /**
    * Пусто для платформенных пользователей (superadmin).
    */
   tenant?: (number | null) | Tenant;
@@ -427,6 +436,10 @@ export interface SiteSetting {
      */
     titleLines?: string | null;
   };
+  /**
+   * Профиль кодирования для новых загруженных видео. Действует на новые загрузки, уже обработанные не меняет.
+   */
+  videoProfile?: ('balanced' | 'fast' | 'compact' | 'quality') | null;
   /**
    * Чипсы под заголовком главной. Порядок задаётся перетаскиванием.
    */
@@ -620,6 +633,10 @@ export interface Category {
    */
   eventTemplate?: boolean | null;
   /**
+   * Раздел рендерится как ОДНА публикация, привязанная к нему основной категорией (например, профиль участника), без списка вложенных публикаций. Берётся последняя опубликованная публикация этой категории.
+   */
+  pageMode?: boolean | null;
+  /**
    * Пусто = сгенерируется автоматически из названия и описания при сохранении.
    */
   seo?: {
@@ -668,7 +685,32 @@ export interface Publication {
   title: string;
   slug: string;
   cover?: (number | null) | Media;
+  /**
+   * 'article' (обычная) или 'profile' (страница-досье).
+   */
+  template?: string | null;
+  /**
+   * Заполняется для шаблона «Профиль».
+   */
+  profile?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   publishedAt?: string | null;
+  prevVersion?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   /**
    * Для разделов-событий: дата лайва/мероприятия. По ней сортируется список и рисуется оранжевая плашка.
    */
@@ -956,6 +998,9 @@ export interface Video {
     | null;
   assetError?: string | null;
   assetBytes?: number | null;
+  originalBytes?: number | null;
+  encodeMs?: number | null;
+  videoProfile?: string | null;
   /**
    * Дорожки субтитров [{ lang, label, key }] — управляются из студии.
    */
@@ -1920,6 +1965,9 @@ export interface TenantsSelect<T extends boolean = true> {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  phone?: T;
+  phoneVerified?: T;
+  emailVerified?: T;
   tenant?: T;
   platformRole?: T;
   tenantRole?: T;
@@ -2005,6 +2053,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         eyebrow?: T;
         titleLines?: T;
       };
+  videoProfile?: T;
   heroChips?: T;
   homeCategories?: T;
   homeSections?:
@@ -2069,6 +2118,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   videoSeries?: T;
   posterLayout?: T;
   eventTemplate?: T;
+  pageMode?: T;
   seo?:
     | T
     | {
@@ -2104,7 +2154,10 @@ export interface PublicationsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   cover?: T;
+  template?: T;
+  profile?: T;
   publishedAt?: T;
+  prevVersion?: T;
   eventDate?: T;
   category?: T;
   extraCategories?: T;
@@ -2334,6 +2387,9 @@ export interface VideosSelect<T extends boolean = true> {
   renditions?: T;
   assetError?: T;
   assetBytes?: T;
+  originalBytes?: T;
+  encodeMs?: T;
+  videoProfile?: T;
   subtitles?: T;
   chapters?: T;
   summary?: T;

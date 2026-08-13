@@ -559,35 +559,45 @@ export function ProfileEditor({ value, onChange, cats, media }: { value: Profile
   const moveBlock = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= blocks.length) return; const n = [...blocks]; const t = n[i]; n[i] = n[j]; n[j] = t; writeBlocks(n) }
   const removeBlock = (i: number) => writeBlocks(blocks.filter((_, j) => j !== i))
 
-  const [menuOpen, setMenuOpen] = React.useState(false)
+  const [menuOpen, setMenuOpen] = React.useState<null | 'top' | 'bottom'>(null)
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set())
   const toggleCollapse = (id: string) => setCollapsed((s2) => { const n = new Set(s2); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const allCollapsed = blocks.length > 0 && blocks.every((b) => collapsed.has(b.id))
   const toggleAll = () => setCollapsed(allCollapsed ? new Set() : new Set(blocks.map((b) => b.id)))
+
+  const addMenuEl = (cls: string) => (
+    <div className={`pe__menu ${cls}`.trim()}>
+      {ADD_MENU.map((m) => (
+        <button type="button" key={m.type} className="pe__menu-item" onClick={() => { addBlock(m.type); setMenuOpen(null) }}>
+          <span className="pe__ico"><BlockIcon type={m.type} /></span>
+          <span className="pe__menu-txt"><b>{BLOCK_LABEL[m.type]}</b><span>{m.hint}</span></span>
+        </button>
+      ))}
+    </div>
+  )
 
   return (
     <div className="pe">
       <style dangerouslySetInnerHTML={{ __html: PE_CSS }} />
       <div className="studio-notice"><Info size={18} /><span>Шаблон «Страница»: вся страница собирается из блоков — добавляйте, удаляйте и двигайте их в нужном порядке.</span></div>
 
-      <div className="pe__blocks-title">Блоки страницы <em>{blocks.length}</em>{blocks.length > 1 && <button type="button" className="pe__collapse-all" onClick={toggleAll}>{allCollapsed ? 'Развернуть все' : 'Свернуть все'}</button>}</div>
+      <div className="pe__blocks-title">Блоки страницы <em>{blocks.length}</em>
+        <div className="pe__bt-actions">
+          <div className="pe__addtop">
+            <button type="button" className="pe__toolbtn" onClick={() => setMenuOpen((o) => o === 'top' ? null : 'top')}>{menuOpen === 'top' ? <><X size={14} /> Закрыть окно</> : <><Plus size={14} /> Добавить блок</>}</button>
+            {menuOpen === 'top' && addMenuEl('pe__menu--top')}
+          </div>
+          {blocks.length > 1 && <button type="button" className="pe__collapse-all" onClick={toggleAll}>{allCollapsed ? 'Развернуть все' : 'Свернуть все'}</button>}
+        </div>
+      </div>
       {blocks.length === 0 && <div className="pe__empty">Пока нет ни одного блока. Добавьте первый ниже.</div>}
       {blocks.map((b, i) => (
         <BlockCard key={b.id} block={b} index={i} total={blocks.length} patch={(p) => patchBlock(i, p)} move={(d) => moveBlock(i, d)} remove={() => removeBlock(i)} cats={cats} media={media} collapsed={collapsed.has(b.id)} onToggleCollapse={() => toggleCollapse(b.id)} />
       ))}
 
       <div className="pe__addwrap">
-        <button type="button" className="studio-btn studio-btn--primary pe__addblock" onClick={() => setMenuOpen((o) => !o)}><Plus size={16} /> Добавить блок</button>
-        {menuOpen && (
-          <div className="pe__menu">
-            {ADD_MENU.map((m) => (
-              <button type="button" key={m.type} className="pe__menu-item" onClick={() => { addBlock(m.type); setMenuOpen(false) }}>
-                <span className="pe__ico"><BlockIcon type={m.type} /></span>
-                <span className="pe__menu-txt"><b>{BLOCK_LABEL[m.type]}</b><span>{m.hint}</span></span>
-              </button>
-            ))}
-          </div>
-        )}
+        <button type="button" className="studio-btn studio-btn--primary pe__addblock" onClick={() => setMenuOpen((o) => o === 'bottom' ? null : 'bottom')}>{menuOpen === 'bottom' ? <><X size={16} /> Закрыть окно</> : <><Plus size={16} /> Добавить блок</>}</button>
+        {menuOpen === 'bottom' && addMenuEl('')}
       </div>
     </div>
   )
@@ -665,8 +675,13 @@ const PE_CSS = `
 .pe__collapse:hover{background:color-mix(in srgb,var(--st-text) 8%,transparent);color:var(--st-text)}
 .pe__card--collapsed .pe__card-head{border-bottom:none}
 .pe__card-prev{padding:8px 14px 10px 46px;font-size:12.5px;color:var(--st-text-muted);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pe__collapse-all{margin-left:auto;font-size:12px;font-weight:600;color:var(--st-text-muted);background:transparent;border:1px solid var(--st-border);border-radius:8px;padding:3px 10px;cursor:pointer}
+.pe__collapse-all{font-size:12px;font-weight:600;color:var(--st-text-muted);background:transparent;border:1px solid var(--st-border);border-radius:8px;padding:3px 10px;cursor:pointer}
 .pe__collapse-all:hover{border-color:#2f6bed;color:#2f6bed}
+.pe__bt-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.pe__addtop{position:relative;display:inline-flex}
+.pe__toolbtn{font-size:12px;font-weight:600;color:var(--st-text-muted);background:transparent;border:1px solid var(--st-border);border-radius:8px;padding:3px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.pe__toolbtn:hover{border-color:#2f6bed;color:#2f6bed}
+.pe__menu--top{top:calc(100% + 6px);bottom:auto;left:auto;right:0;min-width:360px}
 .pe__card--off{border-style:dashed}
 .pe__card--off .pe__card-body{opacity:.4}
 .pe__card--off .pe__card-kind::after{content:' · скрыт';color:var(--st-text-muted);font-weight:600}
