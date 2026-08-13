@@ -40,14 +40,17 @@ export type ProfileData = {
 }
 
 /** Заголовок блока по умолчанию (если у блока не задан свой title). */
+// Названия по стилю отображения, а не по смыслу — конструктор универсален
+// (подходит под любую тему, не только профили участников). Заголовок секции
+// на странице всё равно задаётся через title блока.
 export const BLOCK_LABEL: Record<PBlockType, string> = {
-  text: 'Раздел',
+  text: 'Текст',
   timeline: 'Хронология',
-  relations: 'Отношения',
-  releases: 'Дискография',
-  films: 'Фильмография',
-  awards: 'Награды',
-  factsList: 'Интересные факты',
+  relations: 'Аккордеон',
+  releases: 'Постеры',
+  films: 'Карточки',
+  awards: 'Плашки',
+  factsList: 'Плитки',
   gallery: 'Галерея',
   videos: 'Видео',
 }
@@ -73,11 +76,11 @@ export function toBlocks(p: ProfileData | null | undefined): PBlock[] {
   if (Array.isArray(p.blocks) && p.blocks.length) return p.blocks
   const out: PBlock[] = []
   ;(p.sections ?? []).forEach((s, i) => out.push({ id: `text-${i}`, type: 'text', title: s.title, body: s.body }))
-  if (p.timeline?.length) out.push({ id: 'timeline', type: 'timeline', items: p.timeline })
-  if (p.relations?.length) out.push({ id: 'relations', type: 'relations', items: p.relations })
-  if (p.releases?.length) out.push({ id: 'releases', type: 'releases', items: p.releases })
-  if (p.films?.length) out.push({ id: 'films', type: 'films', items: p.films })
-  if (p.awards?.length) out.push({ id: 'awards', type: 'awards', items: p.awards })
-  if (p.facts?.length) out.push({ id: 'facts', type: 'factsList', items: p.facts })
+  if (p.timeline?.length) out.push({ id: 'timeline', type: 'timeline', title: 'Хронология', items: p.timeline })
+  if (p.relations?.length) out.push({ id: 'relations', type: 'relations', title: 'Отношения', items: p.relations })
+  if (p.releases?.length) out.push({ id: 'releases', type: 'releases', title: 'Дискография', items: p.releases })
+  if (p.films?.length) out.push({ id: 'films', type: 'films', title: 'Фильмография', items: p.films })
+  if (p.awards?.length) out.push({ id: 'awards', type: 'awards', title: 'Награды', items: p.awards })
+  if (p.facts?.length) out.push({ id: 'facts', type: 'factsList', title: 'Интересные факты', items: p.facts })
   return out
 }

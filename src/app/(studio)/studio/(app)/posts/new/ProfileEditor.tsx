@@ -8,13 +8,13 @@ import type { ProfileData } from '@/lib/profileBlocks'
 
 // Порядок и подписи в меню «Добавить блок».
 const ADD_MENU: { type: PBlockType; hint: string }[] = [
-  { type: 'text', hint: 'Заголовок + абзацы текста' },
-  { type: 'timeline', hint: 'Год · событие' },
-  { type: 'relations', hint: 'Имя · описание (аккордеон)' },
-  { type: 'releases', hint: 'Альбомы, синглы' },
-  { type: 'films', hint: 'Фильмы, дорамы, шоу' },
-  { type: 'awards', hint: 'Премии и достижения' },
-  { type: 'factsList', hint: 'Список коротких фактов' },
+  { type: 'text', hint: 'Заголовок + абзацы; подзаголовок — строкой «## »' },
+  { type: 'timeline', hint: 'Год · заголовок · описание' },
+  { type: 'relations', hint: 'Разворачиваемые пункты: заголовок + текст' },
+  { type: 'releases', hint: 'Вертикальные постеры 2:3 (название · подпись · год)' },
+  { type: 'films', hint: 'Горизонтальные карточки (название · подпись · год)' },
+  { type: 'awards', hint: 'Плашки с иконкой (заголовок + подпись)' },
+  { type: 'factsList', hint: 'Нумерованные плитки: заголовок + текст' },
   { type: 'gallery', hint: 'Сетка фото (загрузите ниже)' },
   { type: 'videos', hint: 'Ролики (добавьте ниже)' },
 ]
