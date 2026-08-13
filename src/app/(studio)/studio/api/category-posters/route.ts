@@ -12,13 +12,15 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
   const id = req.nextUrl.searchParams.get('categoryId')
   if (!id) return apiError('Не указана категория')
 
-  const cat: any = await payload.findByID({ collection: 'categories', id, depth: 0, overrideAccess: true }).catch(() => null)
+  const cat: any = /^\d+$/.test(id)
+    ? await payload.findByID({ collection: 'categories', id, depth: 0, overrideAccess: true }).catch(() => null)
+    : ((await payload.find({ collection: 'categories', where: { and: [{ tenant: { equals: tenantId } }, { slug: { equals: id } }] }, limit: 1, depth: 0, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))).docs[0] || null)
   if (!cat || String(cat.tenant?.id ?? cat.tenant) !== String(tenantId)) return apiError('Категория не найдена', 404)
 
   const rp = await payload
     .find({
       collection: 'publications',
-      where: { and: [{ tenant: { equals: tenantId } }, { category: { equals: id } }, publishedWhere()] },
+      where: { and: [{ tenant: { equals: tenantId } }, { category: { equals: cat.id } }, publishedWhere()] },
       sort: '-publishedAt',
       limit: 12,
       depth: 1,

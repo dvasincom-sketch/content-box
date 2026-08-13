@@ -154,9 +154,11 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       const pblocks: any[] = Array.isArray((bpub.profile as any).blocks) ? (bpub.profile as any).blocks : []
       const catIds = Array.from(new Set(pblocks.filter((b) => b?.type === 'categoryRow' && b?.categoryId).map((b) => String(b.categoryId))))
       for (const cid of catIds) {
-        const cat: any = await payload.findByID({ collection: 'categories', id: cid, depth: 0, overrideAccess: true }).catch(() => null)
+        const cat: any = /^\d+$/.test(cid)
+          ? await payload.findByID({ collection: 'categories', id: cid, depth: 0, overrideAccess: true }).catch(() => null)
+          : ((await payload.find({ collection: 'categories', where: { and: [{ tenant: { equals: tenant.id } }, { slug: { equals: cid } }] }, limit: 1, depth: 0, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))).docs[0] || null)
         if (!cat || String(cat.tenant?.id ?? cat.tenant) !== String(tenant.id)) continue
-        const rp = await payload.find({ collection: 'publications', where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: cid } }, publishedWhere()] }, sort: '-publishedAt', limit: 16, depth: 1, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))
+        const rp = await payload.find({ collection: 'publications', where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: cat.id } }, publishedWhere()] }, sort: '-publishedAt', limit: 16, depth: 1, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))
         const items = (rp.docs as any[]).map((p) => { const c = p.cover && typeof p.cover === 'object' ? p.cover : null; return { href: `/publication/${p.slug}`, title: String(p.title || ''), posterUrl: c?.sizes?.poster?.url || c?.sizes?.card?.url || c?.url || null } })
         if (items.length) categoryRows[cid] = { title: String(cat.title || ''), items }
       }
