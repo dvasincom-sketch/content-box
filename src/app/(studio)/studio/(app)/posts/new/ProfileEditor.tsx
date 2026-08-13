@@ -26,7 +26,7 @@ import type { ProfileData } from '@/lib/profileBlocks'
 const ADD_MENU: { type: PBlockType; hint: string }[] = [
   { type: 'hero', hint: 'Фото + надзаголовок, подзаголовок, лид' },
   { type: 'facts', hint: 'Карточки «метка → значение»' },
-  { type: 'text', hint: 'Заголовок + абзацы; лёгкий markdown (## , **жирный**, ссылки, списки)' },
+  { type: 'text', hint: 'Заголовок + абзацы и лёгкий редактор' },
   { type: 'timeline', hint: 'Год · заголовок · описание' },
   { type: 'relations', hint: 'Разворачиваемые пункты: заголовок + текст' },
   { type: 'awards', hint: 'Плашки с иконкой (заголовок + подпись)' },
@@ -486,10 +486,12 @@ function BlockCard({ block, index, total, patch, move, remove, cats, media }: {
         <span className="pe__card-kind">{BLOCK_LABEL[block.type]}</span>
         {block.type === 'hero' ? <div style={{ flex: 1 }} /> : <input className="studio-input pe__title" placeholder={BLOCK_LABEL[block.type]} value={block.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />}
         <div className="pe__ctrls">
-          {block.type !== 'hero' && <button type="button" style={{ ...rowBtn, width: 'auto', padding: '0 9px', fontSize: 11, fontWeight: 600, color: full ? '#2f6bed' : 'var(--st-text-muted)', borderColor: full ? '#2f6bed' : 'var(--st-border)' }} onClick={() => patch({ full: !full } as Partial<PBlock>)} title="Ширина секции">{full ? 'Во всю ширину' : 'Обычная'}</button>}
-          <button type="button" style={rowBtn} onClick={() => move(-1)} disabled={index === 0} title="Выше"><ChevronUp size={15} /></button>
-          <button type="button" style={rowBtn} onClick={() => move(1)} disabled={index === total - 1} title="Ниже"><ChevronDown size={15} /></button>
-          <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={remove} title="Удалить блок"><Trash2 size={15} /></button>
+          {block.type !== 'hero' && <>
+            <button type="button" style={{ ...rowBtn, width: 'auto', padding: '0 9px', fontSize: 11, fontWeight: 600, color: full ? '#2f6bed' : 'var(--st-text-muted)', borderColor: full ? '#2f6bed' : 'var(--st-border)' }} onClick={() => patch({ full: !full } as Partial<PBlock>)} title="Ширина секции">{full ? 'Во всю ширину' : 'Обычная'}</button>
+            <button type="button" style={rowBtn} onClick={() => move(-1)} disabled={index === 0} title="Выше"><ChevronUp size={15} /></button>
+            <button type="button" style={rowBtn} onClick={() => move(1)} disabled={index === total - 1} title="Ниже"><ChevronDown size={15} /></button>
+            <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={remove} title="Удалить блок"><Trash2 size={15} /></button>
+          </>}
         </div>
       </div>
       <div className="pe__card-body"><BlockBody block={block} patch={patch} cats={cats} media={media} /></div>
