@@ -100,6 +100,7 @@ import * as migration_20260812_140000_users_email_verified from './20260812_1400
 import * as migration_20260812_150000_search_queries from './20260812_150000_search_queries';
 import * as migration_20260813_100000_publication_template from './20260813_100000_publication_template';
 import * as migration_20260813_110000_category_page_mode from './20260813_110000_category_page_mode';
+import * as migration_20260813_130000_publication_prev_version from './20260813_130000_publication_prev_version';
 
 export const migrations = [
   {
@@ -611,5 +612,10 @@ export const migrations = [
     up: migration_20260813_110000_category_page_mode.up,
     down: migration_20260813_110000_category_page_mode.down,
     name: '20260813_110000_category_page_mode',
+  },
+  {
+    up: migration_20260813_130000_publication_prev_version.up,
+    down: migration_20260813_130000_publication_prev_version.down,
+    name: '20260813_130000_publication_prev_version',
   },
 ];

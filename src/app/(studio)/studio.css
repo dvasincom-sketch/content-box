@@ -1014,6 +1014,19 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
 .composer__field-label { font-size: var(--st-text-sm); font-weight: 600; color: var(--st-text); }
 .composer__hint { font-size: var(--st-text-xs); color: var(--st-text-faint); line-height: 1.4; }
 
+/* История версий (страховочная плашка в сайдбаре редактора публикации). */
+.composer__version { border-top: 1px solid var(--st-border); padding-top: var(--st-space-4); }
+.composer__version-restore {
+  display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+  margin-top: var(--st-space-2); padding: 8px 12px;
+  font-size: var(--st-text-sm); font-weight: 600; cursor: pointer;
+  color: var(--st-text); background: var(--st-surface-2);
+  border: 1px solid var(--st-border-strong); border-radius: var(--st-radius-sm);
+  transition: background .15s ease, border-color .15s ease;
+}
+.composer__version-restore:hover:not(:disabled) { background: var(--st-surface-hover); border-color: var(--st-text-faint); }
+.composer__version-restore:disabled { opacity: .55; cursor: default; }
+
 /* select наследует .studio-input, добавим стрелку-совместимость */
 select.studio-input {
   appearance: none;

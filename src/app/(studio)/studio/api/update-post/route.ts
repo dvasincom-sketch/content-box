@@ -131,6 +131,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     patch.publishedAt = null
   }
 
+  // Снимок «как было до этого сохранения» — чтобы можно было откатиться на шаг.
+  patch.prevVersion = snapshotOf(existing)
+
   try {
     await payload.update({
       collection: 'publications',
@@ -156,6 +159,15 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
  * null → null (очистить); число → проверить тенант, вернуть число или null;
  * прочее → null.
  */
+// Поля, попадающие в снимок предыдущей версии (страховка от случайного сохранения).
+export const SNAP_FIELDS = ['title', 'description', 'profile', 'template', 'cover', 'category', 'extraCategories', 'minTier', 'relatedVideos', 'gallery', 'tags', 'isNews', 'isNew', 'eventDate', 'publishedAt'] as const
+
+export function snapshotOf(doc: any): Record<string, unknown> {
+  const s: Record<string, unknown> = { savedAt: new Date().toISOString() }
+  for (const key of SNAP_FIELDS) if (doc[key] !== undefined) s[key] = doc[key]
+  return s
+}
+
 async function resolveRel(
   payload: Payload,
   collection: CollectionSlug,

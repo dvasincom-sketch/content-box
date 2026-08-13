@@ -3,7 +3,7 @@
 import React, { useState, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ImagePlus, ImageOff, X, Loader2, Trash2, Newspaper, Sparkles, Video, Music, Plus, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ImagePlus, ImageOff, X, Loader2, Trash2, Newspaper, Sparkles, Video, Music, Plus, ExternalLink, RotateCcw } from 'lucide-react'
 import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
 import { CategoryMultiPicker } from '../../settings/CategoryMultiPicker'
@@ -40,6 +40,18 @@ function flattenCategories(cats: Category[]): MetaCat[] {
   return out
 }
 
+/** «13 авг 2026, 14:30» — момент прошлого снимка для панели истории версий. */
+function fmtWhen(iso?: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  try {
+    return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d)
+  } catch {
+    return d.toISOString().slice(0, 16).replace('T', ', ')
+  }
+}
+
 export type PostInitial = {
   id: number | string
   title: string
@@ -61,6 +73,8 @@ export type PostInitial = {
   gallery: GalleryItem[]
   tags?: string[]
   eventDate?: string | null
+  /** Момент прошлого сохранённого снимка (для панели «История версий»). null — снимка ещё нет. */
+  prevVersionAt?: string | null
 }
 
 export function Composer({
@@ -146,6 +160,7 @@ export function Composer({
 
   const [saving, setSaving] = useState<false | 'draft' | 'publish' | 'save' | 'unpublish'>(false)
   const [deleting, setDeleting] = useState(false)
+  const [restoring, setRestoring] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -289,7 +304,36 @@ export function Composer({
     }
   }
 
-  const busy = saving !== false || deleting
+  async function handleRestore() {
+    if (!isEdit) return
+    const ok = window.confirm(
+      'Восстановить предыдущую версию? Текущее содержимое будет заменено, но сохранится как «предыдущая версия» — восстановление можно отменить тем же способом.',
+    )
+    if (!ok) return
+    setError(null)
+    setRestoring(true)
+    try {
+      const res = await fetch('/studio/api/restore-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id: initial!.id }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error || 'Не удалось восстановить')
+        setRestoring(false)
+        return
+      }
+      // Перезагружаем страницу — форма заново инициализируется из свежих данных.
+      window.location.reload()
+    } catch {
+      setError('Ошибка соединения')
+      setRestoring(false)
+    }
+  }
+
+  const busy = saving !== false || deleting || restoring
 
   return (
     <div className="composer">
@@ -617,6 +661,35 @@ export function Composer({
               Связывают материалы из разных категорий. Клик по тегу на сайте ведёт на страницу со всеми материалами тега.
             </div>
           </div>
+
+          {isEdit && (
+          <div className="composer__field composer__version">
+            <div className="composer__field-label">История версий</div>
+            {initial?.prevVersionAt ? (
+              <>
+                <div className="composer__hint" style={{ marginTop: 0 }}>
+                  Сохранён снимок от {fmtWhen(initial.prevVersionAt)}. Если это сохранение оказалось ошибкой — верните предыдущий вариант.
+                </div>
+                <button
+                  type="button"
+                  className="composer__version-restore"
+                  onClick={handleRestore}
+                  disabled={busy}
+                >
+                  {restoring ? <Loader2 size={14} className="spin" /> : <RotateCcw size={14} />}
+                  {restoring ? 'Восстановление…' : 'Восстановить предыдущую'}
+                </button>
+                <div className="composer__hint" style={{ marginTop: 8 }}>
+                  Хранится только последняя предыдущая версия. Восстановление обратимо: текущее содержимое станет новым снимком.
+                </div>
+              </>
+            ) : (
+              <div className="composer__hint" style={{ marginTop: 0 }}>
+                Пока нет предыдущих версий. Снимок создаётся автоматически при каждом сохранении — сюда попадёт состояние «как было до правки».
+              </div>
+            )}
+          </div>
+          )}
         </aside>
       </div>
 

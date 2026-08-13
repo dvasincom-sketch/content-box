@@ -53,6 +53,7 @@ export const Publications: CollectionConfig = {
       admin: { description: 'Заполняется для шаблона «Профиль».' },
     },
     { name: 'publishedAt', type: 'date', label: 'Дата публикации' },
+    { name: 'prevVersion', type: 'json', label: 'Предыдущая версия (снимок)', admin: { hidden: true } },
     { name: 'eventDate', type: 'date', label: 'Дата события', admin: { description: 'Для разделов-событий: дата лайва/мероприятия. По ней сортируется список и рисуется оранжевая плашка.' } },
     { name: 'category', type: 'relationship', relationTo: 'categories', label: 'Основная категория' },
     {

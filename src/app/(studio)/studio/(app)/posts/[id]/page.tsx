@@ -171,6 +171,10 @@ export default async function EditPostPage({
     tags: Array.isArray(post.tags)
       ? post.tags.map((t: any) => t?.label).filter((l: any): l is string => typeof l === 'string' && l.length > 0)
       : [],
+    prevVersionAt:
+      (post as any).prevVersion && typeof (post as any).prevVersion === 'object' && typeof (post as any).prevVersion.savedAt === 'string'
+        ? (post as any).prevVersion.savedAt
+        : null,
   }
 
   const galleryFolders = (galFoldersRes.docs as any[]).map((f) => {
