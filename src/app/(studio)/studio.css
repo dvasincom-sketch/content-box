@@ -705,7 +705,7 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
   color: var(--st-accent-text);
   background: var(--st-accent);
 }
-.studio-tag--profile { background: color-mix(in srgb, #2f6bed 16%, transparent); color: #2f6bed; border: 1px solid color-mix(in srgb, #2f6bed 34%, transparent); }
+.studio-tag--profile { background: var(--st-surface-2); color: var(--st-text-muted); }
 
 /* --- Пустое состояние ------------------------------------------------------ */
 .studio-empty {
