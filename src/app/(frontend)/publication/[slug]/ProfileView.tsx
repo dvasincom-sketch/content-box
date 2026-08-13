@@ -79,6 +79,11 @@ const css = `
 /* Подзаголовок внутри длинного текстового раздела (строки с «## »). */
 .pf__sh{font-size:16.5px;font-weight:700;line-height:1.35;margin:26px 0 9px;color:var(--pf-tx);max-width:68ch;scroll-margin-top:84px}
 .pf__sec>p+.pf__sh{margin-top:26px}
+.pf__ul{max-width:68ch;margin:10px 0 12px;padding-left:22px;list-style:disc}
+.pf__ul li{margin:4px 0;line-height:1.6;color:var(--pf-tx)}
+.pf__sec a,.pf__accb a,.pf__col a,.pf__callout-body a{color:var(--pf-acc);text-decoration:underline;text-underline-offset:2px}
+.pf__sec a:hover,.pf__accb a:hover,.pf__col a:hover,.pf__callout-body a:hover{text-decoration:none}
+.pf strong{font-weight:700}.pf em{font-style:italic}
 .pf__tl,.pf__acc,.pf__accb p{max-width:760px}
 .pf__facts{background:var(--pf-card);border:1px solid var(--pf-line);border-radius:20px;padding:20px 22px;margin-bottom:18px}
 .pf__facts u{display:block;text-decoration:none;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--pf-mut);margin-bottom:14px;font-weight:700}
@@ -286,17 +291,58 @@ export function ProfileView({
     else if (bot > nav.scrollTop + nav.clientHeight) nav.scrollTop = bot - nav.clientHeight + 8
   }, [active])
 
+  // Безопасная схема ссылки: только http(s), внутренний путь или mailto.
+  const safeHref = (h: string): string | null => {
+    const t = h.trim()
+    if (/^https?:\/\//i.test(t) || /^mailto:/i.test(t) || t.startsWith('/')) return t
+    return null
+  }
+  // Инлайновая мини-разметка: **жирный**, *курсив*, [текст](ссылка).
+  // Только React-узлы, без HTML — XSS невозможен, ссылки санитайзятся.
+  const inline = (text: string, kb: string): React.ReactNode[] => {
+    const out: React.ReactNode[] = []
+    const re = /\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*/g
+    let last = 0, k = 0, m: RegExpExecArray | null
+    while ((m = re.exec(text))) {
+      if (m.index > last) out.push(text.slice(last, m.index))
+      if (m[1] != null) {
+        const href = safeHref(m[2])
+        out.push(
+          href
+            ? (href.startsWith('/')
+                ? <Link key={`${kb}-${k}`} href={href}>{m[1]}</Link>
+                : <a key={`${kb}-${k}`} href={href} target="_blank" rel="noopener noreferrer">{m[1]}</a>)
+            : m[0],
+        )
+      } else if (m[3] != null) {
+        out.push(<strong key={`${kb}-${k}`}>{m[3]}</strong>)
+      } else if (m[4] != null) {
+        out.push(<em key={`${kb}-${k}`}>{m[4]}</em>)
+      }
+      k++
+      last = re.lastIndex
+    }
+    if (last < text.length) out.push(text.slice(last))
+    return out
+  }
   const paras = (body: string, secId?: string) => {
     let sh = 0
     return body.split(/\n{2,}/).map((t, i) => {
       const x = t.trim()
+      if (!x) return null
       if (x.startsWith('## ')) {
         const label = x.slice(3).trim()
         const id = secId ? `${secId}--sh-${sh}` : undefined
         sh++
-        return <h3 className="pf__sh" key={i} id={id} {...(id ? { 'data-pf-sub': '' } : {})}>{label}</h3>
+        return <h3 className="pf__sh" key={i} id={id} {...(id ? { 'data-pf-sub': '' } : {})}>{inline(label, `h${i}`)}</h3>
       }
-      return <p key={i}>{x}</p>
+      const lines = x.split('\n')
+      // Маркированный список: все строки блока начинаются с «- » или «* ».
+      if (lines.length > 0 && lines.every((ln) => /^\s*[-*]\s+/.test(ln))) {
+        return <ul className="pf__ul" key={i}>{lines.map((ln, j) => <li key={j}>{inline(ln.replace(/^\s*[-*]\s+/, ''), `l${i}-${j}`)}</li>)}</ul>
+      }
+      // Абзац: одиночный перевод строки внутри абзаца → <br/>.
+      return <p key={i}>{lines.map((ln, j) => <React.Fragment key={j}>{j > 0 && <br />}{inline(ln, `p${i}-${j}`)}</React.Fragment>)}</p>
     })
   }
   let num = 0

@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading } from 'lucide-react'
 import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType, type PBAward } from '@/lib/profileBlocks'
 import { AWARD_ICONS, AWARD_ICON_MAP } from '@/lib/awardIcons'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
@@ -23,7 +23,7 @@ import type { ProfileData } from '@/lib/profileBlocks'
 
 // Порядок и подписи в меню «Добавить блок».
 const ADD_MENU: { type: PBlockType; hint: string }[] = [
-  { type: 'text', hint: 'Заголовок + абзацы; подзаголовок — строкой «## »' },
+  { type: 'text', hint: 'Заголовок + абзацы; лёгкий markdown (## , **жирный**, ссылки, списки)' },
   { type: 'timeline', hint: 'Год · заголовок · описание' },
   { type: 'relations', hint: 'Разворачиваемые пункты: заголовок + текст' },
   { type: 'awards', hint: 'Плашки с иконкой (заголовок + подпись)' },
@@ -264,11 +264,66 @@ function PublicationsPicker({ ids, onChange }: { ids: (number | string)[]; onCha
   )
 }
 
+/**
+ * Текстовое поле с лёгким markdown: мини-панель вставки и подсказка.
+ * Хранение остаётся простым текстом; рендер понимает «## », **жирный**,
+ * *курсив*, [текст](ссылка) и списки «- ». Панель просто вставляет разметку.
+ */
+function MdArea({ value, onChange, rows = 5, placeholder, hint = true }: { value: string; onChange: (v: string) => void; rows?: number; placeholder?: string; hint?: boolean }) {
+  const ref = React.useRef<HTMLTextAreaElement>(null)
+  const [sel, setSel] = React.useState<[number, number] | null>(null)
+  React.useEffect(() => {
+    if (sel && ref.current) { ref.current.focus(); ref.current.setSelectionRange(sel[0], sel[1]); setSel(null) }
+  }, [sel])
+  const apply = (kind: 'h' | 'b' | 'i' | 'li' | 'link') => {
+    const ta = ref.current
+    const v = value ?? ''
+    const start = ta ? (ta.selectionStart ?? v.length) : v.length
+    const end = ta ? (ta.selectionEnd ?? v.length) : v.length
+    const before = v.slice(0, start), selected = v.slice(start, end), after = v.slice(end)
+    let nv = v, ns = start, ne = end
+    const wrap = (mark: string, ph: string) => {
+      const inner = selected || ph
+      nv = before + mark + inner + mark + after
+      ns = before.length + mark.length; ne = ns + inner.length
+    }
+    const linePrefix = (pfx: string) => {
+      const ls = before.lastIndexOf('\n') + 1
+      nv = v.slice(0, ls) + pfx + v.slice(ls)
+      ns = ne = end + pfx.length
+    }
+    if (kind === 'h') linePrefix('## ')
+    else if (kind === 'li') linePrefix('- ')
+    else if (kind === 'b') wrap('**', 'жирный')
+    else if (kind === 'i') wrap('*', 'курсив')
+    else if (kind === 'link') {
+      const label = selected || 'текст'
+      nv = before + '[' + label + '](https://)' + after
+      ns = before.length + label.length + 3; ne = ns + 'https://'.length
+    }
+    onChange(nv)
+    setSel([ns, ne])
+  }
+  return (
+    <div className="pe__md">
+      <div className="pe__mdbar">
+        <button type="button" onClick={() => apply('h')} title="Подзаголовок"><Heading size={14} /></button>
+        <button type="button" onClick={() => apply('b')} title="Жирный"><Bold size={14} /></button>
+        <button type="button" onClick={() => apply('i')} title="Курсив"><Italic size={14} /></button>
+        <button type="button" onClick={() => apply('li')} title="Список"><List size={14} /></button>
+        <button type="button" onClick={() => apply('link')} title="Ссылка"><Link2 size={14} /></button>
+      </div>
+      <textarea ref={ref} className="studio-input pe__ta" rows={rows} placeholder={placeholder} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
+      {hint && <div className="pe__note">Форматирование: <b>## </b> подзаголовок · <b>**жирный**</b> · <b>*курсив*</b> · <b>[текст](ссылка)</b> · <b>- </b> список. Пустая строка — новый абзац.</div>}
+    </div>
+  )
+}
+
 function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Partial<PBlock>) => void; cats?: { id: number | string; title: string }[]; media?: PEMedia }) {
   switch (block.type) {
     case 'text':
       return (
-        <textarea className="studio-input pe__ta" rows={5} placeholder="Текст раздела. Абзацы разделяйте пустой строкой." value={block.body ?? ''} onChange={(e) => patch({ body: e.target.value } as Partial<PBlock>)} />
+        <MdArea rows={5} placeholder="Текст раздела. Абзацы разделяйте пустой строкой." value={block.body ?? ''} onChange={(v) => patch({ body: v } as Partial<PBlock>)} />
       )
     case 'timeline':
       return <ArrayEditor items={block.items} cols={[{ key: 'year', label: 'Год', w: 1 }, { key: 'title', label: 'Заголовок', w: 2 }, { key: 'text', label: 'Описание', textarea: true }]} blank={() => ({ year: '', title: '', text: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
@@ -305,7 +360,7 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
             {cols.map((c, i) => (
               <div className="pe__coled" key={i}>
                 <input className="studio-input" placeholder={`Заголовок колонки ${i + 1} (необяз.)`} value={c.title ?? ''} onChange={(e) => setCols(cols.map((x, j) => j === i ? { ...x, title: e.target.value } : x))} />
-                <textarea className="studio-input pe__ta" rows={4} placeholder="Текст колонки" value={c.body ?? ''} onChange={(e) => setCols(cols.map((x, j) => j === i ? { ...x, body: e.target.value } : x))} />
+                <MdArea rows={4} hint={false} placeholder="Текст колонки" value={c.body ?? ''} onChange={(v) => setCols(cols.map((x, j) => j === i ? { ...x, body: v } : x))} />
                 <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setCols(cols.filter((_, j) => j !== i))} disabled={cols.length <= 1}><Trash2 size={14} /> Убрать колонку</button>
               </div>
             ))}
@@ -321,7 +376,7 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
             <button type="button" className={'studio-btn ' + (block.variant !== 'note' ? 'studio-btn--primary' : 'studio-btn--ghost')} onClick={() => patch({ variant: 'quote' } as Partial<PBlock>)}>Цитата</button>
             <button type="button" className={'studio-btn ' + (block.variant === 'note' ? 'studio-btn--primary' : 'studio-btn--ghost')} onClick={() => patch({ variant: 'note' } as Partial<PBlock>)}>Заметка</button>
           </div>
-          <textarea className="studio-input pe__ta" rows={3} placeholder="Текст выноски" value={block.text ?? ''} onChange={(e) => patch({ text: e.target.value } as Partial<PBlock>)} />
+          <MdArea rows={3} hint={false} placeholder="Текст выноски" value={block.text ?? ''} onChange={(v) => patch({ text: v } as Partial<PBlock>)} />
           <input className="studio-input" placeholder="Автор / подпись (необяз.)" value={block.author ?? ''} onChange={(e) => patch({ author: e.target.value } as Partial<PBlock>)} />
         </div>
       )
@@ -497,4 +552,9 @@ const PE_CSS = `
 .pe__pframe{position:relative;width:72px;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,var(--st-accent,#8b5cf6),color-mix(in srgb,var(--st-accent,#8b5cf6) 45%,#000));display:grid;place-items:center;color:#fff;font-weight:700}
 .pe__pframe img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pe__pttl{font-size:10.5px;color:var(--st-text-muted);margin-top:4px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe__md{display:flex;flex-direction:column;gap:6px}
+.pe__mdbar{display:flex;gap:4px;flex-wrap:wrap}
+.pe__mdbar button{width:30px;height:28px;display:grid;place-items:center;border:1px solid var(--st-border);border-radius:7px;background:var(--st-surface);color:var(--st-text-muted);cursor:pointer;transition:border-color .12s,color .12s,background .12s}
+.pe__mdbar button:hover{border-color:#2f6bed;color:#2f6bed;background:color-mix(in srgb,#2f6bed 8%,transparent)}
+.pe__md .pe__note b{color:var(--st-text);font-weight:600}
 `
