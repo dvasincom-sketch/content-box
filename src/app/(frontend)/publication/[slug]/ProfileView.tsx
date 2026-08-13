@@ -38,6 +38,7 @@ const css = `
 .pf__eye{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--pf-acc2);font-weight:700}
 .pf__name{font-size:clamp(36px,6vw,72px);font-weight:800;letter-spacing:-.02em;margin:8px 0 6px}
 .pf__sub{font-size:17px;color:var(--pf-mut)}
+.pf__read{font-size:12.5px;color:var(--pf-mut);font-weight:600;letter-spacing:.02em;margin-top:6px}
 .pf__lead{max-width:640px;margin:14px 0 20px;color:var(--pf-tx);opacity:.9}
 .pf__qrow{display:flex;flex-wrap:wrap;gap:9px}
 .pf__qf{background:var(--pf-card);border:1px solid var(--pf-line);border-radius:12px;padding:8px 13px}
@@ -97,9 +98,15 @@ const css = `
 .pf__acc{border:1px solid var(--pf-line);border-radius:14px;overflow:hidden;margin-bottom:9px;background:var(--pf-card)}
 .pf__acch{width:100%;text-align:left;background:none;border:none;color:var(--pf-tx);padding:14px 17px;font-size:15px;font-weight:650;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
 .pf__acch em{font-style:normal;color:var(--pf-acc2);transition:.2s}
+.pf__acch-l{display:flex;align-items:center;gap:12px;min-width:0}
+.pf__acc-av{width:34px;height:34px;border-radius:50%;overflow:hidden;position:relative;display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;flex:none;border:1px solid var(--pf-line);background:linear-gradient(150deg,color-mix(in srgb,var(--pf-acc) 80%,#000),color-mix(in srgb,var(--pf-acc) 35%,#000))}
+.pf__acc-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pf__acc-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf__acc-link{display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:var(--pf-acc2);text-decoration:none}
+.pf__acc-link:hover{text-decoration:underline}
 .pf__acc.on .pf__acch em{transform:rotate(45deg)}
 .pf__accb{max-height:0;overflow:hidden;transition:max-height .3s ease;padding:0 17px}
-.pf__acc.on .pf__accb{max-height:600px;padding-bottom:15px}
+.pf__acc.on .pf__accb{max-height:2400px;padding-bottom:15px}
 .pf__gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .pf__gal figure{margin:0;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid var(--pf-line);background:var(--pf-card)}
 .pf__gal img{width:100%;height:100%;object-fit:cover;display:block}
@@ -142,6 +149,26 @@ export function ProfileView({
     if ('items' in b) return Array.isArray(b.items) && b.items.length > 0
     return true
   })
+
+  // Поиск участника по имени связи — для аватара и ссылки в «Отношениях».
+  const memberByTitle = new Map<string, Member>()
+  const memberBySlug = new Map<string, Member>()
+  for (const m of members || []) { memberByTitle.set((m.title || '').trim().toLowerCase(), m); memberBySlug.set((m.slug || '').toLowerCase(), m) }
+  const ALIAS: Record<string, string> = { 'намджун': 'rm', 'рм': 'rm', 'сокджин': 'jin', 'джин': 'jin', 'юнги': 'suga', 'шуга': 'suga', 'хосок': 'j-hope', 'джей-хоуп': 'j-hope', 'чимин': 'jimin', 'тэхён': 'v', 'ви': 'v', 'чонгук': 'jungkook', 'чон чонгук': 'jungkook' }
+  const findMember = (name: string): Member | undefined => {
+    const n = (name || '').trim().toLowerCase()
+    return memberByTitle.get(n) || (ALIAS[n] ? memberBySlug.get(ALIAS[n]) : undefined)
+  }
+
+  // Оценка времени чтения (рус. ~170 слов/мин, ~6 символов на слово).
+  const readChars = (data.lead || '').length + blocks.reduce((acc, b) => {
+    if (b.type === 'text') return acc + (b.body || '').length
+    if (b.type === 'relations') return acc + b.items.reduce((a, r) => a + (r.text || '').length, 0)
+    if (b.type === 'factsList') return acc + b.items.reduce((a, x) => a + String(x).length, 0)
+    if ('items' in b) return acc + JSON.stringify(b.items).length
+    return acc
+  }, 0)
+  const readMin = Math.max(1, Math.round(readChars / 6 / 170))
 
   const hasBio = Boolean(data.lead) || qf.length > 0
   const toc: { id: string; label: string }[] = []
@@ -197,10 +224,19 @@ export function ProfileView({
       </section>)
     if (b.type === 'relations') return (
       <section className="pf__sec" key={b.id}>{head}
-        {b.items.map((r, i) => { const key = `${b.id}:${i}`; const on = openAcc === key; return (
+        {b.items.map((r, i) => { const key = `${b.id}:${i}`; const on = openAcc === key; const mem = findMember(r.name); return (
           <div className={`pf__acc${on ? ' on' : ''}`} key={i}>
-            <button type="button" className="pf__acch" onClick={() => setOpenAcc(on ? '' : key)}>{r.name}<em>+</em></button>
-            <div className="pf__accb"><p style={{ margin: 0, fontSize: 14 }}>{r.text}</p></div>
+            <button type="button" className="pf__acch" onClick={() => setOpenAcc(on ? '' : key)}>
+              <span className="pf__acch-l">
+                <span className="pf__acc-av">{mem?.portraitUrl ? <img src={mem.portraitUrl} alt={r.name} loading="lazy" /> : initialsOf(r.name)}</span>
+                <span className="pf__acc-nm">{r.name}</span>
+              </span>
+              <em>+</em>
+            </button>
+            <div className="pf__accb">
+              {paras(r.text || '')}
+              {mem && <Link href={`/publication/${mem.slug}`} className="pf__acc-link">Открыть профиль {r.name} →</Link>}
+            </div>
           </div>) })}
       </section>)
     if (b.type === 'releases' || b.type === 'films') return (
@@ -241,6 +277,7 @@ export function ProfileView({
             {data.eyebrow && <div className="pf__eye">{data.eyebrow}</div>}
             <h1 className="pf__name">{title}</h1>
             {data.subtitle && <div className="pf__sub">{data.subtitle}</div>}
+            <div className="pf__read">≈ {readMin} мин чтения</div>
             {data.lead && <p className="pf__lead">{data.lead}</p>}
             {qf.length > 0 && <div className="pf__qrow">{qf.slice(0, 5).map((f, i) => (<div className="pf__qf" key={i}><b>{f.label}</b><i>{f.value}</i></div>))}</div>}
           </div>
