@@ -49,10 +49,19 @@ const css = `
 .pf__toc::-webkit-scrollbar{width:6px}
 .pf__toc::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--pf-tx) 18%,transparent);border-radius:99px}
 .pf__toc b{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--pf-mut);font-weight:700;margin-bottom:8px;padding-left:11px}
-.pf__toc a{position:relative;display:block;padding:5px 11px;border-radius:8px;color:var(--pf-mut);font-size:13.5px;line-height:1.28;cursor:pointer;transition:color .15s,background .15s;text-decoration:none}
-.pf__toc a:hover{color:var(--pf-tx);background:color-mix(in srgb,var(--pf-tx) 5%,transparent)}
-.pf__toc a.on{color:var(--pf-tx);background:color-mix(in srgb,var(--pf-acc) 15%,transparent);font-weight:650}
-.pf__toc a.on::before{content:"";position:absolute;left:2px;top:50%;transform:translateY(-50%);width:3px;height:15px;border-radius:99px;background:linear-gradient(var(--pf-acc),var(--pf-acc2))}
+.pf__toca{position:relative;display:flex;gap:9px;align-items:baseline;padding:5px 11px;border-radius:8px;color:var(--pf-mut);font-size:13.5px;line-height:1.28;text-decoration:none;transition:color .15s,background .15s}
+.pf__toca i{font-style:normal;font-size:11px;font-weight:700;min-width:15px;color:color-mix(in srgb,var(--pf-tx) 45%,transparent);font-variant-numeric:tabular-nums}
+.pf__toca:hover{color:var(--pf-tx);background:color-mix(in srgb,var(--pf-tx) 5%,transparent)}
+.pf__toca.on,.pf__toca.cur{color:var(--pf-tx);font-weight:650}
+.pf__toca.on{background:color-mix(in srgb,var(--pf-acc) 15%,transparent)}
+.pf__toca.on i,.pf__toca.cur i{color:var(--pf-acc2)}
+.pf__toca.on::before{content:"";position:absolute;left:2px;top:50%;transform:translateY(-50%);width:3px;height:15px;border-radius:99px;background:linear-gradient(var(--pf-acc),var(--pf-acc2))}
+.pf__tocsub{max-height:0;overflow:hidden;transition:max-height .28s ease;margin:1px 0 3px 18px;border-left:1px solid var(--pf-line)}
+.pf__tocsub.show{max-height:1600px}
+.pf__tocs{display:flex;gap:8px;align-items:baseline;padding:4px 10px;border-radius:7px;color:var(--pf-mut);font-size:12.5px;line-height:1.25;text-decoration:none;transition:color .15s,background .15s}
+.pf__tocs i{font-style:normal;font-size:10px;min-width:24px;opacity:.7;font-variant-numeric:tabular-nums}
+.pf__tocs:hover{color:var(--pf-tx);background:color-mix(in srgb,var(--pf-tx) 5%,transparent)}
+.pf__tocs.on{color:var(--pf-tx);background:color-mix(in srgb,var(--pf-acc) 13%,transparent);font-weight:600}
 .pf__sec{scroll-margin-top:84px;margin-bottom:46px}
 .pf__h{display:flex;align-items:center;gap:11px;margin-bottom:16px}
 .pf__h i{font-style:normal;font-size:13px;font-weight:800;color:var(--pf-acc2);background:color-mix(in srgb,var(--pf-acc) 16%,transparent);width:29px;height:29px;border-radius:9px;display:grid;place-items:center;flex:none}
@@ -62,7 +71,7 @@ const css = `
 .pf__sec>p{max-width:68ch}
 .pf__sec>p:first-of-type{font-size:1.05em;color:var(--pf-tx);opacity:1}
 /* Подзаголовок внутри длинного текстового раздела (строки с «## »). */
-.pf__sh{font-size:16.5px;font-weight:700;line-height:1.35;margin:26px 0 9px;color:var(--pf-tx);max-width:68ch}
+.pf__sh{font-size:16.5px;font-weight:700;line-height:1.35;margin:26px 0 9px;color:var(--pf-tx);max-width:68ch;scroll-margin-top:84px}
 .pf__sec>p+.pf__sh{margin-top:26px}
 .pf__tl,.pf__acc,.pf__accb p{max-width:760px}
 .pf__facts{background:var(--pf-card);border:1px solid var(--pf-line);border-radius:20px;padding:20px 22px;margin-bottom:18px}
@@ -115,8 +124,9 @@ const css = `
   .pf__port{max-width:200px}
   .pf__wrap{grid-template-columns:1fr;gap:20px}
   .pf__toc{position:static;display:flex;gap:6px;overflow-x:auto;overflow-y:visible;max-height:none;padding-bottom:6px}
-  .pf__toc b{display:none}.pf__toc a{white-space:nowrap}
-  .pf__toc a.on::before{display:none}
+  .pf__toc b{display:none}.pf__toca{white-space:nowrap}
+  .pf__toca.on::before{display:none}
+  .pf__tocsub{display:none}
   .pf__factsg{grid-template-columns:1fr}
 }
 `
@@ -171,14 +181,24 @@ export function ProfileView({
   const readMin = Math.max(1, Math.round(readChars / 6 / 170))
 
   const hasBio = Boolean(data.lead) || qf.length > 0
-  const toc: { id: string; label: string }[] = []
-  if (hasBio) toc.push({ id: 'bio', label: 'Биография' })
-  blocks.forEach((b) => { if (b.title === '') return; toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type] }) })
+  const extractSubs = (body: string, id: string) => {
+    const subs: { id: string; label: string }[] = []
+    let n = 0
+    body.split(/\n{2,}/).forEach((t) => { const x = t.trim(); if (x.startsWith('## ')) { subs.push({ id: `${id}--sh-${n}`, label: x.slice(3).trim() }); n++ } })
+    return subs
+  }
+  type TocItem = { id: string; label: string; subs: { id: string; label: string }[] }
+  const toc: TocItem[] = []
+  if (hasBio) toc.push({ id: 'bio', label: 'Биография', subs: [] })
+  blocks.forEach((b) => { if (b.title === '') return; const subs = b.type === 'text' && b.body ? extractSubs(b.body, b.id) : []; toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type], subs }) })
+  const parentOf = new Map<string, string>()
+  toc.forEach((t) => t.subs.forEach((sub) => parentOf.set(sub.id, t.id)))
 
   const [active, setActive] = useState(toc[0]?.id || '')
   const [prog, setProg] = useState(0)
   const [openAcc, setOpenAcc] = useState('')
   const rootRef = useRef<HTMLDivElement>(null)
+  const tocRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const root = rootRef.current; if (!root) return
@@ -188,7 +208,7 @@ export function ProfileView({
       raf = 0
       const h = document.documentElement
       setProg((h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)) * 100)
-      const hs = Array.from(root.querySelectorAll('[data-pf-sec]')) as HTMLElement[]
+      const hs = Array.from(root.querySelectorAll('[data-pf-sec],[data-pf-sub]')) as HTMLElement[]
       if (!hs.length) return
       let cur = hs[0].id
       for (const el of hs) {
@@ -204,12 +224,21 @@ export function ProfileView({
     window.addEventListener('resize', onScroll)
     return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [toc.length])
+  useEffect(() => { const el = tocRef.current?.querySelector('.on') as HTMLElement | null; if (el) el.scrollIntoView({ block: 'nearest' }) }, [active])
 
-  const paras = (body: string) => body.split(/\n{2,}/).map((t, i) => {
-    const x = t.trim()
-    if (x.startsWith('## ')) return <h3 className="pf__sh" key={i}>{x.slice(3).trim()}</h3>
-    return <p key={i}>{x}</p>
-  })
+  const paras = (body: string, secId?: string) => {
+    let sh = 0
+    return body.split(/\n{2,}/).map((t, i) => {
+      const x = t.trim()
+      if (x.startsWith('## ')) {
+        const label = x.slice(3).trim()
+        const id = secId ? `${secId}--sh-${sh}` : undefined
+        sh++
+        return <h3 className="pf__sh" key={i} id={id} {...(id ? { 'data-pf-sub': '' } : {})}>{label}</h3>
+      }
+      return <p key={i}>{x}</p>
+    })
+  }
   let num = 0
   const Head = ({ id, label }: { id: string; label: string }) => { num += 1; return <div className="pf__h" id={id} data-pf-sec><i>{num}</i><h2>{label}</h2></div> }
 
@@ -217,7 +246,7 @@ export function ProfileView({
     const label = b.title || BLOCK_LABEL[b.type]
     const noHead = b.title === ''
     const head = noHead ? null : <Head id={b.id} label={label} />
-    if (b.type === 'text') return (<section className="pf__sec" key={b.id}>{head}{paras(b.body || '')}</section>)
+    if (b.type === 'text') return (<section className="pf__sec" key={b.id}>{head}{paras(b.body || '', b.title === '' ? undefined : b.id)}</section>)
     if (b.type === 'timeline') return (
       <section className="pf__sec" key={b.id}>{head}
         <div className="pf__tl">{b.items.map((t, i) => (<div className="pf__ti" key={i}><div className="pf__ty">{t.year}</div><div className="pf__tt">{t.title}</div>{t.text && <div className="pf__td">{t.text}</div>}</div>))}</div>
@@ -264,6 +293,8 @@ export function ProfileView({
     return null
   }
 
+  const activeParent = parentOf.get(active) || active
+
   return (
     <div className="pf" ref={rootRef}>
       <style dangerouslySetInnerHTML={{ __html: css }} />
@@ -285,9 +316,27 @@ export function ProfileView({
       </div>
 
       <div className="pf__wrap">
-        <nav className="pf__toc">
-          <b>На этой странице</b>
-          {toc.map((t) => (<a key={t.id} href={`#${t.id}`} className={active === t.id ? 'on' : ''}>{t.label}</a>))}
+        <nav className="pf__toc" ref={tocRef}>
+          <b>Содержание</b>
+          {toc.map((t, ti) => {
+            const cur = activeParent === t.id
+            return (
+              <div className="pf__tocg" key={t.id}>
+                <a href={`#${t.id}`} className={`pf__toca${active === t.id ? ' on' : ''}${cur && active !== t.id ? ' cur' : ''}`}>
+                  <i>{ti + 1}</i><span>{t.label}</span>
+                </a>
+                {t.subs.length > 0 && (
+                  <div className={`pf__tocsub${cur ? ' show' : ''}`}>
+                    {t.subs.map((sub, si) => (
+                      <a key={sub.id} href={`#${sub.id}`} className={`pf__tocs${active === sub.id ? ' on' : ''}`}>
+                        <i>{ti + 1}.{si + 1}</i><span>{sub.label}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </nav>
         <main>
           {hasBio && (
