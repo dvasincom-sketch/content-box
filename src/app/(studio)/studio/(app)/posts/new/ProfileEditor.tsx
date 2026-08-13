@@ -17,6 +17,9 @@ const ADD_MENU: { type: PBlockType; hint: string }[] = [
   { type: 'factsList', hint: 'Нумерованные плитки: заголовок + текст' },
   { type: 'gallery', hint: 'Сетка фото (загрузите ниже)' },
   { type: 'videos', hint: 'Ролики (добавьте ниже)' },
+  { type: 'columns', hint: 'Текст в 2–3 колонки' },
+  { type: 'callout', hint: 'Выделенная выноска / цитата' },
+  { type: 'categoryRow', hint: 'Ряд постеров выбранной категории' },
 ]
 
 type Col = { key: string; label: string; textarea?: boolean; ph?: string; w?: number }
@@ -84,7 +87,7 @@ function FactsEditor({ items, onChange }: { items: string[]; onChange: (n: strin
 }
 
 /** Тело блока — зависит от типа. */
-function BlockBody({ block, patch }: { block: PBlock; patch: (p: Partial<PBlock>) => void }) {
+function BlockBody({ block, patch, cats }: { block: PBlock; patch: (p: Partial<PBlock>) => void; cats?: { id: number | string; title: string }[] }) {
   switch (block.type) {
     case 'text':
       return (
@@ -106,19 +109,60 @@ function BlockBody({ block, patch }: { block: PBlock; patch: (p: Partial<PBlock>
       return <div className="pe__note">Фото галереи загружаются в блоке «Медиа» публикации. Этот блок задаёт положение галереи на странице.</div>
     case 'videos':
       return <div className="pe__note">Ролики добавляются в блоке «Медиа» публикации. Этот блок задаёт положение видео на странице.</div>
+    case 'columns': {
+      const cols = block.cols ?? []
+      const setCols = (n: any[]) => patch({ cols: n } as Partial<PBlock>)
+      return (
+        <div className="pe__rows">
+          <div className="pe__colsgrid">
+            {cols.map((c, i) => (
+              <div className="pe__coled" key={i}>
+                <input className="studio-input" placeholder={`Заголовок колонки ${i + 1} (необяз.)`} value={c.title ?? ''} onChange={(e) => setCols(cols.map((x, j) => j === i ? { ...x, title: e.target.value } : x))} />
+                <textarea className="studio-input pe__ta" rows={4} placeholder="Текст колонки" value={c.body ?? ''} onChange={(e) => setCols(cols.map((x, j) => j === i ? { ...x, body: e.target.value } : x))} />
+                <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setCols(cols.filter((_, j) => j !== i))} disabled={cols.length <= 1}><Trash2 size={14} /> Убрать колонку</button>
+              </div>
+            ))}
+          </div>
+          {cols.length < 3 && <button type="button" className="studio-btn studio-btn--ghost pe__add" onClick={() => setCols([...cols, { body: '' }])}><Plus size={15} /> Добавить колонку</button>}
+        </div>
+      )
+    }
+    case 'callout':
+      return (
+        <div className="pe__rows">
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className={'studio-btn ' + (block.variant !== 'note' ? 'studio-btn--primary' : 'studio-btn--ghost')} onClick={() => patch({ variant: 'quote' } as Partial<PBlock>)}>Цитата</button>
+            <button type="button" className={'studio-btn ' + (block.variant === 'note' ? 'studio-btn--primary' : 'studio-btn--ghost')} onClick={() => patch({ variant: 'note' } as Partial<PBlock>)}>Заметка</button>
+          </div>
+          <textarea className="studio-input pe__ta" rows={3} placeholder="Текст выноски" value={block.text ?? ''} onChange={(e) => patch({ text: e.target.value } as Partial<PBlock>)} />
+          <input className="studio-input" placeholder="Автор / подпись (необяз.)" value={block.author ?? ''} onChange={(e) => patch({ author: e.target.value } as Partial<PBlock>)} />
+        </div>
+      )
+    case 'categoryRow':
+      return (
+        <div className="pe__rows">
+          <select className="studio-input" value={String(block.categoryId ?? '')} onChange={(e) => patch({ categoryId: e.target.value || undefined } as Partial<PBlock>)}>
+            <option value="">— выберите категорию —</option>
+            {(cats ?? []).map((c) => <option key={String(c.id)} value={String(c.id)}>{c.title}</option>)}
+          </select>
+          <div className="pe__note">На странице покажется горизонтальный ряд постеров публикаций выбранной категории.</div>
+        </div>
+      )
     default:
       return null
   }
 }
 
-function BlockCard({ block, index, total, patch, move, remove }: {
+function BlockCard({ block, index, total, patch, move, remove, cats }: {
   block: PBlock
   index: number
   total: number
   patch: (p: Partial<PBlock>) => void
   move: (d: number) => void
   remove: () => void
+  cats?: { id: number | string; title: string }[]
 }) {
+  const full = (block as { full?: boolean }).full
   return (
     <div className="pe__card">
       <div className="pe__card-head">
@@ -126,17 +170,18 @@ function BlockCard({ block, index, total, patch, move, remove }: {
         <span className="pe__card-kind">{BLOCK_LABEL[block.type]}</span>
         <input className="studio-input pe__title" placeholder={BLOCK_LABEL[block.type]} value={block.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />
         <div className="pe__ctrls">
+          <button type="button" style={{ ...rowBtn, width: 'auto', padding: '0 9px', fontSize: 11, fontWeight: 600, color: full ? '#2f6bed' : 'var(--st-text-muted)', borderColor: full ? '#2f6bed' : 'var(--st-border)' }} onClick={() => patch({ full: !full } as Partial<PBlock>)} title="Ширина секции">{full ? 'Во всю ширину' : 'Обычная'}</button>
           <button type="button" style={rowBtn} onClick={() => move(-1)} disabled={index === 0} title="Выше"><ChevronUp size={15} /></button>
           <button type="button" style={rowBtn} onClick={() => move(1)} disabled={index === total - 1} title="Ниже"><ChevronDown size={15} /></button>
           <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={remove} title="Удалить блок"><Trash2 size={15} /></button>
         </div>
       </div>
-      <div className="pe__card-body"><BlockBody block={block} patch={patch} /></div>
+      <div className="pe__card-body"><BlockBody block={block} patch={patch} cats={cats} /></div>
     </div>
   )
 }
 
-export function ProfileEditor({ value, onChange }: { value: ProfileData | null; onChange: (v: ProfileData) => void }) {
+export function ProfileEditor({ value, onChange, cats }: { value: ProfileData | null; onChange: (v: ProfileData) => void; cats?: { id: number | string; title: string }[] }) {
   const v: ProfileData = value || {}
   const set = (patch: Partial<ProfileData>) => onChange({ ...v, ...patch })
 
@@ -175,7 +220,7 @@ export function ProfileEditor({ value, onChange }: { value: ProfileData | null; 
       <div className="pe__blocks-title">Блоки страницы <em>{blocks.length}</em></div>
       {blocks.length === 0 && <div className="pe__empty">Пока нет ни одного блока. Добавьте первый ниже.</div>}
       {blocks.map((b, i) => (
-        <BlockCard key={b.id} block={b} index={i} total={blocks.length} patch={(p) => patchBlock(i, p)} move={(d) => moveBlock(i, d)} remove={() => removeBlock(i)} />
+        <BlockCard key={b.id} block={b} index={i} total={blocks.length} patch={(p) => patchBlock(i, p)} move={(d) => moveBlock(i, d)} remove={() => removeBlock(i)} cats={cats} />
       ))}
 
       <div className="pe__addwrap">
@@ -221,4 +266,6 @@ const PE_CSS = `
 .pe__menu-item:hover{background:color-mix(in srgb,var(--st-accent) 12%,transparent);border-color:color-mix(in srgb,var(--st-accent) 26%,transparent)}
 .pe__menu-item b{font-size:13px;font-weight:600}
 .pe__menu-item span{font-size:11.5px;color:var(--st-text-muted)}
+.pe__colsgrid{display:grid;grid-template-columns:1fr;gap:12px}
+.pe__coled{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--st-border);border-radius:10px;background:color-mix(in srgb,var(--st-text) 2%,transparent)}
 `

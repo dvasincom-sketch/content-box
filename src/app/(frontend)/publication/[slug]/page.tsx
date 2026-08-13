@@ -320,10 +320,21 @@ export default async function PublicationPage({ params }: { params: Promise<Para
       const c = m.cover && typeof m.cover === 'object' ? (m.cover as any) : null
       return { slug: String(m.slug || ''), title: String(m.title || ''), portraitUrl: c?.sizes?.card?.url || c?.sizes?.large?.url || c?.url || null }
     }).filter((m: any) => m.slug)
+    // Ряды-постеры категорий, встроенные в профиль: резолвим публикации категории.
+    const categoryRows: Record<string, any> = {}
+    const pblocks: any[] = Array.isArray((pub.profile as any).blocks) ? (pub.profile as any).blocks : []
+    const catIds = Array.from(new Set(pblocks.filter((b) => b?.type === 'categoryRow' && b?.categoryId).map((b) => String(b.categoryId))))
+    for (const cid of catIds) {
+      const cat: any = await payload.findByID({ collection: 'categories', id: cid, depth: 0, overrideAccess: true }).catch(() => null)
+      if (!cat || String(cat.tenant?.id ?? cat.tenant) !== String(tenant.id)) continue
+      const rp = await payload.find({ collection: 'publications', where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: cid } }, publishedWhere()] }, sort: '-publishedAt', limit: 16, depth: 1, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))
+      const items = (rp.docs as any[]).map((p) => { const c = p.cover && typeof p.cover === 'object' ? p.cover : null; return { href: `/publication/${p.slug}`, title: String(p.title || ''), posterUrl: c?.sizes?.poster?.url || c?.sizes?.card?.url || c?.url || null } })
+      if (items.length) categoryRows[cid] = { title: String(cat.title || ''), items }
+    }
     return (
       <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-8">
-          <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} members={members} />
+          <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} members={members} categoryRows={categoryRows} />
         </div>
       </main>
     )

@@ -103,6 +103,7 @@ export function Composer({
   const videoCandidates = useMemo(() => allMedia.filter((v) => (v.provider ?? null) !== 'audio'), [allMedia])
   const audioCandidates = useMemo(() => allMedia.filter((v) => (v.provider ?? null) === 'audio'), [allMedia])
   const videoModalCats = useMemo(() => flattenCategories(categories), [categories])
+  const catOptions = useMemo(() => videoModalCats.map((c) => ({ id: c.id, title: (c.depth ? '\u00A0\u00A0'.repeat(c.depth) : '') + c.title })), [videoModalCats])
   // Категория-афиша (posterLayout): для неё обложка вертикальная 2:3.
   const isPosterCategory = useMemo(() => {
     const c = categories.find((x) => String(x.id) === String(categoryId))
@@ -481,7 +482,7 @@ export function Composer({
           />
 
           {template === 'profile' ? (
-            <ProfileEditor value={profile} onChange={setProfile} />
+            <ProfileEditor value={profile} onChange={setProfile} cats={catOptions} />
           ) : (
             <TiptapEditor
               initialHtml={initial?.body || ''}

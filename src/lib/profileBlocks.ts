@@ -9,17 +9,21 @@ export type PBTimeline = { year: string; title: string; text?: string }
 export type PBRelation = { name: string; text: string }
 export type PBRelease = { title: string; meta?: string; year?: string }
 export type PBAward = { title: string; subtitle?: string; icon?: string }
+export type PBColumn = { title?: string; body: string }
 
 export type PBlock =
-  | { id: string; type: 'text'; title?: string; body: string }
-  | { id: string; type: 'timeline'; title?: string; items: PBTimeline[] }
-  | { id: string; type: 'relations'; title?: string; items: PBRelation[] }
-  | { id: string; type: 'releases'; title?: string; items: PBRelease[] }
-  | { id: string; type: 'films'; title?: string; items: PBRelease[] }
-  | { id: string; type: 'awards'; title?: string; items: PBAward[] }
-  | { id: string; type: 'factsList'; title?: string; items: string[] }
-  | { id: string; type: 'gallery'; title?: string }
-  | { id: string; type: 'videos'; title?: string }
+  | { id: string; type: 'text'; title?: string; full?: boolean; body: string }
+  | { id: string; type: 'timeline'; title?: string; full?: boolean; items: PBTimeline[] }
+  | { id: string; type: 'relations'; title?: string; full?: boolean; items: PBRelation[] }
+  | { id: string; type: 'releases'; title?: string; full?: boolean; items: PBRelease[] }
+  | { id: string; type: 'films'; title?: string; full?: boolean; items: PBRelease[] }
+  | { id: string; type: 'awards'; title?: string; full?: boolean; items: PBAward[] }
+  | { id: string; type: 'factsList'; title?: string; full?: boolean; items: string[] }
+  | { id: string; type: 'gallery'; title?: string; full?: boolean }
+  | { id: string; type: 'videos'; title?: string; full?: boolean }
+  | { id: string; type: 'columns'; title?: string; full?: boolean; cols: PBColumn[] }
+  | { id: string; type: 'callout'; title?: string; full?: boolean; variant?: 'quote' | 'note'; text: string; author?: string }
+  | { id: string; type: 'categoryRow'; title?: string; full?: boolean; categoryId?: number | string }
 
 export type PBlockType = PBlock['type']
 
@@ -53,6 +57,9 @@ export const BLOCK_LABEL: Record<PBlockType, string> = {
   factsList: 'Плитки',
   gallery: 'Галерея',
   videos: 'Видео',
+  columns: 'Колонки',
+  callout: 'Выноска',
+  categoryRow: 'Ряд-постеры',
 }
 
 /** Пустой блок нужного типа (для «Добавить»). id генерирует вызывающий. */
@@ -67,6 +74,9 @@ export function blankBlock(type: PBlockType, id: string): PBlock {
     case 'factsList': return { id, type, items: [] }
     case 'gallery': return { id, type }
     case 'videos': return { id, type }
+    case 'columns': return { id, type, cols: [{ body: '' }, { body: '' }] }
+    case 'callout': return { id, type, variant: 'quote', text: '' }
+    case 'categoryRow': return { id, type }
   }
 }
 

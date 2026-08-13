@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Link from '@/components/AppLink'
 import { toBlocks, BLOCK_LABEL, type ProfileData, type PBlock } from '@/lib/profileBlocks'
+type CategoryRow = { title: string; href?: string; items: { href: string; title: string; posterUrl?: string | null }[] }
 
 type GalleryItem = { url?: string; caption?: string }
 type VideoItem = { slug: string; title: string; coverUrl?: string | null }
@@ -116,6 +117,21 @@ const css = `
 .pf__sec--src>p:first-of-type{font-size:12px;color:var(--pf-mut);opacity:1}
 .pf__sec--src .pf__h h2{font-size:16px}
 .pf__sec--src .pf__h i{width:24px;height:24px;font-size:11px}
+.pf__cols{display:grid;gap:26px}
+.pf__col>p:first-of-type{margin-top:0}
+.pf__col>p{max-width:none}
+.pf__callout{border-radius:16px;padding:18px 22px;background:var(--pf-card);border:1px solid var(--pf-line)}
+.pf__callout--quote{border-left:4px solid var(--pf-acc);background:color-mix(in srgb,var(--pf-acc) 8%,transparent)}
+.pf__callout--note{border-left:4px solid var(--pf-acc2);background:color-mix(in srgb,var(--pf-acc2) 8%,transparent)}
+.pf__callout-body p{margin:0 0 8px;font-size:16px;line-height:1.6;max-width:none}
+.pf__callout-body p:last-child{margin-bottom:0}
+.pf__callout--quote .pf__callout-body p{font-style:italic}
+.pf__callout-author{margin-top:10px;font-size:13.5px;color:var(--pf-mut);font-weight:600}
+.pf__crow{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x mandatory}
+.pf__crow .pf__pcard{flex:0 0 auto;width:150px;scroll-snap-align:start;text-decoration:none;color:inherit}
+.pf__crow::-webkit-scrollbar{height:6px}
+.pf__crow::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--pf-tx) 18%,transparent);border-radius:99px}
+.pf__sec--full>p,.pf__sec--full>.pf__sh{max-width:none}
 .pf__acc{border:1px solid var(--pf-line);border-radius:14px;overflow:hidden;margin-bottom:9px;background:var(--pf-card)}
 .pf__acch{width:100%;text-align:left;background:none;border:none;color:var(--pf-tx);padding:14px 17px;font-size:15px;font-weight:650;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
 .pf__acch em{font-style:normal;color:var(--pf-acc2);transition:.2s}
@@ -140,6 +156,11 @@ const css = `
   .pf__toca.on::before{display:none}
   .pf__tocsub{display:none}
   .pf__factsg{grid-template-columns:1fr}
+  .pf__sec--full{margin-left:0}
+  .pf__cols{grid-template-columns:1fr !important}
+}
+@media(min-width:901px){
+  .pf__sec--full{margin-left:-260px}
 }
 `
 
@@ -152,7 +173,7 @@ const initialsOf = (name: string): string => {
 }
 
 export function ProfileView({
-  data, title, portraitUrl, gallery, videos, members,
+  data, title, portraitUrl, gallery, videos, members, categoryRows,
 }: {
   data: ProfileData
   title: string
@@ -160,6 +181,7 @@ export function ProfileView({
   gallery?: GalleryItem[]
   videos?: VideoItem[]
   members?: Member[]
+  categoryRows?: Record<string, CategoryRow>
 }) {
   const qf = data.quickFacts ?? []
   const gal = gallery ?? []
@@ -168,6 +190,9 @@ export function ProfileView({
     if (b.type === 'gallery') return gal.length > 0
     if (b.type === 'videos') return vids.length > 0
     if (b.type === 'text') return Boolean(b.body?.trim())
+    if (b.type === 'columns') return b.cols?.some((c) => (c.body || '').trim() || (c.title || '').trim())
+    if (b.type === 'callout') return Boolean(b.text?.trim())
+    if (b.type === 'categoryRow') return Boolean(b.categoryId && categoryRows?.[String(b.categoryId)]?.items?.length)
     if ('items' in b) return Array.isArray(b.items) && b.items.length > 0
     return true
   })
@@ -185,6 +210,8 @@ export function ProfileView({
   // Оценка времени чтения (рус. ~170 слов/мин, ~6 символов на слово).
   const readChars = (data.lead || '').length + blocks.reduce((acc, b) => {
     if (b.type === 'text') return acc + (b.body || '').length
+    if (b.type === 'columns') return acc + b.cols.reduce((a, c) => a + (c.body || '').length, 0)
+    if (b.type === 'callout') return acc + (b.text || '').length
     if (b.type === 'relations') return acc + b.items.reduce((a, r) => a + (r.text || '').length, 0)
     if (b.type === 'factsList') return acc + b.items.reduce((a, x) => a + String(x).length, 0)
     if ('items' in b) return acc + JSON.stringify(b.items).length
@@ -264,13 +291,14 @@ export function ProfileView({
     const label = b.title || BLOCK_LABEL[b.type]
     const noHead = b.title === ''
     const head = noHead ? null : <Head id={b.id} label={label} />
-    if (b.type === 'text') { const isSrc = /^\s*Источник/i.test(b.title || ''); return (<section className={`pf__sec${isSrc ? ' pf__sec--src' : ''}`} key={b.id}>{head}{paras(b.body || '', b.title === '' ? undefined : b.id)}</section>) }
+    const fullCls = (b as { full?: boolean }).full ? ' pf__sec--full' : ''
+    if (b.type === 'text') { const isSrc = /^\s*Источник/i.test(b.title || ''); return (<section className={`pf__sec${fullCls}${isSrc ? ' pf__sec--src' : ''}`} key={b.id}>{head}{paras(b.body || '', b.title === '' ? undefined : b.id)}</section>) }
     if (b.type === 'timeline') return (
-      <section className="pf__sec" key={b.id}>{head}
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="pf__tl">{b.items.map((t, i) => (<div className="pf__ti" key={i}><div className="pf__ty">{t.year}</div><div className="pf__tt">{t.title}</div>{t.text && <div className="pf__td">{t.text}</div>}</div>))}</div>
       </section>)
     if (b.type === 'relations') return (
-      <section className="pf__sec" key={b.id}>{head}
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         {b.items.map((r, i) => { const key = `${b.id}:${i}`; const on = openAcc === key; const mem = findMember(r.name); return (
           <div className={`pf__acc${on ? ' on' : ''}`} key={i}>
             <button type="button" className="pf__acch" onClick={() => setOpenAcc(on ? '' : key)}>
@@ -287,7 +315,7 @@ export function ProfileView({
           </div>) })}
       </section>)
     if (b.type === 'releases') return (
-      <section className="pf__sec" key={b.id}>{head}
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="poster-grid pf__discog">
           {b.items.map((r, i) => (
             <div className="poster-card pf__pcard" key={i}>
@@ -298,29 +326,53 @@ export function ProfileView({
         </div>
       </section>)
     if (b.type === 'films') return (
-      <section className="pf__sec" key={b.id}>{head}
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="pf__grid pf__grid--f">
           {b.items.map((r, i) => (<div className="pf__rel" key={i}><div className="pf__cov">{r.title}</div><div className="pf__rb"><div className="tt">{r.title}</div><div className="mt">{r.meta && <span className="pf__chip">{r.meta}</span>}{r.year}</div></div></div>))}
         </div>
       </section>)
     if (b.type === 'awards') return (
-      <section className="pf__sec" key={b.id}>{head}
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="pf__badges">{b.items.map((a, i) => (<div className="pf__badge" key={i}><em>{a.icon || '🏆'}</em><div><b>{a.title}</b>{a.subtitle && <span>{a.subtitle}</span>}</div></div>))}</div>
       </section>)
     if (b.type === 'factsList') return (
-      <section className="pf__sec" key={b.id}>{head}
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="pf__tiles">{b.items.map((f, i) => { const str = String(f); const di = str.indexOf(' — '); const hasT = di > 0 && di <= 42; const t = hasT ? str.slice(0, di) : ''; const body = hasT ? str.slice(di + 3) : str; return (
           <div className="pf__tile" key={i}><em>{String(i + 1).padStart(2, '0')}</em>{t && <b>{t}</b>}<span>{body}</span></div>
         ) })}</div>
       </section>)
     if (b.type === 'gallery') return (
-      <section className="pf__sec" key={b.id}>{head}
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="pf__gal">{gal.map((g, i) => (<figure key={i}>{g.url ? <img src={g.url} alt={g.caption || ''} loading="lazy" /> : null}</figure>))}</div>
       </section>)
     if (b.type === 'videos') return (
-      <section className="pf__sec" key={b.id}>{head}
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="pf__grid pf__grid--f">{vids.map((v, i) => (<Link href={`/video/${v.slug}`} className="pf__rel" key={i}><div className="pf__cov">{v.coverUrl ? <img src={v.coverUrl} alt={v.title} loading="lazy" /> : v.title}</div><div className="pf__rb"><div className="tt">{v.title}</div></div></Link>))}</div>
       </section>)
+    if (b.type === 'columns') { const n = Math.min(3, Math.max(1, b.cols?.length || 1)); return (
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
+        <div className="pf__cols" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+          {b.cols.map((c, i) => (<div className="pf__col" key={i}>{c.title && <h3 className="pf__sh" style={{ marginTop: 0 }}>{c.title}</h3>}{paras(c.body || '')}</div>))}
+        </div>
+      </section>) }
+    if (b.type === 'callout') return (
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
+        <div className={`pf__callout${b.variant === 'note' ? ' pf__callout--note' : ' pf__callout--quote'}`}>
+          <div className="pf__callout-body">{paras(b.text || '')}</div>
+          {b.author && <div className="pf__callout-author">— {b.author}</div>}
+        </div>
+      </section>)
+    if (b.type === 'categoryRow') { const row = categoryRows?.[String(b.categoryId)]; if (!row) return null; return (
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
+        <div className="pf__crow">
+          {row.items.map((it, i) => (
+            <a className="poster-card pf__pcard" href={it.href} key={i} title={it.title}>
+              <div className="poster-card__frame">{it.posterUrl ? <img src={it.posterUrl} alt={it.title} loading="lazy" className="poster-card__img" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} /> : <div className="poster-card__placeholder pf__pph">{it.title}</div>}</div>
+              <div className="pf__pcap"><b>{it.title}</b></div>
+            </a>
+          ))}
+        </div>
+      </section>) }
     return null
   }
 
