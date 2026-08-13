@@ -15,7 +15,7 @@ export type ProfileData = {
   facts?: string[]
   relations?: { name: string; text: string }[]
 }
-type GalleryItem = { url: string; caption?: string }
+type GalleryItem = { url?: string; caption?: string }
 type VideoItem = { slug: string; title: string; coverUrl?: string | null }
 
 const css = `
