@@ -101,9 +101,21 @@ const css = `
 .pf__badge{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:12px;background:var(--pf-card);border:1px solid var(--pf-line)}
 .pf__badge em{font-style:normal;width:26px;height:26px;border-radius:8px;background:linear-gradient(120deg,var(--pf-acc),var(--pf-acc2));display:grid;place-items:center;font-size:14px;flex:none}
 .pf__badge b{font-size:14px}.pf__badge span{display:block;font-size:12px;color:var(--pf-mut)}
-.pf__tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:11px}
-.pf__tile{padding:15px;border-radius:14px;background:var(--pf-card);border:1px solid var(--pf-line);font-size:14px;font-weight:550}
-.pf__tile em{font-style:normal;font-size:12px;font-weight:800;color:var(--pf-acc2);display:block;margin-bottom:6px}
+.pf__tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:14px}
+.pf__tile{padding:17px 18px;border-radius:16px;background:var(--pf-card);border:1px solid var(--pf-line);display:flex;flex-direction:column}
+.pf__tile em{font-style:normal;font-size:12px;font-weight:800;color:var(--pf-acc2);display:block;margin-bottom:9px;letter-spacing:.04em}
+.pf__tile b{font-size:14.5px;font-weight:700;line-height:1.3;margin-bottom:5px}
+.pf__tile span{font-size:13px;color:var(--pf-mut);line-height:1.55}
+.pf__discog{margin-top:2px}
+.pf__pcard{width:100%}
+.pf__pph{font-size:clamp(14px,1.5vw,18px);font-weight:700;padding:14px;text-align:center;line-height:1.25;background:linear-gradient(135deg,var(--brand-primary,var(--pf-acc)),var(--brand-accent,var(--pf-acc2)))}
+.pf__pcap{padding:9px 2px 0}
+.pf__pcap b{display:block;font-size:13.5px;font-weight:650;line-height:1.25}
+.pf__pcap span{display:flex;gap:7px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--pf-mut);margin-top:4px}
+.pf__sec--src p{font-size:12px;line-height:1.42;color:var(--pf-mut);max-width:none;margin:0 0 4px}
+.pf__sec--src>p:first-of-type{font-size:12px;color:var(--pf-mut);opacity:1}
+.pf__sec--src .pf__h h2{font-size:16px}
+.pf__sec--src .pf__h i{width:24px;height:24px;font-size:11px}
 .pf__acc{border:1px solid var(--pf-line);border-radius:14px;overflow:hidden;margin-bottom:9px;background:var(--pf-card)}
 .pf__acch{width:100%;text-align:left;background:none;border:none;color:var(--pf-tx);padding:14px 17px;font-size:15px;font-weight:650;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
 .pf__acch em{font-style:normal;color:var(--pf-acc2);transition:.2s}
@@ -252,7 +264,7 @@ export function ProfileView({
     const label = b.title || BLOCK_LABEL[b.type]
     const noHead = b.title === ''
     const head = noHead ? null : <Head id={b.id} label={label} />
-    if (b.type === 'text') return (<section className="pf__sec" key={b.id}>{head}{paras(b.body || '', b.title === '' ? undefined : b.id)}</section>)
+    if (b.type === 'text') { const isSrc = /^\s*Источник/i.test(b.title || ''); return (<section className={`pf__sec${isSrc ? ' pf__sec--src' : ''}`} key={b.id}>{head}{paras(b.body || '', b.title === '' ? undefined : b.id)}</section>) }
     if (b.type === 'timeline') return (
       <section className="pf__sec" key={b.id}>{head}
         <div className="pf__tl">{b.items.map((t, i) => (<div className="pf__ti" key={i}><div className="pf__ty">{t.year}</div><div className="pf__tt">{t.title}</div>{t.text && <div className="pf__td">{t.text}</div>}</div>))}</div>
@@ -274,9 +286,20 @@ export function ProfileView({
             </div>
           </div>) })}
       </section>)
-    if (b.type === 'releases' || b.type === 'films') return (
+    if (b.type === 'releases') return (
       <section className="pf__sec" key={b.id}>{head}
-        <div className={`pf__grid${b.type === 'films' ? ' pf__grid--f' : ''}`}>
+        <div className="poster-grid pf__discog">
+          {b.items.map((r, i) => (
+            <div className="poster-card pf__pcard" key={i}>
+              <div className="poster-card__frame"><div className="poster-card__placeholder pf__pph">{r.title}</div></div>
+              <div className="pf__pcap"><b>{r.title}</b><span>{r.meta && <span className="pf__chip">{r.meta}</span>}{r.year}</span></div>
+            </div>
+          ))}
+        </div>
+      </section>)
+    if (b.type === 'films') return (
+      <section className="pf__sec" key={b.id}>{head}
+        <div className="pf__grid pf__grid--f">
           {b.items.map((r, i) => (<div className="pf__rel" key={i}><div className="pf__cov">{r.title}</div><div className="pf__rb"><div className="tt">{r.title}</div><div className="mt">{r.meta && <span className="pf__chip">{r.meta}</span>}{r.year}</div></div></div>))}
         </div>
       </section>)
@@ -286,7 +309,9 @@ export function ProfileView({
       </section>)
     if (b.type === 'factsList') return (
       <section className="pf__sec" key={b.id}>{head}
-        <div className="pf__tiles">{b.items.map((f, i) => (<div className="pf__tile" key={i}><em>{String(i + 1).padStart(2, '0')}</em>{f}</div>))}</div>
+        <div className="pf__tiles">{b.items.map((f, i) => { const str = String(f); const di = str.indexOf(' — '); const hasT = di > 0 && di <= 42; const t = hasT ? str.slice(0, di) : ''; const body = hasT ? str.slice(di + 3) : str; return (
+          <div className="pf__tile" key={i}><em>{String(i + 1).padStart(2, '0')}</em>{t && <b>{t}</b>}<span>{body}</span></div>
+        ) })}</div>
       </section>)
     if (b.type === 'gallery') return (
       <section className="pf__sec" key={b.id}>{head}
