@@ -61,7 +61,13 @@ export default async function StudioPostsPage({ searchParams }: { searchParams: 
 
   const and: any[] = [{ tenant: { equals: author!.tenantId } }, ...(ownFilter ? [ownFilter] : [])]
   if (q) and.push({ title: { like: q } })
-  if (categoryIds.length) and.push({ or: [{ category: { in: categoryIds } }, { categories: { in: categoryIds } }] })
+  if (categoryIds.length) {
+    // id категорий целочисленные — приводим строки из URL к числам, где можно.
+    const catVals = categoryIds.map((v) => { const n = Number(v); return Number.isInteger(n) && String(n) === v ? n : v })
+    // Поле называется extraCategories (не categories) — иначе Payload падает
+    // «The following path cannot be queried: categories».
+    and.push({ or: [{ category: { in: catVals } }, { extraCategories: { in: catVals } }] })
+  }
 
   const res = await payload.find({
     collection: 'publications',
