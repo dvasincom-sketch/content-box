@@ -14,6 +14,7 @@ import { THEME_INIT } from '@/lib/themeInit'
 import { UmamiTracker } from '@/components/UmamiTracker'
 import { UMAMI_STUDIO_WEBSITE_ID } from '@/lib/umami'
 import { PWARegister } from '@/components/PWARegister'
+import BrokenImageFallback from '@/components/BrokenImageFallback'
 
 // Студия — авторизованное приложение (auth + БД), не статика. Рендерим на каждый
 // запрос, иначе `next build` пытается пререндерить и упирается в недоступную на
@@ -44,6 +45,7 @@ export default function StudioRootLayout({ children }: { children: React.ReactNo
         <link rel="icon" type="image/svg+xml" href="/studio-icon.svg" />
       </head>
       <body style={{ margin: 0 }}>
+        <BrokenImageFallback />
         {/* Регистрируем service worker и в студии: во время деплоя апстрим лежит,
             и SW показывает «обновляемся» вместо белого экрана. */}
         <PWARegister />

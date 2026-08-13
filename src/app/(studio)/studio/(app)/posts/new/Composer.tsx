@@ -172,6 +172,8 @@ export function Composer({
     if (!file) return
     setError(null)
     setUploading(true)
+    const ctrl = new AbortController()
+    const to = setTimeout(() => ctrl.abort(), 30000)
     try {
       const fd = new FormData()
       fd.append('file', file)
@@ -179,6 +181,7 @@ export function Composer({
         method: 'POST',
         body: fd,
         credentials: 'include',
+        signal: ctrl.signal,
       })
       const json = await res.json()
       if (!res.ok) setError(json.error || 'Не удалось загрузить обложку')
@@ -187,9 +190,10 @@ export function Composer({
         setCoverUrl(json.url)
         setCoverBroken(false)
       }
-    } catch {
-      setError('Ошибка загрузки обложки')
+    } catch (e) {
+      setError((e as { name?: string })?.name === 'AbortError' ? 'Хранилище временно недоступно, попробуйте позже.' : 'Ошибка загрузки обложки')
     } finally {
+      clearTimeout(to)
       setUploading(false)
       if (fileInput.current) fileInput.current.value = ''
     }

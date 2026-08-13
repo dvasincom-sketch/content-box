@@ -35,6 +35,7 @@ import { BugReportWidget } from '@/components/BugReportWidget'
 import { AskAsya } from '@/components/AskAsya'
 import { asyaEnabled } from '@/lib/asya'
 import { UmamiTracker } from '@/components/UmamiTracker'
+import BrokenImageFallback from '@/components/BrokenImageFallback'
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
@@ -155,6 +156,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             <span className="bg-decor__b" />
           </div>
         )}
+        <BrokenImageFallback />
         <SpotlightController />
         <PWARegister />
         {ctx && (

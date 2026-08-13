@@ -286,16 +286,22 @@ function PublicationsPicker({ ids, onChange }: { ids: (number | string)[]; onCha
 function HeroImage({ url, onChange }: { url?: string; onChange: (u: string) => void }) {
   const ref = React.useRef<HTMLInputElement>(null)
   const [busy, setBusy] = React.useState(false)
+  const [err, setErr] = React.useState<string | null>(null)
   const upload = async (f: File) => {
-    setBusy(true)
+    setBusy(true); setErr(null)
+    const ctrl = new AbortController()
+    const to = setTimeout(() => ctrl.abort(), 30000)
     try {
       const fd = new FormData()
       fd.append('file', f)
-      const res = await fetch('/studio/api/upload-cover', { method: 'POST', body: fd, credentials: 'include' })
+      const res = await fetch('/studio/api/upload-cover', { method: 'POST', body: fd, credentials: 'include', signal: ctrl.signal })
       const j = await res.json().catch(() => ({}))
       if (res.ok && j.url) onChange(j.url)
+      else setErr(j.error || 'Не удалось загрузить фото')
+    } catch (e) {
+      setErr((e as { name?: string })?.name === 'AbortError' ? 'Хранилище временно недоступно, попробуйте позже.' : 'Ошибка загрузки')
     } finally {
-      setBusy(false)
+      clearTimeout(to); setBusy(false)
       if (ref.current) ref.current.value = ''
     }
   }
@@ -308,6 +314,7 @@ function HeroImage({ url, onChange }: { url?: string; onChange: (u: string) => v
         </button>
         {url && <button type="button" className="studio-btn studio-btn--ghost" onClick={() => onChange('')}><Trash2 size={14} /> Убрать</button>}
       </div>
+      {err && <div className="pe__note" style={{ color: '#e5484d' }}>{err}</div>}
       <input ref={ref} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f) }} />
     </div>
   )
