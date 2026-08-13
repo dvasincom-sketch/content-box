@@ -433,6 +433,7 @@ export function Composer({
             </div>
           )}
 
+          <div className={"composer__coverwrap" + (isPosterCategory ? " composer__coverwrap--poster" : "")}>
           {coverUrl && !coverBroken ? (
             <div className={"composer__cover" + (isPosterCategory ? " composer__cover--poster" : "")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -470,6 +471,7 @@ export function Composer({
               Основная категория — «Афиша»: обложка показывается вертикально (2:3). Чтобы сделать обычную горизонтальную — выберите другую категорию или отключите «Афишу» у этой категории в настройках.
             </div>
           )}
+          </div>
           <input
             ref={fileInput}
             type="file"
@@ -488,6 +490,7 @@ export function Composer({
             />
           )}
 
+          {template !== 'profile' && (
           <div className="composer__media">
             <div className="composer__field-label composer__gallery-label">Медиа</div>
 
@@ -553,6 +556,7 @@ export function Composer({
               </div>
             </div>
           </div>
+          )}
         </div>
 
         <aside className="composer__side">

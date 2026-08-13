@@ -969,6 +969,12 @@ a.studio-btn--ghost:hover { color: var(--st-text); }
 .composer__cover--poster { max-width: 260px; }
 .composer__cover--poster img { aspect-ratio: 2 / 3; max-height: none; height: auto; }
 .composer__cover-hint { font-size: 12.5px; color: var(--st-text-muted); line-height: 1.4; margin: -6px 0 16px; max-width: 440px; }
+/* Афиша: миниатюра-постер слева, подсказка справа — без пустого места. */
+.composer__coverwrap--poster { display: flex; align-items: stretch; gap: 20px; margin-bottom: var(--st-space-5); }
+.composer__coverwrap--poster .composer__cover { margin-bottom: 0; }
+.composer__coverwrap--poster .composer__cover--poster { max-width: 172px; flex: none; }
+.composer__coverwrap--poster .composer__cover-add { max-width: 172px; flex: none; align-self: flex-start; }
+.composer__coverwrap--poster .composer__cover-hint { margin: 0; max-width: none; flex: 1; align-self: center; }
 .composer__cover-remove {
   position: absolute;
   top: var(--st-space-3);
