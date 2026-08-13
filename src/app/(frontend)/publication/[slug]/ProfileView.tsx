@@ -224,7 +224,13 @@ export function ProfileView({
     window.addEventListener('resize', onScroll)
     return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [toc.length])
-  useEffect(() => { const el = tocRef.current?.querySelector('.on') as HTMLElement | null; if (el) el.scrollIntoView({ block: 'nearest' }) }, [active])
+  useEffect(() => {
+    const nav = tocRef.current; if (!nav) return
+    const el = nav.querySelector('.on') as HTMLElement | null; if (!el) return
+    const top = el.offsetTop, bot = top + el.offsetHeight
+    if (top < nav.scrollTop) nav.scrollTop = top - 8
+    else if (bot > nav.scrollTop + nav.clientHeight) nav.scrollTop = bot - nav.clientHeight + 8
+  }, [active])
 
   const paras = (body: string, secId?: string) => {
     let sh = 0
