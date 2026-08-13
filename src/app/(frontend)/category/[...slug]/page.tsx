@@ -128,17 +128,11 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   let pubTotal = 0
   let pubPages = 1
   if (!isPosterContainer && !isVideoSeries) {
-    const branchRes = await payload.find({
-      collection: 'categories',
-      where: {
-        and: [{ tenant: { equals: tenant.id } }, { 'breadcrumbs.doc': { equals: category.id } }],
-      },
-      limit: 500,
-      depth: 0,
-      overrideAccess: true,
-    })
-    const branchIDs = (branchRes.docs as any[]).map((c) => c.id)
-    if (branchIDs.length === 0) branchIDs.push(category.id)
+    // Публикация показывается ТОЛЬКО в назначенных ей категориях (основная +
+    // дополнительные) — без роллапа по потомкам, поэтому в родительских разделах
+    // она не появляется. Раньше сюда подтягивалась вся ветка (breadcrumbs.doc),
+    // из-за чего материал «всплывал» и у предков.
+    const branchIDs = [category.id]
 
     // Публикация попадает в раздел по ОСНОВНОЙ или по ДОПОЛНИТЕЛЬНОЙ категории.
     const catMatch: any[] = [
@@ -223,6 +217,27 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     })
   }
 
+  // Контейнер афиш может содержать не только подкатегории, но и публикации,
+  // назначенные прямо ему — показываем их вертикальными постерами.
+  let posterPubs: any[] = []
+  if (isPosterContainer) {
+    const ppRes = await payload.find({
+      collection: 'publications',
+      where: {
+        and: [
+          { tenant: { equals: tenant.id } },
+          publishedWhere(),
+          { or: [{ category: { equals: category.id } }, { extraCategories: { in: [category.id] } }] },
+        ],
+      },
+      sort: '-publishedAt',
+      depth: 1,
+      limit: 60,
+      overrideAccess: true,
+    })
+    posterPubs = ppRes.docs as any[]
+  }
+
   // Прямые подкатегории. Для контейнера — это афиши; для обычной категории —
   // плитки под публикациями. depth:1 — нужен cover.
   const childrenRes = await payload.find({
@@ -293,7 +308,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         ) : isPosterContainer ? (
           // Контейнер: сетка афиш — прямые дочерние категории вертикальными
           // постерами 2:3. Клик по афише → страница дочерней категории (эпизоды).
-          children.length > 0 ? (
+          children.length > 0 || posterPubs.length > 0 ? (
             <div className="poster-grid">
               {children.map((c) => {
                 const cover = c.cover && typeof c.cover === 'object' ? c.cover : null
@@ -324,10 +339,39 @@ export default async function CategoryPage({ params, searchParams }: { params: P
                   </a>
                 )
               })}
+              {posterPubs.map((p) => {
+                const cover = p.cover && typeof p.cover === 'object' ? p.cover : null
+                const posterUrl = cover?.sizes?.poster?.url || cover?.sizes?.card?.url || cover?.url || null
+                return (
+                  <a
+                    key={`p-${p.id}`}
+                    href={`/publication/${p.slug}`}
+                    className="poster-card"
+                    title={p.title}
+                  >
+                    <div className="poster-card__frame">
+                      {posterUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={posterUrl}
+                          alt={p.title}
+                          loading="lazy"
+                          className="poster-card__img"
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+                        />
+                      ) : (
+                        <div className="poster-card__placeholder" aria-hidden>
+                          {(p.title || '?').slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  </a>
+                )
+              })}
             </div>
           ) : category.description ? null : (
             <p style={{ color: 'var(--brand-muted)' }}>
-              В этом разделе пока нет подразделов.
+              В этом разделе пока нет материалов.
             </p>
           )
         ) : (pubs.length === 0 && !isEvent) ? (
