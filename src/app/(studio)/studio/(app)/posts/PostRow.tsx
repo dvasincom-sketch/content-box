@@ -15,6 +15,7 @@ type PubDoc = {
   slug?: string
   publishedAt?: string | null
   featured?: boolean
+  template?: string
   cover?: any
   category?: any
   minTier?: any
@@ -63,6 +64,7 @@ export function PostRow({ doc }: { doc: PubDoc }) {
         <div className="studio-row__title">
           {doc.title || 'Без заголовка'}
           {doc.featured && <span className="studio-tag studio-tag--featured">Featured</span>}
+          {doc.template === 'profile' && <span className="studio-tag studio-tag--profile">Профиль</span>}
         </div>
         <div className="studio-row__meta">
           <span className="studio-row__date">{formatDate(doc.publishedAt)}</span>

@@ -33,6 +33,25 @@ export const Publications: CollectionConfig = {
       label: 'Slug (уникален в пределах тенанта)',
     },
     { name: 'cover', type: 'upload', relationTo: 'media', label: 'Обложка карточки' },
+    {
+      // Шаблон оформления. 'article' — обычная публикация; 'profile' — страница-
+      // досье (герой + факты + таймлайн + карточки + плитки). Varchar, не enum —
+      // чтобы добавлять новые шаблоны без миграций.
+      name: 'template',
+      type: 'text',
+      defaultValue: 'article',
+      label: 'Шаблон',
+      admin: { description: "'article' (обычная) или 'profile' (страница-досье)." },
+    },
+    {
+      // Структурированный контент для шаблона «Профиль» (факты, таймлайн,
+      // дискография, фильмография, награды, факты, разделы). Изображения —
+      // отдельно: портрет = cover, галерея = gallery, видео = relatedVideos.
+      name: 'profile',
+      type: 'json',
+      label: 'Данные профиля',
+      admin: { description: 'Заполняется для шаблона «Профиль».' },
+    },
     { name: 'publishedAt', type: 'date', label: 'Дата публикации' },
     { name: 'eventDate', type: 'date', label: 'Дата события', admin: { description: 'Для разделов-событий: дата лайва/мероприятия. По ней сортируется список и рисуется оранжевая плашка.' } },
     { name: 'category', type: 'relationship', relationTo: 'categories', label: 'Основная категория' },

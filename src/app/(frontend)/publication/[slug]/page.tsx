@@ -19,6 +19,8 @@ import { AsyaSummary } from '../../video/[slug]/AsyaSummary'
 import { ASYA_MIN_TIER_PRICE } from '@/lib/asya'
 import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
+import { ProfileView } from './ProfileView'
+import { videoThumbUrl } from '@/lib/videoThumb'
 import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
 import { CrossLinkCard, breadcrumbLabelPath } from '@/components/CrossLinkCard'
 import { TagChips } from '@/components/TagChips'
@@ -299,6 +301,23 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     )
   }
 
+
+  // Шаблон «Профиль» — страница-досье вместо обычной статьи.
+  if (pub.template === 'profile' && pub.profile && typeof pub.profile === 'object') {
+    const coverObj = pub.cover && typeof pub.cover === 'object' ? (pub.cover as any) : null
+    const portraitUrl = coverObj?.sizes?.large?.url || coverObj?.url || null
+    const pfGallery = galleryItems.map((g) => ({ url: g.thumbUrl || g.url, caption: g.caption }))
+    const pfVideos = relatedVideos
+      .map(({ video }: any) => ({ slug: String(video?.slug || ''), title: String(video?.title || 'Видео'), coverUrl: videoThumbUrl(video) }))
+      .filter((v: any) => v.slug)
+    return (
+      <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} />
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
