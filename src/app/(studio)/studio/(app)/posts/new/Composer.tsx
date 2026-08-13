@@ -104,7 +104,6 @@ export function Composer({
   const audioCandidates = useMemo(() => allMedia.filter((v) => (v.provider ?? null) === 'audio'), [allMedia])
   const videoModalCats = useMemo(() => flattenCategories(categories), [categories])
   const catOptions = useMemo(() => videoModalCats.map((c) => ({ id: c.id, title: (c.depth ? '\u00A0\u00A0'.repeat(c.depth) : '') + c.title })), [videoModalCats])
-  const profileMedia = { gallery, setGallery, galleryFolders, videoCandidates, videoIds, setVideoIds, videoModalCats, canCreateMedia, openVideoModal: () => setVideoModalOpen(true) }
   // Категория-афиша (posterLayout): для неё обложка вертикальная 2:3.
   const isPosterCategory = useMemo(() => {
     const c = categories.find((x) => String(x.id) === String(categoryId))
@@ -141,6 +140,7 @@ export function Composer({
   }
 
   const [gallery, setGallery] = useState<GalleryItem[]>(initial?.gallery ?? [])
+  const profileMedia = { gallery, setGallery, galleryFolders, videoCandidates, videoIds, setVideoIds, videoModalCats, canCreateMedia, openVideoModal: () => setVideoModalOpen(true) }
   const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
   const [eventDate, setEventDate] = useState<string>(initial?.eventDate ? String(initial.eventDate).slice(0, 10) : '')
 
