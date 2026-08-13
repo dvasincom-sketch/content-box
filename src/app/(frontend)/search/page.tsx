@@ -3,6 +3,9 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import { resolveViewerTenantSSR } from '@/search/tenant'
 import { runSearch } from '@/search/query'
+import { getPayload } from 'payload'
+import config from '@/payload.config'
+import { logSearchQuery } from '@/lib/searchStats'
 import { rateLimit, clientIp } from '@/lib/rateLimit'
 import { SearchBox } from '@/components/search/SearchBox'
 import { ListPagination } from '@/components/ListPagination'
@@ -22,6 +25,14 @@ const TYPE_LABELS: Record<string, string> = {
   category: 'Категории',
   video: 'Видео',
   page: 'Страницы',
+}
+
+// Ярлык сущности + подсказка «куда ведёт» — чтобы в выдаче было ясно, что это.
+const TYPE_META: Record<string, { label: string; action: string }> = {
+  publication: { label: 'Публикация', action: 'Открыть публикацию' },
+  category: { label: 'Раздел', action: 'Перейти в раздел' },
+  video: { label: 'Видео', action: 'Смотреть видео' },
+  page: { label: 'Страница', action: 'Открыть страницу' },
 }
 
 type SP = Record<string, string | string[] | undefined>
@@ -66,6 +77,15 @@ export default async function SearchPage({
           includeLocked,
         })
       : null
+
+  // Логируем выполненный поиск (первая страница) — это источник статистики «Поиск».
+  if (result && q && page === 1) {
+    try {
+      const payload = await getPayload({ config: await config })
+      const n = typeof result.totalHits === 'number' ? result.totalHits : 0
+      await logSearchQuery(payload, Number(tenant?.id), q, n)
+    } catch { /* лог не критичен */ }
+  }
 
   const hrefWith = (patch: Record<string, string | undefined>): string => {
     const merged: Record<string, string | undefined> = {
@@ -144,6 +164,9 @@ export default async function SearchPage({
                       <span className={styles.thumbPlaceholder} aria-hidden />
                     )}
                     <span className={styles.itemBody}>
+                      <span className={styles.itemKind} data-kind={h.type}>
+                        {TYPE_META[h.type]?.label ?? h.type}
+                      </span>
                       <span
                         className={styles.itemTitle}
                         dangerouslySetInnerHTML={{ __html: highlight(h.title) }}
@@ -155,7 +178,11 @@ export default async function SearchPage({
                           className={styles.excerpt}
                           dangerouslySetInnerHTML={{ __html: highlight(h.excerpt) }}
                         />
-                      ) : null}
+                      ) : (
+                        <span className={styles.itemAction}>
+                          {TYPE_META[h.type]?.action ?? 'Открыть'} →
+                        </span>
+                      )}
                     </span>
                   </Link>
                 </li>
