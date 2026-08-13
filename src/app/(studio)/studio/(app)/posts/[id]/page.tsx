@@ -79,7 +79,7 @@ export default async function EditPostPage({
   const categories = (catsRes.docs as any[]).map((c) => {
     const rawParent = c.parent
     const parentId = rawParent && typeof rawParent === 'object' ? rawParent.id : (rawParent ?? null)
-    return { id: c.id, title: c.title || 'Без названия', parentId: parentId ?? null }
+    return { id: c.id, title: c.title || 'Без названия', parentId: parentId ?? null, posterLayout: Boolean(c.posterLayout) }
   })
 
   const tiers = (tiersRes.docs as any[]).map((t) => ({

@@ -308,7 +308,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
             лишнее (правило для всех публикаций). */}
         {/* Обложка: только при наличии фото (Ken Burns). Нет обложки — блок не
             выводим вообще, без градиента-заглушки. Заголовок идёт ниже. */}
-        {!isVideoFirst && pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
+        {!isVideoFirst && !(category as { posterLayout?: boolean } | null)?.posterLayout && pub.cover && typeof pub.cover === 'object' && pub.cover.url && (
           <div className="pubhero-cover relative rounded-3xl overflow-hidden h-72 lg:h-96">
             <Image
               src={pub.cover.url}

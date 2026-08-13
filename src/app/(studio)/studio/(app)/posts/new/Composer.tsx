@@ -98,6 +98,11 @@ export function Composer({
   const videoCandidates = useMemo(() => allMedia.filter((v) => (v.provider ?? null) !== 'audio'), [allMedia])
   const audioCandidates = useMemo(() => allMedia.filter((v) => (v.provider ?? null) === 'audio'), [allMedia])
   const videoModalCats = useMemo(() => flattenCategories(categories), [categories])
+  // Категория-афиша (posterLayout): для неё обложка вертикальная 2:3.
+  const isPosterCategory = useMemo(() => {
+    const c = categories.find((x) => String(x.id) === String(categoryId))
+    return Boolean((c as { posterLayout?: boolean } | undefined)?.posterLayout)
+  }, [categories, categoryId])
 
   // Разбиваем прикреплённые из initial по типу (видео / аудио) по provider.
   const initRelated = initial?.relatedVideoIds ?? []
@@ -406,7 +411,7 @@ export function Composer({
           )}
 
           {coverUrl && !coverBroken ? (
-            <div className="composer__cover">
+            <div className={"composer__cover" + (isPosterCategory ? " composer__cover--poster" : "")}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={coverUrl} alt="Обложка" onError={() => setCoverBroken(true)} />
               <button className="composer__cover-remove" onClick={removeCover} title="Убрать">
@@ -436,6 +441,11 @@ export function Composer({
               {uploading ? <Loader2 size={18} className="spin" /> : <ImagePlus size={18} />}
               {uploading ? 'Загрузка…' : 'Прикрепить обложку'}
             </button>
+          )}
+          {isPosterCategory && (
+            <div className="composer__cover-hint">
+              Основная категория — «Афиша»: обложка показывается вертикально (2:3). Чтобы сделать обычную горизонтальную — выберите другую категорию или отключите «Афишу» у этой категории в настройках.
+            </div>
           )}
           <input
             ref={fileInput}

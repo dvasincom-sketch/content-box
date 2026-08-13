@@ -69,6 +69,7 @@ export default async function NewPostPage() {
       id: c.id,
       title: c.title || c.name || 'Без названия',
       parentId: parentId ?? null,
+      posterLayout: Boolean(c.posterLayout),
     }
   })
 
