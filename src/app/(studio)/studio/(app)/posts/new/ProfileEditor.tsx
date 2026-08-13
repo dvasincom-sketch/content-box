@@ -100,7 +100,7 @@ function FactsEditor({ items, onChange }: { items: string[]; onChange: (n: strin
     <div className="pe__rows">
       {list.map((r, i) => (
         <div className="pe__row" key={i}>
-          <div className="pe__fields"><input className="studio-input" style={{ flex: 1 }} placeholder="Факт" value={r} onChange={(e) => upd(i, e.target.value)} /></div>
+          <div className="pe__fields"><textarea className="studio-input pe__fact" style={{ flex: 1 }} rows={2} placeholder="Факт" value={r} ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' } }} onChange={(e) => upd(i, e.target.value)} /></div>
           <div className="pe__ctrls">
             <button type="button" style={rowBtn} onClick={() => move(i, -1)} title="Выше"><ChevronUp size={15} /></button>
             <button type="button" style={rowBtn} onClick={() => move(i, 1)} title="Ниже"><ChevronDown size={15} /></button>
@@ -626,6 +626,7 @@ const PE_CSS = `
 .pe__heroimg-prev span{font-size:10.5px;color:var(--st-text-muted)}
 .pe__heroimg-ctrls{display:flex;gap:6px;flex-wrap:wrap}
 .pe__toggle{margin-right:2px}
+.pe__fact{resize:none;overflow:hidden;min-height:46px;line-height:1.45;font-family:inherit}
 .pe__card--off{border-style:dashed}
 .pe__card--off .pe__card-body{opacity:.4}
 .pe__card--off .pe__card-kind::after{content:' · скрыт';color:var(--st-text-muted);font-weight:600}
