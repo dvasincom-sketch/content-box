@@ -44,11 +44,14 @@ const css = `
 .pf__qf b{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--pf-mut);font-weight:700;margin-bottom:2px}
 .pf__qf i{font-style:normal;font-size:14px;font-weight:600}
 .pf__wrap{display:grid;grid-template-columns:220px 1fr;gap:40px;align-items:start}
-.pf__toc{position:sticky;top:80px}
-.pf__toc b{display:block;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--pf-mut);font-weight:700;margin-bottom:10px}
-.pf__toc a{display:block;padding:7px 12px;border-radius:9px;color:var(--pf-mut);font-size:14px;border-left:2px solid transparent;cursor:pointer;transition:.15s;text-decoration:none}
+.pf__toc{position:sticky;top:76px;max-height:calc(100vh - 96px);overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--pf-tx) 22%,transparent) transparent}
+.pf__toc::-webkit-scrollbar{width:6px}
+.pf__toc::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--pf-tx) 18%,transparent);border-radius:99px}
+.pf__toc b{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--pf-mut);font-weight:700;margin-bottom:8px;padding-left:11px}
+.pf__toc a{position:relative;display:block;padding:5px 11px;border-radius:8px;color:var(--pf-mut);font-size:13.5px;line-height:1.28;cursor:pointer;transition:color .15s,background .15s;text-decoration:none}
 .pf__toc a:hover{color:var(--pf-tx);background:color-mix(in srgb,var(--pf-tx) 5%,transparent)}
-.pf__toc a.on{color:var(--pf-tx);background:color-mix(in srgb,var(--pf-acc) 14%,transparent);border-left-color:var(--pf-acc2);font-weight:600}
+.pf__toc a.on{color:var(--pf-tx);background:color-mix(in srgb,var(--pf-acc) 15%,transparent);font-weight:650}
+.pf__toc a.on::before{content:"";position:absolute;left:2px;top:50%;transform:translateY(-50%);width:3px;height:15px;border-radius:99px;background:linear-gradient(var(--pf-acc),var(--pf-acc2))}
 .pf__sec{scroll-margin-top:84px;margin-bottom:46px}
 .pf__h{display:flex;align-items:center;gap:11px;margin-bottom:16px}
 .pf__h i{font-style:normal;font-size:13px;font-weight:800;color:var(--pf-acc2);background:color-mix(in srgb,var(--pf-acc) 16%,transparent);width:29px;height:29px;border-radius:9px;display:grid;place-items:center;flex:none}
@@ -104,8 +107,9 @@ const css = `
   .pf__heroin{grid-template-columns:1fr;gap:20px;padding:28px 20px}
   .pf__port{max-width:200px}
   .pf__wrap{grid-template-columns:1fr;gap:20px}
-  .pf__toc{position:static;display:flex;gap:6px;overflow-x:auto;padding-bottom:6px}
-  .pf__toc b{display:none}.pf__toc a{white-space:nowrap;border-left:none}
+  .pf__toc{position:static;display:flex;gap:6px;overflow-x:auto;overflow-y:visible;max-height:none;padding-bottom:6px}
+  .pf__toc b{display:none}.pf__toc a{white-space:nowrap}
+  .pf__toc a.on::before{display:none}
   .pf__factsg{grid-template-columns:1fr}
 }
 `
@@ -150,15 +154,28 @@ export function ProfileView({
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const onScroll = () => { const h = document.documentElement; setProg((h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)) * 100) }
-    onScroll(); window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-  useEffect(() => {
     const root = rootRef.current; if (!root) return
-    const secs = Array.from(root.querySelectorAll('[data-pf-sec]')) as HTMLElement[]
-    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) setActive((e.target as HTMLElement).id) }), { rootMargin: '-45% 0px -50% 0px' })
-    secs.forEach((s) => io.observe(s)); return () => io.disconnect()
+    const LINE = 140 // px от верха вьюпорта — «текущий» раздел тот, чей заголовок выше этой линии
+    let raf = 0
+    const compute = () => {
+      raf = 0
+      const h = document.documentElement
+      setProg((h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)) * 100)
+      const hs = Array.from(root.querySelectorAll('[data-pf-sec]')) as HTMLElement[]
+      if (!hs.length) return
+      let cur = hs[0].id
+      for (const el of hs) {
+        if (el.getBoundingClientRect().top - LINE <= 0) cur = el.id
+        else break
+      }
+      if (h.scrollTop + h.clientHeight >= h.scrollHeight - 4) cur = hs[hs.length - 1].id
+      setActive(cur)
+    }
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(compute) }
+    compute()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (raf) cancelAnimationFrame(raf) }
   }, [toc.length])
 
   const paras = (body: string) => body.split(/\n{2,}/).map((t, i) => {
