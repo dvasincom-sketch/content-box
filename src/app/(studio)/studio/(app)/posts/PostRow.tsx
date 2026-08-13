@@ -64,7 +64,6 @@ export function PostRow({ doc }: { doc: PubDoc }) {
         <div className="studio-row__title">
           {doc.title || 'Без заголовка'}
           {doc.featured && <span className="studio-tag studio-tag--featured">Featured</span>}
-          {doc.template === 'profile' && <span className="studio-tag studio-tag--profile">Профиль</span>}
         </div>
         <div className="studio-row__meta">
           <span className="studio-row__date">{formatDate(doc.publishedAt)}</span>
@@ -78,6 +77,7 @@ export function PostRow({ doc }: { doc: PubDoc }) {
       </div>
 
       <div className="studio-row__tags">
+        {doc.template === 'profile' && <span className="studio-tag studio-tag--profile">Профиль</span>}
         {minTierName && (
           <span className="vid__badge">
             <Lock size={12} /> {minTierName}

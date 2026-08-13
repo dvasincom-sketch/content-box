@@ -579,6 +579,11 @@ export function Composer({
           <div className="composer__field">
             <div className="composer__field-label">Основная категория</div>
             <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+            {template === 'profile' && categoryId && (
+              <div className="composer__hint" style={{ color: '#2f6bed' }}>
+                Этот профиль станет главной страницей выбранного раздела — тип раздела автоматически сменится на «Страница» при сохранении.
+              </div>
+            )}
           </div>
 
           {template !== 'profile' && isEventCategory && (

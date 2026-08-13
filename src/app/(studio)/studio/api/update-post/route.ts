@@ -138,6 +138,14 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       data: patch,
       overrideAccess: true,
     })
+    // Профиль в разделе → раздел становится «Страницей» (pageMode).
+    const effTemplate = 'template' in data ? patch.template : (existing as any).template
+    const rawCat = 'category' in patch
+      ? patch.category
+      : ((existing as any).category && typeof (existing as any).category === 'object' ? (existing as any).category.id : (existing as any).category)
+    if (effTemplate === 'profile' && rawCat) {
+      try { await payload.update({ collection: 'categories', id: Number(rawCat), data: { pageMode: true } as any, overrideAccess: true }) } catch { /* не критично */ }
+    }
     return apiOk()
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось сохранить'))
