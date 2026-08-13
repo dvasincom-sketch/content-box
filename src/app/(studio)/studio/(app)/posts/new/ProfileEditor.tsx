@@ -486,13 +486,18 @@ function BlockCard({ block, index, total, patch, move, remove, cats, media }: {
   media?: PEMedia
 }) {
   const full = (block as { full?: boolean }).full
+  const enabled = (block as { enabled?: boolean }).enabled !== false
   return (
-    <div className="pe__card">
+    <div className={'pe__card' + (enabled ? '' : ' pe__card--off')}>
       <div className="pe__card-head">
         <span className="pe__ico"><BlockIcon type={block.type} /></span>
         <span className="pe__card-kind">{BLOCK_LABEL[block.type]}</span>
         {block.type === 'hero' ? <div style={{ flex: 1 }} /> : <input className="studio-input pe__title" placeholder={BLOCK_LABEL[block.type]} value={block.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />}
         <div className="pe__ctrls">
+          <label className="homebld__toggle pe__toggle" title={enabled ? 'Блок показывается — нажмите, чтобы скрыть' : 'Блок скрыт — нажмите, чтобы показать'}>
+            <input type="checkbox" checked={enabled} onChange={() => patch({ enabled: !enabled } as Partial<PBlock>)} />
+            <span className="homebld__toggle-track" aria-hidden="true"><span className="homebld__toggle-thumb" /></span>
+          </label>
           {block.type !== 'hero' && <>
             <button type="button" style={{ ...rowBtn, width: 'auto', padding: '0 9px', fontSize: 11, fontWeight: 600, color: full ? '#2f6bed' : 'var(--st-text-muted)', borderColor: full ? '#2f6bed' : 'var(--st-border)' }} onClick={() => patch({ full: !full } as Partial<PBlock>)} title="Ширина секции">{full ? 'Во всю ширину' : 'Обычная'}</button>
             <button type="button" style={rowBtn} onClick={() => move(-1)} disabled={index === 0} title="Выше"><ChevronUp size={15} /></button>
@@ -620,4 +625,8 @@ const PE_CSS = `
 .pe__heroimg-prev img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pe__heroimg-prev span{font-size:10.5px;color:var(--st-text-muted)}
 .pe__heroimg-ctrls{display:flex;gap:6px;flex-wrap:wrap}
+.pe__toggle{margin-right:2px}
+.pe__card--off{border-style:dashed}
+.pe__card--off .pe__card-body{opacity:.4}
+.pe__card--off .pe__card-kind::after{content:' · скрыт';color:var(--st-text-muted);font-weight:600}
 `

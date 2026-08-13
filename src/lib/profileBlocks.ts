@@ -12,23 +12,23 @@ export type PBAward = { title: string; subtitle?: string; icon?: string }
 export type PBColumn = { title?: string; body: string }
 
 export type PBlock =
-  | { id: string; type: 'text'; title?: string; full?: boolean; body: string }
-  | { id: string; type: 'timeline'; title?: string; full?: boolean; items: PBTimeline[] }
-  | { id: string; type: 'relations'; title?: string; full?: boolean; items: PBRelation[] }
-  | { id: string; type: 'releases'; title?: string; full?: boolean; items: PBRelease[] }
-  | { id: string; type: 'films'; title?: string; full?: boolean; items: PBRelease[] }
-  | { id: string; type: 'awards'; title?: string; full?: boolean; items: PBAward[] }
-  | { id: string; type: 'factsList'; title?: string; full?: boolean; items: string[] }
-  | { id: string; type: 'gallery'; title?: string; full?: boolean }
-  | { id: string; type: 'videos'; title?: string; full?: boolean }
-  | { id: string; type: 'columns'; title?: string; full?: boolean; cols: PBColumn[] }
-  | { id: string; type: 'callout'; title?: string; full?: boolean; variant?: 'quote' | 'note'; text: string; author?: string }
-  | { id: string; type: 'categoryRow'; title?: string; full?: boolean; categoryId?: number | string }
-  | { id: string; type: 'button'; title?: string; full?: boolean; label: string; href: string; variant?: 'primary' | 'ghost' }
-  | { id: string; type: 'divider'; title?: string; full?: boolean; variant?: 'line' | 'dots' | 'space' }
-  | { id: string; type: 'publications'; title?: string; full?: boolean; ids: (number | string)[] }
-  | { id: string; type: 'hero'; title?: string; full?: boolean; eyebrow?: string; subtitle?: string; lead?: string; imageUrl?: string }
-  | { id: string; type: 'facts'; title?: string; full?: boolean; items: PBFact[] }
+  | { id: string; type: 'text'; title?: string; full?: boolean; enabled?: boolean; body: string }
+  | { id: string; type: 'timeline'; title?: string; full?: boolean; enabled?: boolean; items: PBTimeline[] }
+  | { id: string; type: 'relations'; title?: string; full?: boolean; enabled?: boolean; items: PBRelation[] }
+  | { id: string; type: 'releases'; title?: string; full?: boolean; enabled?: boolean; items: PBRelease[] }
+  | { id: string; type: 'films'; title?: string; full?: boolean; enabled?: boolean; items: PBRelease[] }
+  | { id: string; type: 'awards'; title?: string; full?: boolean; enabled?: boolean; items: PBAward[] }
+  | { id: string; type: 'factsList'; title?: string; full?: boolean; enabled?: boolean; items: string[] }
+  | { id: string; type: 'gallery'; title?: string; full?: boolean; enabled?: boolean }
+  | { id: string; type: 'videos'; title?: string; full?: boolean; enabled?: boolean }
+  | { id: string; type: 'columns'; title?: string; full?: boolean; enabled?: boolean; cols: PBColumn[] }
+  | { id: string; type: 'callout'; title?: string; full?: boolean; enabled?: boolean; variant?: 'quote' | 'note'; text: string; author?: string }
+  | { id: string; type: 'categoryRow'; title?: string; full?: boolean; enabled?: boolean; categoryId?: number | string }
+  | { id: string; type: 'button'; title?: string; full?: boolean; enabled?: boolean; label: string; href: string; variant?: 'primary' | 'ghost' }
+  | { id: string; type: 'divider'; title?: string; full?: boolean; enabled?: boolean; variant?: 'line' | 'dots' | 'space' }
+  | { id: string; type: 'publications'; title?: string; full?: boolean; enabled?: boolean; ids: (number | string)[] }
+  | { id: string; type: 'hero'; title?: string; full?: boolean; enabled?: boolean; eyebrow?: string; subtitle?: string; lead?: string; imageUrl?: string }
+  | { id: string; type: 'facts'; title?: string; full?: boolean; enabled?: boolean; items: PBFact[] }
 
 export type PBlockType = PBlock['type']
 

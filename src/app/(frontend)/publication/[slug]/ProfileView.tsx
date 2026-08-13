@@ -203,6 +203,7 @@ export function ProfileView({
   const gal = gallery ?? []
   const vids = videos ?? []
   const blocks = toBlocks(data).filter((b) => {
+    if ((b as { enabled?: boolean }).enabled === false) return false
     if (b.type === 'gallery') return gal.length > 0
     if (b.type === 'videos') return vids.length > 0
     if (b.type === 'text') return Boolean(b.body?.trim())
