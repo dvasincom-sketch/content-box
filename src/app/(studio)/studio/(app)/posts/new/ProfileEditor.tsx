@@ -1,7 +1,7 @@
 'use client'
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading, PanelTop, Rows3, Info } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading, PanelTop, Rows3, Info } from 'lucide-react'
 import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType, type PBAward } from '@/lib/profileBlocks'
 import { AWARD_ICONS, AWARD_ICON_MAP } from '@/lib/awardIcons'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
@@ -475,7 +475,32 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
   }
 }
 
-function BlockCard({ block, index, total, patch, move, remove, cats, media }: {
+/** Короткое превью содержимого блока для свёрнутого вида. */
+function previewOf(b: PBlock): string {
+  const cut = (t: string) => { const x = (t || '').replace(/\s+/g, ' ').trim(); return x.length > 90 ? x.slice(0, 90) + '…' : x }
+  switch (b.type) {
+    case 'hero': return cut([b.eyebrow, b.subtitle, b.lead].filter(Boolean).join(' · ')) || 'Шапка страницы'
+    case 'text': return cut(b.body) || 'Пустой текст'
+    case 'callout': return cut(b.text) || 'Выноска'
+    case 'columns': return `${b.cols?.length || 0} колонки`
+    case 'facts': return `${b.items?.length || 0} фактов`
+    case 'factsList': return `${b.items?.length || 0} плиток`
+    case 'timeline': return `${b.items?.length || 0} пунктов`
+    case 'relations': return `${b.items?.length || 0} пунктов`
+    case 'releases': return `${b.items?.length || 0} карточек`
+    case 'films': return `${b.items?.length || 0} карточек`
+    case 'awards': return `${b.items?.length || 0} плашек`
+    case 'gallery': return `${b.images?.length || 0} фото`
+    case 'videos': return 'Видео'
+    case 'publications': return `${b.ids?.length || 0} публикаций`
+    case 'categoryRow': return 'Ряд-постеры категории'
+    case 'button': return cut(b.label) || 'Кнопка'
+    case 'divider': return 'Разделитель'
+    default: return ''
+  }
+}
+
+function BlockCard({ block, index, total, patch, move, remove, cats, media, collapsed, onToggleCollapse }: {
   block: PBlock
   index: number
   total: number
@@ -484,12 +509,15 @@ function BlockCard({ block, index, total, patch, move, remove, cats, media }: {
   remove: () => void
   cats?: { id: number | string; title: string }[]
   media?: PEMedia
+  collapsed: boolean
+  onToggleCollapse: () => void
 }) {
   const full = (block as { full?: boolean }).full
   const enabled = (block as { enabled?: boolean }).enabled !== false
   return (
-    <div className={'pe__card' + (enabled ? '' : ' pe__card--off')}>
+    <div className={'pe__card' + (enabled ? '' : ' pe__card--off') + (collapsed ? ' pe__card--collapsed' : '')}>
       <div className="pe__card-head">
+        <button type="button" className="pe__collapse" onClick={onToggleCollapse} title={collapsed ? 'Развернуть' : 'Свернуть'} aria-label={collapsed ? 'Развернуть' : 'Свернуть'}>{collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</button>
         <span className="pe__ico"><BlockIcon type={block.type} /></span>
         <span className="pe__card-kind">{BLOCK_LABEL[block.type]}</span>
         {block.type === 'hero' ? <div style={{ flex: 1 }} /> : <input className="studio-input pe__title" placeholder={BLOCK_LABEL[block.type]} value={block.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />}
@@ -506,7 +534,9 @@ function BlockCard({ block, index, total, patch, move, remove, cats, media }: {
           </>}
         </div>
       </div>
-      <div className="pe__card-body"><BlockBody block={block} patch={patch} cats={cats} media={media} /></div>
+      {collapsed
+        ? <div className="pe__card-prev" onClick={onToggleCollapse}>{previewOf(block)}</div>
+        : <div className="pe__card-body"><BlockBody block={block} patch={patch} cats={cats} media={media} /></div>}
     </div>
   )
 }
@@ -530,16 +560,20 @@ export function ProfileEditor({ value, onChange, cats, media }: { value: Profile
   const removeBlock = (i: number) => writeBlocks(blocks.filter((_, j) => j !== i))
 
   const [menuOpen, setMenuOpen] = React.useState(false)
+  const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set())
+  const toggleCollapse = (id: string) => setCollapsed((s2) => { const n = new Set(s2); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const allCollapsed = blocks.length > 0 && blocks.every((b) => collapsed.has(b.id))
+  const toggleAll = () => setCollapsed(allCollapsed ? new Set() : new Set(blocks.map((b) => b.id)))
 
   return (
     <div className="pe">
       <style dangerouslySetInnerHTML={{ __html: PE_CSS }} />
       <div className="studio-notice"><Info size={18} /><span>Шаблон «Страница»: вся страница собирается из блоков — добавляйте, удаляйте и двигайте их в нужном порядке.</span></div>
 
-      <div className="pe__blocks-title">Блоки страницы <em>{blocks.length}</em></div>
+      <div className="pe__blocks-title">Блоки страницы <em>{blocks.length}</em>{blocks.length > 1 && <button type="button" className="pe__collapse-all" onClick={toggleAll}>{allCollapsed ? 'Развернуть все' : 'Свернуть все'}</button>}</div>
       {blocks.length === 0 && <div className="pe__empty">Пока нет ни одного блока. Добавьте первый ниже.</div>}
       {blocks.map((b, i) => (
-        <BlockCard key={b.id} block={b} index={i} total={blocks.length} patch={(p) => patchBlock(i, p)} move={(d) => moveBlock(i, d)} remove={() => removeBlock(i)} cats={cats} media={media} />
+        <BlockCard key={b.id} block={b} index={i} total={blocks.length} patch={(p) => patchBlock(i, p)} move={(d) => moveBlock(i, d)} remove={() => removeBlock(i)} cats={cats} media={media} collapsed={collapsed.has(b.id)} onToggleCollapse={() => toggleCollapse(b.id)} />
       ))}
 
       <div className="pe__addwrap">
@@ -627,6 +661,12 @@ const PE_CSS = `
 .pe__heroimg-ctrls{display:flex;gap:6px;flex-wrap:wrap}
 .pe__toggle{margin-right:2px}
 .pe__fact{resize:none;overflow:hidden;min-height:46px;line-height:1.45;font-family:inherit}
+.pe__collapse{flex:none;width:26px;height:26px;display:grid;place-items:center;border:none;background:transparent;color:var(--st-text-muted);cursor:pointer;border-radius:6px}
+.pe__collapse:hover{background:color-mix(in srgb,var(--st-text) 8%,transparent);color:var(--st-text)}
+.pe__card--collapsed .pe__card-head{border-bottom:none}
+.pe__card-prev{padding:8px 14px 10px 46px;font-size:12.5px;color:var(--st-text-muted);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe__collapse-all{margin-left:auto;font-size:12px;font-weight:600;color:var(--st-text-muted);background:transparent;border:1px solid var(--st-border);border-radius:8px;padding:3px 10px;cursor:pointer}
+.pe__collapse-all:hover{border-color:#2f6bed;color:#2f6bed}
 .pe__card--off{border-style:dashed}
 .pe__card--off .pe__card-body{opacity:.4}
 .pe__card--off .pe__card-kind::after{content:' · скрыт';color:var(--st-text-muted);font-weight:600}
