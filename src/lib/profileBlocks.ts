@@ -27,6 +27,8 @@ export type PBlock =
   | { id: string; type: 'button'; title?: string; full?: boolean; label: string; href: string; variant?: 'primary' | 'ghost' }
   | { id: string; type: 'divider'; title?: string; full?: boolean; variant?: 'line' | 'dots' | 'space' }
   | { id: string; type: 'publications'; title?: string; full?: boolean; ids: (number | string)[] }
+  | { id: string; type: 'hero'; full?: boolean; eyebrow?: string; subtitle?: string; lead?: string; imageUrl?: string }
+  | { id: string; type: 'facts'; title?: string; full?: boolean; items: PBFact[] }
 
 export type PBlockType = PBlock['type']
 
@@ -51,6 +53,8 @@ export type ProfileData = {
 // (подходит под любую тему, не только профили участников). Заголовок секции
 // на странице всё равно задаётся через title блока.
 export const BLOCK_LABEL: Record<PBlockType, string> = {
+  hero: 'Шапка',
+  facts: 'Быстрые факты',
   text: 'Текст',
   timeline: 'Хронология',
   relations: 'Аккордеон',
@@ -86,20 +90,36 @@ export function blankBlock(type: PBlockType, id: string): PBlock {
     case 'button': return { id, type, label: '', href: '', variant: 'primary' }
     case 'divider': return { id, type, variant: 'line' }
     case 'publications': return { id, type, ids: [] }
+    case 'hero': return { id, type, eyebrow: '', subtitle: '', lead: '', imageUrl: '' }
+    case 'facts': return { id, type, items: [{ label: '', value: '' }] }
   }
 }
 
 /** Профиль → список блоков. Если blocks заданы — берём их; иначе строим из legacy. */
 export function toBlocks(p: ProfileData | null | undefined): PBlock[] {
   if (!p) return []
-  if (Array.isArray(p.blocks) && p.blocks.length) return p.blocks
-  const out: PBlock[] = []
-  ;(p.sections ?? []).forEach((s, i) => out.push({ id: `text-${i}`, type: 'text', title: s.title, body: s.body }))
-  if (p.timeline?.length) out.push({ id: 'timeline', type: 'timeline', title: 'Хронология', items: p.timeline })
-  if (p.relations?.length) out.push({ id: 'relations', type: 'relations', title: 'Отношения', items: p.relations })
-  if (p.releases?.length) out.push({ id: 'releases', type: 'releases', title: 'Дискография', items: p.releases })
-  if (p.films?.length) out.push({ id: 'films', type: 'films', title: 'Фильмография', items: p.films })
-  if (p.awards?.length) out.push({ id: 'awards', type: 'awards', title: 'Награды', items: p.awards })
-  if (p.facts?.length) out.push({ id: 'facts', type: 'factsList', title: 'Интересные факты', items: p.facts })
-  return out
+  // База: либо уже сохранённые блоки, либо построение из legacy-полей.
+  let base: PBlock[]
+  if (Array.isArray(p.blocks) && p.blocks.length) {
+    base = p.blocks
+  } else {
+    base = []
+    ;(p.sections ?? []).forEach((s, i) => base.push({ id: `text-${i}`, type: 'text', title: s.title, body: s.body }))
+    if (p.timeline?.length) base.push({ id: 'timeline', type: 'timeline', title: 'Хронология', items: p.timeline })
+    if (p.relations?.length) base.push({ id: 'relations', type: 'relations', title: 'Отношения', items: p.relations })
+    if (p.releases?.length) base.push({ id: 'releases', type: 'releases', title: 'Дискография', items: p.releases })
+    if (p.films?.length) base.push({ id: 'films', type: 'films', title: 'Фильмография', items: p.films })
+    if (p.awards?.length) base.push({ id: 'awards', type: 'awards', title: 'Награды', items: p.awards })
+    if (p.facts?.length) base.push({ id: 'factslist', type: 'factsList', title: 'Интересные факты', items: p.facts })
+  }
+  // Шапка и «Быстрые факты» — тоже блоки. Если их ещё нет среди блоков,
+  // синтезируем из legacy-полей hero (совместимость со старыми страницами).
+  const pre: PBlock[] = []
+  if (!base.some((b) => b.type === 'hero')) {
+    pre.push({ id: 'hero', type: 'hero', eyebrow: p.eyebrow, subtitle: p.subtitle, lead: p.lead })
+  }
+  if (!base.some((b) => b.type === 'facts') && p.quickFacts?.length) {
+    pre.push({ id: 'quickfacts', type: 'facts', items: p.quickFacts })
+  }
+  return [...pre, ...base]
 }

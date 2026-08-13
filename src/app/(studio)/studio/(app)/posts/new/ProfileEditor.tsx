@@ -1,7 +1,7 @@
 'use client'
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading, PanelTop, Rows3 } from 'lucide-react'
 import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType, type PBAward } from '@/lib/profileBlocks'
 import { AWARD_ICONS, AWARD_ICON_MAP } from '@/lib/awardIcons'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
@@ -24,6 +24,8 @@ import type { ProfileData } from '@/lib/profileBlocks'
 
 // Порядок и подписи в меню «Добавить блок».
 const ADD_MENU: { type: PBlockType; hint: string }[] = [
+  { type: 'hero', hint: 'Фото + надзаголовок, подзаголовок, лид' },
+  { type: 'facts', hint: 'Карточки «метка → значение»' },
   { type: 'text', hint: 'Заголовок + абзацы; лёгкий markdown (## , **жирный**, ссылки, списки)' },
   { type: 'timeline', hint: 'Год · заголовок · описание' },
   { type: 'relations', hint: 'Разворачиваемые пункты: заголовок + текст' },
@@ -40,6 +42,7 @@ const ADD_MENU: { type: PBlockType; hint: string }[] = [
 ]
 
 const BLOCK_ICON: Record<PBlockType, React.ComponentType<{ size?: number }>> = {
+  hero: PanelTop, facts: Rows3,
   text: Type, timeline: Clock, relations: ListCollapse, releases: ImageIcon, films: Film,
   awards: Award, factsList: LayoutGrid, gallery: Images, videos: Video,
   columns: Columns3, callout: Quote, categoryRow: GalleryHorizontalEnd, button: MousePointerClick, divider: Minus, publications: Newspaper,
@@ -279,6 +282,37 @@ function PublicationsPicker({ ids, onChange }: { ids: (number | string)[]; onCha
   )
 }
 
+/** Загрузчик фото для блока «Шапка». Файл уходит в media, в блок кладём URL. */
+function HeroImage({ url, onChange }: { url?: string; onChange: (u: string) => void }) {
+  const ref = React.useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = React.useState(false)
+  const upload = async (f: File) => {
+    setBusy(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', f)
+      const res = await fetch('/studio/api/upload-cover', { method: 'POST', body: fd, credentials: 'include' })
+      const j = await res.json().catch(() => ({}))
+      if (res.ok && j.url) onChange(j.url)
+    } finally {
+      setBusy(false)
+      if (ref.current) ref.current.value = ''
+    }
+  }
+  return (
+    <div className="pe__heroimg">
+      <div className="pe__heroimg-prev">{url ? <img src={url} alt="" /> : <span>Фото</span>}</div>
+      <div className="pe__heroimg-ctrls">
+        <button type="button" className="studio-btn studio-btn--ghost" onClick={() => ref.current?.click()} disabled={busy}>
+          <ImageIcon size={15} /> {busy ? 'Загрузка…' : (url ? 'Заменить фото' : 'Загрузить фото')}
+        </button>
+        {url && <button type="button" className="studio-btn studio-btn--ghost" onClick={() => onChange('')}><Trash2 size={14} /> Убрать</button>}
+      </div>
+      <input ref={ref} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f) }} />
+    </div>
+  )
+}
+
 /**
  * Текстовое поле с лёгким markdown: мини-панель вставки и подсказка.
  * Хранение остаётся простым текстом; рендер понимает «## », **жирный**,
@@ -339,6 +373,18 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
       return (
         <MdArea rows={5} placeholder="Текст раздела. Абзацы разделяйте пустой строкой." value={block.body ?? ''} onChange={(v) => patch({ body: v } as Partial<PBlock>)} />
       )
+    case 'hero':
+      return (
+        <div className="pe__rows">
+          <HeroImage url={block.imageUrl} onChange={(u) => patch({ imageUrl: u } as Partial<PBlock>)} />
+          <input className="studio-input" placeholder="Надзаголовок — напр. ВОКАЛИСТ · БАРИТОН" value={block.eyebrow ?? ''} onChange={(e) => patch({ eyebrow: e.target.value } as Partial<PBlock>)} />
+          <input className="studio-input" placeholder="Подзаголовок — напр. настоящее имя" value={block.subtitle ?? ''} onChange={(e) => patch({ subtitle: e.target.value } as Partial<PBlock>)} />
+          <MdArea rows={3} placeholder="Лид — короткое вступление под заголовком" value={block.lead ?? ''} onChange={(val) => patch({ lead: val } as Partial<PBlock>)} />
+          <div className="pe__note">Крупный заголовок берётся из названия публикации (поле «Заголовок» вверху). Фото шапки не связано с обложкой для карточек.</div>
+        </div>
+      )
+    case 'facts':
+      return <ArrayEditor items={block.items} cols={[{ key: 'label', label: 'Метка', w: 1 }, { key: 'value', label: 'Значение', w: 2 }]} blank={() => ({ label: '', value: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
     case 'timeline':
       return <ArrayEditor items={block.items} cols={[{ key: 'year', label: 'Год', w: 1 }, { key: 'title', label: 'Заголовок', w: 2 }, { key: 'text', label: 'Описание', textarea: true }]} blank={() => ({ year: '', title: '', text: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
     case 'relations':
@@ -438,9 +484,9 @@ function BlockCard({ block, index, total, patch, move, remove, cats, media }: {
       <div className="pe__card-head">
         <span className="pe__ico"><BlockIcon type={block.type} /></span>
         <span className="pe__card-kind">{BLOCK_LABEL[block.type]}</span>
-        <input className="studio-input pe__title" placeholder={BLOCK_LABEL[block.type]} value={block.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />
+        {block.type === 'hero' ? <div style={{ flex: 1 }} /> : <input className="studio-input pe__title" placeholder={BLOCK_LABEL[block.type]} value={block.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />}
         <div className="pe__ctrls">
-          <button type="button" style={{ ...rowBtn, width: 'auto', padding: '0 9px', fontSize: 11, fontWeight: 600, color: full ? '#2f6bed' : 'var(--st-text-muted)', borderColor: full ? '#2f6bed' : 'var(--st-border)' }} onClick={() => patch({ full: !full } as Partial<PBlock>)} title="Ширина секции">{full ? 'Во всю ширину' : 'Обычная'}</button>
+          {block.type !== 'hero' && <button type="button" style={{ ...rowBtn, width: 'auto', padding: '0 9px', fontSize: 11, fontWeight: 600, color: full ? '#2f6bed' : 'var(--st-text-muted)', borderColor: full ? '#2f6bed' : 'var(--st-border)' }} onClick={() => patch({ full: !full } as Partial<PBlock>)} title="Ширина секции">{full ? 'Во всю ширину' : 'Обычная'}</button>}
           <button type="button" style={rowBtn} onClick={() => move(-1)} disabled={index === 0} title="Выше"><ChevronUp size={15} /></button>
           <button type="button" style={rowBtn} onClick={() => move(1)} disabled={index === total - 1} title="Ниже"><ChevronDown size={15} /></button>
           <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={remove} title="Удалить блок"><Trash2 size={15} /></button>
@@ -453,16 +499,16 @@ function BlockCard({ block, index, total, patch, move, remove, cats, media }: {
 
 export function ProfileEditor({ value, onChange, cats, media }: { value: ProfileData | null; onChange: (v: ProfileData) => void; cats?: { id: number | string; title: string }[]; media?: PEMedia }) {
   const v: ProfileData = value || {}
-  const set = (patch: Partial<ProfileData>) => onChange({ ...v, ...patch })
 
   // Блоки: берём v.blocks, иначе мигрируем из legacy-полей.
-  const blocks: PBlock[] = React.useMemo(() => (Array.isArray(v.blocks) && v.blocks.length ? v.blocks : toBlocks(v)), [v])
+  const blocks: PBlock[] = React.useMemo(() => toBlocks(v), [v])
 
   // При записи блоков очищаем legacy-поля, чтобы не было двойного рендера.
   const writeBlocks = (next: PBlock[]) => onChange({
     ...v, blocks: next,
     sections: undefined, timeline: undefined, relations: undefined,
     releases: undefined, films: undefined, awards: undefined, facts: undefined,
+    eyebrow: undefined, subtitle: undefined, lead: undefined, quickFacts: undefined,
   })
   const addBlock = (type: PBlockType) => writeBlocks([...blocks, blankBlock(type, newId())])
   const patchBlock = (i: number, p: Partial<PBlock>) => writeBlocks(blocks.map((b, j) => j === i ? ({ ...b, ...p } as PBlock) : b))
@@ -474,18 +520,7 @@ export function ProfileEditor({ value, onChange, cats, media }: { value: Profile
   return (
     <div className="pe">
       <style dangerouslySetInnerHTML={{ __html: PE_CSS }} />
-      <div className="pe__hint">Шаблон «Профиль»: сверху — шапка героя, ниже — блоки-конструктор. Добавляйте, удаляйте и двигайте блоки в нужном порядке. Портрет — обложка публикации; фото и видео — в блоке «Медиа».</div>
-
-      <div className="pe__hero">
-        <label className="studio-field"><span className="studio-field__label">Надзаголовок (eyebrow)</span>
-          <input className="studio-input" placeholder="Участник BTS · рэп-линия · главный танцор" value={v.eyebrow ?? ''} onChange={(e) => set({ eyebrow: e.target.value })} /></label>
-        <label className="studio-field"><span className="studio-field__label">Подзаголовок</span>
-          <input className="studio-input" placeholder="Настоящее имя · прозвище" value={v.subtitle ?? ''} onChange={(e) => set({ subtitle: e.target.value })} /></label>
-        <label className="studio-field"><span className="studio-field__label">Вступление (lead)</span>
-          <textarea className="studio-input pe__ta" rows={3} placeholder="Короткое описание в герое" value={v.lead ?? ''} onChange={(e) => set({ lead: e.target.value })} /></label>
-        <div className="studio-field"><span className="studio-field__label">Быстрые факты</span>
-          <ArrayEditor items={v.quickFacts ?? []} cols={[{ key: 'label', label: 'Метка', w: 1 }, { key: 'value', label: 'Значение', w: 2 }]} blank={() => ({ label: '', value: '' })} onChange={(n) => set({ quickFacts: n })} /></div>
-      </div>
+      <div className="pe__hint">Шаблон «Страница»: вся страница собирается из блоков — добавляйте, удаляйте и двигайте их в нужном порядке.</div>
 
       <div className="pe__blocks-title">Блоки страницы <em>{blocks.length}</em></div>
       {blocks.length === 0 && <div className="pe__empty">Пока нет ни одного блока. Добавьте первый ниже.</div>}
@@ -571,4 +606,9 @@ const PE_CSS = `
 .pe__mdbar button{width:30px;height:28px;display:grid;place-items:center;border:1px solid var(--st-border);border-radius:7px;background:var(--st-surface);color:var(--st-text-muted);cursor:pointer;transition:border-color .12s,color .12s,background .12s}
 .pe__mdbar button:hover{border-color:#2f6bed;color:#2f6bed;background:color-mix(in srgb,#2f6bed 8%,transparent)}
 .pe__md .pe__note b{color:var(--st-text);font-weight:600}
+.pe__heroimg{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pe__heroimg-prev{width:64px;height:86px;flex:none;border-radius:10px;overflow:hidden;border:1px solid var(--st-border);background:var(--st-surface-2);display:grid;place-items:center;position:relative}
+.pe__heroimg-prev img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pe__heroimg-prev span{font-size:10.5px;color:var(--st-text-muted)}
+.pe__heroimg-ctrls{display:flex;gap:6px;flex-wrap:wrap}
 `

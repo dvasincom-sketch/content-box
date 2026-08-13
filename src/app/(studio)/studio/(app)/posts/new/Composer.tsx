@@ -346,7 +346,7 @@ export function Composer({
           <StudioSelect
             value={template}
             onChange={setTemplate}
-            options={[{ value: 'article', label: 'Статья' }, { value: 'profile', label: 'Профиль' }]}
+            options={[{ value: 'article', label: 'Статья' }, { value: 'profile', label: 'Страница' }]}
             ariaLabel="Тип публикации"
             className="composer__type-sel"
           />
@@ -627,7 +627,7 @@ export function Composer({
             <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
             {template === 'profile' && categoryId && (
               <div className="composer__hint" style={{ color: '#2f6bed' }}>
-                Этот профиль станет главной страницей выбранного раздела — тип раздела автоматически сменится на «Страница» при сохранении.
+                Эта страница станет главной для выбранного раздела — тип раздела автоматически сменится на «Страница» при сохранении.
               </div>
             )}
           </div>

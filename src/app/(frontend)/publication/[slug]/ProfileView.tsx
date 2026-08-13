@@ -200,7 +200,6 @@ export function ProfileView({
   categoryRows?: Record<string, CategoryRow>
   pubById?: Record<string, { href: string; title: string; posterUrl?: string | null }>
 }) {
-  const qf = data.quickFacts ?? []
   const gal = gallery ?? []
   const vids = videos ?? []
   const blocks = toBlocks(data).filter((b) => {
@@ -227,8 +226,11 @@ export function ProfileView({
     return memberByTitle.get(n) || (ALIAS[n] ? memberBySlug.get(ALIAS[n]) : undefined)
   }
 
+  const heroBlock = blocks.find((b) => b.type === 'hero') as Extract<PBlock, { type: 'hero' }> | undefined
+  const mainBlocks = blocks.filter((b) => b.type !== 'hero')
+
   // Оценка времени чтения (рус. ~170 слов/мин, ~6 символов на слово).
-  const readChars = (data.lead || '').length + blocks.reduce((acc, b) => {
+  const readChars = ((heroBlock?.lead ?? data.lead) || '').length + blocks.reduce((acc, b) => {
     if (b.type === 'text') return acc + (b.body || '').length
     if (b.type === 'columns') return acc + b.cols.reduce((a, c) => a + (c.body || '').length, 0)
     if (b.type === 'callout') return acc + (b.text || '').length
@@ -239,7 +241,6 @@ export function ProfileView({
   }, 0)
   const readMin = Math.max(1, Math.round(readChars / 6 / 170))
 
-  const hasBio = Boolean(data.lead) || qf.length > 0
   const extractSubs = (body: string, id: string) => {
     const subs: { id: string; label: string }[] = []
     let n = 0
@@ -248,8 +249,7 @@ export function ProfileView({
   }
   type TocItem = { id: string; label: string; subs: { id: string; label: string }[] }
   const toc: TocItem[] = []
-  if (hasBio) toc.push({ id: 'bio', label: 'Биография', subs: [] })
-  blocks.forEach((b) => { if (b.title === '' || b.type === 'divider' || b.type === 'button') return; const subs = b.type === 'text' && b.body ? extractSubs(b.body, b.id) : []; toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type], subs }) })
+  blocks.forEach((b) => { if (b.type === 'hero' || b.type === 'facts' || b.title === '' || b.type === 'divider' || b.type === 'button') return; const subs = b.type === 'text' && b.body ? extractSubs(b.body, b.id) : []; toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type], subs }) })
   const parentOf = new Map<string, string>()
   toc.forEach((t) => t.subs.forEach((sub) => parentOf.set(sub.id, t.id)))
 
@@ -348,12 +348,35 @@ export function ProfileView({
   let num = 0
   const Head = ({ id, label }: { id: string; label: string }) => { num += 1; return <div className="pf__h" id={id} data-pf-sec><i>{num}</i><h2>{label}</h2></div> }
 
+  const renderHero = (b: Extract<PBlock, { type: 'hero' }>) => {
+    const img = b.imageUrl || portraitUrl
+    return (
+      <div className="pf__hero">
+        <div className="pf__herobg" />
+        <div className="pf__heroin">
+          <div className="pf__port">{img ? <img src={img} alt={title} /> : <span className="pf__mono">{initialsOf(title)}</span>}</div>
+          <div>
+            {b.eyebrow && <div className="pf__eye">{b.eyebrow}</div>}
+            <h1 className="pf__name">{title}</h1>
+            {b.subtitle && <div className="pf__sub">{b.subtitle}</div>}
+            <div className="pf__read">≈ {readMin} мин чтения</div>
+            {b.lead && <p className="pf__lead">{b.lead}</p>}
+          </div>
+        </div>
+      </div>
+    )
+  }
   const renderBlock = (b: PBlock) => {
     const label = b.title || BLOCK_LABEL[b.type]
     const noHead = b.title === ''
     const head = noHead ? null : <Head id={b.id} label={label} />
     const fullCls = (b as { full?: boolean }).full ? ' pf__sec--full' : ''
     if (b.type === 'text') { const isSrc = /^\s*Источник/i.test(b.title || ''); return (<section className={`pf__sec${fullCls}${isSrc ? ' pf__sec--src' : ''}`} key={b.id}>{head}{paras(b.body || '', b.title === '' ? undefined : b.id)}</section>) }
+    if (b.type === 'hero') return null
+    if (b.type === 'facts') { const items = b.items || []; if (!items.length) return null; const label = b.title || 'Быстрые факты'; return (
+      <section className={`pf__sec${fullCls}`} key={b.id}>
+        <div className="pf__facts">{label && <u>{label}</u>}<div className="pf__factsg">{items.map((f, i) => (<div className="pf__fr" key={i}><b>{f.label}</b><i>{f.value}</i></div>))}</div></div>
+      </section>) }
     if (b.type === 'timeline') return (
       <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="pf__tl">{b.items.map((t, i) => (<div className="pf__ti" key={i}><div className="pf__ty">{t.year}</div><div className="pf__tt">{t.title}</div>{t.text && <div className="pf__td">{t.text}</div>}</div>))}</div>
@@ -461,20 +484,7 @@ export function ProfileView({
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <div className="pf__prog" style={{ width: `${prog}%` }} />
 
-      <div className="pf__hero">
-        <div className="pf__herobg" />
-        <div className="pf__heroin">
-          <div className="pf__port">{portraitUrl ? <img src={portraitUrl} alt={title} /> : <span className="pf__mono">{initialsOf(title)}</span>}</div>
-          <div>
-            {data.eyebrow && <div className="pf__eye">{data.eyebrow}</div>}
-            <h1 className="pf__name">{title}</h1>
-            {data.subtitle && <div className="pf__sub">{data.subtitle}</div>}
-            <div className="pf__read">≈ {readMin} мин чтения</div>
-            {data.lead && <p className="pf__lead">{data.lead}</p>}
-            {qf.length > 0 && <div className="pf__qrow">{qf.slice(0, 5).map((f, i) => (<div className="pf__qf" key={i}><b>{f.label}</b><i>{f.value}</i></div>))}</div>}
-          </div>
-        </div>
-      </div>
+      {heroBlock && renderHero(heroBlock)}
 
       <div className="pf__wrap">
         <nav className="pf__toc" ref={tocRef}>
@@ -500,18 +510,7 @@ export function ProfileView({
           })}
         </nav>
         <main>
-          {hasBio && (
-            <section className="pf__sec">
-              <Head id="bio" label="Биография" />
-              {qf.length > 0 && (
-                <div className="pf__facts"><u>Быстрые факты</u>
-                  <div className="pf__factsg">{qf.map((f, i) => (<div className="pf__fr" key={i}><b>{f.label}</b><i>{f.value}</i></div>))}</div>
-                </div>
-              )}
-              {data.lead && <p>{data.lead}</p>}
-            </section>
-          )}
-          {blocks.map((b) => renderBlock(b))}
+          {mainBlocks.map((b) => renderBlock(b))}
         </main>
       </div>
 

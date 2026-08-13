@@ -77,7 +77,7 @@ export function PostRow({ doc }: { doc: PubDoc }) {
       </div>
 
       <div className="studio-row__tags">
-        {doc.template === 'profile' && <span className="studio-tag studio-tag--profile">Профиль</span>}
+        {doc.template === 'profile' && <span className="studio-tag studio-tag--profile">Страница</span>}
         {minTierName && (
           <span className="vid__badge">
             <Lock size={12} /> {minTierName}
