@@ -1,31 +1,38 @@
 'use client'
 import React from 'react'
-import { Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, GripVertical } from 'lucide-react'
+import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType } from '@/lib/profileBlocks'
 
-export type ProfileData = {
-  eyebrow?: string
-  subtitle?: string
-  lead?: string
-  quickFacts?: { label: string; value: string }[]
-  sections?: { title: string; body: string }[]
-  timeline?: { year: string; title: string; text?: string }[]
-  relations?: { name: string; text: string }[]
-  releases?: { title: string; meta?: string; year?: string }[]
-  films?: { title: string; meta?: string; year?: string }[]
-  awards?: { title: string; subtitle?: string; icon?: string }[]
-  facts?: string[]
-}
+export type { ProfileData } from '@/lib/profileBlocks'
+import type { ProfileData } from '@/lib/profileBlocks'
+
+// Порядок и подписи в меню «Добавить блок».
+const ADD_MENU: { type: PBlockType; hint: string }[] = [
+  { type: 'text', hint: 'Заголовок + абзацы текста' },
+  { type: 'timeline', hint: 'Год · событие' },
+  { type: 'relations', hint: 'Имя · описание (аккордеон)' },
+  { type: 'releases', hint: 'Альбомы, синглы' },
+  { type: 'films', hint: 'Фильмы, дорамы, шоу' },
+  { type: 'awards', hint: 'Премии и достижения' },
+  { type: 'factsList', hint: 'Список коротких фактов' },
+  { type: 'gallery', hint: 'Сетка фото (загрузите ниже)' },
+  { type: 'videos', hint: 'Ролики (добавьте ниже)' },
+]
 
 type Col = { key: string; label: string; textarea?: boolean; ph?: string; w?: number }
 
 const rowBtn: React.CSSProperties = { border: '1px solid var(--st-border)', background: 'var(--st-surface)', color: 'var(--st-text-muted)', borderRadius: 8, width: 30, height: 30, display: 'grid', placeItems: 'center', cursor: 'pointer', flex: 'none' }
 
-function ArrayEditor({ title, items, cols, blank, onChange }: {
-  title: string
+function newId(): string {
+  return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+}
+
+function ArrayEditor({ items, cols, blank, onChange, addLabel }: {
   items: any[]
   cols: Col[]
   blank: () => any
   onChange: (next: any[]) => void
+  addLabel?: string
 }) {
   const list = Array.isArray(items) ? items : []
   const upd = (i: number, key: string, val: string) => { const n = list.map((r, j) => j === i ? { ...r, [key]: val } : r); onChange(n) }
@@ -33,28 +40,25 @@ function ArrayEditor({ title, items, cols, blank, onChange }: {
   const del = (i: number) => onChange(list.filter((_, j) => j !== i))
   const move = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; const t = n[i]; n[i] = n[j]; n[j] = t; onChange(n) }
   return (
-    <details className="pe__block">
-      <summary><span>{title}</span><em>{list.length}</em></summary>
-      <div className="pe__rows">
-        {list.map((r, i) => (
-          <div className="pe__row" key={i}>
-            <div className="pe__fields">
-              {cols.map((c) => c.textarea ? (
-                <textarea key={c.key} className="studio-input pe__ta" rows={3} placeholder={c.ph || c.label} value={r[c.key] ?? ''} onChange={(e) => upd(i, c.key, e.target.value)} />
-              ) : (
-                <input key={c.key} className="studio-input" style={{ flex: c.w || 1, minWidth: 90 }} placeholder={c.ph || c.label} value={r[c.key] ?? ''} onChange={(e) => upd(i, c.key, e.target.value)} />
-              ))}
-            </div>
-            <div className="pe__ctrls">
-              <button type="button" style={rowBtn} onClick={() => move(i, -1)} title="Выше"><ChevronUp size={15} /></button>
-              <button type="button" style={rowBtn} onClick={() => move(i, 1)} title="Ниже"><ChevronDown size={15} /></button>
-              <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={() => del(i)} title="Удалить"><Trash2 size={15} /></button>
-            </div>
+    <div className="pe__rows">
+      {list.map((r, i) => (
+        <div className="pe__row" key={i}>
+          <div className="pe__fields">
+            {cols.map((c) => c.textarea ? (
+              <textarea key={c.key} className="studio-input pe__ta" rows={3} placeholder={c.ph || c.label} value={r[c.key] ?? ''} onChange={(e) => upd(i, c.key, e.target.value)} />
+            ) : (
+              <input key={c.key} className="studio-input" style={{ flex: c.w || 1, minWidth: 90 }} placeholder={c.ph || c.label} value={r[c.key] ?? ''} onChange={(e) => upd(i, c.key, e.target.value)} />
+            ))}
           </div>
-        ))}
-        <button type="button" className="studio-btn studio-btn--ghost pe__add" onClick={add}><Plus size={15} /> Добавить</button>
-      </div>
-    </details>
+          <div className="pe__ctrls">
+            <button type="button" style={rowBtn} onClick={() => move(i, -1)} title="Выше"><ChevronUp size={15} /></button>
+            <button type="button" style={rowBtn} onClick={() => move(i, 1)} title="Ниже"><ChevronDown size={15} /></button>
+            <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={() => del(i)} title="Удалить"><Trash2 size={15} /></button>
+          </div>
+        </div>
+      ))}
+      <button type="button" className="studio-btn studio-btn--ghost pe__add" onClick={add}><Plus size={15} /> {addLabel || 'Добавить'}</button>
+    </div>
   )
 }
 
@@ -63,48 +67,129 @@ function FactsEditor({ items, onChange }: { items: string[]; onChange: (n: strin
   const upd = (i: number, v: string) => onChange(list.map((r, j) => j === i ? v : r))
   const move = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= list.length) return; const n = [...list]; const t = n[i]; n[i] = n[j]; n[j] = t; onChange(n) }
   return (
-    <details className="pe__block">
-      <summary><span>Интересные факты</span><em>{list.length}</em></summary>
-      <div className="pe__rows">
-        {list.map((r, i) => (
-          <div className="pe__row" key={i}>
-            <div className="pe__fields"><input className="studio-input" style={{ flex: 1 }} placeholder="Факт" value={r} onChange={(e) => upd(i, e.target.value)} /></div>
-            <div className="pe__ctrls">
-              <button type="button" style={rowBtn} onClick={() => move(i, -1)} title="Выше"><ChevronUp size={15} /></button>
-              <button type="button" style={rowBtn} onClick={() => move(i, 1)} title="Ниже"><ChevronDown size={15} /></button>
-              <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={() => onChange(list.filter((_, j) => j !== i))} title="Удалить"><Trash2 size={15} /></button>
-            </div>
+    <div className="pe__rows">
+      {list.map((r, i) => (
+        <div className="pe__row" key={i}>
+          <div className="pe__fields"><input className="studio-input" style={{ flex: 1 }} placeholder="Факт" value={r} onChange={(e) => upd(i, e.target.value)} /></div>
+          <div className="pe__ctrls">
+            <button type="button" style={rowBtn} onClick={() => move(i, -1)} title="Выше"><ChevronUp size={15} /></button>
+            <button type="button" style={rowBtn} onClick={() => move(i, 1)} title="Ниже"><ChevronDown size={15} /></button>
+            <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={() => onChange(list.filter((_, j) => j !== i))} title="Удалить"><Trash2 size={15} /></button>
           </div>
-        ))}
-        <button type="button" className="studio-btn studio-btn--ghost pe__add" onClick={() => onChange([...list, ''])}><Plus size={15} /> Добавить факт</button>
+        </div>
+      ))}
+      <button type="button" className="studio-btn studio-btn--ghost pe__add" onClick={() => onChange([...list, ''])}><Plus size={15} /> Добавить факт</button>
+    </div>
+  )
+}
+
+/** Тело блока — зависит от типа. */
+function BlockBody({ block, patch }: { block: PBlock; patch: (p: Partial<PBlock>) => void }) {
+  switch (block.type) {
+    case 'text':
+      return (
+        <textarea className="studio-input pe__ta" rows={5} placeholder="Текст раздела. Абзацы разделяйте пустой строкой." value={block.body ?? ''} onChange={(e) => patch({ body: e.target.value } as Partial<PBlock>)} />
+      )
+    case 'timeline':
+      return <ArrayEditor items={block.items} cols={[{ key: 'year', label: 'Год', w: 1 }, { key: 'title', label: 'Заголовок', w: 2 }, { key: 'text', label: 'Описание', textarea: true }]} blank={() => ({ year: '', title: '', text: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
+    case 'relations':
+      return <ArrayEditor items={block.items} cols={[{ key: 'name', label: 'Имя' }, { key: 'text', label: 'Описание', textarea: true }]} blank={() => ({ name: '', text: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
+    case 'releases':
+      return <ArrayEditor items={block.items} cols={[{ key: 'title', label: 'Название', w: 2 }, { key: 'meta', label: 'Тип/подпись', w: 1 }, { key: 'year', label: 'Год', w: 1 }]} blank={() => ({ title: '', meta: '', year: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
+    case 'films':
+      return <ArrayEditor items={block.items} cols={[{ key: 'title', label: 'Название', w: 2 }, { key: 'meta', label: 'Тип', w: 1 }, { key: 'year', label: 'Год', w: 1 }]} blank={() => ({ title: '', meta: '', year: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
+    case 'awards':
+      return <ArrayEditor items={block.items} cols={[{ key: 'icon', label: 'Эмодзи', w: 1 }, { key: 'title', label: 'Название', w: 2 }, { key: 'subtitle', label: 'Подпись', w: 2 }]} blank={() => ({ icon: '🏆', title: '', subtitle: '' })} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
+    case 'factsList':
+      return <FactsEditor items={block.items} onChange={(n) => patch({ items: n } as Partial<PBlock>)} />
+    case 'gallery':
+      return <div className="pe__note">Фото галереи загружаются в блоке «Медиа» публикации. Этот блок задаёт положение галереи на странице.</div>
+    case 'videos':
+      return <div className="pe__note">Ролики добавляются в блоке «Медиа» публикации. Этот блок задаёт положение видео на странице.</div>
+    default:
+      return null
+  }
+}
+
+function BlockCard({ block, index, total, patch, move, remove }: {
+  block: PBlock
+  index: number
+  total: number
+  patch: (p: Partial<PBlock>) => void
+  move: (d: number) => void
+  remove: () => void
+}) {
+  return (
+    <div className="pe__card">
+      <div className="pe__card-head">
+        <GripVertical size={15} className="pe__grip" />
+        <span className="pe__card-kind">{BLOCK_LABEL[block.type]}</span>
+        <input className="studio-input pe__title" placeholder={BLOCK_LABEL[block.type]} value={block.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />
+        <div className="pe__ctrls">
+          <button type="button" style={rowBtn} onClick={() => move(-1)} disabled={index === 0} title="Выше"><ChevronUp size={15} /></button>
+          <button type="button" style={rowBtn} onClick={() => move(1)} disabled={index === total - 1} title="Ниже"><ChevronDown size={15} /></button>
+          <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={remove} title="Удалить блок"><Trash2 size={15} /></button>
+        </div>
       </div>
-    </details>
+      <div className="pe__card-body"><BlockBody block={block} patch={patch} /></div>
+    </div>
   )
 }
 
 export function ProfileEditor({ value, onChange }: { value: ProfileData | null; onChange: (v: ProfileData) => void }) {
   const v: ProfileData = value || {}
   const set = (patch: Partial<ProfileData>) => onChange({ ...v, ...patch })
+
+  // Блоки: берём v.blocks, иначе мигрируем из legacy-полей.
+  const blocks: PBlock[] = React.useMemo(() => (Array.isArray(v.blocks) && v.blocks.length ? v.blocks : toBlocks(v)), [v])
+
+  // При записи блоков очищаем legacy-поля, чтобы не было двойного рендера.
+  const writeBlocks = (next: PBlock[]) => onChange({
+    ...v, blocks: next,
+    sections: undefined, timeline: undefined, relations: undefined,
+    releases: undefined, films: undefined, awards: undefined, facts: undefined,
+  })
+  const addBlock = (type: PBlockType) => writeBlocks([...blocks, blankBlock(type, newId())])
+  const patchBlock = (i: number, p: Partial<PBlock>) => writeBlocks(blocks.map((b, j) => j === i ? ({ ...b, ...p } as PBlock) : b))
+  const moveBlock = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= blocks.length) return; const n = [...blocks]; const t = n[i]; n[i] = n[j]; n[j] = t; writeBlocks(n) }
+  const removeBlock = (i: number) => writeBlocks(blocks.filter((_, j) => j !== i))
+
+  const [menuOpen, setMenuOpen] = React.useState(false)
+
   return (
     <div className="pe">
       <style dangerouslySetInnerHTML={{ __html: PE_CSS }} />
-      <div className="pe__hint">Шаблон «Профиль»: заполните блоки-досье. Портрет — это обложка публикации; галерея и видео — в блоке «Медиа» ниже.</div>
+      <div className="pe__hint">Шаблон «Профиль»: сверху — шапка героя, ниже — блоки-конструктор. Добавляйте, удаляйте и двигайте блоки в нужном порядке. Портрет — обложка публикации; фото и видео — в блоке «Медиа».</div>
 
-      <label className="studio-field"><span className="studio-field__label">Надзаголовок (eyebrow)</span>
-        <input className="studio-input" placeholder="Участник BTS · рэп-линия · главный танцор" value={v.eyebrow ?? ''} onChange={(e) => set({ eyebrow: e.target.value })} /></label>
-      <label className="studio-field"><span className="studio-field__label">Подзаголовок</span>
-        <input className="studio-input" placeholder="Настоящее имя · прозвище" value={v.subtitle ?? ''} onChange={(e) => set({ subtitle: e.target.value })} /></label>
-      <label className="studio-field"><span className="studio-field__label">Вступление (lead)</span>
-        <textarea className="studio-input pe__ta" rows={3} placeholder="Короткое описание в герое" value={v.lead ?? ''} onChange={(e) => set({ lead: e.target.value })} /></label>
+      <div className="pe__hero">
+        <label className="studio-field"><span className="studio-field__label">Надзаголовок (eyebrow)</span>
+          <input className="studio-input" placeholder="Участник BTS · рэп-линия · главный танцор" value={v.eyebrow ?? ''} onChange={(e) => set({ eyebrow: e.target.value })} /></label>
+        <label className="studio-field"><span className="studio-field__label">Подзаголовок</span>
+          <input className="studio-input" placeholder="Настоящее имя · прозвище" value={v.subtitle ?? ''} onChange={(e) => set({ subtitle: e.target.value })} /></label>
+        <label className="studio-field"><span className="studio-field__label">Вступление (lead)</span>
+          <textarea className="studio-input pe__ta" rows={3} placeholder="Короткое описание в герое" value={v.lead ?? ''} onChange={(e) => set({ lead: e.target.value })} /></label>
+        <div className="studio-field"><span className="studio-field__label">Быстрые факты</span>
+          <ArrayEditor items={v.quickFacts ?? []} cols={[{ key: 'label', label: 'Метка', w: 1 }, { key: 'value', label: 'Значение', w: 2 }]} blank={() => ({ label: '', value: '' })} onChange={(n) => set({ quickFacts: n })} /></div>
+      </div>
 
-      <ArrayEditor title="Быстрые факты" items={v.quickFacts ?? []} cols={[{ key: 'label', label: 'Метка', w: 1 }, { key: 'value', label: 'Значение', w: 2 }]} blank={() => ({ label: '', value: '' })} onChange={(n) => set({ quickFacts: n })} />
-      <ArrayEditor title="Разделы (текст)" items={v.sections ?? []} cols={[{ key: 'title', label: 'Заголовок раздела' }, { key: 'body', label: 'Текст (абзацы через пустую строку)', textarea: true }]} blank={() => ({ title: '', body: '' })} onChange={(n) => set({ sections: n })} />
-      <ArrayEditor title="Хронология" items={v.timeline ?? []} cols={[{ key: 'year', label: 'Год', w: 1 }, { key: 'title', label: 'Заголовок', w: 2 }, { key: 'text', label: 'Описание', textarea: true }]} blank={() => ({ year: '', title: '', text: '' })} onChange={(n) => set({ timeline: n })} />
-      <ArrayEditor title="Отношения (аккордеон)" items={v.relations ?? []} cols={[{ key: 'name', label: 'Имя' }, { key: 'text', label: 'Описание', textarea: true }]} blank={() => ({ name: '', text: '' })} onChange={(n) => set({ relations: n })} />
-      <ArrayEditor title="Дискография" items={v.releases ?? []} cols={[{ key: 'title', label: 'Название', w: 2 }, { key: 'meta', label: 'Тип/подпись', w: 1 }, { key: 'year', label: 'Год', w: 1 }]} blank={() => ({ title: '', meta: '', year: '' })} onChange={(n) => set({ releases: n })} />
-      <ArrayEditor title="Фильмография" items={v.films ?? []} cols={[{ key: 'title', label: 'Название', w: 2 }, { key: 'meta', label: 'Тип', w: 1 }, { key: 'year', label: 'Год', w: 1 }]} blank={() => ({ title: '', meta: '', year: '' })} onChange={(n) => set({ films: n })} />
-      <ArrayEditor title="Награды" items={v.awards ?? []} cols={[{ key: 'icon', label: 'Эмодзи', w: 1 }, { key: 'title', label: 'Название', w: 2 }, { key: 'subtitle', label: 'Подпись', w: 2 }]} blank={() => ({ icon: '🏆', title: '', subtitle: '' })} onChange={(n) => set({ awards: n })} />
-      <FactsEditor items={v.facts ?? []} onChange={(n) => set({ facts: n })} />
+      <div className="pe__blocks-title">Блоки страницы <em>{blocks.length}</em></div>
+      {blocks.length === 0 && <div className="pe__empty">Пока нет ни одного блока. Добавьте первый ниже.</div>}
+      {blocks.map((b, i) => (
+        <BlockCard key={b.id} block={b} index={i} total={blocks.length} patch={(p) => patchBlock(i, p)} move={(d) => moveBlock(i, d)} remove={() => removeBlock(i)} />
+      ))}
+
+      <div className="pe__addwrap">
+        <button type="button" className="studio-btn studio-btn--primary pe__addblock" onClick={() => setMenuOpen((o) => !o)}><Plus size={16} /> Добавить блок</button>
+        {menuOpen && (
+          <div className="pe__menu">
+            {ADD_MENU.map((m) => (
+              <button type="button" key={m.type} className="pe__menu-item" onClick={() => { addBlock(m.type); setMenuOpen(false) }}>
+                <b>{BLOCK_LABEL[m.type]}</b><span>{m.hint}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -113,14 +198,27 @@ const PE_CSS = `
 .pe{margin:6px 0 4px}
 .pe__hint{font-size:12.5px;color:var(--st-text-muted);background:color-mix(in srgb,var(--st-accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--st-accent) 22%,transparent);border-radius:12px;padding:10px 14px;margin-bottom:14px;line-height:1.4}
 .pe .pe__ta{resize:vertical;min-height:70px;font-family:inherit}
-.pe__block{border:1px solid var(--st-border);border-radius:12px;margin-bottom:10px;background:var(--st-surface)}
-.pe__block>summary{cursor:pointer;list-style:none;padding:12px 15px;display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:14px;color:var(--st-text)}
-.pe__block>summary::-webkit-details-marker{display:none}
-.pe__block>summary em{font-style:normal;font-size:12px;color:var(--st-text-muted);background:color-mix(in srgb,var(--st-text) 8%,transparent);border-radius:999px;padding:2px 9px;font-weight:700}
-.pe__block[open]>summary{border-bottom:1px solid var(--st-border)}
-.pe__rows{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.pe__hero{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--st-border);border-radius:12px;background:var(--st-surface);margin-bottom:18px}
+.pe__blocks-title{font-weight:700;font-size:14px;color:var(--st-text);display:flex;align-items:center;gap:8px;margin:4px 2px 10px}
+.pe__blocks-title em{font-style:normal;font-size:12px;color:var(--st-text-muted);background:color-mix(in srgb,var(--st-text) 8%,transparent);border-radius:999px;padding:2px 9px;font-weight:700}
+.pe__empty{font-size:13px;color:var(--st-text-muted);padding:14px;border:1px dashed var(--st-border);border-radius:12px;text-align:center;margin-bottom:12px}
+.pe__card{border:1px solid var(--st-border);border-radius:12px;margin-bottom:10px;background:var(--st-surface);overflow:hidden}
+.pe__card-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--st-border);background:color-mix(in srgb,var(--st-text) 3%,transparent)}
+.pe__grip{color:var(--st-text-muted);flex:none}
+.pe__card-kind{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--st-text-muted);background:color-mix(in srgb,var(--st-text) 8%,transparent);border-radius:999px;padding:3px 10px;flex:none}
+.pe__title{flex:1;min-width:100px;height:32px}
+.pe__card-body{padding:12px 14px}
+.pe__note{font-size:12.5px;color:var(--st-text-muted);line-height:1.45}
+.pe__rows{display:flex;flex-direction:column;gap:10px}
 .pe__row{display:flex;gap:8px;align-items:flex-start}
 .pe__fields{flex:1;display:flex;gap:8px;flex-wrap:wrap}
 .pe__ctrls{display:flex;gap:4px;flex:none}
 .pe__add{align-self:flex-start;margin-top:2px}
+.pe__addwrap{position:relative;margin-top:6px}
+.pe__addblock{width:100%;justify-content:center}
+.pe__menu{position:absolute;left:0;right:0;bottom:calc(100% + 6px);z-index:20;background:var(--st-surface);border:1px solid var(--st-border);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.18);padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.pe__menu-item{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;border:1px solid transparent;background:transparent;border-radius:9px;padding:8px 11px;cursor:pointer;color:var(--st-text)}
+.pe__menu-item:hover{background:color-mix(in srgb,var(--st-accent) 12%,transparent);border-color:color-mix(in srgb,var(--st-accent) 26%,transparent)}
+.pe__menu-item b{font-size:13px;font-weight:600}
+.pe__menu-item span{font-size:11.5px;color:var(--st-text-muted)}
 `
