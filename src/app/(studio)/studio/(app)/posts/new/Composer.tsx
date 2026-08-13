@@ -287,20 +287,18 @@ export function Composer({
   return (
     <div className="composer">
       <div className="composer__head">
-        <div className="composer__head-left">
-          <Link href="/studio/posts" className="studio-back">
-            <ArrowLeft size={16} />
-            К публикациям
-          </Link>
-          <label className="composer__type">
-            <span className="composer__type-label">Тип</span>
-            <select className="composer__type-select" value={template} onChange={(e) => setTemplate(e.target.value)}>
-              <option value="article">Статья</option>
-              <option value="profile">Профиль</option>
-            </select>
-          </label>
-        </div>
+        <Link href="/studio/posts" className="studio-back">
+          <ArrowLeft size={16} />
+          К публикациям
+        </Link>
         <div className="composer__actions">
+          <StudioSelect
+            value={template}
+            onChange={setTemplate}
+            options={[{ value: 'article', label: 'Статья' }, { value: 'profile', label: 'Профиль' }]}
+            ariaLabel="Тип публикации"
+            className="composer__type-sel"
+          />
           {isEdit && initial!.slug && (
             <a href={`/publication/${initial!.slug}`} target="_blank" rel="noopener" className="studio-btn studio-btn--ghost" title="Открыть публикацию на сайте">
               <ExternalLink size={16} /> На сайте
