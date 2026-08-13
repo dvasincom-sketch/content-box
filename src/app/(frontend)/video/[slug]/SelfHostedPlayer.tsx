@@ -210,7 +210,14 @@ export function SelfHostedPlayer({
       pendingRef.current.clear()
       try {
         const body = JSON.stringify({ videoId, buckets: b })
-        navigator.sendBeacon?.('/api/video-heatmap', new Blob([body], { type: 'application/json' }))
+        const url = '/api/video-heatmap'
+        // text/plain — CORS-safelisted тип: sendBeacon с ним не режется браузером
+        // (application/json иногда молча отбрасывается). Роут читает тело как JSON
+        // независимо от Content-Type. Фолбэк — keepalive-fetch, если beacon недоступен.
+        const ok = navigator.sendBeacon?.(url, new Blob([body], { type: 'text/plain' }))
+        if (!ok) {
+          void fetch(url, { method: 'POST', body, keepalive: true, headers: { 'Content-Type': 'text/plain' } }).catch(() => {})
+        }
       } catch { /* аналитика не критична */ }
     }
     const id = setInterval(flush, 10000)
