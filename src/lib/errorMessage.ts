@@ -10,7 +10,12 @@
  * @param fallback что показать, если извлечь текст не удалось.
  */
 export function errorMessage(e: unknown, fallback = 'Неизвестная ошибка'): string {
-  if (e instanceof Error && e.message) return e.message
+  if (e instanceof Error && e.message) {
+    if (/load failed|failed to fetch|networkerror|network\s*request\s*failed|network connection was lost|typeerror: cancelled/i.test(e.message)) {
+      return 'Ошибка сети — проверьте соединение и попробуйте снова.'
+    }
+    return e.message
+  }
   if (typeof e === 'string' && e) return e
   if (e && typeof e === 'object') {
     const m = (e as { message?: unknown }).message

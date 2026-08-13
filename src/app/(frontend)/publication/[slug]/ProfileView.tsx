@@ -118,7 +118,7 @@ const css = `
 .pf__play{position:absolute;inset:0;margin:auto;width:54px;height:54px;border-radius:50%;background:rgba(0,0,0,.55);display:grid;place-items:center;transition:background .15s}
 .pf__play::before{content:'';border-style:solid;border-width:9px 0 9px 15px;border-color:transparent transparent transparent #fff;margin-left:3px}
 .pf__vtile:hover .pf__play{background:rgba(0,0,0,.72)}
-.pf__vplayer{border-radius:14px;overflow:hidden;border:1px solid var(--pf-line);background:#000}
+.pf__vplayer{grid-column:1/-1;border-radius:14px;overflow:hidden;max-width:900px}
 .pf__cov{aspect-ratio:1;display:grid;place-items:center;text-align:center;padding:12px;font-weight:800;font-size:14px;color:#fff;
   background:linear-gradient(150deg,color-mix(in srgb,var(--pf-acc) 85%,#000),color-mix(in srgb,var(--pf-acc) 40%,#000));position:relative}
 .pf__cov img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}

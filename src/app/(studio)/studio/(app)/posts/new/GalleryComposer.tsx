@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { createPortal } from 'react-dom'
 import {
   ImagePlus, X, Loader2, GripVertical, Library, Upload, Check, AlertCircle,
   Folder, FolderPlus, Pencil, Trash2, FolderInput,
@@ -70,6 +71,8 @@ export function GalleryComposer({
 }) {
   const [tasks, setTasks] = useState<UploadTask[]>([])
   const [libOpen, setLibOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -292,14 +295,15 @@ export function GalleryComposer({
         style={{ display: 'none' }}
       />
 
-      {libOpen && (
+      {libOpen && mounted && createPortal(
         <LibraryModal
           folders={folders}
           alreadyIn={new Set(value.map((v) => String(v.imageId)))}
           remaining={MAX_IMAGES - value.length}
           onClose={() => setLibOpen(false)}
           onAdd={addFromLibrary}
-        />
+        />,
+        document.body,
       )}
     </div>
   )
