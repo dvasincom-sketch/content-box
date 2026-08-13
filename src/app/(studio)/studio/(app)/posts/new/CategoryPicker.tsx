@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react'
 import { ChevronRight, Search, X, Check } from 'lucide-react'
 
-export type CatItem = { id: number | string; title: string; parentId: number | string | null; posterLayout?: boolean }
+export type CatItem = { id: number | string; title: string; parentId: number | string | null; posterLayout?: boolean; eventTemplate?: boolean }
 
 type TreeNode = CatItem & { children: TreeNode[] }
 

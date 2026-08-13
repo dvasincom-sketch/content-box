@@ -108,6 +108,11 @@ export function Composer({
     const c = categories.find((x) => String(x.id) === String(categoryId))
     return Boolean((c as { posterLayout?: boolean } | undefined)?.posterLayout)
   }, [categories, categoryId])
+  // Категория-события: показываем «Дата события» только для неё.
+  const isEventCategory = useMemo(() => {
+    const c = categories.find((x) => String(x.id) === String(categoryId))
+    return Boolean((c as { eventTemplate?: boolean } | undefined)?.eventTemplate)
+  }, [categories, categoryId])
 
   // Разбиваем прикреплённые из initial по типу (видео / аудио) по provider.
   const initRelated = initial?.relatedVideoIds ?? []
@@ -572,12 +577,15 @@ export function Composer({
             <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
           </div>
 
+          {template !== 'profile' && isEventCategory && (
           <div className="composer__field">
             <div className="composer__field-label">Дата события</div>
             <StudioDateField value={eventDate} onChange={setEventDate} />
-            <div className="composer__hint">Для разделов-событий (лайвы и т.п.): по этой дате сортируется список и рисуется оранжевая плашка. Можно оставить пустым.</div>
+            <div className="composer__hint">Раздел-события: по этой дате сортируется список и рисуется оранжевая плашка. Можно оставить пустым.</div>
           </div>
+          )}
 
+          {template !== 'profile' && (
           <div className="composer__field">
             <div className="composer__field-label">Дополнительные категории</div>
             <CategoryMultiPicker
@@ -589,6 +597,7 @@ export function Composer({
               Публикация появится и в этих категориях. Основная — та, что выбрана выше.
             </div>
           </div>
+          )}
 
           <div className="composer__field">
             <div className="composer__field-label">Теги</div>
