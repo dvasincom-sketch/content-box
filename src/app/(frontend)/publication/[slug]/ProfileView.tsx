@@ -184,7 +184,7 @@ const initialsOf = (name: string): string => {
 }
 
 export function ProfileView({
-  data, title, portraitUrl, gallery, videos, members, categoryRows,
+  data, title, portraitUrl, gallery, videos, members, categoryRows, pubById,
 }: {
   data: ProfileData
   title: string
@@ -193,6 +193,7 @@ export function ProfileView({
   videos?: VideoItem[]
   members?: Member[]
   categoryRows?: Record<string, CategoryRow>
+  pubById?: Record<string, { href: string; title: string; posterUrl?: string | null }>
 }) {
   const qf = data.quickFacts ?? []
   const gal = gallery ?? []
@@ -206,6 +207,7 @@ export function ProfileView({
     if (b.type === 'categoryRow') return Boolean(b.categoryId && categoryRows?.[String(b.categoryId)]?.items?.length)
     if (b.type === 'button') return Boolean(b.label?.trim() && b.href?.trim())
     if (b.type === 'divider') return true
+    if (b.type === 'publications') return Boolean(b.ids?.length && b.ids.some((id) => pubById?.[String(id)]))
     if ('items' in b) return Array.isArray(b.items) && b.items.length > 0
     return true
   })
@@ -316,7 +318,7 @@ export function ProfileView({
           <div className={`pf__acc${on ? ' on' : ''}`} key={i}>
             <button type="button" className="pf__acch" onClick={() => setOpenAcc(on ? '' : key)}>
               <span className="pf__acch-l">
-                <span className="pf__acc-av">{mem?.portraitUrl ? <img src={mem.portraitUrl} alt={r.name} loading="lazy" /> : initialsOf(r.name)}</span>
+                {mem && <span className="pf__acc-av">{mem.portraitUrl ? <img src={mem.portraitUrl} alt={r.name} loading="lazy" /> : initialsOf(r.name)}</span>}
                 <span className="pf__acc-nm">{r.name}</span>
               </span>
               <em>+</em>
@@ -392,6 +394,17 @@ export function ProfileView({
       </section>)
     if (b.type === 'divider') return (
       <section className="pf__sec pf__sec--divider" key={b.id}><div className={`pf__divider pf__divider--${b.variant || 'line'}`} /></section>)
+    if (b.type === 'publications') { const items = (b.ids || []).map((id) => pubById?.[String(id)]).filter(Boolean) as { href: string; title: string; posterUrl?: string | null }[]; if (!items.length) return null; return (
+      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
+        <div className="poster-grid pf__discog">
+          {items.map((it, i) => (
+            <a className="poster-card pf__pcard" href={it.href} key={i} title={it.title}>
+              <div className="poster-card__frame">{it.posterUrl ? <img src={it.posterUrl} alt={it.title} loading="lazy" className="poster-card__img" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} /> : <div className="poster-card__placeholder pf__pph">{it.title}</div>}</div>
+              <div className="pf__pcap"><b>{it.title}</b></div>
+            </a>
+          ))}
+        </div>
+      </section>) }
     return null
   }
 

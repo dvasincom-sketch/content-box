@@ -26,6 +26,7 @@ export type PBlock =
   | { id: string; type: 'categoryRow'; title?: string; full?: boolean; categoryId?: number | string }
   | { id: string; type: 'button'; title?: string; full?: boolean; label: string; href: string; variant?: 'primary' | 'ghost' }
   | { id: string; type: 'divider'; title?: string; full?: boolean; variant?: 'line' | 'dots' | 'space' }
+  | { id: string; type: 'publications'; title?: string; full?: boolean; ids: (number | string)[] }
 
 export type PBlockType = PBlock['type']
 
@@ -64,6 +65,7 @@ export const BLOCK_LABEL: Record<PBlockType, string> = {
   categoryRow: 'Ряд-постеры',
   button: 'Кнопка',
   divider: 'Разделитель',
+  publications: 'Публикации',
 }
 
 /** Пустой блок нужного типа (для «Добавить»). id генерирует вызывающий. */
@@ -83,6 +85,7 @@ export function blankBlock(type: PBlockType, id: string): PBlock {
     case 'categoryRow': return { id, type }
     case 'button': return { id, type, label: '', href: '', variant: 'primary' }
     case 'divider': return { id, type, variant: 'line' }
+    case 'publications': return { id, type, ids: [] }
   }
 }
 

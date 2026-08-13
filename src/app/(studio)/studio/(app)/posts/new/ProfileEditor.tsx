@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check } from 'lucide-react'
 import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType, type PBAward } from '@/lib/profileBlocks'
 import { AWARD_ICONS, AWARD_ICON_MAP } from '@/lib/awardIcons'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
@@ -26,8 +26,6 @@ const ADD_MENU: { type: PBlockType; hint: string }[] = [
   { type: 'text', hint: 'Заголовок + абзацы; подзаголовок — строкой «## »' },
   { type: 'timeline', hint: 'Год · заголовок · описание' },
   { type: 'relations', hint: 'Разворачиваемые пункты: заголовок + текст' },
-  { type: 'releases', hint: 'Вертикальные постеры 2:3 (название · подпись · год)' },
-  { type: 'films', hint: 'Горизонтальные карточки (название · подпись · год)' },
   { type: 'awards', hint: 'Плашки с иконкой (заголовок + подпись)' },
   { type: 'factsList', hint: 'Нумерованные плитки: заголовок + текст' },
   { type: 'gallery', hint: 'Сетка фото (загрузите прямо в блоке)' },
@@ -35,6 +33,7 @@ const ADD_MENU: { type: PBlockType; hint: string }[] = [
   { type: 'columns', hint: 'Текст в 2–3 колонки' },
   { type: 'callout', hint: 'Выделенная выноска / цитата' },
   { type: 'categoryRow', hint: 'Ряд постеров выбранной категории' },
+  { type: 'publications', hint: 'Прикрепить существующие публикации' },
   { type: 'button', hint: 'Кнопка-ссылка (CTA)' },
   { type: 'divider', hint: 'Разделитель / отступ' },
 ]
@@ -42,7 +41,7 @@ const ADD_MENU: { type: PBlockType; hint: string }[] = [
 const BLOCK_ICON: Record<PBlockType, React.ComponentType<{ size?: number }>> = {
   text: Type, timeline: Clock, relations: ListCollapse, releases: ImageIcon, films: Film,
   awards: Award, factsList: LayoutGrid, gallery: Images, videos: Video,
-  columns: Columns3, callout: Quote, categoryRow: GalleryHorizontalEnd, button: MousePointerClick, divider: Minus,
+  columns: Columns3, callout: Quote, categoryRow: GalleryHorizontalEnd, button: MousePointerClick, divider: Minus, publications: Newspaper,
 }
 const BlockIcon = ({ type, size = 15 }: { type: PBlockType; size?: number }) => { const I = BLOCK_ICON[type]; return <I size={size} /> }
 
@@ -199,6 +198,72 @@ function AwardsEditor({ items, onChange }: { items: PBAward[]; onChange: (n: PBA
   )
 }
 
+function PublicationsPicker({ ids, onChange }: { ids: (number | string)[]; onChange: (v: (number | string)[]) => void }) {
+  const [q, setQ] = React.useState('')
+  const [results, setResults] = React.useState<any[]>([])
+  const [selected, setSelected] = React.useState<any[]>([])
+  const [loading, setLoading] = React.useState(false)
+  const idsKey = ids.map(String).join(',')
+  React.useEffect(() => {
+    if (!ids.length) { setSelected([]); return }
+    let stop = false
+    fetch(`/studio/api/publications-pick?ids=${encodeURIComponent(idsKey)}`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!stop && d?.items) { const map = new Map(d.items.map((x: any) => [String(x.id), x])); setSelected(ids.map((id) => map.get(String(id))).filter(Boolean)) } })
+      .catch(() => {})
+    return () => { stop = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey])
+  React.useEffect(() => {
+    const nq = q.trim()
+    if (nq.length < 2) { setResults([]); return }
+    let stop = false; setLoading(true)
+    const t = setTimeout(() => {
+      fetch(`/studio/api/publications-pick?q=${encodeURIComponent(nq)}`, { credentials: 'include' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (!stop) setResults(d?.items || []) })
+        .catch(() => {})
+        .finally(() => { if (!stop) setLoading(false) })
+    }, 250)
+    return () => { stop = true; clearTimeout(t) }
+  }, [q])
+  const add = (p: any) => { if (!ids.some((id) => String(id) === String(p.id))) onChange([...ids, p.id]) }
+  const remove = (id: any) => onChange(ids.filter((x) => String(x) !== String(id)))
+  const move = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= ids.length) return; const n = [...ids]; const t = n[i]; n[i] = n[j]; n[j] = t; onChange(n) }
+  return (
+    <div className="pe__rows">
+      {selected.length > 0 && (
+        <div className="pe__pubsel">
+          {selected.map((p, i) => (
+            <div className="pe__pubrow" key={String(p.id)}>
+              <div className="pe__pubthumb">{p.posterUrl ? <img src={p.posterUrl} alt="" /> : <span>{(p.title || '?').slice(0, 1)}</span>}</div>
+              <div className="pe__pubttl">{p.title}</div>
+              <div className="pe__ctrls">
+                <button type="button" style={rowBtn} onClick={() => move(i, -1)} title="Выше"><ChevronUp size={15} /></button>
+                <button type="button" style={rowBtn} onClick={() => move(i, 1)} title="Ниже"><ChevronDown size={15} /></button>
+                <button type="button" style={{ ...rowBtn, color: '#e5484d' }} onClick={() => remove(p.id)} title="Убрать"><Trash2 size={15} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <input className="studio-input" placeholder="Поиск публикации по названию…" value={q} onChange={(e) => setQ(e.target.value)} />
+      {loading && <div className="pe__note">Поиск…</div>}
+      {results.length > 0 && (
+        <div className="pe__pubres">
+          {results.map((p) => { const on = ids.some((id) => String(id) === String(p.id)); return (
+            <button type="button" key={String(p.id)} className={'pe__pubopt' + (on ? ' on' : '')} onClick={() => add(p)} disabled={on}>
+              <div className="pe__pubthumb">{p.posterUrl ? <img src={p.posterUrl} alt="" /> : <span>{(p.title || '?').slice(0, 1)}</span>}</div>
+              <span className="pe__pubttl">{p.title}</span>{on && <Check size={14} />}
+            </button>
+          ) })}
+        </div>
+      )}
+      <div className="pe__note">Прикреплённые публикации покажутся карточками на странице (в этом порядке).</div>
+    </div>
+  )
+}
+
 function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Partial<PBlock>) => void; cats?: { id: number | string; title: string }[]; media?: PEMedia }) {
   switch (block.type) {
     case 'text':
@@ -273,6 +338,8 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
           </div>
         </div>
       )
+    case 'publications':
+      return <PublicationsPicker ids={block.ids ?? []} onChange={(v) => patch({ ids: v } as Partial<PBlock>)} />
     case 'divider':
       return (
         <div style={{ display: 'flex', gap: 8 }}>
@@ -415,6 +482,16 @@ const PE_CSS = `
 .pe__iconcell{aspect-ratio:1;border:1px solid var(--st-border);border-radius:10px;background:var(--st-surface);color:var(--st-text);display:grid;place-items:center;cursor:pointer;transition:border-color .12s,color .12s,background .12s}
 .pe__iconcell:hover{border-color:#2f6bed;color:#2f6bed;background:color-mix(in srgb,#2f6bed 8%,transparent)}
 .pe__iconcell.on{border-color:#2f6bed;color:#fff;background:#2f6bed}
+.pe__pubsel{display:flex;flex-direction:column;gap:6px}
+.pe__pubrow{display:flex;align-items:center;gap:10px;padding:6px;border:1px solid var(--st-border);border-radius:10px;background:var(--st-surface)}
+.pe__pubthumb{width:34px;height:46px;flex:none;border-radius:6px;overflow:hidden;position:relative;background:linear-gradient(135deg,var(--st-accent,#8b5cf6),color-mix(in srgb,var(--st-accent,#8b5cf6) 45%,#000));display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.pe__pubthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pe__pubttl{flex:1;min-width:0;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pe__pubres{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;border:1px solid var(--st-border);border-radius:10px;padding:6px}
+.pe__pubopt{display:flex;align-items:center;gap:10px;padding:6px;border:1px solid transparent;border-radius:8px;background:transparent;cursor:pointer;color:var(--st-text);text-align:left}
+.pe__pubopt:hover:not(:disabled){background:color-mix(in srgb,#2f6bed 8%,transparent);border-color:color-mix(in srgb,#2f6bed 26%,transparent)}
+.pe__pubopt:disabled{opacity:.55;cursor:default}
+.pe__pubopt .pe__pubttl{font-weight:500}
 .pe__crowprev{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px}
 .pe__pcardprev{flex:0 0 auto;width:72px}
 .pe__pframe{position:relative;width:72px;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,var(--st-accent,#8b5cf6),color-mix(in srgb,var(--st-accent,#8b5cf6) 45%,#000));display:grid;place-items:center;color:#fff;font-weight:700}
