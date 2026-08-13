@@ -132,6 +132,16 @@ const css = `
 .pf__crow::-webkit-scrollbar{height:6px}
 .pf__crow::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--pf-tx) 18%,transparent);border-radius:99px}
 .pf__sec--full>p,.pf__sec--full>.pf__sh{max-width:none}
+.pf__sec--btn{margin-bottom:34px}
+.pf__btnwrap{display:flex}
+.pf__btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:12px;font-weight:650;font-size:15px;text-decoration:none;background:linear-gradient(135deg,var(--brand-primary,var(--pf-acc)),var(--brand-accent,var(--pf-acc2)));color:#fff;border:1px solid transparent;transition:transform .15s,box-shadow .15s}
+.pf__btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px color-mix(in srgb,var(--pf-acc) 40%,transparent)}
+.pf__btn--ghost{background:transparent;color:var(--pf-tx);border-color:var(--pf-line)}
+.pf__btn--ghost:hover{background:color-mix(in srgb,var(--pf-tx) 6%,transparent);box-shadow:none}
+.pf__sec--divider{margin:6px 0 40px}
+.pf__divider--line{height:1px;background:var(--pf-line)}
+.pf__divider--dots{height:6px;background:radial-gradient(circle,var(--pf-mut) 1.4px,transparent 1.7px);background-size:16px 6px;background-position:center;opacity:.55}
+.pf__divider--space{height:26px}
 .pf__acc{border:1px solid var(--pf-line);border-radius:14px;overflow:hidden;margin-bottom:9px;background:var(--pf-card)}
 .pf__acch{width:100%;text-align:left;background:none;border:none;color:var(--pf-tx);padding:14px 17px;font-size:15px;font-weight:650;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
 .pf__acch em{font-style:normal;color:var(--pf-acc2);transition:.2s}
@@ -193,6 +203,8 @@ export function ProfileView({
     if (b.type === 'columns') return b.cols?.some((c) => (c.body || '').trim() || (c.title || '').trim())
     if (b.type === 'callout') return Boolean(b.text?.trim())
     if (b.type === 'categoryRow') return Boolean(b.categoryId && categoryRows?.[String(b.categoryId)]?.items?.length)
+    if (b.type === 'button') return Boolean(b.label?.trim() && b.href?.trim())
+    if (b.type === 'divider') return true
     if ('items' in b) return Array.isArray(b.items) && b.items.length > 0
     return true
   })
@@ -229,7 +241,7 @@ export function ProfileView({
   type TocItem = { id: string; label: string; subs: { id: string; label: string }[] }
   const toc: TocItem[] = []
   if (hasBio) toc.push({ id: 'bio', label: 'Биография', subs: [] })
-  blocks.forEach((b) => { if (b.title === '') return; const subs = b.type === 'text' && b.body ? extractSubs(b.body, b.id) : []; toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type], subs }) })
+  blocks.forEach((b) => { if (b.title === '' || b.type === 'divider' || b.type === 'button') return; const subs = b.type === 'text' && b.body ? extractSubs(b.body, b.id) : []; toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type], subs }) })
   const parentOf = new Map<string, string>()
   toc.forEach((t) => t.subs.forEach((sub) => parentOf.set(sub.id, t.id)))
 
@@ -373,6 +385,12 @@ export function ProfileView({
           ))}
         </div>
       </section>) }
+    if (b.type === 'button') return (
+      <section className={`pf__sec${fullCls} pf__sec--btn`} key={b.id}>
+        <div className="pf__btnwrap"><a className={`pf__btn${b.variant === 'ghost' ? ' pf__btn--ghost' : ''}`} href={b.href}>{b.label}</a></div>
+      </section>)
+    if (b.type === 'divider') return (
+      <section className="pf__sec pf__sec--divider" key={b.id}><div className={`pf__divider pf__divider--${b.variant || 'line'}`} /></section>)
     return null
   }
 

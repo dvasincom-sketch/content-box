@@ -20,6 +20,8 @@ const ADD_MENU: { type: PBlockType; hint: string }[] = [
   { type: 'columns', hint: 'Текст в 2–3 колонки' },
   { type: 'callout', hint: 'Выделенная выноска / цитата' },
   { type: 'categoryRow', hint: 'Ряд постеров выбранной категории' },
+  { type: 'button', hint: 'Кнопка-ссылка (CTA)' },
+  { type: 'divider', hint: 'Разделитель / отступ' },
 ]
 
 type Col = { key: string; label: string; textarea?: boolean; ph?: string; w?: number }
@@ -87,6 +89,43 @@ function FactsEditor({ items, onChange }: { items: string[]; onChange: (n: strin
 }
 
 /** Тело блока — зависит от типа. */
+function CategoryRowEditor({ categoryId, cats, patch }: { categoryId?: number | string; cats?: { id: number | string; title: string }[]; patch: (p: Partial<PBlock>) => void }) {
+  const [preview, setPreview] = React.useState<{ title: string; items: { href: string; title: string; posterUrl?: string | null }[] } | null>(null)
+  const [loading, setLoading] = React.useState(false)
+  React.useEffect(() => {
+    if (!categoryId) { setPreview(null); return }
+    let stop = false
+    setLoading(true)
+    fetch(`/studio/api/category-posters?categoryId=${encodeURIComponent(String(categoryId))}`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!stop) setPreview(d && Array.isArray(d.items) ? d : null) })
+      .catch(() => { if (!stop) setPreview(null) })
+      .finally(() => { if (!stop) setLoading(false) })
+    return () => { stop = true }
+  }, [categoryId])
+  return (
+    <div className="pe__rows">
+      <select className="studio-input" value={String(categoryId ?? '')} onChange={(e) => patch({ categoryId: e.target.value || undefined } as Partial<PBlock>)}>
+        <option value="">— выберите категорию —</option>
+        {(cats ?? []).map((c) => <option key={String(c.id)} value={String(c.id)}>{c.title}</option>)}
+      </select>
+      {loading && <div className="pe__note">Загрузка превью…</div>}
+      {!loading && preview && (preview.items.length ? (
+        <div className="pe__crowprev">
+          {preview.items.slice(0, 8).map((it, i) => (
+            <div className="pe__pcardprev" key={i} title={it.title}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <div className="pe__pframe">{it.posterUrl ? <img src={it.posterUrl} alt="" /> : <span>{(it.title || '?').slice(0, 1)}</span>}</div>
+              <div className="pe__pttl">{it.title}</div>
+            </div>
+          ))}
+        </div>
+      ) : <div className="pe__note">В этой категории пока нет опубликованных публикаций для ряда.</div>)}
+      <div className="pe__note">На странице покажется горизонтальный ряд постеров публикаций выбранной категории.</div>
+    </div>
+  )
+}
+
 function BlockBody({ block, patch, cats }: { block: PBlock; patch: (p: Partial<PBlock>) => void; cats?: { id: number | string; title: string }[] }) {
   switch (block.type) {
     case 'text':
@@ -139,13 +178,24 @@ function BlockBody({ block, patch, cats }: { block: PBlock; patch: (p: Partial<P
         </div>
       )
     case 'categoryRow':
+      return <CategoryRowEditor categoryId={block.categoryId} cats={cats} patch={patch} />
+    case 'button':
       return (
         <div className="pe__rows">
-          <select className="studio-input" value={String(block.categoryId ?? '')} onChange={(e) => patch({ categoryId: e.target.value || undefined } as Partial<PBlock>)}>
-            <option value="">— выберите категорию —</option>
-            {(cats ?? []).map((c) => <option key={String(c.id)} value={String(c.id)}>{c.title}</option>)}
-          </select>
-          <div className="pe__note">На странице покажется горизонтальный ряд постеров публикаций выбранной категории.</div>
+          <input className="studio-input" placeholder="Текст кнопки" value={block.label ?? ''} onChange={(e) => patch({ label: e.target.value } as Partial<PBlock>)} />
+          <input className="studio-input" placeholder="Ссылка (URL или /путь)" value={block.href ?? ''} onChange={(e) => patch({ href: e.target.value } as Partial<PBlock>)} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className={'studio-btn ' + (block.variant !== 'ghost' ? 'studio-btn--primary' : 'studio-btn--ghost')} onClick={() => patch({ variant: 'primary' } as Partial<PBlock>)}>Заливка</button>
+            <button type="button" className={'studio-btn ' + (block.variant === 'ghost' ? 'studio-btn--primary' : 'studio-btn--ghost')} onClick={() => patch({ variant: 'ghost' } as Partial<PBlock>)}>Контур</button>
+          </div>
+        </div>
+      )
+    case 'divider':
+      return (
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(['line', 'dots', 'space'] as const).map((v) => (
+            <button type="button" key={v} className={'studio-btn ' + (((block.variant || 'line') === v) ? 'studio-btn--primary' : 'studio-btn--ghost')} onClick={() => patch({ variant: v } as Partial<PBlock>)}>{v === 'line' ? 'Линия' : v === 'dots' ? 'Точки' : 'Отступ'}</button>
+          ))}
         </div>
       )
     default:
@@ -268,4 +318,9 @@ const PE_CSS = `
 .pe__menu-item span{font-size:11.5px;color:var(--st-text-muted)}
 .pe__colsgrid{display:grid;grid-template-columns:1fr;gap:12px}
 .pe__coled{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--st-border);border-radius:10px;background:color-mix(in srgb,var(--st-text) 2%,transparent)}
+.pe__crowprev{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px}
+.pe__pcardprev{flex:0 0 auto;width:72px}
+.pe__pframe{position:relative;width:72px;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,var(--st-accent,#8b5cf6),color-mix(in srgb,var(--st-accent,#8b5cf6) 45%,#000));display:grid;place-items:center;color:#fff;font-weight:700}
+.pe__pframe img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pe__pttl{font-size:10.5px;color:var(--st-text-muted);margin-top:4px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 `
