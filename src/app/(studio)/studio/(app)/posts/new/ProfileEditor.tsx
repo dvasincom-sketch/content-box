@@ -1,5 +1,6 @@
 'use client'
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { Plus, Trash2, ChevronUp, ChevronDown, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading } from 'lucide-react'
 import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType, type PBAward } from '@/lib/profileBlocks'
 import { AWARD_ICONS, AWARD_ICON_MAP } from '@/lib/awardIcons'
@@ -149,9 +150,21 @@ function CategoryRowEditor({ categoryId, cats, patch }: { categoryId?: number | 
 
 function IconPicker({ value, onPick, onClose }: { value?: string; onPick: (key: string) => void; onClose: () => void }) {
   const [q, setQ] = React.useState('')
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => { setMounted(true) }, [])
+  // Esc закрывает окно.
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
   const nq = q.trim().toLowerCase()
   const list = nq ? AWARD_ICONS.filter((i) => i.label.toLowerCase().includes(nq) || i.key.toLowerCase().includes(nq)) : AWARD_ICONS
-  return (
+  if (!mounted) return null
+  // Портал в body — чтобы position:fixed считался от окна, а не от
+  // трансформированного родителя (иначе окно «плавает» и обрезается).
+  return createPortal(
+    (
     <div className="pe__iconov" onMouseDown={onClose}>
       <div className="pe__iconpanel" onMouseDown={(e) => e.stopPropagation()}>
         <div className="pe__iconhead">
@@ -167,6 +180,8 @@ function IconPicker({ value, onPick, onClose }: { value?: string; onPick: (key: 
         </div>
       </div>
     </div>
+    ),
+    document.body,
   )
 }
 
