@@ -5,6 +5,7 @@
  * полями (sections/timeline/…) читаются через toBlocks() — совместимость.
  */
 export type PBFact = { label: string; value: string }
+export type PBGalleryImg = { imageId: number | string; url: string | null; width: number | null; height: number | null; caption: string }
 export type PBTimeline = { year: string; title: string; text?: string }
 export type PBRelation = { name: string; text: string }
 export type PBRelease = { title: string; meta?: string; year?: string }
@@ -19,7 +20,7 @@ export type PBlock =
   | { id: string; type: 'films'; title?: string; full?: boolean; enabled?: boolean; items: PBRelease[] }
   | { id: string; type: 'awards'; title?: string; full?: boolean; enabled?: boolean; items: PBAward[] }
   | { id: string; type: 'factsList'; title?: string; full?: boolean; enabled?: boolean; items: string[] }
-  | { id: string; type: 'gallery'; title?: string; full?: boolean; enabled?: boolean }
+  | { id: string; type: 'gallery'; title?: string; full?: boolean; enabled?: boolean; images?: PBGalleryImg[] }
   | { id: string; type: 'videos'; title?: string; full?: boolean; enabled?: boolean }
   | { id: string; type: 'columns'; title?: string; full?: boolean; enabled?: boolean; cols: PBColumn[] }
   | { id: string; type: 'callout'; title?: string; full?: boolean; enabled?: boolean; variant?: 'quote' | 'note'; text: string; author?: string }

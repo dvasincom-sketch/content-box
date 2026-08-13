@@ -407,8 +407,8 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
     case 'gallery':
       return media ? (
         <div className="pe__rows">
-          <GalleryComposer value={media.gallery} onChange={media.setGallery} folders={media.galleryFolders} />
-          <div className="pe__note">Фото показываются сеткой на странице в этом месте. Порядок — перетаскиванием.</div>
+          <GalleryComposer value={block.images ?? []} onChange={(v) => patch({ images: v } as Partial<PBlock>)} folders={media.galleryFolders} />
+          <div className="pe__note">Своя галерея этого блока (у каждого блока — свой набор). На сайте показывается сеткой, по клику фото открывается на весь экран.</div>
         </div>
       ) : <div className="pe__note">Загрузка фото доступна в редакторе публикации.</div>
     case 'videos':

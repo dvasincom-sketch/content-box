@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import Link from '@/components/AppLink'
 import { toBlocks, BLOCK_LABEL, type ProfileData, type PBlock } from '@/lib/profileBlocks'
 import { AWARD_ICON_MAP } from '@/lib/awardIcons'
+import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
 type CategoryRow = { title: string; href?: string; items: { href: string; title: string; posterUrl?: string | null }[] }
 
 type GalleryItem = { url?: string; caption?: string }
@@ -204,7 +205,7 @@ export function ProfileView({
   const vids = videos ?? []
   const blocks = toBlocks(data).filter((b) => {
     if ((b as { enabled?: boolean }).enabled === false) return false
-    if (b.type === 'gallery') return gal.length > 0
+    if (b.type === 'gallery') return (b.images?.length || gal.length) > 0
     if (b.type === 'videos') return vids.length > 0
     if (b.type === 'text') return Boolean(b.body?.trim())
     if (b.type === 'columns') return b.cols?.some((c) => (c.body || '').trim() || (c.title || '').trim())
@@ -426,10 +427,13 @@ export function ProfileView({
           <div className="pf__tile" key={i}><em>{String(i + 1).padStart(2, '0')}</em>{t && <b>{t}</b>}<span>{body}</span></div>
         ) })}</div>
       </section>)
-    if (b.type === 'gallery') return (
-      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
-        <div className="pf__gal">{gal.map((g, i) => (<figure key={i}>{g.url ? <img src={g.url} alt={g.caption || ''} loading="lazy" /> : null}</figure>))}</div>
-      </section>)
+    if (b.type === 'gallery') {
+      const items: PublicGalleryItem[] = (b.images && b.images.length
+        ? b.images.filter((im) => im.url).map((im) => ({ thumbUrl: im.url as string, largeUrl: im.url as string, url: im.url as string, width: im.width, height: im.height, caption: im.caption || '', alt: im.caption || '' }))
+        : gal.filter((g) => g.url).map((g) => ({ thumbUrl: g.url as string, largeUrl: g.url as string, url: g.url, width: null, height: null, caption: g.caption || '', alt: g.caption || '' })))
+      if (!items.length) return null
+      return (<section className={`pf__sec${fullCls}`} key={b.id}>{head}<PublicGallery items={items} /></section>)
+    }
     if (b.type === 'videos') return (
       <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="pf__grid pf__grid--f">{vids.map((v, i) => (<Link href={`/video/${v.slug}`} className="pf__rel" key={i}><div className="pf__cov">{v.coverUrl ? <img src={v.coverUrl} alt={v.title} loading="lazy" /> : v.title}</div><div className="pf__rb"><div className="tt">{v.title}</div></div></Link>))}</div>
