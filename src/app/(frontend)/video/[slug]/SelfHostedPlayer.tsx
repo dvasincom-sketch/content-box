@@ -89,6 +89,7 @@ export function SelfHostedPlayer({
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const watchedRef = useRef<Set<number>>(new Set()) // все просмотренные слоты (для дедупа)
   const pendingRef = useRef<Set<number>>(new Set())  // новые слоты к отправке
+  const hlsRef = useRef<{ currentLevel: number; destroy: () => void } | null>(null)
 
   const [playing, setPlaying] = useState(false)
   const [current, setCurrent] = useState(0)
@@ -103,6 +104,9 @@ export function SelfHostedPlayer({
   const [activeTrack, setActiveTrack] = useState(-1) // -1 = субтитры выключены
   const [ccOpen, setCcOpen] = useState(false)
   const [chOpen, setChOpen] = useState(false)
+  const [qOpen, setQOpen] = useState(false)
+  const [levels, setLevels] = useState<{ height: number; index: number }[]>([])
+  const [currentQuality, setCurrentQuality] = useState(-1) // -1 = авто (ABR)
   const [chHover, setChHover] = useState(-1)
   const chapters = Array.isArray(chapters_) ? chapters_ : []
   const tracks = Array.isArray(subtitles) ? subtitles : []
@@ -126,6 +130,7 @@ export function SelfHostedPlayer({
       video.src = master
       return () => { video.removeAttribute('src'); video.load() }
     }
+    setLevels([]); setCurrentQuality(-1)
     import('hls.js')
       .then(({ default: Hls }) => {
         if (cancelled) return
@@ -133,13 +138,22 @@ export function SelfHostedPlayer({
           const inst = new Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 30 })
           inst.loadSource(master)
           inst.attachMedia(video)
+          // Список доступных качеств (для ручного выбора 480/720/1080).
+          inst.on(Hls.Events.MANIFEST_PARSED, () => {
+            const lv = ((inst.levels || []) as Array<{ height?: number }>)
+              .map((l, i) => ({ height: l.height || 0, index: i }))
+              .filter((l) => l.height > 0)
+              .sort((a, b) => b.height - a.height)
+            if (!cancelled) setLevels(lv)
+          })
           hls = inst
+          hlsRef.current = inst as unknown as { currentLevel: number; destroy: () => void }
         } else {
           video.src = master
         }
       })
       .catch(() => { video.src = master })
-    return () => { cancelled = true; if (hls) hls.destroy() }
+    return () => { cancelled = true; hlsRef.current = null; if (hls) hls.destroy() }
   }, [master])
 
   /* ── Загрузка и парсинг сториборда ───────────────────────────────────── */
@@ -245,6 +259,13 @@ export function SelfHostedPlayer({
     if (typeof el.requestFullscreen !== "function" && vfs?.webkitEnterFullscreen) { vfs.webkitEnterFullscreen(); return }
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
     else el.requestFullscreen().catch(() => {})
+  }, [])
+
+  const setQuality = useCallback((index: number) => {
+    const inst = hlsRef.current
+    if (inst) inst.currentLevel = index // -1 = авто (ABR снова включается)
+    setCurrentQuality(index)
+    setQOpen(false)
   }, [])
 
   const seekTo = useCallback((time: number) => {
@@ -464,6 +485,21 @@ export function SelfHostedPlayer({
                   <button type="button" onClick={() => { setActiveTrack(-1); setCcOpen(false) }} style={ccItemStyle(activeTrack === -1)}>Выкл</button>
                   {tracks.map((t, i) => (
                     <button key={t.lang + i} type="button" onClick={() => { setActiveTrack(i); setCcOpen(false) }} style={ccItemStyle(activeTrack === i)}>{t.label}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {levels.length > 1 && (
+            <div style={{ position: 'relative' }}>
+              <button type="button" aria-label="Качество" onClick={() => setQOpen((o) => !o)} style={btnStyle}>
+                <Settings size={20} />
+              </button>
+              {qOpen && (
+                <div style={ccMenuStyle}>
+                  <button type="button" onClick={() => setQuality(-1)} style={ccItemStyle(currentQuality === -1)}>Авто</button>
+                  {levels.map((l) => (
+                    <button key={l.index} type="button" onClick={() => setQuality(l.index)} style={ccItemStyle(currentQuality === l.index)}>{l.height}p</button>
                   ))}
                 </div>
               )}
