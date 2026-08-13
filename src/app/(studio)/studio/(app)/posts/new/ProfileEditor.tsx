@@ -284,7 +284,7 @@ function PublicationsPicker({ ids, onChange }: { ids: (number | string)[]; onCha
  * Хранение остаётся простым текстом; рендер понимает «## », **жирный**,
  * *курсив*, [текст](ссылка) и списки «- ». Панель просто вставляет разметку.
  */
-function MdArea({ value, onChange, rows = 5, placeholder, hint = true }: { value: string; onChange: (v: string) => void; rows?: number; placeholder?: string; hint?: boolean }) {
+function MdArea({ value, onChange, rows = 5, placeholder }: { value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
   const ref = React.useRef<HTMLTextAreaElement>(null)
   const [sel, setSel] = React.useState<[number, number] | null>(null)
   React.useEffect(() => {
@@ -329,7 +329,6 @@ function MdArea({ value, onChange, rows = 5, placeholder, hint = true }: { value
         <button type="button" onClick={() => apply('link')} title="Ссылка"><Link2 size={14} /></button>
       </div>
       <textarea ref={ref} className="studio-input pe__ta" rows={rows} placeholder={placeholder} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
-      {hint && <div className="pe__note">Форматирование: <b>## </b> подзаголовок · <b>**жирный**</b> · <b>*курсив*</b> · <b>[текст](ссылка)</b> · <b>- </b> список. Пустая строка — новый абзац.</div>}
     </div>
   )
 }
@@ -375,7 +374,7 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
             {cols.map((c, i) => (
               <div className="pe__coled" key={i}>
                 <input className="studio-input" placeholder={`Заголовок колонки ${i + 1} (необяз.)`} value={c.title ?? ''} onChange={(e) => setCols(cols.map((x, j) => j === i ? { ...x, title: e.target.value } : x))} />
-                <MdArea rows={4} hint={false} placeholder="Текст колонки" value={c.body ?? ''} onChange={(v) => setCols(cols.map((x, j) => j === i ? { ...x, body: v } : x))} />
+                <MdArea rows={4} placeholder="Текст колонки" value={c.body ?? ''} onChange={(v) => setCols(cols.map((x, j) => j === i ? { ...x, body: v } : x))} />
                 <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setCols(cols.filter((_, j) => j !== i))} disabled={cols.length <= 1}><Trash2 size={14} /> Убрать колонку</button>
               </div>
             ))}
@@ -391,7 +390,7 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
             <button type="button" className={'studio-btn ' + (block.variant !== 'note' ? 'studio-btn--primary' : 'studio-btn--ghost')} onClick={() => patch({ variant: 'quote' } as Partial<PBlock>)}>Цитата</button>
             <button type="button" className={'studio-btn ' + (block.variant === 'note' ? 'studio-btn--primary' : 'studio-btn--ghost')} onClick={() => patch({ variant: 'note' } as Partial<PBlock>)}>Заметка</button>
           </div>
-          <MdArea rows={3} hint={false} placeholder="Текст выноски" value={block.text ?? ''} onChange={(v) => patch({ text: v } as Partial<PBlock>)} />
+          <MdArea rows={3} placeholder="Текст выноски" value={block.text ?? ''} onChange={(v) => patch({ text: v } as Partial<PBlock>)} />
           <input className="studio-input" placeholder="Автор / подпись (необяз.)" value={block.author ?? ''} onChange={(e) => patch({ author: e.target.value } as Partial<PBlock>)} />
         </div>
       )
