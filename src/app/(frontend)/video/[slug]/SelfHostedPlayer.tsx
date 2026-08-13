@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Play, Pause, Maximize, Minimize, Volume2, VolumeX, Loader2, Captions, ListVideo, X } from 'lucide-react'
+import { Play, Pause, Maximize, Minimize, Volume2, VolumeX, Loader2, Captions, ListVideo, X, Settings } from 'lucide-react'
 
 /**
  * Плеер собственного HLS-видео (provider='self') с кастомными контролами и
