@@ -287,10 +287,19 @@ export function Composer({
   return (
     <div className="composer">
       <div className="composer__head">
-        <Link href="/studio/posts" className="studio-back">
-          <ArrowLeft size={16} />
-          К публикациям
-        </Link>
+        <div className="composer__head-left">
+          <Link href="/studio/posts" className="studio-back">
+            <ArrowLeft size={16} />
+            К публикациям
+          </Link>
+          <label className="composer__type">
+            <span className="composer__type-label">Тип</span>
+            <select className="composer__type-select" value={template} onChange={(e) => setTemplate(e.target.value)}>
+              <option value="article">Статья</option>
+              <option value="profile">Профиль</option>
+            </select>
+          </label>
+        </div>
         <div className="composer__actions">
           {isEdit && initial!.slug && (
             <a href={`/publication/${initial!.slug}`} target="_blank" rel="noopener" className="studio-btn studio-btn--ghost" title="Открыть публикацию на сайте">
@@ -375,10 +384,8 @@ export function Composer({
 
       <div className="composer__grid">
         <div className="composer__main">
-          <div className="composer__flags" style={{ marginBottom: 8 }}>
-            <button type="button" className={`composer__flag${template === 'article' ? ' is-on' : ''}`} onClick={() => setTemplate('article')} aria-pressed={template === 'article'} title="Обычная публикация">Обычная</button>
-            <button type="button" className={`composer__flag${template === 'profile' ? ' is-on' : ''}`} onClick={() => setTemplate('profile')} aria-pressed={template === 'profile'} title="Страница-досье (профиль)">Профиль</button>
-          </div>
+          {template !== 'profile' && (
+          <>
           <div className="composer__flags">
             <button
               type="button"
@@ -407,6 +414,8 @@ export function Composer({
                 ? `В разделе «Новинки» до ${new Date(initial.newUntil).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow', day: 'numeric', month: 'long', year: 'numeric' })}`
                 : 'После сохранения — 14 дней в разделе «Новинки», затем только в своих категориях'}
             </div>
+          )}
+          </>
           )}
           <input
             className="composer__title"
