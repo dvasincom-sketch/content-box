@@ -160,6 +160,8 @@ export default async function EditPostPage({
     coverId: coverId != null ? Number(coverId) : null,
     coverUrl,
     isPublished,
+    template: (post as any).template || 'article',
+    profile: ((post as any).profile && typeof (post as any).profile === 'object') ? (post as any).profile : null,
     isNews: !!post.isNews,
     isNew: !!post.isNew,
     newUntil: post.newUntil ?? null,

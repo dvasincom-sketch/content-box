@@ -8,6 +8,7 @@ import { slugify } from '@/lib/slugify'
 import { CategoryPicker, type CatItem } from './CategoryPicker'
 import { CategoryMultiPicker } from '../../settings/CategoryMultiPicker'
 import { TiptapEditor } from './TiptapEditor'
+import { ProfileEditor, type ProfileData } from './ProfileEditor'
 import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
 import { VideoCreateModal, AudioUploadButton, type CreatedMedia } from './MediaCreate'
@@ -54,6 +55,8 @@ export type PostInitial = {
   isNew?: boolean
   /** До какого момента публикация висит в «Новинках» (проставляет сервер). */
   newUntil?: string | null
+  template?: string
+  profile?: ProfileData | null
   relatedVideoIds: (number | string)[]
   gallery: GalleryItem[]
   tags?: string[]
@@ -81,6 +84,8 @@ export function Composer({
 
   const [title, setTitle] = useState(initial?.title || '')
   const [body, setBody] = useState(initial?.body || '')
+  const [template, setTemplate] = useState<string>(initial?.template || 'article')
+  const [profile, setProfile] = useState<ProfileData | null>(initial?.profile ?? null)
   const [categoryId, setCategoryId] = useState<string>(initial?.categoryId || '')
   const [extraCategoryIds, setExtraCategoryIds] = useState<string[]>(initial?.extraCategoryIds ?? [])
   const [minTierId, setMinTierId] = useState<string>(initial?.minTierId || '')
@@ -223,6 +228,8 @@ export function Composer({
       // в create — только если есть
       tags: isEdit ? tags : (tags.length ? tags : undefined),
       eventDate: isEdit ? (eventDate || null) : (eventDate || undefined),
+      template,
+      profile: template === 'profile' ? (profile || {}) : (isEdit ? null : undefined),
     }
     if (isEdit) payload.id = initial!.id
     if (publish !== undefined) payload.publish = publish
@@ -368,6 +375,10 @@ export function Composer({
 
       <div className="composer__grid">
         <div className="composer__main">
+          <div className="composer__flags" style={{ marginBottom: 8 }}>
+            <button type="button" className={`composer__flag${template === 'article' ? ' is-on' : ''}`} onClick={() => setTemplate('article')} aria-pressed={template === 'article'} title="Обычная публикация">Обычная</button>
+            <button type="button" className={`composer__flag${template === 'profile' ? ' is-on' : ''}`} onClick={() => setTemplate('profile')} aria-pressed={template === 'profile'} title="Страница-досье (профиль)">Профиль</button>
+          </div>
           <div className="composer__flags">
             <button
               type="button"
@@ -455,11 +466,15 @@ export function Composer({
             style={{ display: 'none' }}
           />
 
-          <TiptapEditor
-            initialHtml={initial?.body || ''}
-            onChange={setBody}
-            placeholder="Текст публикации. Выделите текст и примените форматирование."
-          />
+          {template === 'profile' ? (
+            <ProfileEditor value={profile} onChange={setProfile} />
+          ) : (
+            <TiptapEditor
+              initialHtml={initial?.body || ''}
+              onChange={setBody}
+              placeholder="Текст публикации. Выделите текст и примените форматирование."
+            />
+          )}
 
           <div className="composer__media">
             <div className="composer__field-label composer__gallery-label">Медиа</div>

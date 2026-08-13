@@ -86,6 +86,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         ...(gallery.length ? { gallery } : {}),
         ...(data.isNews ? { isNews: true } : {}),
         ...(data.isNew ? { isNew: true } : {}),
+        template: data.template === 'profile' ? 'profile' : 'article',
+        ...((data.profile && typeof data.profile === 'object' && !Array.isArray(data.profile)) ? { profile: data.profile } : {}),
         ...(Array.isArray(data.tags) && data.tags.length
           ? {
               tags: (data.tags as unknown[])

@@ -89,6 +89,14 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     patch.gallery = await buildGallery(payload, data.gallery, tenantId)
   }
 
+  // Шаблон публикации и данные профиля.
+  if ('template' in data) {
+    patch.template = data.template === 'profile' ? 'profile' : 'article'
+  }
+  if ('profile' in data) {
+    patch.profile = data.profile && typeof data.profile === 'object' && !Array.isArray(data.profile) ? data.profile : null
+  }
+
   // Признак «Новость»
   if ('isNews' in data) {
     patch.isNews = Boolean(data.isNews)
