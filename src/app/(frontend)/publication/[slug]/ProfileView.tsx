@@ -43,7 +43,14 @@ const css = `
 .pf__h{display:flex;align-items:center;gap:11px;margin-bottom:16px}
 .pf__h i{font-style:normal;font-size:13px;font-weight:800;color:var(--pf-acc2);background:color-mix(in srgb,var(--pf-acc) 16%,transparent);width:29px;height:29px;border-radius:9px;display:grid;place-items:center;flex:none}
 .pf__h h2{font-size:24px;font-weight:750;margin:0}
-.pf p{margin:0 0 13px;opacity:.9;line-height:1.65}
+.pf p{margin:0 0 12px;opacity:.92;line-height:1.72}
+/* Читаемая ширина строки для прозы (заголовки/сетки/карточки — на всю ширину). */
+.pf__sec>p{max-width:68ch}
+.pf__sec>p:first-of-type{font-size:1.05em;color:var(--pf-tx);opacity:1}
+/* Подзаголовок внутри длинного текстового раздела (строки с «## »). */
+.pf__sh{font-size:16.5px;font-weight:700;line-height:1.35;margin:26px 0 9px;color:var(--pf-tx);max-width:68ch}
+.pf__sec>p+.pf__sh{margin-top:26px}
+.pf__tl,.pf__acc,.pf__accb p{max-width:760px}
 .pf__facts{background:var(--pf-card);border:1px solid var(--pf-line);border-radius:20px;padding:20px 22px;margin-bottom:18px}
 .pf__facts u{display:block;text-decoration:none;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--pf-mut);margin-bottom:14px;font-weight:700}
 .pf__factsg{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 24px}
@@ -116,7 +123,7 @@ export function ProfileView({
   const hasBio = Boolean(data.lead) || qf.length > 0
   const toc: { id: string; label: string }[] = []
   if (hasBio) toc.push({ id: 'bio', label: 'Биография' })
-  blocks.forEach((b) => toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type] }))
+  blocks.forEach((b) => { if (b.title === '') return; toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type] }) })
 
   const [active, setActive] = useState(toc[0]?.id || '')
   const [prog, setProg] = useState(0)
@@ -135,19 +142,25 @@ export function ProfileView({
     secs.forEach((s) => io.observe(s)); return () => io.disconnect()
   }, [toc.length])
 
-  const paras = (body: string) => body.split(/\n{2,}/).map((t, i) => <p key={i}>{t.trim()}</p>)
+  const paras = (body: string) => body.split(/\n{2,}/).map((t, i) => {
+    const x = t.trim()
+    if (x.startsWith('## ')) return <h3 className="pf__sh" key={i}>{x.slice(3).trim()}</h3>
+    return <p key={i}>{x}</p>
+  })
   let num = 0
   const Head = ({ id, label }: { id: string; label: string }) => { num += 1; return <div className="pf__h" id={id} data-pf-sec><i>{num}</i><h2>{label}</h2></div> }
 
   const renderBlock = (b: PBlock) => {
     const label = b.title || BLOCK_LABEL[b.type]
-    if (b.type === 'text') return (<section className="pf__sec" key={b.id}><Head id={b.id} label={label} />{paras(b.body || '')}</section>)
+    const noHead = b.title === ''
+    const head = noHead ? null : <Head id={b.id} label={label} />
+    if (b.type === 'text') return (<section className="pf__sec" key={b.id}>{head}{paras(b.body || '')}</section>)
     if (b.type === 'timeline') return (
-      <section className="pf__sec" key={b.id}><Head id={b.id} label={label} />
+      <section className="pf__sec" key={b.id}>{head}
         <div className="pf__tl">{b.items.map((t, i) => (<div className="pf__ti" key={i}><div className="pf__ty">{t.year}</div><div className="pf__tt">{t.title}</div>{t.text && <div className="pf__td">{t.text}</div>}</div>))}</div>
       </section>)
     if (b.type === 'relations') return (
-      <section className="pf__sec" key={b.id}><Head id={b.id} label={label} />
+      <section className="pf__sec" key={b.id}>{head}
         {b.items.map((r, i) => { const key = `${b.id}:${i}`; const on = openAcc === key; return (
           <div className={`pf__acc${on ? ' on' : ''}`} key={i}>
             <button type="button" className="pf__acch" onClick={() => setOpenAcc(on ? '' : key)}>{r.name}<em>+</em></button>
@@ -155,25 +168,25 @@ export function ProfileView({
           </div>) })}
       </section>)
     if (b.type === 'releases' || b.type === 'films') return (
-      <section className="pf__sec" key={b.id}><Head id={b.id} label={label} />
+      <section className="pf__sec" key={b.id}>{head}
         <div className={`pf__grid${b.type === 'films' ? ' pf__grid--f' : ''}`}>
           {b.items.map((r, i) => (<div className="pf__rel" key={i}><div className="pf__cov">{r.title}</div><div className="pf__rb"><div className="tt">{r.title}</div><div className="mt">{r.meta && <span className="pf__chip">{r.meta}</span>}{r.year}</div></div></div>))}
         </div>
       </section>)
     if (b.type === 'awards') return (
-      <section className="pf__sec" key={b.id}><Head id={b.id} label={label} />
+      <section className="pf__sec" key={b.id}>{head}
         <div className="pf__badges">{b.items.map((a, i) => (<div className="pf__badge" key={i}><em>{a.icon || '🏆'}</em><div><b>{a.title}</b>{a.subtitle && <span>{a.subtitle}</span>}</div></div>))}</div>
       </section>)
     if (b.type === 'factsList') return (
-      <section className="pf__sec" key={b.id}><Head id={b.id} label={label} />
+      <section className="pf__sec" key={b.id}>{head}
         <div className="pf__tiles">{b.items.map((f, i) => (<div className="pf__tile" key={i}><em>{String(i + 1).padStart(2, '0')}</em>{f}</div>))}</div>
       </section>)
     if (b.type === 'gallery') return (
-      <section className="pf__sec" key={b.id}><Head id={b.id} label={label} />
+      <section className="pf__sec" key={b.id}>{head}
         <div className="pf__gal">{gal.map((g, i) => (<figure key={i}>{g.url ? <img src={g.url} alt={g.caption || ''} loading="lazy" /> : null}</figure>))}</div>
       </section>)
     if (b.type === 'videos') return (
-      <section className="pf__sec" key={b.id}><Head id={b.id} label={label} />
+      <section className="pf__sec" key={b.id}>{head}
         <div className="pf__grid pf__grid--f">{vids.map((v, i) => (<Link href={`/video/${v.slug}`} className="pf__rel" key={i}><div className="pf__cov">{v.coverUrl ? <img src={v.coverUrl} alt={v.title} loading="lazy" /> : v.title}</div><div className="pf__rb"><div className="tt">{v.title}</div></div></Link>))}</div>
       </section>)
     return null
