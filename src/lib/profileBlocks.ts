@@ -27,7 +27,7 @@ export type PBlock =
   | { id: string; type: 'button'; title?: string; full?: boolean; label: string; href: string; variant?: 'primary' | 'ghost' }
   | { id: string; type: 'divider'; title?: string; full?: boolean; variant?: 'line' | 'dots' | 'space' }
   | { id: string; type: 'publications'; title?: string; full?: boolean; ids: (number | string)[] }
-  | { id: string; type: 'hero'; full?: boolean; eyebrow?: string; subtitle?: string; lead?: string; imageUrl?: string }
+  | { id: string; type: 'hero'; title?: string; full?: boolean; eyebrow?: string; subtitle?: string; lead?: string; imageUrl?: string }
   | { id: string; type: 'facts'; title?: string; full?: boolean; items: PBFact[] }
 
 export type PBlockType = PBlock['type']
