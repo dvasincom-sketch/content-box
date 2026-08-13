@@ -14,6 +14,7 @@ export type EditableCat = {
   coverId: number | null
   coverUrl: string | null
   posterLayout: boolean
+  pageMode?: boolean
   videoSeries: boolean
   eventTemplate: boolean
 }
@@ -40,6 +41,7 @@ export function CategoryEditPanel({
   const [coverId, setCoverId] = useState<number | null>(cat.coverId)
   const [coverUrl, setCoverUrl] = useState<string | null>(cat.coverUrl)
   const [posterLayout, setPosterLayout] = useState<boolean>(cat.posterLayout ?? false)
+  const [pageMode, setPageMode] = useState<boolean>(cat.pageMode ?? false)
   const [videoSeries, setVideoSeries] = useState<boolean>(cat.videoSeries ?? false)
   const [eventTemplate, setEventTemplate] = useState<boolean>(cat.eventTemplate ?? false)
   const [uploading, setUploading] = useState(false)
@@ -188,6 +190,7 @@ export function CategoryEditPanel({
           description: descHtml,
           coverId: coverId ?? null,
           posterLayout,
+          pageMode,
           videoSeries,
           eventTemplate,
           parentId: parentSel === '__root__' ? null : Number(parentSel),
@@ -246,27 +249,36 @@ export function CategoryEditPanel({
             <div className="catedit__poster-toggle">
               <button
                 type="button"
-                className={`catedit__poster-opt${!posterLayout ? ' is-on' : ''}`}
-                onClick={() => setPosterLayout(false)}
+                className={`catedit__poster-opt${!posterLayout && !pageMode ? ' is-on' : ''}`}
+                onClick={() => { setPosterLayout(false); setPageMode(false) }}
               >
                 Обычный раздел
               </button>
               <button
                 type="button"
                 className={`catedit__poster-opt${posterLayout ? ' is-on' : ''}`}
-                onClick={() => { setPosterLayout(true); setVideoSeries(false) }}
+                onClick={() => { setPosterLayout(true); setVideoSeries(false); setPageMode(false) }}
               >
                 Контейнер афиш
               </button>
+              <button
+                type="button"
+                className={`catedit__poster-opt${pageMode ? ' is-on' : ''}`}
+                onClick={() => { setPageMode(true); setPosterLayout(false); setVideoSeries(false) }}
+              >
+                Страница
+              </button>
             </div>
             <div className="catedit__hint">
-              {posterLayout
+              {pageMode
+                ? 'Страница — раздел показывает ОДНУ публикацию, привязанную к нему основной категорией (например, профиль участника). Список вложенных публикаций не выводится. Берётся последняя опубликованная публикация этой категории.'
+                : posterLayout
                 ? 'Контейнер афиш — дочерние категории этого раздела выводятся вертикальными постерами 2:3 (афишами): рядом на главной и сеткой на странице раздела. Клик по афише ведёт в дочерний раздел с эпизодами. Вертикальную обложку загружайте в КАЖДУЮ дочернюю категорию.'
                 : 'Обычный раздел — видео, публикации и подразделы. Ниже выберите, как показывать видео этого раздела.'}
             </div>
           </div>
 
-          {!posterLayout && (
+          {!posterLayout && !pageMode && (
             <div className="studio-field">
               <span className="studio-field__label">Видео в разделе</span>
               <div className="catedit__poster-toggle">

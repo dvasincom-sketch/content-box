@@ -45,6 +45,7 @@ export default async function CategoriesPage() {
       coverId: coverId != null ? Number(coverId) : null,
       coverUrl: coverUrl ?? null,
       posterLayout: Boolean(c.posterLayout),
+      pageMode: Boolean(c.pageMode),
       videoSeries: Boolean(c.videoSeries),
       eventTemplate: Boolean(c.eventTemplate),
     }

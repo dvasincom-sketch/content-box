@@ -64,6 +64,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   }
 
   if ('eventTemplate' in data) patch.eventTemplate = Boolean(data.eventTemplate)
+  if ('pageMode' in data) patch.pageMode = Boolean(data.pageMode)
 
   // Флаги показа в меню/футере (используются опцией «добавить категорию в меню»).
   if ('showInHeader' in data) patch.showInHeader = Boolean(data.showInHeader)

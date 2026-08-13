@@ -15,6 +15,7 @@ type Cat = {
   coverId: number | null
   coverUrl: string | null
   posterLayout: boolean
+  pageMode?: boolean
   videoSeries: boolean
   eventTemplate: boolean
 }
@@ -132,6 +133,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
       coverId: node.coverId,
       coverUrl: node.coverUrl,
       posterLayout: node.posterLayout,
+      pageMode: node.pageMode,
       videoSeries: node.videoSeries,
       eventTemplate: node.eventTemplate,
     })

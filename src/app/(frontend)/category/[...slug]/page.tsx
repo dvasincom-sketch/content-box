@@ -16,6 +16,7 @@ import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
 import { VideoCardsBlock } from '@/blocks/VideoCardsBlock'
 import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { categoryHref } from '@/lib/categoryHref'
+import { ProfileView } from '@/app/(frontend)/publication/[slug]/ProfileView'
 import { CrossLinkCard } from '@/components/CrossLinkCard'
 import { publishedWhere } from '@/lib/published'
 import { EventFilter } from './EventFilter'
@@ -120,6 +121,45 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   const isPosterContainer = Boolean(category.posterLayout)
   const isVideoSeries = Boolean(category.videoSeries)
   const isEvent = Boolean(category.eventTemplate)
+
+  // Тип раздела «Страница»: рендерим одну привязанную публикацию как страницу
+  // (например, профиль участника), без списка вложенных публикаций.
+  if ((category as any).pageMode) {
+    const bound = await payload.find({
+      collection: 'publications',
+      where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: category.id } }, publishedWhere()] },
+      sort: '-publishedAt', depth: 2, limit: 1, overrideAccess: true,
+    })
+    const bpub: any = (bound.docs as any[])[0]
+    const bcrumbs = (category.breadcrumbs ?? []) as { url?: string; label?: string }[]
+    if (bpub && bpub.template === 'profile' && bpub.profile) {
+      const cov = bpub.cover && typeof bpub.cover === 'object' ? bpub.cover : null
+      const portraitUrl = cov?.sizes?.large?.url || cov?.url || null
+      const pfGallery = Array.isArray(bpub.gallery)
+        ? (bpub.gallery as any[]).map((row) => { const img = row?.image; const u = img && typeof img === 'object' ? (img.sizes?.thumbnail?.url || img.url) : null; return u ? { url: u as string, caption: row?.caption || '' } : null }).filter(Boolean)
+        : []
+      const pfVideos = Array.isArray(bpub.relatedVideos)
+        ? (bpub.relatedVideos as any[]).map((v) => (v && typeof v === 'object' && v.slug ? { slug: String(v.slug), title: String(v.title || 'Видео'), coverUrl: videoThumbUrl(v) } : null)).filter(Boolean)
+        : []
+      return (
+        <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
+          <div className="max-w-6xl mx-auto px-4 py-8">
+            <Breadcrumbs crumbs={bcrumbs as any} lastIsCurrent className="mb-6" />
+            <ProfileView data={bpub.profile} title={bpub.title} portraitUrl={portraitUrl} gallery={pfGallery as any} videos={pfVideos as any} />
+          </div>
+        </main>
+      )
+    }
+    return (
+      <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <Breadcrumbs crumbs={bcrumbs as any} lastIsCurrent className="mb-6" />
+          <h1 className="text-3xl lg:text-5xl font-extrabold" style={{ color: 'var(--brand-text)' }}>{category.title}</h1>
+          <p style={{ color: 'var(--brand-muted)', marginTop: 16 }}>Для раздела-«страницы» пока нет привязанной публикации. Создайте публикацию с основной категорией «{category.title}».</p>
+        </div>
+      </main>
+    )
+  }
 
   // Публикации всей ветки: категории, у которых текущая есть в цепочке предков.
   // Для контейнера не нужны (показываем афиши детей), поэтому не запрашиваем.
