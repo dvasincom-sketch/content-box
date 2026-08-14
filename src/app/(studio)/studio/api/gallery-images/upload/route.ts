@@ -1,5 +1,5 @@
 import { withAuthor, apiError, apiOk, belongsToTenant, hasCapability, authorCan } from '@/app/(studio)/studio/api/_lib'
-import { sanitizeFilename } from '@/lib/safeFileName'
+import { shrinkForWeb, storageName } from '@/lib/imageIngest'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -10,6 +10,7 @@ import { errorMessage } from '@/lib/errorMessage'
  * Принимает multipart/form-data:
  *   file      — сам файл (обязателен)
  *   folderId  — id папки библиотеки (опционально)
+ *   publicationId — id публикации-источника (опционально, автотег)
  *   alt       — подпись/alt (опционально)
  *
  * Возвращает { id, url, width, height } — размеры нужны фронту для justified-grid.
@@ -51,11 +52,22 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     if (ok) folderId = Number(rawFolder)
   }
 
+  // Публикация-источник (если задана) — фиксируем происхождение картинки для
+  // автоматической организации библиотеки «по публикациям».
+  let sourcePublication: number | null = null
+  const rawPub = form.get('publicationId')
+  if (rawPub && typeof rawPub === 'string' && rawPub !== '') {
+    const okPub = await belongsToTenant(payload, 'publications', rawPub, tenantId)
+    if (okPub) sourcePublication = Number(rawPub)
+  }
+
   const alt = (form.get('alt') as string) || (blob as any).name || ''
 
   try {
     const arrayBuffer = await blob.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
+
+    const ing = await shrinkForWeb(buffer, blob.type)
 
     const doc = await payload.create({
       collection: 'gallery-images',
@@ -64,12 +76,13 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         owner: author.user.id,
         alt: alt || undefined,
         ...(folderId ? { folder: folderId } : {}),
+        ...(sourcePublication ? { sourcePublication } : {}),
       } as any,
       file: {
-        data: buffer,
-        name: sanitizeFilename(String((blob as any).name || ''), { mime: blob.type, fallbackBase: 'img' }),
-        mimetype: blob.type,
-        size: blob.size,
+        data: ing.buffer,
+        name: storageName(tenantId, (blob as any).name, ing.ext, 'img'),
+        mimetype: ing.mime,
+        size: ing.buffer.length,
       },
       overrideAccess: true,
     })

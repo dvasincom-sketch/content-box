@@ -649,6 +649,7 @@ svg {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: top center;   /* кадрируем по верхней границе — лица не обрезаются */
   display: block;
   pointer-events: none;      /* клики/контекст-меню перехватывает shield */
   -webkit-user-drag: none;

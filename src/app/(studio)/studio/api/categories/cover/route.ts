@@ -1,5 +1,5 @@
 import { withAuthor, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
-import { sanitizeFilename } from '@/lib/safeFileName'
+import { shrinkForWeb, storageName } from '@/lib/imageIngest'
 import { errorMessage } from '@/lib/errorMessage'
 import { logActivity } from '@/lib/logActivity'
 
@@ -39,14 +39,16 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
   try {
     const buffer = Buffer.from(await blob.arrayBuffer())
+    const ing = await shrinkForWeb(buffer, blob.type)
+
     const media = await payload.create({
       collection: 'media',
       data: { tenant: tenantId } as any,
       file: {
-        data: buffer,
-        name: sanitizeFilename(String((blob as any).name || ''), { mime: blob.type, fallbackBase: 'cat-cover' }),
-        mimetype: blob.type,
-        size: blob.size,
+        data: ing.buffer,
+        name: storageName(tenantId, (blob as any).name, ing.ext, 'cat-cover'),
+        mimetype: ing.mime,
+        size: ing.buffer.length,
       },
       overrideAccess: true,
     })

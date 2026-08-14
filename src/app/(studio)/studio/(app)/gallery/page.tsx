@@ -6,6 +6,7 @@ import { can } from '@/access'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { GalleryLibrary } from './GalleryLibrary'
+import { getMediaStats } from '@/lib/mediaStats'
 
 /** Раздел «Галерея» студии (Медиа) — общая библиотека изображений тенанта. */
 export const dynamic = 'force-dynamic'
@@ -27,5 +28,15 @@ export default async function GalleryPage() {
     parentId: f.parent ? (typeof f.parent === 'object' ? f.parent.id : f.parent) : null,
   }))
 
-  return <GalleryLibrary folders={folders}  canCreate={can(author!.user as any, 'gallery', 'create')} />
+  // Общий объём галереи (файлы + байты на диске) — тот же агрегат, что на дашборде.
+  const stats = await getMediaStats(payload, author!.tenantId)
+  const g = stats?.sources.find((x) => x.key === 'gallery') || null
+
+  return (
+    <GalleryLibrary
+      folders={folders}
+      canCreate={can(author!.user as any, 'gallery', 'create')}
+      stats={g ? { files: g.files, bytes: g.bytes } : null}
+    />
+  )
 }

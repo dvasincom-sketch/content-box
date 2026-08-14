@@ -64,10 +64,12 @@ export function GalleryComposer({
   value,
   onChange,
   folders,
+  publicationId,
 }: {
   value: GalleryItem[]
   onChange: (items: GalleryItem[]) => void
   folders: FolderItem[]
+  publicationId?: number | string
 }) {
   const [tasks, setTasks] = useState<UploadTask[]>([])
   const [libOpen, setLibOpen] = useState(false)
@@ -87,6 +89,7 @@ export function GalleryComposer({
   const uploadOne = useCallback(async (file: File): Promise<GalleryItem> => {
     const fd = new FormData()
     fd.append('file', file)
+    if (publicationId != null) fd.append('publicationId', String(publicationId))
     const res = await fetch('/studio/api/gallery-images/upload', {
       method: 'POST',
       body: fd,
@@ -101,7 +104,7 @@ export function GalleryComposer({
       height: json.height,
       caption: '',
     }
-  }, [])
+  }, [publicationId])
 
   // Очередь с ограниченной параллельностью.
   // Каждый успешно загруженный файл дописываем к valueRef.current (актуальному
@@ -298,6 +301,7 @@ export function GalleryComposer({
       {libOpen && mounted && createPortal(
         <LibraryModal
           folders={folders}
+          publicationId={publicationId}
           alreadyIn={new Set(value.map((v) => String(v.imageId)))}
           remaining={MAX_IMAGES - value.length}
           onClose={() => setLibOpen(false)}
@@ -494,12 +498,14 @@ export function GalleryFolderManager({
 
 function LibraryModal({
   folders,
+  publicationId,
   alreadyIn,
   remaining,
   onClose,
   onAdd,
 }: {
   folders: FolderItem[]
+  publicationId?: number | string
   alreadyIn: Set<string>
   remaining: number
   onClose: () => void
@@ -507,7 +513,8 @@ function LibraryModal({
 }) {
   const flat = flattenFolders(folders)
   const router = useRouter()
-  const [folder, setFolder] = useState<string>('all')
+  // Дефолт-скоуп: если открыли из сохранённой публикации — показываем её фото.
+  const [folder, setFolder] = useState<string>(publicationId != null ? 'pub' : 'all')
   const [images, setImages] = useState<LibImage[]>([])
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
@@ -544,7 +551,9 @@ function LibraryModal({
   useEffect(() => {
     let stop = false
     setLoading(true)
-    const qs = new URLSearchParams({ folder, page: String(page), limit: '40' })
+    const qs = new URLSearchParams({ page: String(page), limit: '40' })
+    if (folder === 'pub' && publicationId != null) qs.set('publication', String(publicationId))
+    else qs.set('folder', folder)
     fetch(`/studio/api/gallery-images/list?${qs}`, { credentials: 'include' })
       .then((r) => r.json())
       .then((json) => {
@@ -594,6 +603,7 @@ function LibraryModal({
               value={folder}
               onChange={setFolder}
               options={[
+                ...(publicationId != null ? [{ value: 'pub', label: 'Этой публикации' }] : []),
                 { value: 'all', label: 'Все папки' },
                 { value: 'none', label: 'Без папки' },
                 ...flat.map((f) => ({
@@ -630,7 +640,9 @@ function LibraryModal({
         <div className="glib__body">
           {images.length === 0 && !loading ? (
             <div className="glib__empty">
-              {folder === 'all'
+              {folder === 'pub'
+                ? 'В этой публикации ещё нет загруженных изображений. Загрузите первые с устройства.'
+                : folder === 'all'
                 ? 'В библиотеке пока нет изображений. Загрузите первые с устройства.'
                 : 'В этой папке нет изображений.'}
             </div>

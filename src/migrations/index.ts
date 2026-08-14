@@ -101,6 +101,7 @@ import * as migration_20260812_150000_search_queries from './20260812_150000_sea
 import * as migration_20260813_100000_publication_template from './20260813_100000_publication_template';
 import * as migration_20260813_110000_category_page_mode from './20260813_110000_category_page_mode';
 import * as migration_20260813_130000_publication_prev_version from './20260813_130000_publication_prev_version';
+import * as migration_20260814_100000_gallery_source_publication from './20260814_100000_gallery_source_publication';
 
 export const migrations = [
   {
@@ -617,5 +618,10 @@ export const migrations = [
     up: migration_20260813_130000_publication_prev_version.up,
     down: migration_20260813_130000_publication_prev_version.down,
     name: '20260813_130000_publication_prev_version',
+  },
+  {
+    up: migration_20260814_100000_gallery_source_publication.up,
+    down: migration_20260814_100000_gallery_source_publication.down,
+    name: '20260814_100000_gallery_source_publication',
   },
 ];

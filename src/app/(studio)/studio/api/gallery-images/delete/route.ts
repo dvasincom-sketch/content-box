@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { withAuthor, readJson, apiError, apiOk, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
+import { galleryImageUsage } from '@/lib/galleryUsage'
 
 /**
  * Удаление изображения библиотеки галереи.
@@ -25,17 +26,19 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const iTenant = img.tenant && typeof img.tenant === 'object' ? img.tenant.id : img.tenant
   if (Number(iTenant) !== Number(tenantId)) return apiError('Изображение не найдено', 404)
 
-  // Используется в галереях публикаций? Блокируем.
-  const pubs = await payload.find({
-    collection: 'publications',
-    where: { and: [{ tenant: { equals: tenantId } }, { 'gallery.image': { equals: id } }] },
-    depth: 0, limit: 50, overrideAccess: true,
-  })
-  if (pubs.totalDocs > 0) {
+  // Используется в публикациях? Проверяем ОБА хранилища единым детектором:
+  // классическое поле gallery + JSON-блоки страниц-профилей.
+  const usedPubIds = await galleryImageUsage(payload, tenantId, id)
+  if (usedPubIds.length > 0) {
+    const pubs = await payload.find({
+      collection: 'publications',
+      where: { and: [{ tenant: { equals: tenantId } }, { id: { in: usedPubIds } }] },
+      depth: 0, limit: 50, overrideAccess: true,
+    })
     const usedIn = (pubs.docs as any[]).map((p) => ({ id: p.id, title: p.title || 'Без заголовка' }))
     return NextResponse.json(
       {
-        error: `Изображение используется в публикациях (${pubs.totalDocs}). Сначала открепите его там.`,
+        error: `Изображение используется в публикациях (${usedPubIds.length}). Сначала открепите его там.`,
         usedIn,
       },
       { status: 409 },

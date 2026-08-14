@@ -154,7 +154,7 @@ export function Composer({
   }
 
   const [gallery, setGallery] = useState<GalleryItem[]>(initial?.gallery ?? [])
-  const profileMedia = { gallery, setGallery, galleryFolders, videoCandidates, videoIds, setVideoIds, videoModalCats, canCreateMedia, openVideoModal: () => setVideoModalOpen(true) }
+  const profileMedia = { gallery, setGallery, galleryFolders, videoCandidates, videoIds, setVideoIds, videoModalCats, canCreateMedia, openVideoModal: () => setVideoModalOpen(true), publicationId: initial?.id }
   const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
   const [eventDate, setEventDate] = useState<string>(initial?.eventDate ? String(initial.eventDate).slice(0, 10) : '')
 

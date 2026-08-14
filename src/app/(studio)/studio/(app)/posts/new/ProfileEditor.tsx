@@ -17,6 +17,8 @@ export type PEMedia = {
   videoModalCats: any
   canCreateMedia?: boolean
   openVideoModal: () => void
+  /** id публикации-источника (есть только при редактировании сохранённой). */
+  publicationId?: number | string
 }
 
 export type { ProfileData } from '@/lib/profileBlocks'
@@ -407,7 +409,7 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
     case 'gallery':
       return media ? (
         <div className="pe__rows">
-          <GalleryComposer value={block.images ?? []} onChange={(v) => patch({ images: v } as Partial<PBlock>)} folders={media.galleryFolders} />
+          <GalleryComposer value={block.images ?? []} onChange={(v) => patch({ images: v } as Partial<PBlock>)} folders={media.galleryFolders} publicationId={media.publicationId} />
           <div className="pe__note">Своя галерея этого блока (у каждого блока — свой набор). На сайте показывается сеткой, по клику фото открывается на весь экран.</div>
         </div>
       ) : <div className="pe__note">Загрузка фото доступна в редакторе публикации.</div>

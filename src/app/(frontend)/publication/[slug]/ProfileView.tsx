@@ -107,7 +107,7 @@ const css = `
 .pf__ti::before{content:"";position:absolute;left:-31px;top:5px;width:11px;height:11px;border-radius:50%;background:linear-gradient(120deg,var(--pf-acc),var(--pf-acc2));box-shadow:0 0 0 4px var(--pf-bg)}
 .pf__ty{font-size:12.5px;font-weight:800;color:var(--pf-acc2)}
 .pf__tt{font-weight:650;margin:2px 0 3px}
-.pf__td{font-size:14px;color:var(--pf-mut)}
+.pf__td{font-size:14px;color:var(--pf-mut);line-height:1.45}
 .pf__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:15px}
 .pf__grid--f{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .pf__rel{border-radius:14px;overflow:hidden;border:1px solid var(--pf-line);background:var(--pf-card);transition:.18s;text-decoration:none;color:inherit}
