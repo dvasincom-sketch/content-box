@@ -56,11 +56,22 @@ async function computeAll(payload: any) {
   return { pool, rows }
 }
 
-export const GET = withAuthor(async ({ payload, author }) => {
+export const GET = withAuthor(async ({ req, payload, author }) => {
   if (!isSuperAdmin(author.user as any)) return apiError('Доступно только супер-администратору', 403)
+  const apply = new URL(req.url).searchParams.get('apply') === '1'
   try {
-    const { rows } = await computeAll(payload)
-    return apiOk({ dryRun: true, videos: rows.map((r) => ({ title: r.title, wasHuman: formatBytes(r.was), nowHuman: formatBytes(r.now), changed: r.was !== r.now })) })
+    const { pool, rows } = await computeAll(payload)
+    let updated = 0
+    if (apply) {
+      for (const r of rows) {
+        if (r.was !== r.now) { await pool.query(`UPDATE videos SET asset_bytes = $1 WHERE id = $2`, [r.now, r.id]); updated++ }
+      }
+    }
+    return apiOk({
+      dryRun: !apply,
+      ...(apply ? { applied: true, updated } : { hint: 'Добавьте ?apply=1 к URL, чтобы записать в БД.' }),
+      videos: rows.map((r) => ({ title: r.title, wasHuman: formatBytes(r.was), nowHuman: formatBytes(r.now), changed: r.was !== r.now })),
+    })
   } catch (e: any) {
     return apiError(e?.message || 'Ошибка', 502)
   }

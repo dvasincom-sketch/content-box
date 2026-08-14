@@ -952,6 +952,10 @@ export function AddPanel({
                         )
                       })}
                     </div>
+                    <div style={{ display: 'flex', gap: 7, marginTop: 10, fontSize: 12, color: 'var(--st-text-muted)', lineHeight: 1.45 }}>
+                      <Info size={14} style={{ flex: 'none', marginTop: 1, opacity: 0.8 }} />
+                      <span>Плеер сам подбирает дорожку под экран и скорость зрителя (адаптивный стрим). Больше разрешений — плавнее и качественнее для всех: телефон на слабой сети получит 480p, большой экран на быстром интернете — 1080p. Меньше дорожек — экономия места, но и меньше гибкости. 480+720 — разумный минимум; 1080 добавляйте, если важна максимальная чёткость на больших экранах.</span>
+                    </div>
                   </div>
                   {profileRecent.length > 0 && (
                     <div style={{ marginTop: 18, borderTop: '1px solid var(--st-border)', paddingTop: 14 }}>

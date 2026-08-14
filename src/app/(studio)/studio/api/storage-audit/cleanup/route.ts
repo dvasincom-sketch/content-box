@@ -51,12 +51,19 @@ async function findOrphanSources(payload: any) {
   return { s3, bucket, orphans }
 }
 
-export const GET = withAuthor(async ({ payload, author }) => {
+export const GET = withAuthor(async ({ req, payload, author }) => {
   if (!isSuperAdmin(author.user as any)) return apiError('Доступно только супер-администратору', 403)
+  const apply = new URL(req.url).searchParams.get('apply') === '1'
   try {
-    const { orphans } = await findOrphanSources(payload)
+    const { s3, bucket, orphans } = await findOrphanSources(payload)
     const bytes = orphans.reduce((s, o) => s + o.bytes, 0)
-    return apiOk({ dryRun: true, count: orphans.length, bytes, human: formatBytes(bytes), items: orphans.map((o) => ({ key: o.key, human: formatBytes(o.bytes) })) })
+    if (!apply) {
+      return apiOk({ dryRun: true, hint: 'Добавьте ?apply=1 к URL, чтобы удалить.', count: orphans.length, bytes, human: formatBytes(bytes), items: orphans.map((o) => ({ key: o.key, human: formatBytes(o.bytes) })) })
+    }
+    for (let i = 0; i < orphans.length; i += 1000) {
+      await s3.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: orphans.slice(i, i + 1000).map((o) => ({ Key: o.key })) } }))
+    }
+    return apiOk({ applied: true, deleted: orphans.length, bytes, human: formatBytes(bytes) })
   } catch (e: any) {
     return apiError(e?.message || 'Ошибка', 502)
   }
