@@ -265,6 +265,13 @@ export const SiteSettings: CollectionConfig = {
       admin: { description: 'Профиль кодирования для новых загруженных видео. Действует на новые загрузки, уже обработанные не меняет.' },
     },
     {
+      name: 'videoRenditions',
+      type: 'text',
+      defaultValue: '480,720',
+      label: 'Хранимые разрешения видео',
+      admin: { description: 'Какие дорожки генерировать для новых видео (CSV из 480,720,1080). 1080 — самый тяжёлый по месту, включайте где действительно нужно. Действует на новые загрузки.' },
+    },
+    {
       name: 'heroChips',
       type: 'relationship',
       relationTo: 'categories',

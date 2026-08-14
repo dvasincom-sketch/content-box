@@ -802,6 +802,11 @@ function VideoMetaFields({
   )
 }
 
+const RENDITIONS: { h: string; title: string; hint: string; warn: boolean }[] = [
+  { h: '480', title: '480p', hint: 'Лёгкое — для мобильного и слабой сети.', warn: false },
+  { h: '720', title: '720p', hint: 'Оптимально для большинства. Рекомендуется.', warn: false },
+  { h: '1080', title: '1080p (Full HD)', hint: 'Самый большой файл — занимает больше всего места в хранилище. Включайте только там, где чёткость действительно нужна.', warn: true },
+]
 const VIDEO_PROFILES: { id: string; title: string; opt: string; cost: string }[] = [
   { id: 'fast', title: 'Быстро', opt: 'Приоритет скорости обработки', cost: 'файл чуть крупнее' },
   { id: 'balanced', title: 'Баланс', opt: 'Оптимальный компромисс', cost: 'рекомендуется' },
@@ -829,10 +834,11 @@ export function AddPanel({
   const [videoProfile, setVideoProfile] = useState<string>('balanced')
   const [profileOpen, setProfileOpen] = useState(false)
   const [profileRecent, setProfileRecent] = useState<Array<{ title: string; profile: string | null; durationSec: number | null; originalBytes: number | null; assetBytes: number | null; encodeMs: number | null }>>([])
+  const [renditions, setRenditions] = useState<string[]>(['480', '720'])
   const gearRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     fetch('/studio/api/settings/video-profile', { credentials: 'include' })
-      .then((r) => r.json()).then((j) => { if (j?.profile) setVideoProfile(j.profile); if (Array.isArray(j?.recent)) setProfileRecent(j.recent) }).catch(() => {})
+      .then((r) => r.json()).then((j) => { if (j?.profile) setVideoProfile(j.profile); if (typeof j?.renditions === 'string') setRenditions(j.renditions.split(',').filter(Boolean)); if (Array.isArray(j?.recent)) setProfileRecent(j.recent) }).catch(() => {})
   }, [])
   async function pickProfile(id: string) {
     setVideoProfile(id)
@@ -842,6 +848,16 @@ export function AddPanel({
         body: JSON.stringify({ profile: id }),
       })
     } catch { /* тихо */ }
+  }
+  function toggleRendition(h: string) {
+    const nextSet = renditions.includes(h) ? renditions.filter((x) => x !== h) : [...renditions, h]
+    if (nextSet.length === 0) return // хотя бы одно разрешение обязательно
+    const ordered = ['480', '720', '1080'].filter((x) => nextSet.includes(x))
+    setRenditions(ordered)
+    fetch('/studio/api/settings/video-profile', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ renditions: ordered.join(',') }),
+    }).catch(() => {})
   }
   // Вкладка «Библиотека» есть только у Kinescope. При переключении на Cloudflare
   // возвращаемся к загрузке, чтобы не остаться на скрытой вкладке.
@@ -909,6 +925,33 @@ export function AddPanel({
                         </button>
                       )
                     })}
+                  </div>
+                  <div style={{ marginTop: 18, borderTop: '1px solid var(--st-border)', paddingTop: 14 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--st-text)', marginBottom: 2 }}>Хранимые разрешения</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--st-text-muted)', marginBottom: 10 }}>Какие дорожки создавать для новых видео. Действует на новые загрузки.</div>
+                    <div style={{ display: 'grid', gap: 6 }}>
+                      {RENDITIONS.map((rd) => {
+                        const on = renditions.includes(rd.h)
+                        const onlyOne = renditions.length === 1 && on
+                        return (
+                          <button
+                            key={rd.h}
+                            type="button"
+                            onClick={() => toggleRendition(rd.h)}
+                            disabled={onlyOne}
+                            style={{ display: 'flex', alignItems: 'flex-start', gap: 10, textAlign: 'left', border: `1px solid ${on ? 'var(--st-accent)' : 'var(--st-border)'}`, background: on ? 'color-mix(in srgb, var(--st-accent) 8%, transparent)' : 'transparent', borderRadius: 10, padding: '10px 12px', cursor: onlyOne ? 'not-allowed' : 'pointer', opacity: onlyOne ? 0.7 : 1 }}
+                          >
+                            <span style={{ flex: 'none', width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${on ? 'var(--st-accent)' : 'var(--st-border)'}`, background: on ? 'var(--st-accent)' : 'transparent', display: 'grid', placeItems: 'center', marginTop: 1 }}>
+                              {on && <Check size={13} style={{ color: '#fff' }} />}
+                            </span>
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--st-text)' }}>{rd.title}</span>
+                              <span style={{ display: 'block', fontSize: 12, color: rd.warn ? 'var(--st-danger, #c2410c)' : 'var(--st-text-muted)', marginTop: 2 }}>{rd.hint}</span>
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                   {profileRecent.length > 0 && (
                     <div style={{ marginTop: 18, borderTop: '1px solid var(--st-border)', paddingTop: 14 }}>

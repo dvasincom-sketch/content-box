@@ -79,6 +79,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
     const settingsRes = await payload.find({ collection: 'site-settings', where: { tenant: { equals: tenantId } }, limit: 1, depth: 0, overrideAccess: true })
     const profile = String((settingsRes.docs[0] as any)?.videoProfile || 'balanced')
+    const renditionHeights = String((settingsRes.docs[0] as any)?.videoRenditions || '480,720')
 
     await enqueueTranscode(payload, {
       videoId: doc.id,
@@ -86,6 +87,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       playbackId,
       originalKey: key,
       profile,
+      renditionHeights,
     })
 
     return apiOk({ id: doc.id, playbackId })

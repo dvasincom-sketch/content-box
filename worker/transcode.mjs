@@ -17,7 +17,7 @@ import { Readable } from 'node:stream'
 import { createHmac } from 'node:crypto'
 import http from 'node:http'
 import pg from 'pg'
-import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 
 // ВАЖНО: берём env через `||`, а НЕ через destructuring-дефолты. Timeweb
 // подставляет незаданную переменную как ПУСТУЮ СТРОКУ, а `= 'ru-1'` срабатывает
@@ -88,6 +88,12 @@ const PROFILES = {
   compact: { preset: 'slow', crf: [24, 25, 26] },
   quality: { preset: 'slow', crf: [20, 21, 22] },
 }
+// Разбор CSV разрешений ('480,720,1080') в набор высот. Пусто → без ограничения.
+function parseHeights(csv) {
+  if (!csv) return []
+  return String(csv).split(',').map((x) => Number(x.trim())).filter((n) => n > 0)
+}
+
 function resolveProfile(profile) {
   const p = PROFILES[profile] || PROFILES.balanced
   return {
@@ -249,9 +255,10 @@ async function fileBytes(path) {
   try { return (await stat(path)).size } catch { return 0 }
 }
 
-async function buildHls(input, outDir, meta, onProgress, profile) {
+async function buildHls(input, outDir, meta, onProgress, profile, renditionHeights) {
   const { preset, ladder } = resolveProfile(profile)
-  const renditions = ladder.filter((r) => r.height <= meta.height)
+  const allowed = parseHeights(renditionHeights)
+  const renditions = ladder.filter((r) => r.height <= meta.height && (allowed.length === 0 || allowed.includes(r.height)))
   if (!renditions.length) renditions.push({ ...ladder[ladder.length - 1], height: Math.max(144, meta.height || 480) })
   for (let i = 0; i < renditions.length; i++) await mkdir(join(outDir, String(i)), { recursive: true })
 
@@ -338,7 +345,7 @@ async function claimJob() {
   try {
     await c.query('BEGIN')
     const r = await c.query(
-      `SELECT id, video_id, tenant_id, playback_id, original_key, source_url, attempts, kind, profile
+      `SELECT id, video_id, tenant_id, playback_id, original_key, source_url, attempts, kind, profile, rendition_heights
          FROM video_jobs
         WHERE status = 'queued'
            OR (status = 'processing' AND locked_at IS NOT NULL AND locked_at < now() - interval '30 minutes')
@@ -593,7 +600,7 @@ async function processJob(job) {
       pool.query(`UPDATE video_jobs SET progress=$2, updated_at=now() WHERE id=$1`, [job.id, pct]).catch(() => {})
     }
     await pool.query(`UPDATE video_jobs SET progress=0, updated_at=now() WHERE id=$1`, [job.id]).catch(() => {})
-    const renditions = await buildHls(input, hlsDir, meta, onProgress, job.profile)
+    const renditions = await buildHls(input, hlsDir, meta, onProgress, job.profile, job.rendition_heights)
     const encodeMs = Date.now() - t
     log(`job ${job.id} transcoded ${renditions.length} rendition(s) in ${secs(t)}s`)
 
@@ -613,7 +620,18 @@ async function processJob(job) {
     t = Date.now()
     log(`job ${job.id} uploading to S3…`)
     const hlsUp = await uploadDir(hlsDir, `hls/${playbackId}`)
-    let assetBytes = hlsUp.bytes
+    // asset_bytes считаем ПО ФАКТУ из S3 (устойчиво к повторному транскоду и
+    // локальным погрешностям stat): сумма реально лежащих объектов hls/<pid>/.
+    let assetBytes = 0
+    try {
+      let lt
+      do {
+        const lr = await s3.send(new ListObjectsV2Command({ Bucket: S3_BUCKET, Prefix: `hls/${playbackId}/`, ContinuationToken: lt }))
+        for (const o of lr.Contents || []) assetBytes += o.Size || 0
+        lt = lr.IsTruncated ? lr.NextContinuationToken : undefined
+      } while (lt)
+    } catch (e) { assetBytes = 0 }
+    if (!assetBytes) assetBytes = hlsUp.bytes
     log(`job ${job.id} uploaded ${hlsUp.count} HLS file(s) in ${secs(t)}s`)
     await uploadFile(join(work, 'poster.jpg'), `posters/${playbackId}.jpg`)
     assetBytes += await fileBytes(join(work, 'poster.jpg')) + spriteBytes
@@ -654,10 +672,18 @@ async function processJob(job) {
     // Оригинал больше не нужен — HLS собран и залит в S3. Удаляем исходник,
     // чтобы не занимать место (у импорта по ссылке оригинала в нашем S3 и нет).
     if (job.original_key) {
-      await s3
-        .send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: job.original_key }))
-        .then(() => log(`original ${job.original_key} deleted`))
-        .catch((e) => log('cleanup original failed (non-fatal):', e.message))
+      let del = false
+      for (let a = 0; a < 3 && !del; a++) {
+        try {
+          await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: job.original_key }))
+          del = true
+          log(`original ${job.original_key} deleted`)
+        } catch (e) {
+          log(`cleanup original attempt ${a + 1} failed:`, e.message)
+          await new Promise((r) => setTimeout(r, 1000 * (a + 1)))
+        }
+      }
+      if (!del) log(`cleanup original GAVE UP (осиротеет; подчистит /storage-audit/cleanup): ${job.original_key}`)
     }
     log(`job ${job.id} done in ${secs(started)}s total`)
   } catch (e) {

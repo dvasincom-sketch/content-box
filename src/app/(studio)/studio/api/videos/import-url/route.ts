@@ -80,7 +80,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
     const settingsRes = await payload.find({ collection: 'site-settings', where: { tenant: { equals: tenantId } }, limit: 1, depth: 0, overrideAccess: true })
     const profile = String((settingsRes.docs[0] as any)?.videoProfile || 'balanced')
-    await enqueueTranscode(payload, { videoId: doc.id, tenantId, playbackId, sourceUrl: url, profile })
+    const renditionHeights = String((settingsRes.docs[0] as any)?.videoRenditions || '480,720')
+    await enqueueTranscode(payload, { videoId: doc.id, tenantId, playbackId, sourceUrl: url, profile, renditionHeights })
     return apiOk({ id: doc.id, playbackId })
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось создать запись видео'), 500)

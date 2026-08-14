@@ -18,12 +18,14 @@ export async function enqueueTranscode(
     sourceUrl?: string | null
     /** Профиль сжатия (fast|balanced|compact|quality). Штампуется на задачу. */
     profile?: string | null
+    /** Хранимые разрешения (CSV, напр. '480,720'). Штампуется на задачу. */
+    renditionHeights?: string | null
   },
 ): Promise<void> {
   await sqlRows(
     payload,
-    `INSERT INTO "video_jobs" ("video_id","tenant_id","playback_id","original_key","source_url","status","profile")
-     VALUES ($1,$2,$3,$4,$5,'queued',$6)`,
+    `INSERT INTO "video_jobs" ("video_id","tenant_id","playback_id","original_key","source_url","status","profile","rendition_heights")
+     VALUES ($1,$2,$3,$4,$5,'queued',$6,$7)`,
     [
       Number(args.videoId),
       args.tenantId != null ? Number(args.tenantId) : null,
@@ -31,6 +33,7 @@ export async function enqueueTranscode(
       args.originalKey ?? null,
       args.sourceUrl ?? null,
       args.profile || 'balanced',
+      args.renditionHeights || '480,720',
     ],
   )
 }
