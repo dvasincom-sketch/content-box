@@ -29,6 +29,7 @@ export const GET = withAuthor(async ({ payload, author }) => {
 
   // 1) Скан бакета: агрегируем HLS по playbackId + исходники originals/
   const hls = new Map<string, { bytes: number; count: number }>()
+  const rend = new Map<string, number>() // `${playbackId}/${index}` → bytes (разбивка по дорожкам)
   const originals: { key: string; bytes: number }[] = []
   let token: string | undefined
   let pages = 0
@@ -43,6 +44,8 @@ export const GET = withAuthor(async ({ payload, author }) => {
         if (m) {
           const cur = hls.get(m[1]) || { bytes: 0, count: 0 }
           cur.bytes += sz; cur.count += 1; hls.set(m[1], cur)
+          const rm = k.match(/^hls\/([^/]+)\/(\d+)\//)
+          if (rm) rend.set(`${rm[1]}/${rm[2]}`, (rend.get(`${rm[1]}/${rm[2]}`) || 0) + sz)
         } else if (k.startsWith('originals/')) {
           originals.push({ key: k, bytes: sz })
         }
@@ -75,7 +78,13 @@ export const GET = withAuthor(async ({ payload, author }) => {
   const orphanHls: any[] = []
   for (const [pid, agg] of hls) {
     const v = known.get(pid)
-    if (v) live.push({ playbackId: pid, title: v.title, tenantId: v.tenantId, bucketBytes: agg.bytes, bucketHuman: formatBytes(agg.bytes), assetBytes: v.assetBytes, segments: agg.count })
+    if (v) {
+      const renditions = Array.from(rend.entries())
+        .filter(([key]) => key.startsWith(pid + '/'))
+        .map(([key, bytes]) => ({ index: Number(key.split('/')[1]), bytes, human: formatBytes(bytes) }))
+        .sort((a, b) => a.index - b.index)
+      live.push({ playbackId: pid, title: v.title, tenantId: v.tenantId, bucketBytes: agg.bytes, bucketHuman: formatBytes(agg.bytes), assetBytes: v.assetBytes, assetHuman: formatBytes(v.assetBytes), segments: agg.count, renditions })
+    }
     else orphanHls.push({ playbackId: pid, bytes: agg.bytes, human: formatBytes(agg.bytes), segments: agg.count })
   }
   live.sort((a, b) => b.bucketBytes - a.bucketBytes)
