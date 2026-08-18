@@ -59,22 +59,24 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
   const storageRub = ai.storageRub
   const commission = ai.commissionRub
   const extras = ai.extrasRub
-  const monthlyCost = storageRub + aiThisMonth + extras
-  const covered = Math.min(monthlyCost, commission)
-  const monthlyNet = Math.max(0, monthlyCost - commission)
+  const aiMonth = aiThisMonth
+  // Модель: платформенный сбор за месяц = генерация (токены Аси) + 10% с выручки.
+  // Стоимость хранилища ВХОДИТ в комиссию 10% (не добавляется сверху). С депозита
+  // списывается генерация сверх комиссии; хранилище с депозита не берётся.
+  const monthTotal = aiMonth + extras + commission
+  const depositMonth = Math.max(0, aiMonth + extras - commission)
 
-  // Списано с депозита = сумма ежемесячных нетто (как в таблице) — чтобы сводка
-  // и помесячный биллинг совпадали.
-  const spent = months.reduce((sum, m) => sum + Math.max(0, m.costRub + storageRub + extras - commission), 0)
+  const spent = months.reduce((sum, m) => sum + Math.max(0, m.costRub + extras - commission), 0)
   const balance = deposit - spent
 
   const rows = months.map((m, i) => {
-    const cost = m.costRub + storageRub + extras
-    const net = Math.max(0, cost - commission)
-    const cumNet = months.slice(0, i + 1).reduce((sum, x) => sum + Math.max(0, x.costRub + storageRub + extras - commission), 0)
-    return { ...m, cost, net, balanceAfter: deposit - cumNet }
+    const total = m.costRub + commission
+    const fromDeposit = Math.max(0, m.costRub + extras - commission)
+    const cum = months.slice(0, i + 1).reduce((sum, x) => sum + Math.max(0, x.costRub + extras - commission), 0)
+    return { ...m, total, fromDeposit, balanceAfter: deposit - cum }
   })
   const rowsDesc = [...rows].reverse()
+  const curMonth = months.length ? monthLabel(months[months.length - 1].month) : 'текущий месяц'
 
   const commissionPct = Math.round(COMMISSION_RATE * 100)
   const usagePct = t && t.grade.ceilingGb > 0 ? Math.min(100, Math.round((t.usedGb / t.grade.ceilingGb) * 100)) : 0
@@ -92,14 +94,14 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
 
         <div className="cp__hero">
           <div className="cp__hero-tile">
-            <div className="cp__hero-lbl">Расход за текущий месяц</div>
-            <div className="cp__hero-val">{rub(monthlyCost)}</div>
-            <div className="cp__hero-sub">хранилище + токены + доп. услуги</div>
+            <div className="cp__hero-lbl">Платформенный сбор за месяц</div>
+            <div className="cp__hero-val">{rub(monthTotal)}</div>
+            <div className="cp__hero-sub">генерация + {commissionPct}% комиссии · хранилище в комиссии</div>
           </div>
           <div className="cp__hero-tile">
             <div className="cp__hero-lbl">К списанию с депозита</div>
-            <div className="cp__hero-val">{rub(monthlyNet)}</div>
-            <div className="cp__hero-sub">{commission > 0 ? `покрыто подписками ${rub(covered)} (оценка)` : 'подписок пока нет'}</div>
+            <div className="cp__hero-val">{rub(depositMonth)}</div>
+            <div className="cp__hero-sub">генерация − комиссия (оценка)</div>
           </div>
           <div className="cp__hero-tile cp__hero-tile--dep">
             <div className="cp__hero-lbl">Остаток депозита</div>
@@ -182,15 +184,16 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
         <div className="cp__key"><AiKeyCard /></div>
       </section>
 
-      {/* ── 4. Комиссия платформы (покрытие расходов) ──────────────── */}
+      {/* ── 4. Платформенный сбор за текущий месяц ─────────────────── */}
       <section className="settings__block cp__block">
-        <div className="cp__head"><Percent size={17} /> Комиссия платформы</div>
-        <p className="cp__muted">Платформа берёт {commissionPct}% с выручки платных подписок. Эта комиссия идёт на покрытие расходов проекта (хранилище + токены + доп. услуги); остаток списывается с депозита. Пока приём платежей не подключён — суммы оценочные.</p>
-        <div className="cp__two">
-          <div className="cp__tile"><div className="cp__tile-val">{rub(commission)}</div><div className="cp__tile-lbl">{commissionPct}% × выручка {rub(ai.mrrRub)}/мес (оценка)</div></div>
-          <div className="cp__tile"><div className="cp__tile-val">{rub(monthlyCost)}</div><div className="cp__tile-lbl">Расход проекта за месяц</div></div>
-        </div>
-        <div className="cp__fee"><span>Покрыто комиссией {rub(covered)} · к списанию с депозита</span><b>{rub(monthlyNet)}</b></div>
+        <div className="cp__head"><Percent size={17} /> Платформенный сбор за текущий месяц</div>
+        <p className="cp__muted">Сумма за месяц = генерация (токены Аси) + {commissionPct}% с выручки платных подписок. Стоимость хранилища входит в комиссию {commissionPct}% и не добавляется сверху. Суммы оценочные — приём платежей ещё не подключён.</p>
+        <div className="cp__line"><span className="cp__l-ico"><HardDrive size={15} /></span><span className="cp__l-name">Стоимость хранилища</span><span className="cp__l-meta">входит в комиссию {commissionPct}%</span><span className="cp__l-val">{rub(storageRub)}</span></div>
+        <div className="cp__line"><span className="cp__l-ico"><Sparkles size={15} /></span><span className="cp__l-name">Генерация страниц (токены Аси)</span><span className="cp__l-meta">за месяц</span><span className="cp__l-val">{rub(aiMonth)}</span></div>
+        {extras > 0 && <div className="cp__line"><span className="cp__l-ico"><Zap size={15} /></span><span className="cp__l-name">Доп. услуги (буст транскодинга)</span><span className="cp__l-meta">по факту</span><span className="cp__l-val">{rub(extras)}</span></div>}
+        <div className="cp__line"><span className="cp__l-ico"><Percent size={15} /></span><span className="cp__l-name">{commissionPct}% с выручки платных подписок</span><span className="cp__l-meta">выручка {rub(ai.mrrRub)}/мес (оценка)</span><span className="cp__l-val">{rub(commission)}</span></div>
+        <div className="cp__fee"><span>Итого за {curMonth} на текущий момент</span><b>{rub(monthTotal)}</b></div>
+        <div className="cp__feesub">С депозита: генерация {rub(aiMonth + extras)} − комиссия {rub(commission)} = <b>{rub(depositMonth)}</b>. Хранилище с депозита не списывается.</div>
       </section>
 
       {/* ── 5. Биллинг по месяцам ──────────────────────────────────── */}
@@ -199,15 +202,15 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
         {rowsDesc.length === 0 && <div className="cp__empty">Пока нет расходов — таблица заполнится по мере использования.</div>}
         {rowsDesc.length > 0 && (
           <table className="cp__table">
-            <thead><tr><th>Месяц</th><th>Хранилище</th><th>Токены Аси</th><th>Итого</th><th>С депозита</th><th>Остаток</th></tr></thead>
+            <thead><tr><th>Месяц</th><th>Токены Аси</th><th>Комиссия {commissionPct}%</th><th>Итого</th><th>С депозита</th><th>Остаток</th></tr></thead>
             <tbody>
               {rowsDesc.map((m) => (
                 <tr key={m.month}>
                   <td>{monthLabel(m.month)}</td>
-                  <td>{rub(storageRub)}</td>
                   <td>{rub(m.costRub)}</td>
-                  <td><b>{rub(m.cost)}</b></td>
-                  <td>{rub(m.net)}</td>
+                  <td>{rub(commission)}</td>
+                  <td><b>{rub(m.total)}</b></td>
+                  <td>{rub(m.fromDeposit)}</td>
                   <td className={m.balanceAfter < 0 ? 'cp__neg' : ''}>{rub(m.balanceAfter)}</td>
                 </tr>
               ))}
@@ -283,6 +286,7 @@ const CP_CSS = `
 .cp__fee{display:flex;flex-direction:column;gap:4px;margin-top:12px;padding:14px 16px;border-radius:12px;background:color-mix(in srgb,var(--st-text) 4%,transparent)}
 .cp__fee span{font-size:13px;color:var(--st-text-muted)}
 .cp__fee b{font-size:24px;color:var(--st-text)}
+.cp__feesub{font-size:12.5px;color:var(--st-text-muted);margin-top:8px;line-height:1.45}
 .cp__fee em{font-size:13px;font-weight:500;color:var(--st-text-muted);font-style:normal;margin-left:8px}
 .cp__table{width:100%;border-collapse:collapse;font-size:13px}
 .cp__table th{text-align:right;font-weight:600;color:var(--st-text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:6px 8px;border-bottom:1px solid var(--st-border)}
