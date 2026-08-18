@@ -531,7 +531,7 @@ export function Composer({
           />
 
           {template === 'profile' ? (
-            <ProfileEditor value={profile} onChange={setProfile} cats={catOptions} media={profileMedia} />
+            <ProfileEditor value={profile} onChange={setProfile} cats={catOptions} media={profileMedia} onApplySuggest={(sg) => { if (sg.title && !title.trim()) setTitle(sg.title); if (sg.tags && sg.tags.length) setTags((prev) => Array.from(new Set([...prev, ...sg.tags!]))) }} />
           ) : (
             <TiptapEditor
               initialHtml={initial?.body || ''}

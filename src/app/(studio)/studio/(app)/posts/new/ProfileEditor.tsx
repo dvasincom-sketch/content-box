@@ -544,7 +544,7 @@ function BlockCard({ block, index, total, patch, move, remove, cats, media, coll
   )
 }
 
-export function ProfileEditor({ value, onChange, cats, media }: { value: ProfileData | null; onChange: (v: ProfileData) => void; cats?: { id: number | string; title: string }[]; media?: PEMedia }) {
+export function ProfileEditor({ value, onChange, cats, media, onApplySuggest }: { value: ProfileData | null; onChange: (v: ProfileData) => void; cats?: { id: number | string; title: string }[]; media?: PEMedia; onApplySuggest?: (s: { title?: string; tags?: string[] }) => void }) {
   const v: ProfileData = value || {}
 
   // Блоки: берём v.blocks, иначе мигрируем из legacy-полей.
@@ -605,7 +605,7 @@ export function ProfileEditor({ value, onChange, cats, media }: { value: Profile
         {menuOpen === 'bottom' && addMenuEl('')}
       </div>
 
-      <AiComposeModal open={aiOpen} onClose={() => setAiOpen(false)} onInsert={(ai, mode) => writeBlocks(mode === 'replace' ? ai : [...blocks, ...ai])} />
+      <AiComposeModal open={aiOpen} onClose={() => setAiOpen(false)} existingBlocks={blocks} onApplySuggest={onApplySuggest} onInsert={(ai, mode) => writeBlocks(mode === 'replace' ? ai : [...blocks, ...ai])} />
     </div>
   )
 }

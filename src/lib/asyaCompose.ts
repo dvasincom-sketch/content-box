@@ -50,6 +50,7 @@ export async function composePageBlocks(args: {
   text: string
   messages?: ComposeMsg[]
   blocks?: RawBlock[]
+  existing?: { type: string; title: string }[]
   lang?: string
   /** Ключ тенанта (из студии). Если не задан — платформенный из env. */
   key?: string
@@ -63,6 +64,7 @@ export async function composePageBlocks(args: {
       text: args.text,
       messages: args.messages ?? [],
       blocks: args.blocks ?? [],
+      existing: args.existing ?? [],
       lang: args.lang || 'ru',
     }),
   })

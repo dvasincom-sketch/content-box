@@ -131,10 +131,12 @@ function BlockEditor({ b, patch }: { b: PBlock; patch: (p: Partial<PBlock>) => v
 
 const LOADER_STEPS = ['Читаю текст…', 'Определяю структуру…', 'Собираю блоки…', 'Проверяю разметку…', 'Почти готово…']
 
-export function AiComposeModal({ open, onClose, onInsert }: {
+export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existingBlocks }: {
   open: boolean
   onClose: () => void
   onInsert: (blocks: PBlock[], mode: InsertMode) => void
+  onApplySuggest?: (s: { title?: string; tags?: string[] }) => void
+  existingBlocks?: PBlock[]
 }) {
   const [text, setText] = React.useState('')
   const [phase, setPhase] = React.useState<'input' | 'review'>('input')
@@ -200,7 +202,7 @@ export function AiComposeModal({ open, onClose, onInsert }: {
 
   async function propose() {
     if (text.trim().length < 30) { setError('Вставьте текст — минимум 30 символов.'); return }
-    const ok = await call({ text: text.trim(), messages: [], blocks: [] })
+    const ok = await call({ text: text.trim(), messages: [], blocks: [], existing })
     if (ok) setPhase('review')
   }
 
@@ -209,13 +211,14 @@ export function AiComposeModal({ open, onClose, onInsert }: {
     if (!f) return
     setLog((l) => [...l, { role: 'user', content: f }])
     setFeedback('')
-    await call({ text: text.trim(), messages: [{ role: 'user', content: f }], blocks })
+    await call({ text: text.trim(), messages: [{ role: 'user', content: f }], blocks, existing })
   }
 
   if (!open || typeof document === 'undefined') return null
 
   const chars = text.trim().length
   const bigText = chars > 12000
+  const existing = (existingBlocks || []).map((b) => ({ type: b.type, title: (b as { title?: string }).title || '' }))
 
   return createPortal(
     <div className="aic__overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !loading) close() }}>
@@ -298,7 +301,10 @@ export function AiComposeModal({ open, onClose, onInsert }: {
                 {suggest.tags && suggest.tags.length > 0 && (
                   <div className="aic__sg-row"><span className="aic__sg-lbl">Теги</span><span className="aic__sg-tags">{suggest.tags.map((t, i) => <span key={i} className="aic__sg-tag">{t}</span>)}</span></div>
                 )}
-                <div className="aic__sg-note">Подсказки ИИ — заголовок и теги можно вписать в поля публикации справа.</div>
+                <div className="aic__sg-actions">
+                  {onApplySuggest && <button type="button" className="studio-btn studio-btn--ghost aic__sg-apply" onClick={() => onApplySuggest(suggest)}><Check size={14} /> Применить в поля публикации</button>}
+                  <span className="aic__sg-note">Заголовок подставится, если поле пустое; теги добавятся к существующим.</span>
+                </div>
               </div>
             )}
 
@@ -422,6 +428,8 @@ const AIC_CSS = `
 .aic__sg-tags{display:flex;gap:6px;flex-wrap:wrap}
 .aic__sg-tag{font-size:12px;background:color-mix(in srgb,var(--st-text) 8%,transparent);border-radius:999px;padding:2px 9px;color:var(--st-text)}
 .aic__sg-note{font-size:11.5px;color:var(--st-text-muted)}
+.aic__sg-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.aic__sg-apply{padding:5px 11px;font-size:12.5px}
 .aic__mode{display:flex;gap:8px;flex-wrap:wrap}
 .aic__mode label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--st-text-muted);border:1px solid var(--st-border);border-radius:9px;padding:7px 12px;cursor:pointer}
 .aic__mode label.is-on{border-color:#2f6bed;color:var(--st-text);background:color-mix(in srgb,#2f6bed 8%,transparent)}

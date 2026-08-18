@@ -31,7 +31,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   const rl = rateLimit(`compose:${clientIp(req.headers)}`, 20, 60_000)
   if (!rl.ok) return tooManyRequests(rl.retryAfter, 'Слишком часто. Подождите немного.')
 
-  const data = await readJson<{ text?: string; messages?: ComposeMsg[]; blocks?: RawBlock[] }>(req)
+  const data = await readJson<{ text?: string; messages?: ComposeMsg[]; blocks?: RawBlock[]; existing?: { type: string; title: string }[] }>(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
   const text = String(data.text || '').trim()
@@ -42,9 +42,10 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     .slice(-12)
     .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content).slice(0, 4000) }))
   const prev = Array.isArray(data.blocks) ? data.blocks.slice(0, 40) : []
+  const existing = Array.isArray(data.existing) ? data.existing.slice(0, 40) : []
 
   try {
-    const r = await composePageBlocks({ text: text.slice(0, 60000), messages, blocks: prev, lang: 'ru', key })
+    const r = await composePageBlocks({ text: text.slice(0, 60000), messages, blocks: prev, existing, lang: 'ru', key })
     const blocks = sanitizeComposeBlocks(r.blocks)
     const tokensIn = estimateTokens(text, ...messages.map((m) => m.content))
     const tokensOut = estimateTokens(r.note, JSON.stringify(r.blocks))
