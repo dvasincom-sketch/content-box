@@ -605,7 +605,7 @@ export function ProfileEditor({ value, onChange, cats, media }: { value: Profile
         {menuOpen === 'bottom' && addMenuEl('')}
       </div>
 
-      <AiComposeModal open={aiOpen} onClose={() => setAiOpen(false)} onInsert={(ai) => writeBlocks([...blocks, ...ai])} />
+      <AiComposeModal open={aiOpen} onClose={() => setAiOpen(false)} onInsert={(ai, mode) => writeBlocks(mode === 'replace' ? ai : [...blocks, ...ai])} />
     </div>
   )
 }

@@ -1,16 +1,27 @@
 'use client'
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { Sparkles, X, Send, Loader2, ArrowLeft, Check, Eye } from 'lucide-react'
+import { Sparkles, X, Send, Loader2, ArrowLeft, Check, Eye, Trash2, Pencil, ArrowUp, ArrowDown } from 'lucide-react'
 import { BLOCK_LABEL, type PBlock } from '@/lib/profileBlocks'
+import { RATE_IN_RUB_PER_M, RATE_OUT_RUB_PER_M } from '@/lib/aiPricing'
 
 /**
  * Модалка «Заполнить с помощью AI»: автор вставляет сплошной текст, Ася
- * (capability compose) предлагает разбивку на блоки, автор правит её в диалоге и
- * видит читаемое превью будущей страницы. По подтверждению блоки уходят в
- * конструктор через onInsert.
+ * (capability compose) предлагает разбивку на блоки, автор правит её в диалоге,
+ * видит читаемое превью, управляет составом (вкл/выкл, порядок, правка, удаление)
+ * и вставляет в конструктор (добавить/заменить). Стоимость токенов — оценочная.
  */
 type Msg = { role: 'assistant' | 'user'; content: string }
+type InsertMode = 'append' | 'replace'
+
+const RUB = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 2 })
+const rubFmt = (n: number) => RUB.format(n || 0)
+/** Грубая оценка стоимости разбора до запуска: вход ≈ символы/3, выход ≈ 40% входа. */
+function estCostRub(chars: number): number {
+  const tin = Math.max(0, chars / 3)
+  const tout = tin * 0.4
+  return (tin / 1e6) * RATE_IN_RUB_PER_M + (tout / 1e6) * RATE_OUT_RUB_PER_M
+}
 
 /* ── Мини-Markdown → HTML (жирный/курсив/подзаголовок/списки/абзацы) ── */
 function escapeHtml(s: string): string {
@@ -90,8 +101,32 @@ function BlockPreview({ b }: { b: PBlock }) {
     case 'divider':
       return <hr className="aic__pv-hr" />
     default:
-      return <div className="aic__pv-ph">{PLACEHOLDER_NOTE[b.type] || BLOCK_LABEL[b.type]}</div>
+      return <div className="aic__pv-ph">{anyB._hint || PLACEHOLDER_NOTE[b.type] || BLOCK_LABEL[b.type]}</div>
   }
+}
+
+/** Быстрая правка текста блока перед вставкой (детали — в конструкторе после). */
+function BlockEditor({ b, patch }: { b: PBlock; patch: (p: Partial<PBlock>) => void }) {
+  const anyB = b as any
+  const textField = b.type === 'text' ? 'body' : b.type === 'callout' ? 'text' : b.type === 'hero' ? 'lead' : null
+  const hasTitle = b.type !== 'divider' && b.type !== 'hero'
+  return (
+    <div className="aic__edit">
+      {hasTitle && (
+        <input className="studio-input" placeholder="Заголовок блока" value={anyB.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />
+      )}
+      {b.type === 'hero' && (
+        <>
+          <input className="studio-input" placeholder="Надзаголовок" value={anyB.eyebrow ?? ''} onChange={(e) => patch({ eyebrow: e.target.value } as Partial<PBlock>)} />
+          <input className="studio-input" placeholder="Подзаголовок" value={anyB.subtitle ?? ''} onChange={(e) => patch({ subtitle: e.target.value } as Partial<PBlock>)} />
+        </>
+      )}
+      {textField && (
+        <textarea className="studio-input aic__edit-ta" rows={4} placeholder="Текст (Markdown: **жирный**, *курсив*)" value={anyB[textField] ?? ''} onChange={(e) => patch({ [textField]: e.target.value } as Partial<PBlock>)} />
+      )}
+      <div className="aic__editnote">{textField ? 'Списки и детали удобнее доредактировать в конструкторе после вставки.' : 'Детали этого блока редактируются в конструкторе после вставки.'}</div>
+    </div>
+  )
 }
 
 const LOADER_STEPS = ['Читаю текст…', 'Определяю структуру…', 'Собираю блоки…', 'Проверяю разметку…', 'Почти готово…']
@@ -99,34 +134,48 @@ const LOADER_STEPS = ['Читаю текст…', 'Определяю струк
 export function AiComposeModal({ open, onClose, onInsert }: {
   open: boolean
   onClose: () => void
-  onInsert: (blocks: PBlock[]) => void
+  onInsert: (blocks: PBlock[], mode: InsertMode) => void
 }) {
   const [text, setText] = React.useState('')
   const [phase, setPhase] = React.useState<'input' | 'review'>('input')
   const [blocks, setBlocks] = React.useState<PBlock[]>([])
+  const [excluded, setExcluded] = React.useState<Set<string>>(() => new Set())
+  const [insertMode, setInsertMode] = React.useState<InsertMode>('append')
+  const [editingId, setEditingId] = React.useState<string | null>(null)
+  const [cost, setCost] = React.useState<number | null>(null)
   const [log, setLog] = React.useState<Msg[]>([])
   const [feedback, setFeedback] = React.useState('')
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [stepIdx, setStepIdx] = React.useState(0)
 
-  // Прокручиваем сообщения лоудера, пока идёт запрос — чтобы было видно, что сайт работает.
   React.useEffect(() => {
     if (!loading) { setStepIdx(0); return }
     const id = setInterval(() => setStepIdx((i) => (i + 1) % LOADER_STEPS.length), 2200)
     return () => clearInterval(id)
   }, [loading])
 
-  const reset = () => { setText(''); setPhase('input'); setBlocks([]); setLog([]); setFeedback(''); setError(null) }
+  const reset = () => {
+    setText(''); setPhase('input'); setBlocks([]); setExcluded(new Set()); setInsertMode('append')
+    setEditingId(null); setCost(null); setLog([]); setFeedback(''); setError(null)
+  }
   const close = () => { reset(); onClose() }
+
+  const included = blocks.filter((b) => !excluded.has(b.id))
+  const toggleExc = (id: string) => setExcluded((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const removeBlock = (id: string) => { setBlocks((bs) => bs.filter((b) => b.id !== id)); if (editingId === id) setEditingId(null) }
+  const moveBlock = (id: string, dir: -1 | 1) => setBlocks((bs) => {
+    const i = bs.findIndex((b) => b.id === id); const j = i + dir
+    if (i < 0 || j < 0 || j >= bs.length) return bs
+    const n = [...bs]; const t = n[i]; n[i] = n[j]; n[j] = t; return n
+  })
+  const patchBlock = (id: string, p: Partial<PBlock>) => setBlocks((bs) => bs.map((b) => b.id === id ? ({ ...b, ...p } as PBlock) : b))
 
   async function call(body: Record<string, unknown>): Promise<boolean> {
     setLoading(true); setError(null)
     try {
       const res = await fetch('/studio/api/compose', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify(body),
       })
       const j = await res.json().catch(() => null)
@@ -135,6 +184,8 @@ export function AiComposeModal({ open, onClose, onInsert }: {
         return false
       }
       setBlocks(Array.isArray(j.blocks) ? j.blocks : [])
+      setExcluded(new Set())
+      if (typeof j.costRub === 'number') setCost(j.costRub)
       setLog((l) => [...l, { role: 'assistant', content: String(j.note || 'Готово.') }])
       return true
     } catch {
@@ -161,7 +212,8 @@ export function AiComposeModal({ open, onClose, onInsert }: {
 
   if (!open || typeof document === 'undefined') return null
 
-  const bigText = text.trim().length > 12000
+  const chars = text.trim().length
+  const bigText = chars > 12000
 
   return createPortal(
     <div className="aic__overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !loading) close() }}>
@@ -187,7 +239,11 @@ export function AiComposeModal({ open, onClose, onInsert }: {
             />
             {error && <div className="aic__err">{error}</div>}
             <div className="aic__actions">
-              <span className="aic__count">{text.trim().length.toLocaleString('ru-RU')} симв.{bigText ? ' · большой текст, разбор может занять до минуты' : ''}</span>
+              <span className="aic__count">
+                {chars.toLocaleString('ru-RU')} симв.
+                {chars >= 30 ? ` · ≈ ${rubFmt(estCostRub(chars))} (оценка)` : ''}
+                {bigText ? ' · большой текст, разбор может занять до минуты' : ''}
+              </span>
               <button type="button" className="studio-btn studio-btn--primary" disabled={loading} onClick={propose}>
                 {loading ? <><Loader2 size={16} className="aic__spin" /> Разбираю…</> : <><Sparkles size={16} /> Предложить разбивку</>}
               </button>
@@ -202,15 +258,35 @@ export function AiComposeModal({ open, onClose, onInsert }: {
             </div>
 
             <div className="aic__preview">
-              <div className="aic__preview-h"><Eye size={14} /> Превью страницы · блоков: {blocks.length}</div>
+              <div className="aic__preview-h">
+                <span><Eye size={14} /> Превью · выбрано {included.length} из {blocks.length}</span>
+                {cost != null && <span className="aic__cost">разбор ≈ {rubFmt(cost)}</span>}
+              </div>
               {blocks.length === 0 && <div className="aic__empty">Пусто — уточните текст или правку.</div>}
               <div className="aic__pvwrap">
-                {blocks.map((b, i) => (
-                  <div key={b.id || i} className="aic__pvblock">
-                    <span className="aic__pv-kind">{BLOCK_LABEL[b.type]}</span>
-                    <div className="aic__pv-content"><BlockPreview b={b} /></div>
-                  </div>
-                ))}
+                {blocks.map((b, i) => {
+                  const off = excluded.has(b.id)
+                  const editing = editingId === b.id
+                  return (
+                    <div key={b.id || i} className={`aic__pvblock${off ? ' is-off' : ''}`}>
+                      <div className="aic__pvbar">
+                        <label className="aic__pvchk">
+                          <input type="checkbox" checked={!off} onChange={() => toggleExc(b.id)} />
+                          <span className="aic__pv-kind2">{BLOCK_LABEL[b.type]}</span>
+                        </label>
+                        <div className="aic__pvctrls">
+                          <button type="button" title="Выше" disabled={i === 0} onClick={() => moveBlock(b.id, -1)}><ArrowUp size={14} /></button>
+                          <button type="button" title="Ниже" disabled={i === blocks.length - 1} onClick={() => moveBlock(b.id, 1)}><ArrowDown size={14} /></button>
+                          <button type="button" title="Править текст" className={editing ? 'is-on' : ''} onClick={() => setEditingId(editing ? null : b.id)}><Pencil size={14} /></button>
+                          <button type="button" title="Удалить" className="aic__delbtn" onClick={() => removeBlock(b.id)}><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                      {editing
+                        ? <BlockEditor b={b} patch={(p) => patchBlock(b.id, p)} />
+                        : <div className="aic__pv-content"><BlockPreview b={b} /></div>}
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -231,10 +307,15 @@ export function AiComposeModal({ open, onClose, onInsert }: {
               </button>
             </div>
 
+            <div className="aic__mode">
+              <label className={insertMode === 'append' ? 'is-on' : ''}><input type="radio" name="aicmode" checked={insertMode === 'append'} onChange={() => setInsertMode('append')} /> Добавить в конец</label>
+              <label className={insertMode === 'replace' ? 'is-on' : ''}><input type="radio" name="aicmode" checked={insertMode === 'replace'} onChange={() => setInsertMode('replace')} /> Заменить страницу</label>
+            </div>
+
             <div className="aic__actions aic__actions--split">
               <button type="button" className="studio-btn studio-btn--ghost" disabled={loading} onClick={reset}><ArrowLeft size={16} /> Заново</button>
-              <button type="button" className="studio-btn studio-btn--primary" disabled={loading || blocks.length === 0} onClick={() => { onInsert(blocks); close() }}>
-                <Check size={16} /> Вставить в страницу
+              <button type="button" className="studio-btn studio-btn--primary" disabled={loading || included.length === 0} onClick={() => { onInsert(included, insertMode); close() }}>
+                <Check size={16} /> Вставить ({included.length})
               </button>
             </div>
           </div>
@@ -274,12 +355,24 @@ const AIC_CSS = `
 .aic__msg--assistant{align-self:flex-start;background:color-mix(in srgb,var(--st-accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--st-accent) 22%,transparent);color:var(--st-text)}
 .aic__msg--user{align-self:flex-end;background:color-mix(in srgb,var(--st-text) 7%,transparent);color:var(--st-text)}
 .aic__preview{border:1px solid var(--st-border);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:color-mix(in srgb,var(--st-text) 2%,transparent)}
-.aic__preview-h{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--st-text-muted);padding:2px 2px}
+.aic__preview-h{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;font-weight:700;color:var(--st-text-muted);padding:2px 2px}
+.aic__preview-h span{display:inline-flex;align-items:center;gap:6px}
+.aic__cost{color:#2f6bed}
 .aic__empty{font-size:13px;color:var(--st-text-muted);padding:8px}
-.aic__pvwrap{display:flex;flex-direction:column;gap:10px;max-height:44vh;overflow:auto;padding-right:4px}
-.aic__pvblock{position:relative;border:1px solid var(--st-border);border-radius:10px;padding:12px 12px 12px 12px;background:var(--st-surface)}
-.aic__pv-kind{position:absolute;top:-9px;left:10px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#2f6bed;background:color-mix(in srgb,#2f6bed 14%,transparent);border-radius:999px;padding:2px 8px}
-.aic__pv-content{font-size:13.5px;color:var(--st-text);line-height:1.55}
+.aic__pvwrap{display:flex;flex-direction:column;gap:10px;max-height:42vh;overflow:auto;padding-right:4px}
+.aic__pvblock{border:1px solid var(--st-border);border-radius:10px;background:var(--st-surface);overflow:hidden}
+.aic__pvblock.is-off{opacity:.5}
+.aic__pvbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px 6px 10px;border-bottom:1px solid var(--st-border);background:color-mix(in srgb,var(--st-text) 3%,transparent)}
+.aic__pvchk{display:flex;align-items:center;gap:8px;cursor:pointer}
+.aic__pvchk input{cursor:pointer}
+.aic__pv-kind2{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#2f6bed}
+.aic__pvctrls{display:flex;gap:2px}
+.aic__pvctrls button{border:1px solid transparent;background:transparent;color:var(--st-text-muted);border-radius:7px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer}
+.aic__pvctrls button:hover:not(:disabled){background:color-mix(in srgb,var(--st-text) 8%,transparent);color:var(--st-text)}
+.aic__pvctrls button:disabled{opacity:.35;cursor:default}
+.aic__pvctrls button.is-on{color:#2f6bed;background:color-mix(in srgb,#2f6bed 12%,transparent)}
+.aic__pvctrls .aic__delbtn:hover{color:#e5484d;background:color-mix(in srgb,#e5484d 12%,transparent)}
+.aic__pv-content{padding:12px;font-size:13.5px;color:var(--st-text);line-height:1.55}
 .aic__pv-content p{margin:0 0 8px}
 .aic__pv-content p:last-child{margin-bottom:0}
 .aic__pv-content h4{margin:6px 0;font-size:14.5px}
@@ -303,9 +396,16 @@ const AIC_CSS = `
 .aic__pv-quote cite{display:block;margin-top:4px;font-size:12px;color:var(--st-text-muted);font-style:normal}
 .aic__pv-hr{border:none;border-top:1px solid var(--st-border);margin:2px 0}
 .aic__pv-ph{font-size:13px;color:var(--st-text-muted);font-style:italic}
+.aic__edit{padding:12px;display:flex;flex-direction:column;gap:8px}
+.aic__edit .studio-input{width:100%}
+.aic__edit-ta{resize:vertical;font-family:inherit;line-height:1.45;min-height:90px}
+.aic__editnote{font-size:11.5px;color:var(--st-text-muted)}
 .aic__refine{display:flex;gap:8px;align-items:flex-end}
 .aic__fb{resize:vertical;flex:1;font-family:inherit;line-height:1.45}
 .aic__send{flex:none;width:44px;justify-content:center}
+.aic__mode{display:flex;gap:8px;flex-wrap:wrap}
+.aic__mode label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--st-text-muted);border:1px solid var(--st-border);border-radius:9px;padding:7px 12px;cursor:pointer}
+.aic__mode label.is-on{border-color:#2f6bed;color:var(--st-text);background:color-mix(in srgb,#2f6bed 8%,transparent)}
 .aic__spin{animation:aicspin 1s linear infinite}
 @keyframes aicspin{to{transform:rotate(360deg)}}
 .aic__loader{position:absolute;inset:0;background:color-mix(in srgb,var(--st-surface) 88%,transparent);backdrop-filter:blur(2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--st-text);z-index:5}

@@ -4,6 +4,7 @@ import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
 import { composePageBlocks, pingCompose, type ComposeMsg, type RawBlock } from '@/lib/asyaCompose'
 import { sanitizeComposeBlocks } from '@/lib/composeBlocks'
 import { logAiUsage, estimateTokens } from '@/lib/logAiUsage'
+import { costRub } from '@/lib/aiPricing'
 
 /**
  * AI-конструктор страницы: сплошной текст → блоки. Только для автора студии.
@@ -45,16 +46,18 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   try {
     const r = await composePageBlocks({ text: text.slice(0, 24000), messages, blocks: prev, lang: 'ru', key })
     const blocks = sanitizeComposeBlocks(r.blocks)
+    const tokensIn = estimateTokens(text, ...messages.map((m) => m.content))
+    const tokensOut = estimateTokens(r.note, JSON.stringify(r.blocks))
     void logAiUsage(payload, {
       tenant: tenantId,
       surface: 'compose',
       action: 'compose',
-      tokensIn: estimateTokens(text, ...messages.map((m) => m.content)),
-      tokensOut: estimateTokens(r.note, JSON.stringify(r.blocks)),
+      tokensIn,
+      tokensOut,
       actorType: 'author',
       meta: `${blocks.length} блоков`,
     })
-    return apiOk({ note: r.note, blocks })
+    return apiOk({ note: r.note, blocks, tokensIn, tokensOut, costRub: costRub(tokensIn, tokensOut) })
   } catch (e) {
     const reason = e instanceof Error ? e.message : String(e)
     return apiError('Не удалось разобрать текст: ' + reason, 502)
