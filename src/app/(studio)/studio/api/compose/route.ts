@@ -31,7 +31,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   const rl = rateLimit(`compose:${clientIp(req.headers)}`, 40, 60_000)
   if (!rl.ok) return tooManyRequests(rl.retryAfter, 'Слишком часто. Подождите немного.')
 
-  const data = await readJson<{ text?: string; messages?: ComposeMsg[]; blocks?: RawBlock[]; existing?: { type: string; title: string }[]; part?: { i?: number } }>(req)
+  const data = await readJson<{ text?: string; messages?: ComposeMsg[]; blocks?: RawBlock[]; existing?: { type: string; title: string }[]; mode?: 'verbatim' | 'condense' | 'brief'; brief?: string; part?: { i?: number } }>(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
   const text = String(data.text || '').trim()
@@ -43,6 +43,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content).slice(0, 4000) }))
   const prev = Array.isArray(data.blocks) ? data.blocks.slice(0, 40) : []
   const existing = Array.isArray(data.existing) ? data.existing.slice(0, 40) : []
+  const mode = data.mode === 'condense' || data.mode === 'brief' ? data.mode : 'verbatim'
+  const brief = String(data.brief || '').slice(0, 2000)
 
   // Потоковый разбор по частям: клиент шлёт part.i, сервер сам режет текст и
   // обрабатывает один фрагмент за запрос (быстрый ответ, без долгого соединения).
@@ -53,7 +55,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     const i = Math.max(0, Math.min(Number(data.part.i), nParts - 1))
     const frag = chunks[i]
     try {
-      const r = await composePageBlocks({ text: frag, part: { i, n: nParts }, existing: i === 0 ? existing : [], lang: 'ru', key })
+      const r = await composePageBlocks({ text: frag, part: { i, n: nParts }, existing: i === 0 ? existing : [], lang: 'ru', mode, brief, key })
       const blocks = sanitizeComposeBlocks(r.blocks)
       const tokensIn = estimateTokens(frag)
       const tokensOut = estimateTokens(r.note, JSON.stringify(r.blocks))
@@ -73,7 +75,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   }
 
   try {
-    const r = await composePageBlocks({ text: text.slice(0, 60000), messages, blocks: prev, existing, lang: 'ru', key })
+    const r = await composePageBlocks({ text: text.slice(0, 60000), messages, blocks: prev, existing, lang: 'ru', mode, brief, key })
     const blocks = sanitizeComposeBlocks(r.blocks)
     const tokensIn = estimateTokens(text, ...messages.map((m) => m.content))
     const tokensOut = estimateTokens(r.note, JSON.stringify(r.blocks))

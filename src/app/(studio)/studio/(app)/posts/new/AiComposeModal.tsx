@@ -130,6 +130,8 @@ function BlockEditor({ b, patch }: { b: PBlock; patch: (p: Partial<PBlock>) => v
 }
 
 /** Колбэки прогресса по частям. */
+type TextMode = 'verbatim' | 'condense' | 'brief'
+
 type ChunkHandlers = {
   onPlan?: (parts: number) => void
   onPart?: (blocks: PBlock[], i: number, n: number) => void
@@ -143,7 +145,7 @@ type ChunkHandlers = {
  * соединения — прокси не рвёт и не буферизует ответ. Аккумулятор живёт ВНЕ рендера
  * (иначе react-hooks/immutability ругается на мутацию массива из рендера).
  */
-async function runComposeChunks(text: string, existing: { type: string; title: string }[], h: ChunkHandlers): Promise<void> {
+async function runComposeChunks(text: string, existing: { type: string; title: string }[], opt: { mode: TextMode; brief: string }, h: ChunkHandlers): Promise<void> {
   const all: PBlock[] = []
   let n = 1
   let note = ''
@@ -155,7 +157,7 @@ async function runComposeChunks(text: string, existing: { type: string; title: s
     try {
       const res = await fetch('/studio/api/compose', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ text, part: { i }, existing: i === 0 ? existing : [] }),
+        body: JSON.stringify({ text, part: { i }, existing: i === 0 ? existing : [], mode: opt.mode, brief: opt.brief }),
       })
       j = (await res.json().catch(() => null)) as Record<string, unknown> | null
       if (!res.ok || !j || j.ok !== true) { h.onError?.(String((j && j.error) || 'Не удалось обработать текст. Попробуйте ещё раз.')); return }
@@ -219,6 +221,8 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
   const [error, setError] = React.useState<string | null>(null)
   const [stepIdx, setStepIdx] = React.useState(0)
   const [progress, setProgress] = React.useState<{ i: number; n: number } | null>(null)
+  const [mode, setMode] = React.useState<TextMode>('verbatim')
+  const [brief, setBrief] = React.useState('')
 
   React.useEffect(() => {
     if (!loading) { setStepIdx(0); return }
@@ -229,6 +233,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
   const reset = () => {
     setText(''); setPhase('input'); setBlocks([]); setExcluded(new Set()); setInsertMode('append')
     setEditingId(null); setCost(null); setSuggest(null); setInitialProposal([]); setLog([]); setFeedback(''); setError(null); setProgress(null)
+    setMode('verbatim'); setBrief('')
   }
   const close = () => { reset(); onClose() }
 
@@ -278,7 +283,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
     setLoading(true); setError(null); setProgress(null); setSuggest(null); setCost(null)
     setBlocks([]); setExcluded(new Set()); setLog([]); setInitialProposal([])
     try {
-      await runComposeChunks(t, existing, {
+      await runComposeChunks(t, existing, { mode, brief: brief.trim() }, {
         onPlan: (parts) => { setPhase('review'); setProgress({ i: 0, n: parts }) },
         onPart: (bl, i, n) => { setBlocks((prev) => [...prev, ...bl]); setProgress({ i, n }) },
         onDone: ({ note, suggest, cost, truncated, blocks }) => {
@@ -318,6 +323,11 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
   const chars = text.trim().length
   const bigText = chars > 12000
   const existing = (existingBlocks || []).map((b) => ({ type: b.type, title: (b as { title?: string }).title || '' }))
+  const modeHint = mode === 'condense'
+    ? 'Ася сократит текст, оставит суть и факты и разложит по разным блокам.'
+    : mode === 'brief'
+      ? 'Ася выполнит ваше задание над текстом и оформит его блоками.'
+      : 'Текст переносится дословно; Ася разложит его по разным блокам конструктора.'
 
   return createPortal(
     <div className="aic__overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !loading) close() }}>
@@ -330,7 +340,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
 
         {phase === 'input' ? (
           <div className="aic__body">
-            <p className="aic__hint">Вставьте текст статьи, биографии или обзора — ИИ разберёт его на блоки конструктора и предложит структуру. Текст переносится дословно, без сокращения. Результат увидите как превью до вставки.</p>
+            <p className="aic__hint">Вставьте текст статьи, биографии или обзора. {modeHint} Результат увидите как превью до вставки.</p>
             <div className="aic__paid">Это отдельная услуга — оплачивается по тарифам (стоимость токенов списывается с депозита проекта; см. Настройки → Тариф).</div>
             <textarea
               className="studio-input aic__ta"
@@ -341,6 +351,21 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
               disabled={loading}
               autoFocus
             />
+            <div className="aic__tmode">
+              <label className={mode === 'verbatim' ? 'is-on' : ''}><input type="radio" name="aictmode" checked={mode === 'verbatim'} disabled={loading} onChange={() => setMode('verbatim')} /> Как есть</label>
+              <label className={mode === 'condense' ? 'is-on' : ''}><input type="radio" name="aictmode" checked={mode === 'condense'} disabled={loading} onChange={() => setMode('condense')} /> Сократить</label>
+              <label className={mode === 'brief' ? 'is-on' : ''}><input type="radio" name="aictmode" checked={mode === 'brief'} disabled={loading} onChange={() => setMode('brief')} /> По заданию</label>
+            </div>
+            {mode === 'brief' && (
+              <textarea
+                className="studio-input aic__brief"
+                rows={2}
+                placeholder="Задание для Аси: напр. «сократи втрое», «сделай 3 раздела с подзаголовками», «оформи факты и хронологию», «напиши обзор по этим фактам»…"
+                value={brief}
+                onChange={(e) => setBrief(e.target.value)}
+                disabled={loading}
+              />
+            )}
             {error && <div className="aic__err">{error}</div>}
             <div className="aic__actions">
               <span className="aic__count">
@@ -484,6 +509,10 @@ const AIC_CSS = `
 .aic__hint{font-size:13px;color:var(--st-text-muted);line-height:1.5;margin:0}
 .aic__paid{font-size:12.5px;color:var(--st-text);background:color-mix(in srgb,#2f6bed 8%,transparent);border:1px solid color-mix(in srgb,#2f6bed 20%,transparent);border-radius:10px;padding:9px 12px;line-height:1.45}
 .aic__ta{resize:vertical;min-height:180px;font-family:inherit;line-height:1.5}
+.aic__tmode{display:flex;gap:8px;flex-wrap:wrap}
+.aic__tmode label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--st-text-muted);border:1px solid var(--st-border);border-radius:9px;padding:7px 12px;cursor:pointer}
+.aic__tmode label.is-on{border-color:#2f6bed;color:var(--st-text);background:color-mix(in srgb,#2f6bed 8%,transparent)}
+.aic__brief{resize:vertical;min-height:56px;font-family:inherit;line-height:1.45}
 .aic__actions{display:flex;align-items:center;justify-content:flex-end;gap:12px}
 .aic__actions--split{justify-content:space-between}
 .aic__count{font-size:12px;color:var(--st-text-muted);margin-right:auto}

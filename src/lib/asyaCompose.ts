@@ -74,6 +74,10 @@ export async function composePageBlocks(args: {
   blocks?: RawBlock[]
   existing?: { type: string; title: string }[]
   lang?: string
+  /** Режим редактирования: verbatim (как есть) | condense (сократить) | brief (по заданию). */
+  mode?: 'verbatim' | 'condense' | 'brief'
+  /** Задание автора для режима brief. */
+  brief?: string
   /** Потоковый режим: обрабатывать ЭТОТ фрагмент как часть i из n (оркестрация у нас). */
   part?: { i: number; n: number }
   /** Ключ тенанта (из студии). Если не задан — платформенный из env. */
@@ -90,6 +94,8 @@ export async function composePageBlocks(args: {
       blocks: args.blocks ?? [],
       existing: args.existing ?? [],
       lang: args.lang || 'ru',
+      ...(args.mode ? { mode: args.mode } : {}),
+      ...(args.brief ? { brief: args.brief } : {}),
       ...(args.part ? { part: args.part } : {}),
     }),
   })
