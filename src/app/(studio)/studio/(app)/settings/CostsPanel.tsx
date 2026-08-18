@@ -61,8 +61,9 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
   const covered = Math.min(monthlyCost, commission)
   const monthlyNet = Math.max(0, monthlyCost - commission)
 
-  const grossSpend = aiTotals.costRub + storageRub + extras
-  const spent = Math.max(0, grossSpend - commission)
+  // Списано с депозита = сумма ежемесячных нетто (как в таблице) — чтобы сводка
+  // и помесячный биллинг совпадали.
+  const spent = months.reduce((sum, m) => sum + Math.max(0, m.costRub + storageRub + extras - commission), 0)
   const balance = deposit - spent
 
   const rows = months.map((m, i) => {
@@ -262,6 +263,7 @@ const CP_CSS = `
 .cp__tile-lbl{font-size:12px;color:var(--st-text-muted);margin-top:2px}
 .cp__break{margin-top:12px;display:flex;flex-direction:column;gap:2px}
 .cp__brk-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--st-border);font-size:13px}
+.cp__brk-row:last-child{border-bottom:none}
 .cp__brk-ico{color:var(--st-text-muted)}
 .cp__brk-lbl{flex:1;color:var(--st-text)}
 .cp__brk-cnt{font-size:12px;color:var(--st-text-muted)}

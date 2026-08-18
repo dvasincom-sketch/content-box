@@ -71,8 +71,8 @@ export function AiKeyCard() {
           {busy ? <Loader2 size={16} className="aik__spin" /> : <Check size={16} />} Сохранить
         </button>
         {status?.source === 'studio' && (
-          <button type="button" className="studio-btn studio-btn--ghost aik__clear" disabled={busy} onClick={() => void save('', true)} title="Удалить ключ из студии">
-            <Trash2 size={16} />
+          <button type="button" className="catmgr__icon-btn catmgr__icon-btn--danger" disabled={busy} onClick={() => void save('', true)} title="Удалить ключ из студии">
+            <Trash2 size={15} />
           </button>
         )}
       </div>
