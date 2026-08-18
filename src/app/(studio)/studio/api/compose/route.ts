@@ -11,6 +11,7 @@ import { logAiUsage, estimateTokens } from '@/lib/logAiUsage'
  *  POST { text, messages?, blocks? } → { ok, note, blocks }
  */
 export const runtime = 'nodejs'
+export const maxDuration = 120
 
 /** Ключ Аси для тенанта: сначала из студии (site-settings.aiComposeKey), затем платформенный env. */
 async function tenantComposeKey(payload: Payload, tenantId: number): Promise<string> {
