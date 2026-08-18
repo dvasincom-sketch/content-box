@@ -22,6 +22,21 @@ export function composeEnabled(): boolean {
   return composeKey().length > 0
 }
 
+/**
+ * Проверка доступности эндпоинта Аси /compose (GET возвращает служебную инфу).
+ * Нужна для диагностики: 200 → роут задеплоен, 404 → сервис Аси без нового роута.
+ */
+export async function pingCompose(): Promise<{ reachable: boolean; status: number; host: string }> {
+  let host = ''
+  try { host = new URL(composeUrl()).host } catch { /* ignore */ }
+  try {
+    const res = await fetch(composeUrl(), { method: 'GET' })
+    return { reachable: res.ok, status: res.status, host }
+  } catch {
+    return { reachable: false, status: 0, host }
+  }
+}
+
 export type ComposeMsg = { role: 'user' | 'assistant'; content: string }
 /** Сырой блок от Аси (без id, поля произвольные) — санитайз на нашей стороне. */
 export type RawBlock = { type: string; [k: string]: unknown }

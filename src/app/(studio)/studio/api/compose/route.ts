@@ -1,7 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '../_lib'
 import type { Payload } from 'payload'
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
-import { composePageBlocks, type ComposeMsg, type RawBlock } from '@/lib/asyaCompose'
+import { composePageBlocks, pingCompose, type ComposeMsg, type RawBlock } from '@/lib/asyaCompose'
 import { sanitizeComposeBlocks } from '@/lib/composeBlocks'
 import { logAiUsage, estimateTokens } from '@/lib/logAiUsage'
 
@@ -54,8 +54,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       meta: `${blocks.length} блоков`,
     })
     return apiOk({ note: r.note, blocks })
-  } catch {
-    return apiError('Не удалось разобрать текст. Попробуйте ещё раз.', 502)
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e)
+    return apiError('Не удалось разобрать текст: ' + reason, 502)
   }
 })
 
@@ -80,8 +81,11 @@ export const GET = withAuthor(async ({ payload, tenantId }) => {
     const base = (process.env.ASYA_SUMMARY_URL || 'https://xn--80a8a2b.online/api/summary').replace(/\/summary\/?$/, '')
     composeUrlHost = new URL(process.env.ASYA_COMPOSE_URL || `${base}/compose`).host
   } catch { /* ignore */ }
+  const upstream = await pingCompose()
   return apiOk({
     enabled: tenantKeyLen > 0 || composeKeyLen > 0,
+    upstreamReachable: upstream.reachable,
+    upstreamStatus: upstream.status,
     keySource: tenantKeyLen > 0 ? 'studio' : composeKeyLen > 0 ? 'env' : 'none',
     hasStudioKey: tenantKeyLen > 0,
     hasComposeKey: composeKeyLen > 0,
