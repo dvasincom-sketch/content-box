@@ -20,6 +20,8 @@ const nf = new Intl.NumberFormat('ru-RU')
 const rf = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 2 })
 const fmt = (n: number) => nf.format(Math.round(n || 0))
 const rub = (n: number) => rf.format(n || 0)
+const GB = 1024 * 1024 * 1024
+const gb = (bytes: number) => `${(Math.max(0, bytes || 0) / GB).toFixed(1).replace('.', ',')} ГБ`
 const monthLabel = (m: string) => {
   const [y, mo] = m.split('-')
   const names = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
@@ -76,7 +78,6 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
 
   const commissionPct = Math.round(COMMISSION_RATE * 100)
   const usagePct = t && t.grade.ceilingGb > 0 ? Math.min(100, Math.round((t.usedGb / t.grade.ceilingGb) * 100)) : 0
-  const feeFromStorage = t ? t.storageFeeRub >= t.commissionFeeRub : true
 
   return (
     <div className="cp">
@@ -98,7 +99,7 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
           <div className="cp__hero-tile">
             <div className="cp__hero-lbl">К списанию с депозита</div>
             <div className="cp__hero-val">{rub(monthlyNet)}</div>
-            <div className="cp__hero-sub">{commission > 0 ? `покрыто подписками ${rub(covered)}` : 'подписок пока нет'}</div>
+            <div className="cp__hero-sub">{commission > 0 ? `покрыто подписками ${rub(covered)} (оценка)` : 'подписок пока нет'}</div>
           </div>
           <div className="cp__hero-tile cp__hero-tile--dep">
             <div className="cp__hero-lbl">Остаток депозита</div>
@@ -126,11 +127,11 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
             <p className="cp__topup-note">Приём платежей подключается вместе с биллингом. Пока пополнение депозита делает администратор платформы.</p>
           </div>
         )}
-        {deposit > 0 && <div className="cp__bar"><div className="cp__bar-fill" style={{ width: `${Math.max(0, Math.min(100, (spent / deposit) * 100))}%` }} /></div>}
+        {deposit > 0 && <div className="cp__bar" title="Остаток депозита"><div className="cp__bar-fill cp__bar-fill--ok" style={{ width: `${Math.max(0, Math.min(100, (balance / deposit) * 100))}%` }} /></div>}
 
         {/* Мини-статистика */}
         <div className="cp__stats">
-          <div><b>{t ? formatBytes(t.usedBytes) : '—'}</b><span>хранилище</span></div>
+          <div><b>{t ? gb(t.usedBytes) : '—'}</b><span>хранилище</span></div>
           <div><b>{fmt(aiTotals.tokensIn + aiTotals.tokensOut)}</b><span>токенов Аси</span></div>
           <div><b>{fmt(aiTotals.calls)}</b><span>вызовов Аси</span></div>
           <div><b>{rub(ai.mrrRub)}</b><span>выручка/мес</span></div>
@@ -143,7 +144,7 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
         {t ? (
           <>
             <div className="cp__two">
-              <div className="cp__tile"><div className="cp__tile-val">{formatBytes(t.usedBytes)}</div><div className="cp__tile-lbl">Занято ({t.usedGb} ГБ)</div></div>
+              <div className="cp__tile"><div className="cp__tile-val">{gb(t.usedBytes)}</div><div className="cp__tile-lbl">Занято место</div></div>
               <div className="cp__tile"><div className="cp__tile-val">{t.grade.ceilingGb} ГБ</div><div className="cp__tile-lbl">Потолок грейда «{t.grade.label}»</div></div>
             </div>
             <div className="cp__bar cp__bar--tall"><div className="cp__bar-fill" style={{ width: `${usagePct}%`, background: t.overCeiling ? '#dc2626' : usagePct > 80 ? '#f59e0b' : '#7c3aed' }} /></div>
@@ -155,7 +156,8 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
                 ))}
               </div>
             )}
-            <div className="cp__line cp__line--extra"><span className="cp__l-ico"><Zap size={15} /></span><span className="cp__l-name">Доп. услуги (буст транскодинга)</span><span className="cp__l-meta">по факту использования</span><span className="cp__l-val">{rub(extras)}</span></div>
+            <div className="cp__line cp__line--extra"><span className="cp__l-ico"><HardDrive size={15} /></span><span className="cp__l-name">Стоимость хранилища</span><span className="cp__l-meta">{gb(t.usedBytes)} × {STORAGE_RATE_RUB} ₽/ГБ</span><span className="cp__l-val">{rub(storageRub)}/мес</span></div>
+            <div className="cp__line"><span className="cp__l-ico"><Zap size={15} /></span><span className="cp__l-name">Доп. услуги (буст транскодинга)</span><span className="cp__l-meta">по факту использования</span><span className="cp__l-val">{rub(extras)}</span></div>
           </>
         ) : <div className="cp__empty">Не удалось посчитать хранилище — обновите страницу.</div>}
       </section>
@@ -180,19 +182,15 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
         <div className="cp__key"><AiKeyCard /></div>
       </section>
 
-      {/* ── 4. Платформенный сбор ──────────────────────────────────── */}
+      {/* ── 4. Комиссия платформы (покрытие расходов) ──────────────── */}
       <section className="settings__block cp__block">
-        <div className="cp__head"><Percent size={17} /> Платформенный сбор за текущий месяц</div>
-        {t ? (
-          <>
-            <p className="cp__muted">Сбор = наибольшее из двух: {commissionPct}% от выручки или объём × {STORAGE_RATE_RUB} ₽/ГБ. Есть подписчики — платит комиссия; нет — платит хранилище.</p>
-            <div className="cp__two">
-              <div className={`cp__tile ${feeFromStorage && !t.trialActive ? 'cp__tile--pick' : ''}`}><div className="cp__tile-val">{rub(t.storageFeeRub)}</div><div className="cp__tile-lbl">Хранилище: {t.usedGb} ГБ × {STORAGE_RATE_RUB} ₽</div></div>
-              <div className={`cp__tile ${!feeFromStorage && !t.trialActive ? 'cp__tile--pick' : ''}`}><div className="cp__tile-val">{rub(t.commissionFeeRub)}</div><div className="cp__tile-lbl">{commissionPct}% от выручки {rub(ai.mrrRub)}/мес</div></div>
-            </div>
-            <div className="cp__fee"><span>Расчётный сбор за месяц</span><b>{t.trialActive ? '0 ₽' : rub(t.feeRub)}{t.trialActive && <em> в триале</em>}</b></div>
-          </>
-        ) : <div className="cp__empty">—</div>}
+        <div className="cp__head"><Percent size={17} /> Комиссия платформы</div>
+        <p className="cp__muted">Платформа берёт {commissionPct}% с выручки платных подписок. Эта комиссия идёт на покрытие расходов проекта (хранилище + токены + доп. услуги); остаток списывается с депозита. Пока приём платежей не подключён — суммы оценочные.</p>
+        <div className="cp__two">
+          <div className="cp__tile"><div className="cp__tile-val">{rub(commission)}</div><div className="cp__tile-lbl">{commissionPct}% × выручка {rub(ai.mrrRub)}/мес (оценка)</div></div>
+          <div className="cp__tile"><div className="cp__tile-val">{rub(monthlyCost)}</div><div className="cp__tile-lbl">Расход проекта за месяц</div></div>
+        </div>
+        <div className="cp__fee"><span>Покрыто комиссией {rub(covered)} · к списанию с депозита</span><b>{rub(monthlyNet)}</b></div>
       </section>
 
       {/* ── 5. Биллинг по месяцам ──────────────────────────────────── */}
@@ -250,6 +248,7 @@ const CP_CSS = `
 .cp__bar{height:8px;border-radius:999px;background:color-mix(in srgb,var(--st-text) 10%,transparent);overflow:hidden;margin:4px 0}
 .cp__bar--tall{height:10px;margin:12px 0 6px}
 .cp__bar-fill{height:100%;background:#2f6bed;border-radius:999px;transition:width .3s ease}
+.cp__bar-fill--ok{background:#1a7f4b}
 .cp__bar-cap{display:flex;justify-content:space-between;font-size:12px;color:var(--st-text-muted);margin-bottom:8px}
 .cp__bar-cap span{display:inline-flex;align-items:center;gap:4px}
 .cp__stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:8px;padding-top:12px;border-top:1px dashed var(--st-border)}
