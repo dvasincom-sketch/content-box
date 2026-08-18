@@ -2,6 +2,7 @@ import { withAuthor, readJson, apiOk, apiError, canMutateDoc } from '@/app/(stud
 import { getObjectText } from '@/lib/s3'
 import { asyaEnabled, summarizeTranscript, vttToPlainText, pushVideoKnowledge } from '@/lib/asya'
 import { errorMessage } from '@/lib/errorMessage'
+import { logAiUsage, estimateTokens } from '@/lib/logAiUsage'
 
 /**
  * Студийная (пере)генерация саммари от Аси для своего видео. Автор не гейтится по
@@ -37,6 +38,15 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     const r = await summarizeTranscript({ transcript, title: String(video.title || ''), source: `video:${videoId}`, lang: String(track.lang || 'ru'), refresh: true })
     const summary = { tldr: r.tldr, points: r.points, text: r.text, hash: r.hash, lang: r.lang, at: new Date().toISOString() }
     await payload.update({ collection: 'videos', id: videoId, data: { summary } as any, overrideAccess: true })
+    void logAiUsage(payload, {
+      tenant: tenantId,
+      surface: 'summary',
+      action: 'video_summary',
+      tokensIn: estimateTokens(transcript),
+      tokensOut: estimateTokens(r.tldr, ...(r.points || []), r.text),
+      actorType: 'author',
+      meta: String(video.title || '').slice(0, 120),
+    })
 
     // Пополняем знание Аси по видео (для ответов «где посмотреть …»).
     const url = video.slug ? `/video/${video.slug}` : undefined

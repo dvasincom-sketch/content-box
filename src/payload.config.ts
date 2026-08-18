@@ -33,6 +33,7 @@ import { BookFollows } from './collections/BookFollows'
 import { Comments } from './collections/Comments'
 import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
+import { AiUsage } from './collections/AiUsage'
 import { Activity } from './collections/Activity'
 import { SubscriptionEvents } from './collections/SubscriptionEvents'
 import { SubscriberActivity } from './collections/SubscriberActivity'
@@ -165,6 +166,7 @@ export default buildConfig({
     Comments,
     Reactions,
     ActivityEvents,
+    AiUsage,
     Activity,
     SubscriptionEvents,
     SubscriberActivity,
@@ -316,6 +318,7 @@ export default buildConfig({
         comments: { useTenantAccess: false },
         reactions: { useTenantAccess: false },
         'activity-events': { useTenantAccess: false },
+        'ai-usage': { useTenantAccess: false },
         submissions: { useTenantAccess: false },
         'bug-reports': { useTenantAccess: false },
         bookmarks: { useTenantAccess: false },

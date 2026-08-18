@@ -2,6 +2,7 @@ import { withAuthor, readJson, apiError, apiOk } from '../_lib'
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
 import { composeEnabled, composePageBlocks, type ComposeMsg, type RawBlock } from '@/lib/asyaCompose'
 import { sanitizeComposeBlocks } from '@/lib/composeBlocks'
+import { logAiUsage, estimateTokens } from '@/lib/logAiUsage'
 
 /**
  * AI-конструктор страницы: сплошной текст → блоки. Только для автора студии.
@@ -10,7 +11,7 @@ import { sanitizeComposeBlocks } from '@/lib/composeBlocks'
  */
 export const runtime = 'nodejs'
 
-export const POST = withAuthor(async ({ req }) => {
+export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   if (!composeEnabled()) return apiError('AI-конструктор не подключён', 503)
 
   const rl = rateLimit(`compose:${clientIp(req.headers)}`, 20, 60_000)
@@ -30,7 +31,17 @@ export const POST = withAuthor(async ({ req }) => {
 
   try {
     const r = await composePageBlocks({ text: text.slice(0, 24000), messages, blocks: prev, lang: 'ru' })
-    return apiOk({ note: r.note, blocks: sanitizeComposeBlocks(r.blocks) })
+    const blocks = sanitizeComposeBlocks(r.blocks)
+    void logAiUsage(payload, {
+      tenant: tenantId,
+      surface: 'compose',
+      action: 'compose',
+      tokensIn: estimateTokens(text, ...messages.map((m) => m.content)),
+      tokensOut: estimateTokens(r.note, JSON.stringify(r.blocks)),
+      actorType: 'author',
+      meta: `${blocks.length} блоков`,
+    })
+    return apiOk({ note: r.note, blocks })
   } catch {
     return apiError('Не удалось разобрать текст. Попробуйте ещё раз.', 502)
   }

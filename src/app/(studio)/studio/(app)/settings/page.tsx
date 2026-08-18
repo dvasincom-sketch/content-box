@@ -18,6 +18,7 @@ import { capabilitiesOf } from '@/access'
 import { hasCap, SETTINGS_MANAGE_KEYS } from '@/lib/permissions'
 import { normalizeHomeSections } from '@/lib/homeSections'
 import { SettingsView } from './SettingsView'
+import { getAiUsageStats, type AiUsageStats } from '@/lib/aiUsageStats'
 import { getMediaStats } from '@/lib/mediaStats'
 import { getCommerceStats } from '@/lib/commerceStats'
 import { computeTariff } from '@/lib/tariff'
@@ -129,7 +130,9 @@ export default async function SettingsPage() {
   // Данные раздела «Тариф» (только владельцу): занятое место, MRR, дата создания
   // проекта для триала — считаем расчётный платформенный сбор.
   let tariff: TariffPanelData | null = null
+  let aiUsage: AiUsageStats | null = null
   if (isOwner) {
+    aiUsage = await getAiUsageStats(payload, author!.tenantId)
     const [mediaStats, commerce, tenantDoc] = await Promise.all([
       getMediaStats(payload, author!.tenantId),
       getCommerceStats(payload, author!.tenantId),
@@ -162,6 +165,7 @@ export default async function SettingsPage() {
       isOwner={isOwner}
       abilities={abilities}
       tariff={tariff}
+      aiUsage={aiUsage}
     />
   )
 }

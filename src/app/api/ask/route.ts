@@ -3,6 +3,9 @@ import { tenantIdFromRequestHeaders } from '@/lib/tenantByHost'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { asyaEnabled, askAsya } from '@/lib/asya'
 import { errorMessage } from '@/lib/errorMessage'
+import { getPayload } from 'payload'
+import config from '@/payload.config'
+import { logAiUsage, estimateTokens } from '@/lib/logAiUsage'
 
 /**
  * Панель «Спросить Асю» на сайте. Ассистент по видео — перк подписки: доступен
@@ -41,6 +44,17 @@ export async function POST(req: NextRequest) {
 
   try {
     const r = await askAsya(q)
+    try {
+      const payload = await getPayload({ config: await config })
+      void logAiUsage(payload, {
+        tenant: tenantId,
+        surface: 'support',
+        action: 'ask',
+        tokensIn: estimateTokens(q),
+        tokensOut: estimateTokens(r.answer),
+        actorType: 'subscriber',
+      })
+    } catch { /* учёт вторичен */ }
     return NextResponse.json({ ok: true, answer: r.answer, matches: r.matches })
   } catch (e: unknown) {
     return NextResponse.json({ ok: false, error: errorMessage(e, 'ask_failed') }, { status: 500 })
