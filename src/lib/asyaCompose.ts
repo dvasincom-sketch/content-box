@@ -3,16 +3,23 @@
  * страницы. Ключ — секрет, дёргаем ТОЛЬКО сервер-к-серверу (никогда из браузера).
  * Многошаговый диалог: текст + история правок + прошлый вариант блоков.
  *
+ * Env читаем ЛЕНИВО внутри функций (не на уровне модуля) — чтобы значение бралось
+ * из рантайм-окружения контейнера, а не «замораживалось» при сборке Next.
  * Env: ASYA_COMPOSE_KEY (обязателен), ASYA_COMPOSE_URL (по умолчанию — сосед
  * саммари: /summary → /compose).
  */
-const ASYA_URL = process.env.ASYA_SUMMARY_URL || 'https://xn--80a8a2b.online/api/summary'
-const ASYA_BASE = ASYA_URL.replace(/\/summary\/?$/, '')
-const COMPOSE_URL = process.env.ASYA_COMPOSE_URL || `${ASYA_BASE}/compose`
-const COMPOSE_KEY = process.env.ASYA_COMPOSE_KEY || ''
+function composeKey(): string {
+  return (process.env.ASYA_COMPOSE_KEY || '').trim()
+}
+
+function composeUrl(): string {
+  if (process.env.ASYA_COMPOSE_URL) return process.env.ASYA_COMPOSE_URL
+  const base = (process.env.ASYA_SUMMARY_URL || 'https://xn--80a8a2b.online/api/summary').replace(/\/summary\/?$/, '')
+  return `${base}/compose`
+}
 
 export function composeEnabled(): boolean {
-  return COMPOSE_KEY.trim().length > 0
+  return composeKey().length > 0
 }
 
 export type ComposeMsg = { role: 'user' | 'assistant'; content: string }
@@ -29,10 +36,11 @@ export async function composePageBlocks(args: {
   blocks?: RawBlock[]
   lang?: string
 }): Promise<{ note: string; blocks: RawBlock[] }> {
-  if (!composeEnabled()) throw new Error('ASYA_COMPOSE_KEY не задан')
-  const res = await fetch(COMPOSE_URL, {
+  const key = composeKey()
+  if (!key) throw new Error('ASYA_COMPOSE_KEY не задан')
+  const res = await fetch(composeUrl(), {
     method: 'POST',
-    headers: { Authorization: `Bearer ${COMPOSE_KEY}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       text: args.text,
       messages: args.messages ?? [],

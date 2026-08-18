@@ -52,4 +52,23 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
  * факт наличия ключа Аси, сам ключ никогда не раскрывается.
  *  GET → { ok, enabled }
  */
-export const GET = withAuthor(async () => apiOk({ enabled: composeEnabled() }))
+export const GET = withAuthor(async () => {
+  // Сравниваем с рабочим ключом саммари: если summary=true, а compose=false —
+  // проблема именно в переменной ASYA_COMPOSE_KEY (имя/область/не применилась),
+  // а не в рантайм-инъекции env вообще. Значения ключей НЕ раскрываются.
+  const composeKeyLen = (process.env.ASYA_COMPOSE_KEY || '').trim().length
+  const summaryKeyLen = (process.env.ASYA_SUMMARY_KEY || '').trim().length
+  let composeUrlHost = ''
+  try {
+    const base = (process.env.ASYA_SUMMARY_URL || 'https://xn--80a8a2b.online/api/summary').replace(/\/summary\/?$/, '')
+    composeUrlHost = new URL(process.env.ASYA_COMPOSE_URL || `${base}/compose`).host
+  } catch { /* ignore */ }
+  return apiOk({
+    enabled: composeEnabled(),
+    hasComposeKey: composeKeyLen > 0,
+    composeKeyLen,
+    hasSummaryKey: summaryKeyLen > 0,
+    composeUrlOverridden: !!process.env.ASYA_COMPOSE_URL,
+    composeUrlHost,
+  })
+})
