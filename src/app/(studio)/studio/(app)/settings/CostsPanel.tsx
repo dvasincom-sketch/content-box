@@ -27,6 +27,14 @@ const monthLabel = (m: string) => {
   const names = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
   return `${names[Number(mo) - 1] || mo} ${y}`
 }
+/** Дата списания за месяц = 1-е число следующего месяца (в родительном падеже). */
+const nextFirst = (m: string) => {
+  const [y, mo] = m.split('-').map(Number)
+  const ny = mo === 12 ? y + 1 : y
+  const nmo = mo === 12 ? 1 : mo + 1
+  const g = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+  return `1 ${g[nmo - 1]} ${ny}`
+}
 function sourceIcon(key: MediaSourceStat['key']): React.ReactNode {
   switch (key) {
     case 'audio': return <Music size={15} />
@@ -67,16 +75,21 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
   const monthTotal = aiMonth + extras + commission
   const depositMonth = monthTotal
 
-  const spent = months.reduce((sum, m) => sum + (m.costRub + extras + commission), 0)
+  // Деньги не списываются сразу, а резервируются и списываются 1-го числа
+  // следующего месяца. Прошлые месяцы уже списаны, текущий (последний) — в резерве.
+  const reserved = months.length ? months[months.length - 1].costRub + extras + commission : 0
+  const charged = months.slice(0, -1).reduce((sum, m) => sum + (m.costRub + extras + commission), 0)
+  const spent = charged + reserved
   const balance = deposit - spent
 
   const rows = months.map((m, i) => {
     const total = m.costRub + extras + commission
     const cum = months.slice(0, i + 1).reduce((sum, x) => sum + (x.costRub + extras + commission), 0)
-    return { ...m, total, fromDeposit: total, balanceAfter: deposit - cum }
+    return { ...m, total, fromDeposit: total, balanceAfter: deposit - cum, isCurrent: i === months.length - 1 }
   })
   const rowsDesc = [...rows].reverse()
   const curMonth = months.length ? monthLabel(months[months.length - 1].month) : 'текущий месяц'
+  const chargeDate = months.length ? nextFirst(months[months.length - 1].month) : ''
 
   const commissionPct = Math.round(COMMISSION_RATE * 100)
   const usagePct = t && t.grade.ceilingGb > 0 ? Math.min(100, Math.round((t.usedGb / t.grade.ceilingGb) * 100)) : 0
@@ -96,12 +109,12 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
           <div className="cp__hero-tile">
             <div className="cp__hero-lbl">Сбор за месяц</div>
             <div className="cp__hero-val">{rub(monthTotal)}</div>
-            <div className="cp__hero-sub">списывается с депозита</div>
+            <div className="cp__hero-sub">зарезервировано · спишется {chargeDate}</div>
           </div>
           <div className="cp__hero-tile cp__hero-tile--dep">
             <div className="cp__hero-lbl">Остаток депозита</div>
             <div className={`cp__hero-val ${balance < 0 ? 'cp__neg' : ''}`}>{rub(balance)}</div>
-            <div className="cp__hero-sub">внесено {rub(deposit)} · списано {rub(spent)}</div>
+            <div className="cp__hero-sub">внесено {rub(deposit)} · резерв {rub(reserved)} · списано {rub(charged)}</div>
           </div>
           <div className="cp__hero-tile">
             <div className="cp__hero-lbl">Автор получает</div>
@@ -123,7 +136,7 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
               ))}
             </div>
             <div className="cp__topup-row">
-              <button type="button" className="studio-btn studio-btn--primary" disabled title="Приём платежей скоро">Оплатить {fmt(topupAmt)} ₽ через YooKassa</button>
+              <button type="button" className="studio-btn studio-btn--primary" disabled title="Приём платежей скоро">Оплатить</button>
               <span className="cp__soon">Скоро</span>
             </div>
             <p className="cp__topup-note">Приём платежей подключается вместе с биллингом. Пока пополнение депозита делает администратор платформы.</p>
@@ -193,7 +206,7 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
         {extras > 0 && <div className="cp__line"><span className="cp__l-ico"><Zap size={15} /></span><span className="cp__l-name">Доп. услуги (буст транскодинга)</span><span className="cp__l-meta">по факту</span><span className="cp__l-val">{rub(extras)}</span></div>}
         <div className="cp__line"><span className="cp__l-ico"><Percent size={15} /></span><span className="cp__l-name">{commissionPct}% с выручки платных подписок</span><span className="cp__l-meta">выручка {rub(ai.mrrRub)}/мес (оценка)</span><span className="cp__l-val">{rub(commission)}</span></div>
         <div className="cp__fee"><span>Итого за {curMonth} на текущий момент</span><b>{rub(monthTotal)}</b></div>
-        <div className="cp__feesub">Пока есть депозит, весь сбор списывается с него ({rub(monthTotal)}), а автор получает 100% выручки — комиссия не удерживается. Когда депозит закончится, {commissionPct}% начнут удерживаться с выручки.</div>
+        <div className="cp__feesub">Пока есть депозит, весь сбор идёт с него, а автор получает 100% выручки — комиссия не удерживается. Деньги не списываются сразу: сумма за {curMonth} <b>резервируется</b> и спишется <b>{chargeDate}</b>. Когда депозит закончится, {commissionPct}% начнут удерживаться с выручки.</div>
       </section>
 
       {/* ── 5. Биллинг по месяцам ──────────────────────────────────── */}
@@ -206,7 +219,7 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
             <tbody>
               {rowsDesc.map((m) => (
                 <tr key={m.month}>
-                  <td>{monthLabel(m.month)}</td>
+                  <td>{monthLabel(m.month)}{m.isCurrent && <span className="cp__resv">резерв</span>}</td>
                   <td>{rub(m.costRub)}</td>
                   <td>{rub(commission)}</td>
                   <td><b>{rub(m.fromDeposit)}</b></td>
@@ -216,6 +229,7 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
             </tbody>
           </table>
         )}
+        {reserved > 0 && <div className="cp__note"><Info size={13} /> Текущий месяц ({curMonth}) — {rub(reserved)} зарезервировано, спишется {chargeDate}. Прошлые месяцы уже списаны.</div>}
         <div className="cp__note"><Info size={13} /> Токены и стоимость — оценка по длине текста; хранилище и комиссия — по текущему состоянию. Точное списание подключится вместе с биллингом.</div>
       </section>
     </div>
@@ -235,6 +249,7 @@ const CP_CSS = `
 .cp__hero-val{font-size:26px;font-weight:800;color:var(--st-text);line-height:1.15;margin:3px 0}
 .cp__hero-sub{font-size:11.5px;color:var(--st-text-muted)}
 .cp__pos{color:#1a7f4b}
+.cp__resv{margin-left:8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:#b7791f;background:color-mix(in srgb,#f59e0b 16%,transparent);border-radius:999px;padding:2px 7px;vertical-align:middle}
 .cp__neg{color:#e5484d}
 .cp__depctl{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .cp__dep-note{font-size:12px;color:var(--st-text-muted);align-self:center;line-height:1.4}

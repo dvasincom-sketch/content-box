@@ -175,6 +175,7 @@ export function AiComposeModal({ open, onClose, onInsert }: {
         {phase === 'input' ? (
           <div className="aic__body">
             <p className="aic__hint">Вставьте текст статьи, биографии или обзора — ИИ разберёт его на блоки конструктора и предложит структуру. Текст переносится дословно, без сокращения. Результат увидите как превью до вставки.</p>
+            <div className="aic__paid">Это отдельная услуга — оплачивается по тарифам (стоимость токенов списывается с депозита проекта; см. Настройки → Тариф).</div>
             <textarea
               className="studio-input aic__ta"
               rows={12}
@@ -262,6 +263,7 @@ const AIC_CSS = `
 .aic__x:disabled{opacity:.4;cursor:default}
 .aic__body{padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .aic__hint{font-size:13px;color:var(--st-text-muted);line-height:1.5;margin:0}
+.aic__paid{font-size:12.5px;color:var(--st-text);background:color-mix(in srgb,#2f6bed 8%,transparent);border:1px solid color-mix(in srgb,#2f6bed 20%,transparent);border-radius:10px;padding:9px 12px;line-height:1.45}
 .aic__ta{resize:vertical;min-height:180px;font-family:inherit;line-height:1.5}
 .aic__actions{display:flex;align-items:center;justify-content:flex-end;gap:12px}
 .aic__actions--split{justify-content:space-between}
