@@ -177,6 +177,7 @@ export function Composer({
     try {
       const fd = new FormData()
       fd.append('file', file)
+      if (title.trim()) fd.append('seoName', title.trim())
       const res = await fetch('/studio/api/upload-cover', {
         method: 'POST',
         body: fd,

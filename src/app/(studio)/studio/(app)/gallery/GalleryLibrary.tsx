@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Upload, Loader2, Check, AlertCircle, Folder, FolderInput, Trash2, X, Images,
-  FolderOpen, Layers, FolderClosed, Search, ImageOff,
+  FolderOpen, Layers, FolderClosed, Search, ImageOff, Sparkles,
 } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { GalleryFolderManager } from '../posts/new/GalleryComposer'
 import { errorMessage } from '@/lib/errorMessage'
@@ -59,6 +60,7 @@ export function GalleryLibrary({ folders, canCreate = true, stats = null }: { fo
   const [moveTarget, setMoveTarget] = useState('')
   const [busy, setBusy] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
+  const [altOpen, setAltOpen] = useState(false)
   const [q, setQ] = useState('')
   const [qd, setQd] = useState('')
   const [dropFolder, setDropFolder] = useState<string | null>(null) // подсветка папки-цели
@@ -290,6 +292,7 @@ export function GalleryLibrary({ folders, canCreate = true, stats = null }: { fo
                   {busy ? <Loader2 size={15} className="spin" /> : null} Переместить
                 </button>
               </div>
+              <button className="studio-btn studio-btn--ghost" onClick={() => setAltOpen(true)} disabled={busy} title="Сгенерировать alt-подписи по контексту"><Sparkles size={15} /> Alt (Ася)</button>
               <button className="studio-btn studio-btn--ghost" onClick={deleteSelected} disabled={busy} style={{ color: 'var(--st-danger, #d33)' }}><Trash2 size={15} /> Удалить</button>
               <button className="studio-btn studio-btn--ghost" onClick={() => setSelected(new Set())}><X size={15} /> Снять выбор</button>
             </div>
@@ -356,8 +359,87 @@ export function GalleryLibrary({ folders, canCreate = true, stats = null }: { fo
             </div>
           )}
         </section>
+        {altOpen && (
+          <AltSeoModal
+            images={images.filter((im) => selected.has(String(im.id)))}
+            onClose={() => setAltOpen(false)}
+            onSaved={() => { setAltOpen(false); setSelected(new Set()); setReloadKey((k) => k + 1) }}
+          />
+        )}
       </div>
     </div>
+  )
+}
+
+/** Модалка: Ася предлагает alt-подписи для выбранных фото; автор правит и сохраняет. */
+function AltSeoModal({ images, onClose, onSaved }: { images: LibImage[]; onClose: () => void; onSaved: () => void }) {
+  const [rows, setRows] = useState(() => images.map((im) => ({ id: String(im.id), url: im.url, alt: im.alt || '' })))
+  const [busy, setBusy] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [cost, setCost] = useState<number | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    fetch('/studio/api/gallery-images/seo', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ ids: images.map((im) => String(im.id)) }),
+    })
+      .then((r) => r.json().catch(() => null))
+      .then((j) => {
+        if (!alive) return
+        if (!j || j.ok !== true) { setError((j && j.error) || 'Не удалось сгенерировать подписи.'); setBusy(false); return }
+        const map = new Map<string, string>(((j.items as { id: string; alt: string }[]) || []).map((it) => [String(it.id), String(it.alt || '')]))
+        setRows((rs) => rs.map((r) => { const a = map.get(r.id); return a ? { ...r, alt: a } : r }))
+        if (typeof j.costRub === 'number') setCost(j.costRub)
+        setBusy(false)
+      })
+      .catch(() => { if (alive) { setError('Соединение прервалось — попробуйте ещё раз.'); setBusy(false) } })
+    return () => { alive = false }
+  }, [images])
+
+  const save = () => {
+    setSaving(true); setError(null)
+    fetch('/studio/api/gallery-images/set-alt', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ items: rows.map((r) => ({ id: r.id, alt: r.alt })) }),
+    })
+      .then((r) => r.json().catch(() => null))
+      .then((j) => { if (!j || j.ok !== true) { setError((j && j.error) || 'Не удалось сохранить.'); setSaving(false); return } onSaved() })
+      .catch(() => { setError('Не удалось сохранить.'); setSaving(false) })
+  }
+
+  if (typeof document === 'undefined') return null
+  return createPortal(
+    <div className="gseo__overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !saving) onClose() }}>
+      <style dangerouslySetInnerHTML={{ __html: GML_CSS }} />
+      <div className="gseo" role="dialog" aria-modal="true">
+        <div className="gseo__head">
+          <div className="gseo__title"><Sparkles size={17} /> Alt-подписи от Аси</div>
+          <button className="gseo__x" onClick={onClose} disabled={saving} title="Закрыть"><X size={17} /></button>
+        </div>
+        <div className="gseo__sub">Уникальные подписи по контексту публикации — для органического трафика по картинкам. Проверьте и при необходимости поправьте перед сохранением.{cost != null ? ` · разбор ≈ ${cost.toFixed(2)} ₽` : ''}</div>
+        {error && <div className="gseo__err">{error}</div>}
+        <div className="gseo__body">
+          {busy ? (
+            <div className="gseo__load"><Loader2 size={22} className="spin" /> Ася придумывает подписи…</div>
+          ) : rows.map((r, i) => (
+            <div className="gseo__row" key={r.id}>
+              {r.url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="gseo__thumb" src={r.url} alt="" />
+              ) : <span className="gseo__thumb gseo__thumb--empty"><Images size={16} /></span>}
+              <input className="studio-input gseo__alt" value={r.alt} placeholder="Alt-подпись" onChange={(e) => setRows((rs) => rs.map((x, j) => j === i ? { ...x, alt: e.target.value } : x))} />
+            </div>
+          ))}
+        </div>
+        <div className="gseo__foot">
+          <button className="studio-btn studio-btn--ghost" onClick={onClose} disabled={saving}>Отмена</button>
+          <button className="studio-btn studio-btn--primary" onClick={save} disabled={busy || saving}>{saving ? <><Loader2 size={15} className="spin" /> Сохраняю…</> : <><Check size={15} /> Сохранить ({rows.length})</>}</button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -404,4 +486,19 @@ const GML_CSS = `
 .gml__selall{margin-left:10px;font-size:12px;font-weight:600;color:var(--st-accent);background:transparent;border:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .gml__ohint{font-size:12px;color:var(--st-text-muted);background:color-mix(in srgb,var(--st-accent) 8%,transparent);border-radius:8px;padding:8px 12px;margin:-4px 0 12px;line-height:1.4}
 @media(max-width:760px){.gml{grid-template-columns:1fr}.gml__side{position:static}}
+.gseo__overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:20px}
+.gseo{width:min(680px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--st-surface);border:1px solid var(--st-border);border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden}
+.gseo__head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--st-border)}
+.gseo__title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;color:var(--st-text)}
+.gseo__x{border:0;background:transparent;color:var(--st-text-muted);cursor:pointer;padding:4px;border-radius:7px}
+.gseo__x:hover{background:color-mix(in srgb,var(--st-text) 8%,transparent)}
+.gseo__sub{font-size:12.5px;color:var(--st-text-muted);padding:10px 16px 0;line-height:1.45}
+.gseo__err{margin:10px 16px 0;font-size:13px;color:#e5484d;background:color-mix(in srgb,#e5484d 10%,transparent);border:1px solid color-mix(in srgb,#e5484d 30%,transparent);border-radius:9px;padding:8px 11px}
+.gseo__body{padding:12px 16px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.gseo__load{display:flex;align-items:center;gap:10px;justify-content:center;padding:34px 0;color:var(--st-text-muted);font-size:14px}
+.gseo__row{display:flex;align-items:center;gap:10px}
+.gseo__thumb{width:46px;height:46px;flex:none;border-radius:8px;object-fit:cover;border:1px solid var(--st-border);background:var(--st-surface-2,#f4f4f4)}
+.gseo__thumb--empty{display:grid;place-items:center;color:var(--st-text-muted)}
+.gseo__alt{flex:1}
+.gseo__foot{display:flex;justify-content:space-between;gap:10px;padding:12px 16px;border-top:1px solid var(--st-border)}
 `

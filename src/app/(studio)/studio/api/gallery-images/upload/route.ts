@@ -1,5 +1,7 @@
 import { withAuthor, apiError, apiOk, belongsToTenant, hasCapability, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { shrinkForWeb, storageName } from '@/lib/imageIngest'
+import { slugify } from '@/lib/slugify'
+import { randomUUID } from 'crypto'
 import { errorMessage } from '@/lib/errorMessage'
 
 /**
@@ -61,13 +63,29 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     if (okPub) sourcePublication = Number(rawPub)
   }
 
-  const alt = (form.get('alt') as string) || (blob as any).name || ''
+  // SEO-контекст: заголовок публикации даёт человекочитаемое имя файла и alt по
+  // умолчанию. Существующие файлы не трогаем — это только для нового объекта.
+  let pubTitle = ''
+  const seoNameRaw = form.get('seoName')
+  if (seoNameRaw && typeof seoNameRaw === 'string') pubTitle = seoNameRaw.trim()
+  if (!pubTitle && sourcePublication) {
+    try {
+      const pub = await payload.findByID({ collection: 'publications', id: sourcePublication, depth: 0, overrideAccess: true }) as { title?: unknown }
+      pubTitle = String(pub?.title || '').trim()
+    } catch { /* ignore */ }
+  }
+  const seoBase = slugify(pubTitle)
+
+  const alt = (form.get('alt') as string) || pubTitle || (blob as any).name || ''
 
   try {
     const arrayBuffer = await blob.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
     const ing = await shrinkForWeb(buffer, blob.type)
+    const storeName = seoBase
+      ? storageName(tenantId, `${seoBase}-${randomUUID().slice(0, 6)}`, ing.ext, 'img')
+      : storageName(tenantId, (blob as any).name, ing.ext, 'img')
 
     const doc = await payload.create({
       collection: 'gallery-images',
@@ -80,7 +98,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       } as any,
       file: {
         data: ing.buffer,
-        name: storageName(tenantId, (blob as any).name, ing.ext, 'img'),
+        name: storeName,
         mimetype: ing.mime,
         size: ing.buffer.length,
       },

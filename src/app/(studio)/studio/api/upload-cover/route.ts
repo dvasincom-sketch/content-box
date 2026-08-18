@@ -1,6 +1,8 @@
 import { withAuthor, apiError, apiOk } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
 import { shrinkForWeb, storageName } from '@/lib/imageIngest'
+import { slugify } from '@/lib/slugify'
+import { randomUUID } from 'crypto'
 
 /**
  * Загрузка обложки в коллекцию media. Файл идёт в R2 (s3Storage настроен в
@@ -36,18 +38,26 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     return apiError('Файл больше 12 МБ')
   }
 
+  // SEO-имя обложки из заголовка публикации (если клиент прислал seoName).
+  const seoNameRaw = form.get('seoName')
+  const seoTitle = seoNameRaw && typeof seoNameRaw === 'string' ? seoNameRaw.trim() : ''
+  const seoBase = slugify(seoTitle)
+
   try {
     const arrayBuffer = await blob.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
     const ing = await shrinkForWeb(buffer, blob.type)
+    const storeName = seoBase
+      ? storageName(tenantId, `${seoBase}-oblozhka-${randomUUID().slice(0, 5)}`, ing.ext, 'cover')
+      : storageName(tenantId, (blob as any).name, ing.ext, 'cover')
 
     const doc = await payload.create({
       collection: 'media',
-      data: { tenant: tenantId } as any,
+      data: { tenant: tenantId, ...(seoTitle ? { alt: seoTitle } : {}) } as any,
       file: {
         data: ing.buffer,
-        name: storageName(tenantId, (blob as any).name, ing.ext, 'cover'),
+        name: storeName,
         mimetype: ing.mime,
         size: ing.buffer.length,
       },
