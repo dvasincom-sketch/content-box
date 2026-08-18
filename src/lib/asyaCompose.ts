@@ -18,6 +18,28 @@ function composeUrl(): string {
   return `${base}/compose`
 }
 
+/** URL обучения Аси (правки редактора). По умолчанию сосед /summary → /feedback. */
+function feedbackUrl(): string {
+  if (process.env.ASYA_FEEDBACK_URL) return process.env.ASYA_FEEDBACK_URL
+  const base = (process.env.ASYA_SUMMARY_URL || 'https://xn--80a8a2b.online/api/summary').replace(/\/summary\/?$/, '')
+  return `${base}/feedback`
+}
+
+/** Отправить правку структуры разбора как обучающий пример (few-shot). Best-effort. */
+export async function sendComposeFeedback(key: string, a: { before?: string; after: string }): Promise<void> {
+  const k = (key || '').trim()
+  if (!k || !a.after) return
+  try {
+    await fetch(feedbackUrl(), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${k}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind: 'compose', source: 'compose', before: a.before || '', after: a.after }),
+    })
+  } catch {
+    /* обучение не критично */
+  }
+}
+
 export function composeEnabled(): boolean {
   return composeKey().length > 0
 }

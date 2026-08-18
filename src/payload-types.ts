@@ -89,6 +89,7 @@ export interface Config {
     comments: Comment;
     reactions: Reaction;
     'activity-events': ActivityEvent;
+    'ai-usage': AiUsage;
     'studio-activity': StudioActivity;
     'subscription-events': SubscriptionEvent;
     'subscriber-activity': SubscriberActivity;
@@ -127,6 +128,7 @@ export interface Config {
     comments: CommentsSelect<false> | CommentsSelect<true>;
     reactions: ReactionsSelect<false> | ReactionsSelect<true>;
     'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
+    'ai-usage': AiUsageSelect<false> | AiUsageSelect<true>;
     'studio-activity': StudioActivitySelect<false> | StudioActivitySelect<true>;
     'subscription-events': SubscriptionEventsSelect<false> | SubscriptionEventsSelect<true>;
     'subscriber-activity': SubscriberActivitySelect<false> | SubscriberActivitySelect<true>;
@@ -322,6 +324,14 @@ export interface User {
 export interface SiteSetting {
   id: number;
   tenant?: (number | null) | Tenant;
+  /**
+   * Секретный ключ проекта в сервисе Ася (capability compose) для «Заполнить с помощью AI». Хранится в пределах тенанта, на публичный сайт не отдаётся. Если пусто — используется платформенный ключ (env).
+   */
+  aiComposeKey?: string | null;
+  /**
+   * Аванс тенанта на оплату токенов ИИ. Из него ежемесячно списывается стоимость. Виден только staff.
+   */
+  aiDepositRub?: number | null;
   logo?: (number | null) | Media;
   /**
    * Квадратная иконка для PWA, favicon и apple-touch. Лучше 512×512+.
@@ -440,6 +450,10 @@ export interface SiteSetting {
    * Профиль кодирования для новых загруженных видео. Действует на новые загрузки, уже обработанные не меняет.
    */
   videoProfile?: ('balanced' | 'fast' | 'compact' | 'quality') | null;
+  /**
+   * Какие дорожки генерировать для новых видео (CSV из 480,720,1080). 1080 — самый тяжёлый по месту, включайте где действительно нужно. Действует на новые загрузки.
+   */
+  videoRenditions?: string | null;
   /**
    * Чипсы под заголовком главной. Порядок задаётся перетаскиванием.
    */
@@ -1104,6 +1118,10 @@ export interface GalleryImage {
    * Папка библиотеки для группировки. Одно изображение — одна папка.
    */
   folder?: (number | null) | GalleryFolder;
+  /**
+   * Публикация, через которую изображение загружено. Проставляется автоматически.
+   */
+  sourcePublication?: (number | null) | Publication;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -1513,6 +1531,27 @@ export interface ActivityEvent {
   createdAt: string;
 }
 /**
+ * Журнал вызовов Аси (служебное, только чтение).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-usage".
+ */
+export interface AiUsage {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  surface: 'compose' | 'summary' | 'support';
+  action?: string | null;
+  tokensIn?: number | null;
+  tokensOut?: number | null;
+  tokensTotal?: number | null;
+  estimated?: boolean | null;
+  ok?: boolean | null;
+  actorType?: string | null;
+  meta?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Журнал действий участников студии.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1842,6 +1881,10 @@ export interface PayloadLockedDocument {
         value: number | ActivityEvent;
       } | null)
     | ({
+        relationTo: 'ai-usage';
+        value: number | AiUsage;
+      } | null)
+    | ({
         relationTo: 'studio-activity';
         value: number | StudioActivity;
       } | null)
@@ -2000,6 +2043,8 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
   tenant?: T;
+  aiComposeKey?: T;
+  aiDepositRub?: T;
   logo?: T;
   appIcon?: T;
   themePreset?: T;
@@ -2054,6 +2099,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         titleLines?: T;
       };
   videoProfile?: T;
+  videoRenditions?: T;
   heroChips?: T;
   homeCategories?: T;
   homeSections?:
@@ -2436,6 +2482,7 @@ export interface GalleryImagesSelect<T extends boolean = true> {
   owner?: T;
   alt?: T;
   folder?: T;
+  sourcePublication?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -2623,6 +2670,24 @@ export interface ActivityEventsSelect<T extends boolean = true> {
   points?: T;
   refType?: T;
   refId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-usage_select".
+ */
+export interface AiUsageSelect<T extends boolean = true> {
+  tenant?: T;
+  surface?: T;
+  action?: T;
+  tokensIn?: T;
+  tokensOut?: T;
+  tokensTotal?: T;
+  estimated?: T;
+  ok?: T;
+  actorType?: T;
+  meta?: T;
   updatedAt?: T;
   createdAt?: T;
 }

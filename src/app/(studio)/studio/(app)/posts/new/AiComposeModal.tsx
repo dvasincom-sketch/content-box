@@ -146,6 +146,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [cost, setCost] = React.useState<number | null>(null)
   const [suggest, setSuggest] = React.useState<{ title?: string; tags?: string[] } | null>(null)
+  const [initialProposal, setInitialProposal] = React.useState<PBlock[]>([])
   const [log, setLog] = React.useState<Msg[]>([])
   const [feedback, setFeedback] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -160,7 +161,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
 
   const reset = () => {
     setText(''); setPhase('input'); setBlocks([]); setExcluded(new Set()); setInsertMode('append')
-    setEditingId(null); setCost(null); setSuggest(null); setLog([]); setFeedback(''); setError(null)
+    setEditingId(null); setCost(null); setSuggest(null); setInitialProposal([]); setLog([]); setFeedback(''); setError(null)
   }
   const close = () => { reset(); onClose() }
 
@@ -186,7 +187,9 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
         setError(j?.error || 'Не удалось обработать текст. Попробуйте ещё раз.')
         return false
       }
-      setBlocks(Array.isArray(j.blocks) ? j.blocks : [])
+      const gotBlocks: PBlock[] = Array.isArray(j.blocks) ? j.blocks : []
+      setBlocks(gotBlocks)
+      if (!Array.isArray(body.messages) || (body.messages as unknown[]).length === 0) setInitialProposal(gotBlocks)
       setExcluded(new Set())
       if (typeof j.costRub === 'number') setCost(j.costRub)
       setSuggest(j.suggest && typeof j.suggest === 'object' ? j.suggest : null)
@@ -203,7 +206,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
   async function propose() {
     if (text.trim().length < 30) { setError('Вставьте текст — минимум 30 символов.'); return }
     const ok = await call({ text: text.trim(), messages: [], blocks: [], existing })
-    if (ok) setPhase('review')
+    if (ok) { setPhase('review') }
   }
 
   async function refine() {
@@ -212,6 +215,14 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
     setLog((l) => [...l, { role: 'user', content: f }])
     setFeedback('')
     await call({ text: text.trim(), messages: [{ role: 'user', content: f }], blocks, existing })
+  }
+
+  const summarizeBlocks = (bs: PBlock[]) => bs.map((b) => `${BLOCK_LABEL[b.type]}${(b as { title?: string }).title ? ': ' + (b as { title?: string }).title : ''}`).join(', ')
+  function sendComposeFeedbackIfChanged() {
+    const before = summarizeBlocks(initialProposal)
+    const after = summarizeBlocks(included)
+    if (!before || !after || before === after) return
+    fetch('/studio/api/compose/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ before, after }) }).catch(() => {})
   }
 
   if (!open || typeof document === 'undefined') return null
@@ -332,7 +343,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
 
             <div className="aic__actions aic__actions--split">
               <button type="button" className="studio-btn studio-btn--ghost" disabled={loading} onClick={reset}><ArrowLeft size={16} /> Заново</button>
-              <button type="button" className="studio-btn studio-btn--primary" disabled={loading || included.length === 0} onClick={() => { onInsert(included, insertMode); close() }}>
+              <button type="button" className="studio-btn studio-btn--primary" disabled={loading || included.length === 0} onClick={() => { sendComposeFeedbackIfChanged(); onInsert(included, insertMode); close() }}>
                 <Check size={16} /> Вставить ({included.length})
               </button>
             </div>
