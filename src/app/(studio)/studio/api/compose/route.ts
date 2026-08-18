@@ -46,3 +46,10 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     return apiError('Не удалось разобрать текст. Попробуйте ещё раз.', 502)
   }
 })
+
+/**
+ * Диагностика подключения: доступна только автору студии. Возвращает лишь
+ * факт наличия ключа Аси, сам ключ никогда не раскрывается.
+ *  GET → { ok, enabled }
+ */
+export const GET = withAuthor(async () => apiOk({ enabled: composeEnabled() }))
