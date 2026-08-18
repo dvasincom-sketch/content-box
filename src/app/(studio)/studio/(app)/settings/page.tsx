@@ -131,6 +131,7 @@ export default async function SettingsPage() {
   // проекта для триала — считаем расчётный платформенный сбор.
   let tariff: TariffPanelData | null = null
   let aiUsage: AiUsageStats | null = null
+  const aiDeposit = Number((settings?.aiDepositRub as number) || 0)
   if (isOwner) {
     aiUsage = await getAiUsageStats(payload, author!.tenantId)
     const [mediaStats, commerce, tenantDoc] = await Promise.all([
@@ -166,6 +167,7 @@ export default async function SettingsPage() {
       abilities={abilities}
       tariff={tariff}
       aiUsage={aiUsage}
+      aiDeposit={aiDeposit}
     />
   )
 }

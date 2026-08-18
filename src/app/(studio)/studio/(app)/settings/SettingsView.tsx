@@ -36,7 +36,7 @@ type Tier = {
   perks: Perk[]
 }
 
-type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers' | 'access' | 'tariff' | 'ai'
+type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers' | 'access' | 'tariff'
 export type Member = { id: number | string; email: string; name: string; status: string; isSelf: boolean; studioRole?: string | null; capabilities?: import('@/lib/permissions').CapMatrix | null }
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -47,7 +47,6 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'tiers', label: 'Монетизация' },
   { id: 'access', label: 'Доступ' },
   { id: 'tariff', label: 'Тариф' },
-  { id: 'ai', label: 'AI' },
 ]
 
 const PLATFORMS = [
@@ -75,6 +74,7 @@ export function SettingsView({
   abilities,
   tariff,
   aiUsage,
+  aiDeposit,
 }: {
   logoUrl: string | null
   appIconUrl: string | null
@@ -92,6 +92,7 @@ export function SettingsView({
   abilities: CapMatrix | null
   tariff: TariffPanelData | null
   aiUsage: AiUsageStats | null
+  aiDeposit: number
 }) {
   const canTab = (id: SettingsTab): boolean => {
     if (isOwner) return true
@@ -103,7 +104,6 @@ export function SettingsView({
       case 'tiers': return hasCap(abilities, 'tiers', 'manage') || hasCap(abilities, 'goals', 'manage')
       case 'access': return false
       case 'tariff': return false
-      case 'ai': return false
       default: return false
     }
   }
@@ -185,8 +185,7 @@ export function SettingsView({
           </>
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}
-        {tab === 'tariff' && isOwner && <TariffPanel data={tariff} />}
-        {tab === 'ai' && isOwner && (<><AiKeyCard /><AiUsagePanel data={aiUsage} /></>)}
+        {tab === 'tariff' && isOwner && (<><TariffPanel data={tariff} /><AiKeyCard /><AiUsagePanel data={aiUsage} deposit={aiDeposit} /></>)}
       </div>
     </>
   )

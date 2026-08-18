@@ -105,6 +105,7 @@ import * as migration_20260814_100000_gallery_source_publication from './2026081
 import * as migration_20260814_110000_video_renditions from './20260814_110000_video_renditions';
 import * as migration_20260818_090000_add_ai_usage from './20260818_090000_add_ai_usage';
 import * as migration_20260818_100000_add_ai_compose_key from './20260818_100000_add_ai_compose_key';
+import * as migration_20260818_110000_add_ai_deposit from './20260818_110000_add_ai_deposit';
 
 export const migrations = [
   {
@@ -641,5 +642,10 @@ export const migrations = [
     up: migration_20260818_100000_add_ai_compose_key.up,
     down: migration_20260818_100000_add_ai_compose_key.down,
     name: '20260818_100000_add_ai_compose_key',
+  },
+  {
+    up: migration_20260818_110000_add_ai_deposit.up,
+    down: migration_20260818_110000_add_ai_deposit.down,
+    name: '20260818_110000_add_ai_deposit',
   },
 ];

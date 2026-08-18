@@ -41,6 +41,16 @@ export const SiteSettings: CollectionConfig = {
         read: ({ req: { user } }) => isSuperAdmin(user) || Boolean(getUserTenantID(user)),
       },
     },
+    {
+      name: 'aiDepositRub',
+      type: 'number',
+      label: 'Депозит на ИИ (₽)',
+      defaultValue: 0,
+      admin: { description: 'Аванс тенанта на оплату токенов ИИ. Из него ежемесячно списывается стоимость. Виден только staff.' },
+      access: {
+        read: ({ req: { user } }) => isSuperAdmin(user) || Boolean(getUserTenantID(user)),
+      },
+    },
     { name: 'logo', type: 'upload', relationTo: 'media', label: 'Логотип' },
     {
       name: 'appIcon',
