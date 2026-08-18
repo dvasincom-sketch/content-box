@@ -61,19 +61,19 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
   const extras = ai.extrasRub
   const aiMonth = aiThisMonth
   // Модель: платформенный сбор за месяц = генерация (токены Аси) + 10% с выручки.
-  // Стоимость хранилища ВХОДИТ в комиссию 10% (не добавляется сверху). С депозита
-  // списывается генерация сверх комиссии; хранилище с депозита не берётся.
+  // Стоимость хранилища входит в комиссию (не добавляется сверху). Пока есть
+  // депозит — ВЕСЬ сбор списывается с депозита, а автор получает 100% выручки
+  // (комиссия не удерживается). Кончится депозит — включится удержание 10%.
   const monthTotal = aiMonth + extras + commission
-  const depositMonth = Math.max(0, aiMonth + extras - commission)
+  const depositMonth = monthTotal
 
-  const spent = months.reduce((sum, m) => sum + Math.max(0, m.costRub + extras - commission), 0)
+  const spent = months.reduce((sum, m) => sum + (m.costRub + extras + commission), 0)
   const balance = deposit - spent
 
   const rows = months.map((m, i) => {
-    const total = m.costRub + commission
-    const fromDeposit = Math.max(0, m.costRub + extras - commission)
-    const cum = months.slice(0, i + 1).reduce((sum, x) => sum + Math.max(0, x.costRub + extras - commission), 0)
-    return { ...m, total, fromDeposit, balanceAfter: deposit - cum }
+    const total = m.costRub + extras + commission
+    const cum = months.slice(0, i + 1).reduce((sum, x) => sum + (x.costRub + extras + commission), 0)
+    return { ...m, total, fromDeposit: total, balanceAfter: deposit - cum }
   })
   const rowsDesc = [...rows].reverse()
   const curMonth = months.length ? monthLabel(months[months.length - 1].month) : 'текущий месяц'
@@ -94,19 +94,19 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
 
         <div className="cp__hero">
           <div className="cp__hero-tile">
-            <div className="cp__hero-lbl">Платформенный сбор за месяц</div>
+            <div className="cp__hero-lbl">Сбор за месяц</div>
             <div className="cp__hero-val">{rub(monthTotal)}</div>
-            <div className="cp__hero-sub">генерация + {commissionPct}% комиссии · хранилище в комиссии</div>
-          </div>
-          <div className="cp__hero-tile">
-            <div className="cp__hero-lbl">К списанию с депозита</div>
-            <div className="cp__hero-val">{rub(depositMonth)}</div>
-            <div className="cp__hero-sub">генерация − комиссия (оценка)</div>
+            <div className="cp__hero-sub">списывается с депозита</div>
           </div>
           <div className="cp__hero-tile cp__hero-tile--dep">
             <div className="cp__hero-lbl">Остаток депозита</div>
             <div className={`cp__hero-val ${balance < 0 ? 'cp__neg' : ''}`}>{rub(balance)}</div>
-            <div className="cp__hero-sub">внесено {rub(deposit)} · израсходовано {rub(spent)}</div>
+            <div className="cp__hero-sub">внесено {rub(deposit)} · списано {rub(spent)}</div>
+          </div>
+          <div className="cp__hero-tile">
+            <div className="cp__hero-lbl">Автор получает</div>
+            <div className="cp__hero-val cp__pos">100%</div>
+            <div className="cp__hero-sub">выручки, пока есть депозит</div>
           </div>
         </div>
 
@@ -193,7 +193,7 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
         {extras > 0 && <div className="cp__line"><span className="cp__l-ico"><Zap size={15} /></span><span className="cp__l-name">Доп. услуги (буст транскодинга)</span><span className="cp__l-meta">по факту</span><span className="cp__l-val">{rub(extras)}</span></div>}
         <div className="cp__line"><span className="cp__l-ico"><Percent size={15} /></span><span className="cp__l-name">{commissionPct}% с выручки платных подписок</span><span className="cp__l-meta">выручка {rub(ai.mrrRub)}/мес (оценка)</span><span className="cp__l-val">{rub(commission)}</span></div>
         <div className="cp__fee"><span>Итого за {curMonth} на текущий момент</span><b>{rub(monthTotal)}</b></div>
-        <div className="cp__feesub">С депозита: генерация {rub(aiMonth + extras)} − комиссия {rub(commission)} = <b>{rub(depositMonth)}</b>. Хранилище с депозита не списывается.</div>
+        <div className="cp__feesub">Пока есть депозит, весь сбор списывается с него ({rub(monthTotal)}), а автор получает 100% выручки — комиссия не удерживается. Когда депозит закончится, {commissionPct}% начнут удерживаться с выручки.</div>
       </section>
 
       {/* ── 5. Биллинг по месяцам ──────────────────────────────────── */}
@@ -202,15 +202,14 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
         {rowsDesc.length === 0 && <div className="cp__empty">Пока нет расходов — таблица заполнится по мере использования.</div>}
         {rowsDesc.length > 0 && (
           <table className="cp__table">
-            <thead><tr><th>Месяц</th><th>Токены Аси</th><th>Комиссия {commissionPct}%</th><th>Итого</th><th>С депозита</th><th>Остаток</th></tr></thead>
+            <thead><tr><th>Месяц</th><th>Токены Аси</th><th>Комиссия {commissionPct}%</th><th>С депозита</th><th>Остаток</th></tr></thead>
             <tbody>
               {rowsDesc.map((m) => (
                 <tr key={m.month}>
                   <td>{monthLabel(m.month)}</td>
                   <td>{rub(m.costRub)}</td>
                   <td>{rub(commission)}</td>
-                  <td><b>{rub(m.total)}</b></td>
-                  <td>{rub(m.fromDeposit)}</td>
+                  <td><b>{rub(m.fromDeposit)}</b></td>
                   <td className={m.balanceAfter < 0 ? 'cp__neg' : ''}>{rub(m.balanceAfter)}</td>
                 </tr>
               ))}
@@ -235,6 +234,7 @@ const CP_CSS = `
 .cp__hero-lbl{font-size:12px;color:var(--st-text-muted)}
 .cp__hero-val{font-size:26px;font-weight:800;color:var(--st-text);line-height:1.15;margin:3px 0}
 .cp__hero-sub{font-size:11.5px;color:var(--st-text-muted)}
+.cp__pos{color:#1a7f4b}
 .cp__neg{color:#e5484d}
 .cp__depctl{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .cp__dep-note{font-size:12px;color:var(--st-text-muted);align-self:center;line-height:1.4}
