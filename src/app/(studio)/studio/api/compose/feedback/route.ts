@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '../../../_lib'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '../../_lib'
 import { sendComposeFeedback } from '@/lib/asyaCompose'
 
 /**
