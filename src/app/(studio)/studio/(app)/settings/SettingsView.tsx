@@ -18,9 +18,8 @@ import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
 import { TariffPanel, type TariffPanelData } from './TariffPanel'
-import { AiUsagePanel } from './AiUsagePanel'
+import { AiUsagePanel, type AiBilling } from './AiUsagePanel'
 import { AiKeyCard } from './AiKeyCard'
-import type { AiUsageStats } from '@/lib/aiUsageStats'
 
 type Social = { platform: string; url: string }
 type Perk = { type: PerkType; text: string }
@@ -73,8 +72,7 @@ export function SettingsView({
   isOwner,
   abilities,
   tariff,
-  aiUsage,
-  aiDeposit,
+  aiBilling,
 }: {
   logoUrl: string | null
   appIconUrl: string | null
@@ -91,8 +89,7 @@ export function SettingsView({
   isOwner: boolean
   abilities: CapMatrix | null
   tariff: TariffPanelData | null
-  aiUsage: AiUsageStats | null
-  aiDeposit: number
+  aiBilling: AiBilling
 }) {
   const canTab = (id: SettingsTab): boolean => {
     if (isOwner) return true
@@ -185,7 +182,7 @@ export function SettingsView({
           </>
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}
-        {tab === 'tariff' && isOwner && (<><TariffPanel data={tariff} /><AiKeyCard /><AiUsagePanel data={aiUsage} deposit={aiDeposit} /></>)}
+        {tab === 'tariff' && isOwner && (<><TariffPanel data={tariff} /><AiKeyCard /><AiUsagePanel data={aiBilling} /></>)}
       </div>
     </>
   )

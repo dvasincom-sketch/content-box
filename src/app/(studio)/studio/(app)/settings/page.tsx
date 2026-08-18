@@ -149,6 +149,16 @@ export default async function SettingsPage() {
     }
   }
 
+  const aiBilling = {
+    usage: aiUsage,
+    deposit: aiDeposit,
+    storageRub: tariff?.tariff.storageFeeRub ?? 0,
+    commissionRub: tariff?.tariff.commissionFeeRub ?? 0,
+    extrasRub: 0,
+    usedGb: tariff?.tariff.usedGb ?? 0,
+    mrrRub: tariff?.mrrRub ?? 0,
+  }
+
   return (
     <SettingsView
       logoUrl={logoUrl}
@@ -166,8 +176,7 @@ export default async function SettingsPage() {
       isOwner={isOwner}
       abilities={abilities}
       tariff={tariff}
-      aiUsage={aiUsage}
-      aiDeposit={aiDeposit}
+      aiBilling={aiBilling}
     />
   )
 }
