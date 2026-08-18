@@ -40,6 +40,7 @@ export async function pingCompose(): Promise<{ reachable: boolean; status: numbe
 export type ComposeMsg = { role: 'user' | 'assistant'; content: string }
 /** Сырой блок от Аси (без id, поля произвольные) — санитайз на нашей стороне. */
 export type RawBlock = { type: string; [k: string]: unknown }
+export type ComposeSuggest = { title?: string; tags?: string[] }
 
 /**
  * Разобрать текст на блоки. Возвращает заметку ассистента и сырые блоки
@@ -52,7 +53,7 @@ export async function composePageBlocks(args: {
   lang?: string
   /** Ключ тенанта (из студии). Если не задан — платформенный из env. */
   key?: string
-}): Promise<{ note: string; blocks: RawBlock[] }> {
+}): Promise<{ note: string; blocks: RawBlock[]; suggest: ComposeSuggest | null }> {
   const key = (args.key || '').trim() || composeKey()
   if (!key) throw new Error('ASYA_COMPOSE_KEY не задан')
   const res = await fetch(composeUrl(), {
@@ -72,5 +73,6 @@ export async function composePageBlocks(args: {
   return {
     note: String(j.note || ''),
     blocks: Array.isArray(j.blocks) ? (j.blocks as RawBlock[]) : [],
+    suggest: j?.suggest && typeof j.suggest === 'object' ? (j.suggest as ComposeSuggest) : null,
   }
 }

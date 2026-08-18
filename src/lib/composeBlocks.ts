@@ -57,13 +57,16 @@ function one(raw: unknown): PBlock | null {
   const withTitle = <T extends object>(x: T): T & { title?: string } => (title ? { ...x, title } : x)
 
   if (PLACEHOLDER_TYPES.has(type)) {
-    // Пустой плейсхолдер — автор наполнит сам. Для кнопки сохраняем только лейбл.
+    // Пустой плейсхолдер — автор наполнит сам. Сохраняем подсказку ИИ (_hint) и,
+    // для кнопки, лейбл. _hint показывается в превью, что вставить.
     const base = blankBlock(type, id)
+    const hint = plain(b.hint, 140)
+    const hintPart = hint ? { _hint: hint } : {}
     if (type === 'button') {
       const label = plain(b.label, 80)
-      return { ...base, ...(label ? { label } : {}) } as PBlock
+      return { ...base, ...(label ? { label } : {}), ...hintPart } as PBlock
     }
-    return withTitle(base) as PBlock
+    return { ...withTitle(base), ...hintPart } as PBlock
   }
 
   if (!TEXT_TYPES.has(type)) return null

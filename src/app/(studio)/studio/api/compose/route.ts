@@ -44,7 +44,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   const prev = Array.isArray(data.blocks) ? data.blocks.slice(0, 40) : []
 
   try {
-    const r = await composePageBlocks({ text: text.slice(0, 24000), messages, blocks: prev, lang: 'ru', key })
+    const r = await composePageBlocks({ text: text.slice(0, 60000), messages, blocks: prev, lang: 'ru', key })
     const blocks = sanitizeComposeBlocks(r.blocks)
     const tokensIn = estimateTokens(text, ...messages.map((m) => m.content))
     const tokensOut = estimateTokens(r.note, JSON.stringify(r.blocks))
@@ -57,7 +57,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
       actorType: 'author',
       meta: `${blocks.length} блоков`,
     })
-    return apiOk({ note: r.note, blocks, tokensIn, tokensOut, costRub: costRub(tokensIn, tokensOut) })
+    return apiOk({ note: r.note, blocks, suggest: r.suggest ?? null, tokensIn, tokensOut, costRub: costRub(tokensIn, tokensOut) })
   } catch (e) {
     const reason = e instanceof Error ? e.message : String(e)
     return apiError('Не удалось разобрать текст: ' + reason, 502)

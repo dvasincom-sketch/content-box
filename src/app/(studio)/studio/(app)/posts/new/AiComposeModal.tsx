@@ -143,6 +143,7 @@ export function AiComposeModal({ open, onClose, onInsert }: {
   const [insertMode, setInsertMode] = React.useState<InsertMode>('append')
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [cost, setCost] = React.useState<number | null>(null)
+  const [suggest, setSuggest] = React.useState<{ title?: string; tags?: string[] } | null>(null)
   const [log, setLog] = React.useState<Msg[]>([])
   const [feedback, setFeedback] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -157,7 +158,7 @@ export function AiComposeModal({ open, onClose, onInsert }: {
 
   const reset = () => {
     setText(''); setPhase('input'); setBlocks([]); setExcluded(new Set()); setInsertMode('append')
-    setEditingId(null); setCost(null); setLog([]); setFeedback(''); setError(null)
+    setEditingId(null); setCost(null); setSuggest(null); setLog([]); setFeedback(''); setError(null)
   }
   const close = () => { reset(); onClose() }
 
@@ -186,6 +187,7 @@ export function AiComposeModal({ open, onClose, onInsert }: {
       setBlocks(Array.isArray(j.blocks) ? j.blocks : [])
       setExcluded(new Set())
       if (typeof j.costRub === 'number') setCost(j.costRub)
+      setSuggest(j.suggest && typeof j.suggest === 'object' ? j.suggest : null)
       setLog((l) => [...l, { role: 'assistant', content: String(j.note || 'Готово.') }])
       return true
     } catch {
@@ -289,6 +291,16 @@ export function AiComposeModal({ open, onClose, onInsert }: {
                 })}
               </div>
             </div>
+
+            {suggest && (suggest.title || (suggest.tags && suggest.tags.length > 0)) && (
+              <div className="aic__suggest">
+                {suggest.title && <div className="aic__sg-row"><span className="aic__sg-lbl">Заголовок</span><span className="aic__sg-val">{suggest.title}</span></div>}
+                {suggest.tags && suggest.tags.length > 0 && (
+                  <div className="aic__sg-row"><span className="aic__sg-lbl">Теги</span><span className="aic__sg-tags">{suggest.tags.map((t, i) => <span key={i} className="aic__sg-tag">{t}</span>)}</span></div>
+                )}
+                <div className="aic__sg-note">Подсказки ИИ — заголовок и теги можно вписать в поля публикации справа.</div>
+              </div>
+            )}
 
             {error && <div className="aic__err">{error}</div>}
 
@@ -403,6 +415,13 @@ const AIC_CSS = `
 .aic__refine{display:flex;gap:8px;align-items:flex-end}
 .aic__fb{resize:vertical;flex:1;font-family:inherit;line-height:1.45}
 .aic__send{flex:none;width:44px;justify-content:center}
+.aic__suggest{border:1px solid color-mix(in srgb,#2f6bed 22%,transparent);background:color-mix(in srgb,#2f6bed 6%,transparent);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.aic__sg-row{display:flex;gap:10px;align-items:baseline;font-size:13px}
+.aic__sg-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:#2f6bed;min-width:70px}
+.aic__sg-val{color:var(--st-text);font-weight:600}
+.aic__sg-tags{display:flex;gap:6px;flex-wrap:wrap}
+.aic__sg-tag{font-size:12px;background:color-mix(in srgb,var(--st-text) 8%,transparent);border-radius:999px;padding:2px 9px;color:var(--st-text)}
+.aic__sg-note{font-size:11.5px;color:var(--st-text-muted)}
 .aic__mode{display:flex;gap:8px;flex-wrap:wrap}
 .aic__mode label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--st-text-muted);border:1px solid var(--st-border);border-radius:9px;padding:7px 12px;cursor:pointer}
 .aic__mode label.is-on{border-color:#2f6bed;color:var(--st-text);background:color-mix(in srgb,#2f6bed 8%,transparent)}
