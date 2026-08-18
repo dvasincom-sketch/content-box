@@ -167,7 +167,7 @@ export function AiComposeModal({ open, onClose, onInsert }: {
 
 const AIC_CSS = `
 .aic__overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:20px}
-.aic{width:min(720px,96vw);max-height:92vh;display:flex;flex-direction:column;background:var(--st-surface);border:1px solid var(--st-border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden}
+.aic{font-family:var(--st-font-body,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif);width:min(720px,96vw);max-height:92vh;display:flex;flex-direction:column;background:var(--st-surface);border:1px solid var(--st-border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.4);overflow:hidden}
 .aic__head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--st-border)}
 .aic__title{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;color:var(--st-text)}
 .aic__x{border:none;background:transparent;color:var(--st-text-muted);cursor:pointer;padding:4px;border-radius:8px}
