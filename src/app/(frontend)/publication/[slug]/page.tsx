@@ -323,6 +323,22 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     // Ряды-постеры категорий, встроенные в профиль: резолвим публикации категории.
     const categoryRows: Record<string, any> = {}
     const pblocks: any[] = Array.isArray((pub.profile as any).blocks) ? (pub.profile as any).blocks : []
+    // SEO-alt для блочных галерей: подтягиваем alt из библиотеки (gallery-images.alt)
+    // в отдельное поле img.alt. Блоки в БД не переписываем — только для рендера.
+    const galImgIds = Array.from(new Set(
+      pblocks.filter((b) => b?.type === 'gallery' && Array.isArray(b?.images))
+        .flatMap((b) => (b.images as any[]).map((im) => im?.imageId).filter((x) => x != null).map((x) => String(x))),
+    ))
+    if (galImgIds.length) {
+      const gi = await payload.find({ collection: 'gallery-images', where: { id: { in: galImgIds } }, limit: 300, depth: 0, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))
+      const altMap = new Map<string, string>((gi.docs as any[]).map((d) => [String(d.id), String(d.alt || '')]))
+      for (const b of pblocks) {
+        if (b?.type !== 'gallery' || !Array.isArray(b.images)) continue
+        for (const im of b.images) {
+          if (im?.imageId != null) { const a = altMap.get(String(im.imageId)); if (a) im.alt = a }
+        }
+      }
+    }
     const catIds = Array.from(new Set(pblocks.filter((b) => b?.type === 'categoryRow' && b?.categoryId).map((b) => String(b.categoryId))))
     for (const cid of catIds) {
       const cat: any = /^\d+$/.test(cid)

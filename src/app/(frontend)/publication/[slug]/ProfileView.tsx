@@ -449,7 +449,7 @@ export function ProfileView({
       </section>)
     if (b.type === 'gallery') {
       const items: PublicGalleryItem[] = (b.images && b.images.length
-        ? b.images.filter((im) => im.url).map((im) => ({ thumbUrl: im.url as string, largeUrl: im.url as string, url: im.url as string, width: im.width, height: im.height, caption: im.caption || '', alt: im.caption || '' }))
+        ? b.images.filter((im) => im.url).map((im) => ({ thumbUrl: im.url as string, largeUrl: im.url as string, url: im.url as string, width: im.width, height: im.height, caption: im.caption || '', alt: im.alt || im.caption || '' }))
         : gal.filter((g) => g.url).map((g) => ({ thumbUrl: g.url as string, largeUrl: g.url as string, url: g.url, width: null, height: null, caption: g.caption || '', alt: g.caption || '' })))
       if (!items.length) return null
       return (<section className={`pf__sec${fullCls}`} key={b.id}>{head}<PublicGallery items={items} /></section>)

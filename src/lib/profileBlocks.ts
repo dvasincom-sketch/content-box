@@ -5,7 +5,7 @@
  * полями (sections/timeline/…) читаются через toBlocks() — совместимость.
  */
 export type PBFact = { label: string; value: string }
-export type PBGalleryImg = { imageId: number | string; url: string | null; width: number | null; height: number | null; caption: string }
+export type PBGalleryImg = { imageId: number | string; url: string | null; width: number | null; height: number | null; caption: string; alt?: string }
 export type PBTimeline = { year: string; title: string; text?: string }
 export type PBRelation = { name: string; text: string }
 export type PBRelease = { title: string; meta?: string; year?: string }
