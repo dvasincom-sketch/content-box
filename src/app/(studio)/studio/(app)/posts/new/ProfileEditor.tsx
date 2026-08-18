@@ -328,6 +328,53 @@ function HeroImage({ url, onChange }: { url?: string; onChange: (u: string) => v
  * Хранение остаётся простым текстом; рендер понимает «## », **жирный**,
  * *курсив*, [текст](ссылка) и списки «- ». Панель просто вставляет разметку.
  */
+/**
+ * Вставка форматированного текста (Word, Google Docs, веб) → наш Markdown-набор:
+ * **жирный**, *курсив*, [текст](ссылка), «## подзаголовок», списки «- ». Иначе при
+ * вставке в обычную textarea оформление терялось. Разбираем HTML буфера через DOMParser
+ * и обходим дерево; при отсутствии HTML — обычная вставка (native).
+ */
+function htmlToMd(html: string): string {
+  let doc: Document
+  try { doc = new DOMParser().parseFromString(html, 'text/html') } catch { return '' }
+  const isBold = (el: HTMLElement): boolean => {
+    const w = el.style.fontWeight
+    if (w) return w === 'bold' || w === 'bolder' || (/^\d+$/.test(w) && Number(w) >= 600)
+    return el.tagName === 'STRONG' || el.tagName === 'B'
+  }
+  const isItalic = (el: HTMLElement): boolean => {
+    const st = el.style.fontStyle
+    if (st) return st === 'italic'
+    return el.tagName === 'EM' || el.tagName === 'I'
+  }
+  const kids = (node: Node): string => {
+    let out = ''
+    node.childNodes.forEach((c) => { out += ser(c) })
+    return out
+  }
+  const ser = (node: Node): string => {
+    if (node.nodeType === 3) return (node.textContent || '').replace(/\s+/g, ' ')
+    if (node.nodeType !== 1) return ''
+    const el = node as HTMLElement
+    const tag = el.tagName
+    if (tag === 'BR') return '\n'
+    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'HEAD') return ''
+    const inner = kids(el)
+    if (tag === 'A') { const href = el.getAttribute('href') || ''; const t = inner.trim(); return href && t ? `[${t}](${href})` : inner }
+    if (/^H[1-6]$/.test(tag)) return '\n\n## ' + inner.trim() + '\n\n'
+    if (tag === 'LI') return '- ' + inner.trim() + '\n'
+    if (tag === 'UL' || tag === 'OL') return '\n' + inner + '\n'
+    if (tag === 'P' || tag === 'DIV' || tag === 'BLOCKQUOTE' || tag === 'TR') return '\n\n' + inner + '\n\n'
+    if (!inner.trim()) return inner
+    if (isBold(el) && !inner.includes('*')) return '**' + inner.trim() + '**'
+    if (isItalic(el) && !inner.includes('*')) return '*' + inner.trim() + '*'
+    return inner
+  }
+  let md = kids(doc.body)
+  md = md.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/[ \t]{2,}/g, ' ').trim()
+  return md
+}
+
 function MdArea({ value, onChange, rows = 5, placeholder }: { value: string; onChange: (v: string) => void; rows?: number; placeholder?: string }) {
   const ref = React.useRef<HTMLTextAreaElement>(null)
   const [sel, setSel] = React.useState<[number, number] | null>(null)
@@ -363,6 +410,21 @@ function MdArea({ value, onChange, rows = 5, placeholder }: { value: string; onC
     onChange(nv)
     setSel([ns, ne])
   }
+  const onPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const html = e.clipboardData.getData('text/html')
+    if (!html || !/<(strong|b|em|i|a|h[1-6]|li|ul|ol)\b/i.test(html)) return // обычный текст — нативная вставка
+    const md = htmlToMd(html)
+    if (!md) return
+    e.preventDefault()
+    const ta = e.currentTarget
+    const v = value ?? ''
+    const start = ta.selectionStart ?? v.length
+    const end = ta.selectionEnd ?? v.length
+    const nv = v.slice(0, start) + md + v.slice(end)
+    onChange(nv)
+    const caret = start + md.length
+    setSel([caret, caret])
+  }
   return (
     <div className="pe__md">
       <div className="pe__mdbar">
@@ -372,7 +434,7 @@ function MdArea({ value, onChange, rows = 5, placeholder }: { value: string; onC
         <button type="button" onClick={() => apply('li')} title="Список"><List size={14} /></button>
         <button type="button" onClick={() => apply('link')} title="Ссылка"><Link2 size={14} /></button>
       </div>
-      <textarea ref={ref} className="studio-input pe__ta" rows={rows} placeholder={placeholder} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
+      <textarea ref={ref} className="studio-input pe__ta" rows={rows} placeholder={placeholder} value={value ?? ''} onChange={(e) => onChange(e.target.value)} onPaste={onPaste} />
     </div>
   )
 }

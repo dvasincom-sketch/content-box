@@ -380,9 +380,9 @@ export function ProfileView({
           <div>
             {b.eyebrow && <div className="pf__eye">{b.eyebrow}</div>}
             <h1 className="pf__name">{title}</h1>
-            {b.subtitle && <div className="pf__sub">{b.subtitle}</div>}
+            {b.subtitle && <div className="pf__sub">{inline(b.subtitle, 'herosub')}</div>}
             <div className="pf__read">≈ {readMin} мин чтения</div>
-            {b.lead && <p className="pf__lead">{b.lead}</p>}
+            {b.lead && <p className="pf__lead">{inline(b.lead, 'herolead')}</p>}
           </div>
         </div>
       </div>
