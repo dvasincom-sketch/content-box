@@ -129,6 +129,69 @@ function BlockEditor({ b, patch }: { b: PBlock; patch: (p: Partial<PBlock>) => v
   )
 }
 
+/** Разбор одного блока server-sent events («event:» + «data:»). */
+function parseSse(raw: string): { event: string; data: Record<string, unknown> } | null {
+  let event = 'message'
+  const data: string[] = []
+  for (const line of raw.split('\n')) {
+    if (line.startsWith('event:')) event = line.slice(6).trim()
+    else if (line.startsWith('data:')) data.push(line.slice(5).replace(/^ /, ''))
+  }
+  if (!data.length) return null
+  try { return { event, data: JSON.parse(data.join('\n')) as Record<string, unknown> } } catch { return null }
+}
+
+type StreamHandlers = {
+  onStart?: (parts: number) => void
+  onProgress?: (blocks: PBlock[], i: number, n: number) => void
+  onDone?: (d: Record<string, unknown>) => void
+  onError?: (msg: string) => void
+}
+
+/**
+ * Читает потоковый ответ /studio/api/compose/stream и дёргает колбэки по событиям.
+ * Аккумулятор и разбор живут ВНЕ рендера компонента — иначе react-hooks/immutability
+ * ругается на мутацию массива, созданного в рендере. Возвращает число блоков.
+ */
+async function readComposeStream(text: string, existing: { type: string; title: string }[], h: StreamHandlers): Promise<number> {
+  const res = await fetch('/studio/api/compose/stream', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+    body: JSON.stringify({ text, existing }),
+  })
+  if (!res.ok || !res.body) {
+    const j = await res.json().catch(() => null)
+    h.onError?.((j && j.error) || 'Не удалось обработать текст. Попробуйте ещё раз.')
+    return 0
+  }
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buf = ''
+  let count = 0
+  let finished = false
+  while (!finished) {
+    const { value, done } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    let nl = buf.indexOf('\n\n')
+    while (nl >= 0) {
+      const chunk = buf.slice(0, nl); buf = buf.slice(nl + 2)
+      const ev = parseSse(chunk)
+      if (ev) {
+        const d = ev.data
+        if (ev.event === 'start') h.onStart?.(Number(d.parts) || 1)
+        else if (ev.event === 'progress') {
+          const bl = (Array.isArray(d.blocks) ? d.blocks : []) as PBlock[]
+          count += bl.length
+          h.onProgress?.(bl, (Number(d.i) || 0) + 1, Number(d.n) || 1)
+        } else if (ev.event === 'done') { h.onDone?.(d); finished = true }
+        else if (ev.event === 'error') { h.onError?.(String(d.error || 'Ошибка разбора.')); finished = true }
+      }
+      nl = buf.indexOf('\n\n')
+    }
+  }
+  return count
+}
+
 const LOADER_STEPS = ['Читаю текст…', 'Определяю структуру…', 'Собираю блоки…', 'Проверяю разметку…', 'Почти готово…']
 
 export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existingBlocks }: {
@@ -152,6 +215,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [stepIdx, setStepIdx] = React.useState(0)
+  const [progress, setProgress] = React.useState<{ i: number; n: number } | null>(null)
 
   React.useEffect(() => {
     if (!loading) { setStepIdx(0); return }
@@ -161,7 +225,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
 
   const reset = () => {
     setText(''); setPhase('input'); setBlocks([]); setExcluded(new Set()); setInsertMode('append')
-    setEditingId(null); setCost(null); setSuggest(null); setInitialProposal([]); setLog([]); setFeedback(''); setError(null)
+    setEditingId(null); setCost(null); setSuggest(null); setInitialProposal([]); setLog([]); setFeedback(''); setError(null); setProgress(null)
   }
   const close = () => { reset(); onClose() }
 
@@ -203,10 +267,32 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
     }
   }
 
+  // Потоковый разбор: студия режет текст на части и отдаёт блоки по мере готовности
+  // (event-stream). Прогресс виден по частям, длинный текст не упирается в таймаут.
   async function propose() {
-    if (text.trim().length < 30) { setError('Вставьте текст — минимум 30 символов.'); return }
-    const ok = await call({ text: text.trim(), messages: [], blocks: [], existing })
-    if (ok) { setPhase('review') }
+    const t = text.trim()
+    if (t.length < 30) { setError('Вставьте текст — минимум 30 символов.'); return }
+    setLoading(true); setError(null); setProgress(null); setSuggest(null); setCost(null)
+    setBlocks([]); setExcluded(new Set()); setLog([])
+    try {
+      await readComposeStream(t, existing, {
+        onStart: (parts) => { setPhase('review'); setProgress({ i: 0, n: parts }) },
+        onProgress: (bl, i, n) => { setBlocks((prev) => [...prev, ...bl]); setProgress({ i, n }) },
+        onDone: (d) => {
+          const bl = (Array.isArray(d.blocks) ? d.blocks : []) as PBlock[]
+          setBlocks(bl); setInitialProposal(bl); setExcluded(new Set())
+          if (typeof d.costRub === 'number') setCost(d.costRub)
+          setSuggest(d.suggest && typeof d.suggest === 'object' ? (d.suggest as { title?: string; tags?: string[] }) : null)
+          const extra = d.truncated ? ' Текст очень длинный — разобрана начальная часть; остальное добавьте отдельной публикацией.' : ''
+          setLog([{ role: 'assistant', content: String(d.note || 'Готово.') + extra }])
+        },
+        onError: (msg) => { setError(msg); setPhase('input') },
+      })
+    } catch {
+      setError('Соединение прервалось — попробуйте ещё раз или сократите текст.')
+    } finally {
+      setLoading(false); setProgress(null)
+    }
   }
 
   async function refine() {
@@ -258,7 +344,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
               <span className="aic__count">
                 {chars.toLocaleString('ru-RU')} симв.
                 {chars >= 30 ? ` · ≈ ${rubFmt(estCostRub(chars))} (оценка)` : ''}
-                {bigText ? ' · большой текст, разбор может занять до минуты' : ''}
+                {bigText ? ' · большой текст — разберём по частям, с прогрессом' : ''}
               </span>
               <button type="button" className="studio-btn studio-btn--primary" disabled={loading} onClick={propose}>
                 {loading ? <><Loader2 size={16} className="aic__spin" /> Разбираю…</> : <><Sparkles size={16} /> Предложить разбивку</>}
@@ -267,6 +353,15 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
           </div>
         ) : (
           <div className="aic__body">
+            {progress && (
+              <div className="aic__prog">
+                <div className="aic__prog-top">
+                  <Loader2 size={14} className="aic__spin" />
+                  {progress.i === 0 ? 'Читаю текст…' : `Разбираю часть ${progress.i} из ${progress.n}…`}
+                </div>
+                <div className="aic__prog-bar"><span style={{ width: `${Math.round((progress.i / Math.max(1, progress.n)) * 100)}%` }} /></div>
+              </div>
+            )}
             <div className="aic__chat">
               {log.map((m, i) => (
                 <div key={i} className={`aic__msg aic__msg--${m.role}`}>{m.content}</div>
@@ -278,7 +373,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
                 <span><Eye size={14} /> Превью · выбрано {included.length} из {blocks.length}</span>
                 {cost != null && <span className="aic__cost">разбор ≈ {rubFmt(cost)}</span>}
               </div>
-              {blocks.length === 0 && <div className="aic__empty">Пусто — уточните текст или правку.</div>}
+              {blocks.length === 0 && !progress && <div className="aic__empty">Пусто — уточните текст или правку.</div>}
               <div className="aic__pvwrap">
                 {blocks.map((b, i) => {
                   const off = excluded.has(b.id)
@@ -350,7 +445,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
           </div>
         )}
 
-        {loading && (
+        {loading && !progress && (
           <div className="aic__loader">
             <Loader2 size={30} className="aic__spin" />
             <div className="aic__loader-step">{LOADER_STEPS[stepIdx]}</div>
@@ -444,6 +539,10 @@ const AIC_CSS = `
 .aic__mode{display:flex;gap:8px;flex-wrap:wrap}
 .aic__mode label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--st-text-muted);border:1px solid var(--st-border);border-radius:9px;padding:7px 12px;cursor:pointer}
 .aic__mode label.is-on{border-color:#2f6bed;color:var(--st-text);background:color-mix(in srgb,#2f6bed 8%,transparent)}
+.aic__prog{display:flex;flex-direction:column;gap:6px;border:1px solid color-mix(in srgb,#2f6bed 22%,transparent);background:color-mix(in srgb,#2f6bed 6%,transparent);border-radius:10px;padding:9px 12px}
+.aic__prog-top{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--st-text)}
+.aic__prog-bar{height:6px;border-radius:999px;background:color-mix(in srgb,var(--st-text) 10%,transparent);overflow:hidden}
+.aic__prog-bar span{display:block;height:100%;background:#2f6bed;border-radius:999px;transition:width .3s ease}
 .aic__spin{animation:aicspin 1s linear infinite}
 @keyframes aicspin{to{transform:rotate(360deg)}}
 .aic__loader{position:absolute;inset:0;background:color-mix(in srgb,var(--st-surface) 88%,transparent);backdrop-filter:blur(2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--st-text);z-index:5}

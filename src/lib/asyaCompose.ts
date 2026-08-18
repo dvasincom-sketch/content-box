@@ -74,6 +74,8 @@ export async function composePageBlocks(args: {
   blocks?: RawBlock[]
   existing?: { type: string; title: string }[]
   lang?: string
+  /** Потоковый режим: обрабатывать ЭТОТ фрагмент как часть i из n (оркестрация у нас). */
+  part?: { i: number; n: number }
   /** Ключ тенанта (из студии). Если не задан — платформенный из env. */
   key?: string
 }): Promise<{ note: string; blocks: RawBlock[]; suggest: ComposeSuggest | null }> {
@@ -88,6 +90,7 @@ export async function composePageBlocks(args: {
       blocks: args.blocks ?? [],
       existing: args.existing ?? [],
       lang: args.lang || 'ru',
+      ...(args.part ? { part: args.part } : {}),
     }),
   })
   const j: any = await res.json().catch(() => null)
@@ -99,4 +102,29 @@ export async function composePageBlocks(args: {
     blocks: Array.isArray(j.blocks) ? (j.blocks as RawBlock[]) : [],
     suggest: j?.suggest && typeof j.suggest === 'object' ? (j.suggest as ComposeSuggest) : null,
   }
+}
+
+/**
+ * Разбивка длинного текста на части по границам абзацев (~maxChars символов).
+ * Зеркалит логику Аси, но оркестрацию ведём мы: по фрагменту на запрос, чтобы
+ * показывать прогресс и не упираться в лимит вывода/таймаут одного вызова.
+ * Крохотные хвостовые фрагменты (<30 симв.) приклеиваем к предыдущему —
+ * иначе Ася отклонит их как «текст слишком короткий».
+ */
+export function chunkComposeText(text: string, maxChars = 8000): string[] {
+  const paras = String(text || '').split(/\n{2,}/)
+  const chunks: string[] = []
+  let buf = ''
+  for (const para of paras) {
+    if (buf && buf.length + para.length + 2 > maxChars) { chunks.push(buf); buf = '' }
+    buf = buf ? buf + '\n\n' + para : para
+    while (buf.length > maxChars * 1.5) { chunks.push(buf.slice(0, maxChars)); buf = buf.slice(maxChars) }
+  }
+  if (buf.trim()) chunks.push(buf)
+  const out: string[] = []
+  for (const c of chunks) {
+    if (out.length && c.trim().length < 30) { out[out.length - 1] += '\n\n' + c; continue }
+    out.push(c)
+  }
+  return out.length ? out : [text]
 }
