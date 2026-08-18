@@ -56,13 +56,13 @@ export function AiKeyCard() {
     <section className="settings__block aik">
       <style dangerouslySetInnerHTML={{ __html: AIK_CSS }} />
       <div className="aik__head"><span className="aik__ico"><KeyRound size={16} /></span><b>Подключение ИИ (Ася)</b>{badge}</div>
-      <p className="aik__lead">Ключ проекта в сервисе Ася (capability <code>compose</code>) для функции «Заполнить с помощью AI». Вставьте ключ здесь — он хранится в настройках вашего проекта. Если поле оставить пустым, используется платформенный ключ (если задан).</p>
+      <p className="aik__lead">Ключ проекта в сервисе Ася (capability <code>compose</code>) для функции «Заполнить с помощью AI». Вставьте ключ здесь — он хранится в настройках вашего проекта. Если поле оставить пустым, используется платформенный ключ (если задан). Получить ключ можно на <a className="aik__link" href="https://api.xn--80a8a2b.online" target="_blank" rel="noopener noreferrer">api.ася.online</a>.</p>
 
       <div className="aik__row">
         <input
           type="password"
           className="studio-input aik__input"
-          placeholder={status?.hasKey ? 'Ключ сохранён — введите новый, чтобы заменить' : 'Вставьте ключ Аси (asya_…)'}
+          placeholder={status?.hasKey ? '••••••••••••••••' : 'Вставьте ключ Аси (asya_…)'}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           autoComplete="off"
@@ -77,6 +77,7 @@ export function AiKeyCard() {
         )}
       </div>
 
+      {status?.hasKey && <div className="aik__hint">Ключ сохранён (скрыт). Введите новый, чтобы заменить.</div>}
       {msg && <div className="aik__ok">{msg}</div>}
       {err && <div className="aik__err">{err}</div>}
     </section>
@@ -98,6 +99,8 @@ const AIK_CSS = `
 .aik__clear{flex:none;width:42px;justify-content:center;color:#e5484d}
 .aik__spin{animation:aikspin 1s linear infinite}
 @keyframes aikspin{to{transform:rotate(360deg)}}
+.aik__link{color:#2f6bed;text-decoration:underline}
+.aik__hint{font-size:12px;color:var(--st-text-muted);margin-top:8px}
 .aik__ok{font-size:13px;color:#1a7f4b;margin-top:10px}
 .aik__err{font-size:13px;color:#e5484d;margin-top:10px}
 `
