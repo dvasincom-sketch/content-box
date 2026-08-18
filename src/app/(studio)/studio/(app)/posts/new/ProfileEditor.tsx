@@ -1,11 +1,12 @@
 'use client'
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading, PanelTop, Rows3, Info } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading, PanelTop, Rows3, Info, Sparkles } from 'lucide-react'
 import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType, type PBAward } from '@/lib/profileBlocks'
 import { AWARD_ICONS, AWARD_ICON_MAP } from '@/lib/awardIcons'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
 import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
+import { AiComposeModal } from './AiComposeModal'
 
 export type PEMedia = {
   gallery: GalleryItem[]
@@ -562,6 +563,7 @@ export function ProfileEditor({ value, onChange, cats, media }: { value: Profile
   const removeBlock = (i: number) => writeBlocks(blocks.filter((_, j) => j !== i))
 
   const [menuOpen, setMenuOpen] = React.useState<null | 'top' | 'bottom'>(null)
+  const [aiOpen, setAiOpen] = React.useState(false)
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set())
   const toggleCollapse = (id: string) => setCollapsed((s2) => { const n = new Set(s2); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const allCollapsed = blocks.length > 0 && blocks.every((b) => collapsed.has(b.id))
@@ -589,6 +591,7 @@ export function ProfileEditor({ value, onChange, cats, media }: { value: Profile
             <button type="button" className="pe__toolbtn" onClick={() => setMenuOpen((o) => o === 'top' ? null : 'top')}>{menuOpen === 'top' ? <><X size={14} /> Закрыть окно</> : <><Plus size={14} /> Добавить блок</>}</button>
             {menuOpen === 'top' && addMenuEl('pe__menu--top')}
           </div>
+          <button type="button" className="pe__toolbtn pe__ai" onClick={() => setAiOpen(true)}><Sparkles size={14} /> Заполнить с помощью AI</button>
           {blocks.length > 1 && <button type="button" className="pe__collapse-all" onClick={toggleAll}>{allCollapsed ? 'Развернуть все' : 'Свернуть все'}</button>}
         </div>
       </div>
@@ -601,6 +604,8 @@ export function ProfileEditor({ value, onChange, cats, media }: { value: Profile
         <button type="button" className="studio-btn studio-btn--primary pe__addblock" onClick={() => setMenuOpen((o) => o === 'bottom' ? null : 'bottom')}>{menuOpen === 'bottom' ? <><X size={16} /> Закрыть окно</> : <><Plus size={16} /> Добавить блок</>}</button>
         {menuOpen === 'bottom' && addMenuEl('')}
       </div>
+
+      <AiComposeModal open={aiOpen} onClose={() => setAiOpen(false)} onInsert={(ai) => writeBlocks([...blocks, ...ai])} />
     </div>
   )
 }
@@ -610,6 +615,7 @@ const PE_CSS = `
 .pe__hint{font-size:12.5px;color:var(--st-text-muted);background:color-mix(in srgb,var(--st-accent) 9%,transparent);border:1px solid color-mix(in srgb,var(--st-accent) 22%,transparent);border-radius:12px;padding:10px 14px;margin-bottom:14px;line-height:1.4}
 .pe .pe__ta{resize:vertical;min-height:70px;font-family:inherit}
 .pe__hero{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--st-border);border-radius:12px;background:var(--st-surface);margin-bottom:18px}
+.pe__ai{color:#2f6bed;border-color:color-mix(in srgb,#2f6bed 30%,transparent)}
 .pe__blocks-title{font-weight:700;font-size:14px;color:var(--st-text);display:flex;align-items:center;gap:8px;margin:4px 2px 10px}
 .pe__blocks-title em{font-style:normal;font-size:12px;color:var(--st-text-muted);background:color-mix(in srgb,var(--st-text) 8%,transparent);border-radius:999px;padding:2px 9px;font-weight:700}
 .pe__empty{font-size:13px;color:var(--st-text-muted);padding:14px;border:1px dashed var(--st-border);border-radius:12px;text-align:center;margin-bottom:12px}
