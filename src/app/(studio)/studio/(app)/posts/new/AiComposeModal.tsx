@@ -129,67 +129,54 @@ function BlockEditor({ b, patch }: { b: PBlock; patch: (p: Partial<PBlock>) => v
   )
 }
 
-/** Разбор одного блока server-sent events («event:» + «data:»). */
-function parseSse(raw: string): { event: string; data: Record<string, unknown> } | null {
-  let event = 'message'
-  const data: string[] = []
-  for (const line of raw.split('\n')) {
-    if (line.startsWith('event:')) event = line.slice(6).trim()
-    else if (line.startsWith('data:')) data.push(line.slice(5).replace(/^ /, ''))
-  }
-  if (!data.length) return null
-  try { return { event, data: JSON.parse(data.join('\n')) as Record<string, unknown> } } catch { return null }
-}
-
-type StreamHandlers = {
-  onStart?: (parts: number) => void
-  onProgress?: (blocks: PBlock[], i: number, n: number) => void
-  onDone?: (d: Record<string, unknown>) => void
+/** Колбэки прогресса по частям. */
+type ChunkHandlers = {
+  onPlan?: (parts: number) => void
+  onPart?: (blocks: PBlock[], i: number, n: number) => void
+  onDone?: (d: { note: string; suggest: { title?: string; tags?: string[] } | null; cost: number; truncated: boolean; blocks: PBlock[] }) => void
   onError?: (msg: string) => void
 }
 
 /**
- * Читает потоковый ответ /studio/api/compose/stream и дёргает колбэки по событиям.
- * Аккумулятор и разбор живут ВНЕ рендера компонента — иначе react-hooks/immutability
- * ругается на мутацию массива, созданного в рендере. Возвращает число блоков.
+ * Разбор длинного текста короткими запросами: клиент сам идёт по частям (part.i),
+ * сервер режет текст и обрабатывает один фрагмент за запрос. Так нет долгого
+ * соединения — прокси не рвёт и не буферизует ответ. Аккумулятор живёт ВНЕ рендера
+ * (иначе react-hooks/immutability ругается на мутацию массива из рендера).
  */
-async function readComposeStream(text: string, existing: { type: string; title: string }[], h: StreamHandlers): Promise<number> {
-  const res = await fetch('/studio/api/compose/stream', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-    body: JSON.stringify({ text, existing }),
-  })
-  if (!res.ok || !res.body) {
-    const j = await res.json().catch(() => null)
-    h.onError?.((j && j.error) || 'Не удалось обработать текст. Попробуйте ещё раз.')
-    return 0
-  }
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let buf = ''
-  let count = 0
-  let finished = false
-  while (!finished) {
-    const { value, done } = await reader.read()
-    if (done) break
-    buf += decoder.decode(value, { stream: true })
-    let nl = buf.indexOf('\n\n')
-    while (nl >= 0) {
-      const chunk = buf.slice(0, nl); buf = buf.slice(nl + 2)
-      const ev = parseSse(chunk)
-      if (ev) {
-        const d = ev.data
-        if (ev.event === 'start') h.onStart?.(Number(d.parts) || 1)
-        else if (ev.event === 'progress') {
-          const bl = (Array.isArray(d.blocks) ? d.blocks : []) as PBlock[]
-          count += bl.length
-          h.onProgress?.(bl, (Number(d.i) || 0) + 1, Number(d.n) || 1)
-        } else if (ev.event === 'done') { h.onDone?.(d); finished = true }
-        else if (ev.event === 'error') { h.onError?.(String(d.error || 'Ошибка разбора.')); finished = true }
-      }
-      nl = buf.indexOf('\n\n')
+async function runComposeChunks(text: string, existing: { type: string; title: string }[], h: ChunkHandlers): Promise<void> {
+  const all: PBlock[] = []
+  let n = 1
+  let note = ''
+  let suggest: { title?: string; tags?: string[] } | null = null
+  let cost = 0
+  let truncated = false
+  for (let i = 0; i < n; i++) {
+    let j: Record<string, unknown> | null = null
+    try {
+      const res = await fetch('/studio/api/compose', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ text, part: { i }, existing: i === 0 ? existing : [] }),
+      })
+      j = (await res.json().catch(() => null)) as Record<string, unknown> | null
+      if (!res.ok || !j || j.ok !== true) { h.onError?.(String((j && j.error) || 'Не удалось обработать текст. Попробуйте ещё раз.')); return }
+    } catch {
+      if (all.length) h.onDone?.({ note: note + ' (соединение прервалось — показаны готовые части)', suggest, cost, truncated: true, blocks: all })
+      else h.onError?.('Соединение прервалось — попробуйте ещё раз.')
+      return
     }
+    if (i === 0) {
+      n = Math.max(1, Number(j.parts) || 1)
+      note = String(j.note || '')
+      suggest = j.suggest && typeof j.suggest === 'object' ? (j.suggest as { title?: string; tags?: string[] }) : null
+      truncated = !!j.truncated
+      h.onPlan?.(n)
+    }
+    if (typeof j.costRub === 'number') cost += j.costRub as number
+    const bl = (Array.isArray(j.blocks) ? j.blocks : []) as PBlock[]
+    for (const b of bl) all.push(b)
+    h.onPart?.(bl, i + 1, n)
   }
-  return count
+  h.onDone?.({ note, suggest, cost, truncated, blocks: all })
 }
 
 const LOADER_STEPS = ['Читаю текст…', 'Определяю структуру…', 'Собираю блоки…', 'Проверяю разметку…', 'Почти готово…']
@@ -267,29 +254,28 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
     }
   }
 
-  // Потоковый разбор: студия режет текст на части и отдаёт блоки по мере готовности
-  // (event-stream). Прогресс виден по частям, длинный текст не упирается в таймаут.
+  // Разбор длинного текста по частям короткими запросами (без долгого соединения):
+  // прокси не рвёт связь и не буферизует ответ. Прогресс виден по частям.
   async function propose() {
     const t = text.trim()
     if (t.length < 30) { setError('Вставьте текст — минимум 30 символов.'); return }
     setLoading(true); setError(null); setProgress(null); setSuggest(null); setCost(null)
-    setBlocks([]); setExcluded(new Set()); setLog([])
+    setBlocks([]); setExcluded(new Set()); setLog([]); setInitialProposal([])
     try {
-      await readComposeStream(t, existing, {
-        onStart: (parts) => { setPhase('review'); setProgress({ i: 0, n: parts }) },
-        onProgress: (bl, i, n) => { setBlocks((prev) => [...prev, ...bl]); setProgress({ i, n }) },
-        onDone: (d) => {
-          const bl = (Array.isArray(d.blocks) ? d.blocks : []) as PBlock[]
-          setBlocks(bl); setInitialProposal(bl); setExcluded(new Set())
-          if (typeof d.costRub === 'number') setCost(d.costRub)
-          setSuggest(d.suggest && typeof d.suggest === 'object' ? (d.suggest as { title?: string; tags?: string[] }) : null)
-          const extra = d.truncated ? ' Текст очень длинный — разобрана начальная часть; остальное добавьте отдельной публикацией.' : ''
-          setLog([{ role: 'assistant', content: String(d.note || 'Готово.') + extra }])
+      await runComposeChunks(t, existing, {
+        onPlan: (parts) => { setPhase('review'); setProgress({ i: 0, n: parts }) },
+        onPart: (bl, i, n) => { setBlocks((prev) => [...prev, ...bl]); setProgress({ i, n }) },
+        onDone: ({ note, suggest, cost, truncated, blocks }) => {
+          setBlocks(blocks); setInitialProposal(blocks); setExcluded(new Set())
+          setCost(cost || null)
+          setSuggest(suggest && typeof suggest === 'object' ? suggest : null)
+          const extra = truncated ? ' Текст очень длинный — разобрана начальная часть; остальное добавьте отдельной публикацией.' : ''
+          setLog([{ role: 'assistant', content: (note || 'Готово.') + extra }])
         },
         onError: (msg) => { setError(msg); setPhase('input') },
       })
     } catch {
-      setError('Соединение прервалось — попробуйте ещё раз или сократите текст.')
+      setError('Соединение прервалось — попробуйте ещё раз.')
     } finally {
       setLoading(false); setProgress(null)
     }

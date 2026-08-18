@@ -1,7 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '../_lib'
 import type { Payload } from 'payload'
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
-import { composePageBlocks, pingCompose, type ComposeMsg, type RawBlock } from '@/lib/asyaCompose'
+import { composePageBlocks, chunkComposeText, pingCompose, type ComposeMsg, type RawBlock } from '@/lib/asyaCompose'
 import { sanitizeComposeBlocks } from '@/lib/composeBlocks'
 import { logAiUsage, estimateTokens } from '@/lib/logAiUsage'
 import { costRub } from '@/lib/aiPricing'
@@ -28,10 +28,10 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   const key = await tenantComposeKey(payload, tenantId)
   if (!key) return apiError('AI-конструктор не подключён', 503)
 
-  const rl = rateLimit(`compose:${clientIp(req.headers)}`, 20, 60_000)
+  const rl = rateLimit(`compose:${clientIp(req.headers)}`, 40, 60_000)
   if (!rl.ok) return tooManyRequests(rl.retryAfter, 'Слишком часто. Подождите немного.')
 
-  const data = await readJson<{ text?: string; messages?: ComposeMsg[]; blocks?: RawBlock[]; existing?: { type: string; title: string }[] }>(req)
+  const data = await readJson<{ text?: string; messages?: ComposeMsg[]; blocks?: RawBlock[]; existing?: { type: string; title: string }[]; part?: { i?: number } }>(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
   const text = String(data.text || '').trim()
@@ -43,6 +43,34 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content).slice(0, 4000) }))
   const prev = Array.isArray(data.blocks) ? data.blocks.slice(0, 40) : []
   const existing = Array.isArray(data.existing) ? data.existing.slice(0, 40) : []
+
+  // Потоковый разбор по частям: клиент шлёт part.i, сервер сам режет текст и
+  // обрабатывает один фрагмент за запрос (быстрый ответ, без долгого соединения).
+  if (data.part && Number.isInteger(data.part.i)) {
+    const MAX_CHARS = 120_000, MAX_PARTS = 16
+    const chunks = chunkComposeText(text.slice(0, MAX_CHARS), 8000)
+    const nParts = Math.min(chunks.length, MAX_PARTS)
+    const i = Math.max(0, Math.min(Number(data.part.i), nParts - 1))
+    const frag = chunks[i]
+    try {
+      const r = await composePageBlocks({ text: frag, part: { i, n: nParts }, existing: i === 0 ? existing : [], lang: 'ru', key })
+      const blocks = sanitizeComposeBlocks(r.blocks)
+      const tokensIn = estimateTokens(frag)
+      const tokensOut = estimateTokens(r.note, JSON.stringify(r.blocks))
+      void logAiUsage(payload, {
+        tenant: tenantId, surface: 'compose', action: 'compose',
+        tokensIn, tokensOut, actorType: 'author', meta: `часть ${i + 1}/${nParts}, ${blocks.length} блоков`,
+      })
+      return apiOk({
+        note: r.note, blocks, suggest: i === 0 ? (r.suggest ?? null) : null,
+        parts: nParts, part: i, truncated: chunks.length > MAX_PARTS || text.length > MAX_CHARS,
+        tokensIn, tokensOut, costRub: costRub(tokensIn, tokensOut),
+      })
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e)
+      return apiError('Не удалось разобрать текст: ' + reason, 502)
+    }
+  }
 
   try {
     const r = await composePageBlocks({ text: text.slice(0, 60000), messages, blocks: prev, existing, lang: 'ru', key })
