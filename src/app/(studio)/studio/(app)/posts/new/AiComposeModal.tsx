@@ -179,6 +179,22 @@ async function runComposeChunks(text: string, existing: { type: string; title: s
   h.onDone?.({ note, suggest, cost, truncated, blocks: all })
 }
 
+/** Короткая подпись блока для лёгкого списка во время разбора (без тяжёлого HTML). */
+function blockShortText(b: PBlock): string {
+  const a = b as Record<string, unknown>
+  const strip = (v: unknown) => String(v || '').replace(/[*_`#>\[\]]/g, '').replace(/\s+/g, ' ').trim()
+  if (a.title) return strip(a.title)
+  if (a.subtitle) return strip(a.subtitle)
+  for (const k of ['body', 'text', 'lead'] as const) { const v = strip(a[k]); if (v) return v.slice(0, 90) }
+  if (Array.isArray(a.items) && a.items.length) {
+    const it = a.items[0] as unknown
+    if (typeof it === 'string') return strip(it).slice(0, 90)
+    const r = (it || {}) as Record<string, unknown>
+    return strip(r.title || r.name || r.label || r.year).slice(0, 90)
+  }
+  return ''
+}
+
 const LOADER_STEPS = ['Читаю текст…', 'Определяю структуру…', 'Собираю блоки…', 'Проверяю разметку…', 'Почти готово…']
 
 export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existingBlocks }: {
@@ -356,10 +372,21 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
 
             <div className="aic__preview">
               <div className="aic__preview-h">
-                <span><Eye size={14} /> Превью · выбрано {included.length} из {blocks.length}</span>
+                <span><Eye size={14} /> {loading ? `Собираю блоки · ${blocks.length}` : `Превью · выбрано ${included.length} из ${blocks.length}`}</span>
                 {cost != null && <span className="aic__cost">разбор ≈ {rubFmt(cost)}</span>}
               </div>
               {blocks.length === 0 && !progress && <div className="aic__empty">Пусто — уточните текст или правку.</div>}
+              {loading && (
+                <div className="aic__pvwrap aic__pvwrap--lite">
+                  {blocks.map((b, i) => (
+                    <div key={b.id || i} className="aic__pvlite">
+                      <span className="aic__pv-kind2">{BLOCK_LABEL[b.type] || 'Блок'}</span>
+                      {blockShortText(b) && <span className="aic__pvlite-t">{blockShortText(b)}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!loading && (
               <div className="aic__pvwrap">
                 {blocks.map((b, i) => {
                   const off = excluded.has(b.id)
@@ -385,6 +412,7 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
                   )
                 })}
               </div>
+              )}
             </div>
 
             {suggest && (suggest.title || (suggest.tags && suggest.tags.length > 0)) && (
@@ -472,6 +500,11 @@ const AIC_CSS = `
 .aic__pvwrap{display:flex;flex-direction:column;gap:10px;max-height:42vh;overflow:auto;padding-right:4px}
 .aic__pvblock{border:1px solid var(--st-border);border-radius:10px;background:var(--st-surface);overflow:hidden}
 .aic__pvblock.is-off{opacity:.5}
+.aic__pvwrap--lite{gap:6px}
+.aic__pvlite{display:flex;align-items:center;gap:10px;border:1px solid var(--st-border);border-radius:9px;background:var(--st-surface);padding:8px 11px;animation:aicfade .22s ease}
+.aic__pvlite .aic__pv-kind2{flex:none}
+.aic__pvlite-t{font-size:13px;color:var(--st-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@keyframes aicfade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
 .aic__pvbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px 6px 10px;border-bottom:1px solid var(--st-border);background:color-mix(in srgb,var(--st-text) 3%,transparent)}
 .aic__pvchk{display:flex;align-items:center;gap:8px;cursor:pointer}
 .aic__pvchk input{cursor:pointer}
