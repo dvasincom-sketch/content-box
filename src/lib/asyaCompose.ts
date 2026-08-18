@@ -35,8 +35,10 @@ export async function composePageBlocks(args: {
   messages?: ComposeMsg[]
   blocks?: RawBlock[]
   lang?: string
+  /** Ключ тенанта (из студии). Если не задан — платформенный из env. */
+  key?: string
 }): Promise<{ note: string; blocks: RawBlock[] }> {
-  const key = composeKey()
+  const key = (args.key || '').trim() || composeKey()
   if (!key) throw new Error('ASYA_COMPOSE_KEY не задан')
   const res = await fetch(composeUrl(), {
     method: 'POST',

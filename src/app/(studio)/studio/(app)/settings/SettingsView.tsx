@@ -19,6 +19,7 @@ import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
 import { TariffPanel, type TariffPanelData } from './TariffPanel'
 import { AiUsagePanel } from './AiUsagePanel'
+import { AiKeyCard } from './AiKeyCard'
 import type { AiUsageStats } from '@/lib/aiUsageStats'
 
 type Social = { platform: string; url: string }
@@ -185,7 +186,7 @@ export function SettingsView({
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}
         {tab === 'tariff' && isOwner && <TariffPanel data={tariff} />}
-        {tab === 'ai' && isOwner && <AiUsagePanel data={aiUsage} />}
+        {tab === 'ai' && isOwner && (<><AiKeyCard /><AiUsagePanel data={aiUsage} /></>)}
       </div>
     </>
   )

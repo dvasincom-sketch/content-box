@@ -104,6 +104,7 @@ import * as migration_20260813_130000_publication_prev_version from './20260813_
 import * as migration_20260814_100000_gallery_source_publication from './20260814_100000_gallery_source_publication';
 import * as migration_20260814_110000_video_renditions from './20260814_110000_video_renditions';
 import * as migration_20260818_090000_add_ai_usage from './20260818_090000_add_ai_usage';
+import * as migration_20260818_100000_add_ai_compose_key from './20260818_100000_add_ai_compose_key';
 
 export const migrations = [
   {
@@ -635,5 +636,10 @@ export const migrations = [
     up: migration_20260818_090000_add_ai_usage.up,
     down: migration_20260818_090000_add_ai_usage.down,
     name: '20260818_090000_add_ai_usage',
+  },
+  {
+    up: migration_20260818_100000_add_ai_compose_key.up,
+    down: migration_20260818_100000_add_ai_compose_key.down,
+    name: '20260818_100000_add_ai_compose_key',
   },
 ];

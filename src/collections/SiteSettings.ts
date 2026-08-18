@@ -32,6 +32,15 @@ export const SiteSettings: CollectionConfig = {
   },
   fields: [
     // `tenant` added by the multi-tenant plugin.
+    {
+      name: 'aiComposeKey',
+      type: 'text',
+      label: 'Ключ Аси (AI-конструктор)',
+      admin: { description: 'Секретный ключ проекта в сервисе Ася (capability compose) для «Заполнить с помощью AI». Хранится в пределах тенанта, на публичный сайт не отдаётся. Если пусто — используется платформенный ключ (env).' },
+      access: {
+        read: ({ req: { user } }) => isSuperAdmin(user) || Boolean(getUserTenantID(user)),
+      },
+    },
     { name: 'logo', type: 'upload', relationTo: 'media', label: 'Логотип' },
     {
       name: 'appIcon',

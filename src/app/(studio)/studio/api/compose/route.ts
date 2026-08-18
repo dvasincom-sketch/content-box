@@ -1,6 +1,7 @@
-import { withAuthor, readJson, apiError, apiOk } from '../_lib'
+import { withAuthor, readJson, apiError, apiOk, findTenantSettings } from '../_lib'
+import type { Payload } from 'payload'
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
-import { composeEnabled, composePageBlocks, type ComposeMsg, type RawBlock } from '@/lib/asyaCompose'
+import { composePageBlocks, type ComposeMsg, type RawBlock } from '@/lib/asyaCompose'
 import { sanitizeComposeBlocks } from '@/lib/composeBlocks'
 import { logAiUsage, estimateTokens } from '@/lib/logAiUsage'
 
@@ -11,8 +12,19 @@ import { logAiUsage, estimateTokens } from '@/lib/logAiUsage'
  */
 export const runtime = 'nodejs'
 
+/** Ключ Аси для тенанта: сначала из студии (site-settings.aiComposeKey), затем платформенный env. */
+async function tenantComposeKey(payload: Payload, tenantId: number): Promise<string> {
+  try {
+    const s = await findTenantSettings(payload, tenantId)
+    const k = String((s as { aiComposeKey?: unknown } | null)?.aiComposeKey || '').trim()
+    if (k) return k
+  } catch { /* ignore */ }
+  return (process.env.ASYA_COMPOSE_KEY || '').trim()
+}
+
 export const POST = withAuthor(async ({ req, payload, tenantId }) => {
-  if (!composeEnabled()) return apiError('AI-конструктор не подключён', 503)
+  const key = await tenantComposeKey(payload, tenantId)
+  if (!key) return apiError('AI-конструктор не подключён', 503)
 
   const rl = rateLimit(`compose:${clientIp(req.headers)}`, 20, 60_000)
   if (!rl.ok) return tooManyRequests(rl.retryAfter, 'Слишком часто. Подождите немного.')
@@ -30,7 +42,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   const prev = Array.isArray(data.blocks) ? data.blocks.slice(0, 40) : []
 
   try {
-    const r = await composePageBlocks({ text: text.slice(0, 24000), messages, blocks: prev, lang: 'ru' })
+    const r = await composePageBlocks({ text: text.slice(0, 24000), messages, blocks: prev, lang: 'ru', key })
     const blocks = sanitizeComposeBlocks(r.blocks)
     void logAiUsage(payload, {
       tenant: tenantId,
@@ -52,7 +64,12 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
  * факт наличия ключа Аси, сам ключ никогда не раскрывается.
  *  GET → { ok, enabled }
  */
-export const GET = withAuthor(async () => {
+export const GET = withAuthor(async ({ payload, tenantId }) => {
+  let tenantKeyLen = 0
+  try {
+    const s = await findTenantSettings(payload, tenantId)
+    tenantKeyLen = String((s as { aiComposeKey?: unknown } | null)?.aiComposeKey || '').trim().length
+  } catch { /* ignore */ }
   // Сравниваем с рабочим ключом саммари: если summary=true, а compose=false —
   // проблема именно в переменной ASYA_COMPOSE_KEY (имя/область/не применилась),
   // а не в рантайм-инъекции env вообще. Значения ключей НЕ раскрываются.
@@ -64,7 +81,9 @@ export const GET = withAuthor(async () => {
     composeUrlHost = new URL(process.env.ASYA_COMPOSE_URL || `${base}/compose`).host
   } catch { /* ignore */ }
   return apiOk({
-    enabled: composeEnabled(),
+    enabled: tenantKeyLen > 0 || composeKeyLen > 0,
+    keySource: tenantKeyLen > 0 ? 'studio' : composeKeyLen > 0 ? 'env' : 'none',
+    hasStudioKey: tenantKeyLen > 0,
     hasComposeKey: composeKeyLen > 0,
     composeKeyLen,
     hasSummaryKey: summaryKeyLen > 0,
