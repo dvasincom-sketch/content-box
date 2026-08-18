@@ -70,5 +70,11 @@ export const GET = withAuthor(async () => {
     hasSummaryKey: summaryKeyLen > 0,
     composeUrlOverridden: !!process.env.ASYA_COMPOSE_URL,
     composeUrlHost,
+    // Имена (НЕ значения) env-переменных, похожих на ключи Аси — чтобы поймать
+    // опечатку/кириллицу в имени. ascii:false → в имени неотличимый на глаз
+    // не-латинский символ (частая причина «переменная есть, но не видна»).
+    asyaEnvKeys: Object.keys(process.env)
+      .filter((k) => /asya|compose|summary/i.test(k))
+      .map((k) => ({ name: k, ascii: /^[\x20-\x7E]+$/.test(k) })),
   })
 })
