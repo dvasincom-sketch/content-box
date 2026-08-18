@@ -1,0 +1,294 @@
+'use client'
+import React from 'react'
+import {
+  LayoutDashboard, Wallet, HardDrive, Sparkles, Zap, Percent, Info, Check, Loader2,
+  FileText, Captions, MessageCircle, TrendingUp, Image as ImageIcon, Music, Images, FileDown, Video as VideoIcon,
+} from 'lucide-react'
+import { formatBytes, type MediaSourceStat } from '@/lib/mediaStats'
+import { STORAGE_RATE_RUB, COMMISSION_RATE } from '@/lib/tariff'
+import { RATE_IN_RUB_PER_M, RATE_OUT_RUB_PER_M } from '@/lib/aiPricing'
+import type { AiBilling, AiSurfaceKey, AiSurfaceStat } from '@/lib/aiUsageStats'
+import type { TariffPanelData } from './TariffPanel'
+import { AiKeyCard } from './AiKeyCard'
+
+/**
+ * Единый раздел расходов во вкладке «Тариф». Структура: Дашборд (расход за месяц +
+ * остаток депозита) → Хранилище (+доп. услуги) → AI-ассистент (ключ + сервисы) →
+ * Платформенный сбор → Биллинг по месяцам. Токены/стоимость — оценка.
+ */
+const nf = new Intl.NumberFormat('ru-RU')
+const rf = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 2 })
+const fmt = (n: number) => nf.format(Math.round(n || 0))
+const rub = (n: number) => rf.format(n || 0)
+const monthLabel = (m: string) => {
+  const [y, mo] = m.split('-')
+  const names = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+  return `${names[Number(mo) - 1] || mo} ${y}`
+}
+function sourceIcon(key: MediaSourceStat['key']): React.ReactNode {
+  switch (key) {
+    case 'audio': return <Music size={15} />
+    case 'gallery': return <Images size={15} />
+    case 'downloads': return <FileDown size={15} />
+    case 'video': return <VideoIcon size={15} />
+    default: return <ImageIcon size={15} />
+  }
+}
+
+const AI_SERVICES: { key: AiSurfaceKey; label: string; hint: string; Icon: React.ComponentType<{ size?: number }> }[] = [
+  { key: 'compose', label: 'Генерация страниц', hint: 'Разбор текста на блоки', Icon: FileText },
+  { key: 'summary', label: 'Сервис саммари', hint: 'Краткое содержание видео', Icon: Captions },
+  { key: 'support', label: 'Сервис поддержки', hint: 'Ответы зрителям на сайте', Icon: MessageCircle },
+]
+
+export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai: AiBilling }) {
+  const t = tariff?.tariff ?? null
+  const sources = (tariff?.sources ?? []).filter((s) => s.files > 0 || s.bytes > 0)
+  const usage = ai.usage
+  const emptyStat: AiSurfaceStat = { calls: 0, tokensIn: 0, tokensOut: 0, costRub: 0 }
+  const aiTotals = usage?.totals ?? emptyStat
+  const months = usage?.months ?? []
+  const aiThisMonth = months.length ? months[months.length - 1].costRub : 0
+
+  const [deposit, setDeposit] = React.useState<number>(ai.deposit || 0)
+  const [editVal, setEditVal] = React.useState<string>(String(ai.deposit || 0))
+  const [saving, setSaving] = React.useState(false)
+  const [savedMsg, setSavedMsg] = React.useState<string | null>(null)
+
+  async function saveDeposit() {
+    const rubVal = Math.max(0, Math.round(Number(editVal) || 0))
+    setSaving(true); setSavedMsg(null)
+    try {
+      const res = await fetch('/studio/api/settings/ai-deposit', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ rub: rubVal }),
+      })
+      const j = await res.json().catch(() => null)
+      if (res.ok && j?.ok) { setDeposit(j.deposit ?? rubVal); setSavedMsg('Сохранено') }
+      else setSavedMsg('Не сохранилось')
+    } catch { setSavedMsg('Ошибка сети') } finally { setSaving(false) }
+  }
+
+  const storageRub = ai.storageRub
+  const commission = ai.commissionRub
+  const extras = ai.extrasRub
+  const monthlyCost = storageRub + aiThisMonth + extras
+  const covered = Math.min(monthlyCost, commission)
+  const monthlyNet = Math.max(0, monthlyCost - commission)
+
+  const grossSpend = aiTotals.costRub + storageRub + extras
+  const spent = Math.max(0, grossSpend - commission)
+  const balance = deposit - spent
+
+  const rows = months.map((m, i) => {
+    const cost = m.costRub + storageRub + extras
+    const net = Math.max(0, cost - commission)
+    const cumNet = months.slice(0, i + 1).reduce((sum, x) => sum + Math.max(0, x.costRub + storageRub + extras - commission), 0)
+    return { ...m, cost, net, balanceAfter: deposit - cumNet }
+  })
+  const rowsDesc = [...rows].reverse()
+
+  const commissionPct = Math.round(COMMISSION_RATE * 100)
+  const usagePct = t && t.grade.ceilingGb > 0 ? Math.min(100, Math.round((t.usedGb / t.grade.ceilingGb) * 100)) : 0
+  const feeFromStorage = t ? t.storageFeeRub >= t.commissionFeeRub : true
+
+  return (
+    <div className="cp">
+      <style dangerouslySetInnerHTML={{ __html: CP_CSS }} />
+
+      {/* ── 1. Дашборд ─────────────────────────────────────────────── */}
+      <section className="settings__block cp__block">
+        <div className="cp__head"><LayoutDashboard size={17} /> Дашборд расходов</div>
+        {t?.trialActive && (
+          <div className="cp__trial"><Info size={15} /> Триал — {t.trialDaysLeft} дн. осталось. Платформенный сбор 0 ₽ до конца триала.</div>
+        )}
+
+        <div className="cp__hero">
+          <div className="cp__hero-tile">
+            <div className="cp__hero-lbl">Расход за текущий месяц</div>
+            <div className="cp__hero-val">{rub(monthlyCost)}</div>
+            <div className="cp__hero-sub">хранилище + токены + доп. услуги</div>
+          </div>
+          <div className="cp__hero-tile">
+            <div className="cp__hero-lbl">К списанию с депозита</div>
+            <div className="cp__hero-val">{rub(monthlyNet)}</div>
+            <div className="cp__hero-sub">{commission > 0 ? `покрыто подписками ${rub(covered)}` : 'подписок пока нет'}</div>
+          </div>
+          <div className="cp__hero-tile cp__hero-tile--dep">
+            <div className="cp__hero-lbl">Остаток депозита</div>
+            <div className={`cp__hero-val ${balance < 0 ? 'cp__neg' : ''}`}>{rub(balance)}</div>
+            <div className="cp__hero-sub">внесено {rub(deposit)} · израсходовано {rub(spent)}</div>
+          </div>
+        </div>
+
+        <div className="cp__depctl">
+          <span className="cp__ico"><Wallet size={15} /></span>
+          <label className="cp__dep-field">Депозит, ₽
+            <input type="number" min={0} step={1000} className="studio-input cp__dep-input" value={editVal} onChange={(e) => setEditVal(e.target.value)} />
+          </label>
+          <button type="button" className="studio-btn studio-btn--ghost" disabled={saving} onClick={() => void saveDeposit()}>
+            {saving ? <Loader2 size={15} className="cp__spin" /> : <Check size={15} />} Сохранить
+          </button>
+          {savedMsg && <span className="cp__saved">{savedMsg}</span>}
+        </div>
+        {deposit > 0 && <div className="cp__bar"><div className="cp__bar-fill" style={{ width: `${Math.max(0, Math.min(100, (spent / deposit) * 100))}%` }} /></div>}
+
+        {/* Мини-статистика */}
+        <div className="cp__stats">
+          <div><b>{t ? formatBytes(t.usedBytes) : '—'}</b><span>хранилище</span></div>
+          <div><b>{fmt(aiTotals.tokensIn + aiTotals.tokensOut)}</b><span>токенов Аси</span></div>
+          <div><b>{fmt(aiTotals.calls)}</b><span>вызовов Аси</span></div>
+          <div><b>{rub(ai.mrrRub)}</b><span>выручка/мес</span></div>
+        </div>
+      </section>
+
+      {/* ── 2. Хранилище ───────────────────────────────────────────── */}
+      <section className="settings__block cp__block">
+        <div className="cp__head"><HardDrive size={17} /> Хранилище</div>
+        {t ? (
+          <>
+            <div className="cp__two">
+              <div className="cp__tile"><div className="cp__tile-val">{formatBytes(t.usedBytes)}</div><div className="cp__tile-lbl">Занято ({t.usedGb} ГБ)</div></div>
+              <div className="cp__tile"><div className="cp__tile-val">{t.grade.ceilingGb} ГБ</div><div className="cp__tile-lbl">Потолок грейда «{t.grade.label}»</div></div>
+            </div>
+            <div className="cp__bar cp__bar--tall"><div className="cp__bar-fill" style={{ width: `${usagePct}%`, background: t.overCeiling ? '#dc2626' : usagePct > 80 ? '#f59e0b' : '#7c3aed' }} /></div>
+            <div className="cp__bar-cap"><span>{usagePct}% потолка</span>{t.nextGrade ? <span><TrendingUp size={12} /> дальше: «{t.nextGrade.label}» — до {t.nextGrade.ceilingGb} ГБ</span> : <span>максимальный грейд</span>}</div>
+            {sources.length > 0 && (
+              <div className="cp__break">
+                {sources.map((s) => (
+                  <div key={s.key} className="cp__brk-row"><span className="cp__brk-ico">{sourceIcon(s.key)}</span><span className="cp__brk-lbl">{s.label}</span><span className="cp__brk-cnt">{s.files} файл.</span><span className="cp__brk-size">{formatBytes(s.bytes)}</span></div>
+                ))}
+              </div>
+            )}
+            <div className="cp__line cp__line--extra"><span className="cp__l-ico"><Zap size={15} /></span><span className="cp__l-name">Доп. услуги (буст транскодинга)</span><span className="cp__l-meta">по факту использования</span><span className="cp__l-val">{rub(extras)}</span></div>
+          </>
+        ) : <div className="cp__empty">Не удалось посчитать хранилище — обновите страницу.</div>}
+      </section>
+
+      {/* ── 3. AI-ассистент ────────────────────────────────────────── */}
+      <section className="settings__block cp__block">
+        <div className="cp__head"><Sparkles size={17} /> AI-ассистент (Ася)</div>
+        <p className="cp__muted">Ставки токенов: вход <b>{fmt(RATE_IN_RUB_PER_M)} ₽/млн</b>, исход <b>{fmt(RATE_OUT_RUB_PER_M)} ₽/млн</b>. Всего за всё время: <b>{rub(aiTotals.costRub)}</b>.</p>
+        <div className="cp__svc">
+          {AI_SERVICES.map((s) => {
+            const st = usage?.bySurface?.[s.key] ?? emptyStat
+            return (
+              <div key={s.key} className="cp__svc-card">
+                <div className="cp__svc-head"><span className="cp__ico"><s.Icon size={15} /></span><b>{s.label}</b></div>
+                <div className="cp__svc-hint">{s.hint}</div>
+                <div className="cp__svc-cost">{rub(st.costRub)}</div>
+                <div className="cp__svc-sub">вход {fmt(st.tokensIn)} · исход {fmt(st.tokensOut)} · {fmt(st.calls)} выз.</div>
+              </div>
+            )
+          })}
+        </div>
+        <div className="cp__key"><AiKeyCard /></div>
+      </section>
+
+      {/* ── 4. Платформенный сбор ──────────────────────────────────── */}
+      <section className="settings__block cp__block">
+        <div className="cp__head"><Percent size={17} /> Платформенный сбор за текущий месяц</div>
+        {t ? (
+          <>
+            <p className="cp__muted">Сбор = наибольшее из двух: {commissionPct}% от выручки или объём × {STORAGE_RATE_RUB} ₽/ГБ. Есть подписчики — платит комиссия; нет — платит хранилище.</p>
+            <div className="cp__two">
+              <div className={`cp__tile ${feeFromStorage && !t.trialActive ? 'cp__tile--pick' : ''}`}><div className="cp__tile-val">{rub(t.storageFeeRub)}</div><div className="cp__tile-lbl">Хранилище: {t.usedGb} ГБ × {STORAGE_RATE_RUB} ₽</div></div>
+              <div className={`cp__tile ${!feeFromStorage && !t.trialActive ? 'cp__tile--pick' : ''}`}><div className="cp__tile-val">{rub(t.commissionFeeRub)}</div><div className="cp__tile-lbl">{commissionPct}% от выручки {rub(ai.mrrRub)}/мес</div></div>
+            </div>
+            <div className="cp__fee"><span>Расчётный сбор за месяц</span><b>{t.trialActive ? '0 ₽' : rub(t.feeRub)}{t.trialActive && <em> в триале</em>}</b></div>
+          </>
+        ) : <div className="cp__empty">—</div>}
+      </section>
+
+      {/* ── 5. Биллинг по месяцам ──────────────────────────────────── */}
+      <section className="settings__block cp__block">
+        <div className="cp__head">Биллинг по прошлым месяцам</div>
+        {rowsDesc.length === 0 && <div className="cp__empty">Пока нет расходов — таблица заполнится по мере использования.</div>}
+        {rowsDesc.length > 0 && (
+          <table className="cp__table">
+            <thead><tr><th>Месяц</th><th>Хранилище</th><th>Токены Аси</th><th>Итого</th><th>С депозита</th><th>Остаток</th></tr></thead>
+            <tbody>
+              {rowsDesc.map((m) => (
+                <tr key={m.month}>
+                  <td>{monthLabel(m.month)}</td>
+                  <td>{rub(storageRub)}</td>
+                  <td>{rub(m.costRub)}</td>
+                  <td><b>{rub(m.cost)}</b></td>
+                  <td>{rub(m.net)}</td>
+                  <td className={m.balanceAfter < 0 ? 'cp__neg' : ''}>{rub(m.balanceAfter)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <div className="cp__note"><Info size={13} /> Токены и стоимость — оценка по длине текста; хранилище и комиссия — по текущему состоянию. Точное списание подключится вместе с биллингом.</div>
+      </section>
+    </div>
+  )
+}
+
+const CP_CSS = `
+.cp__block{margin-bottom:16px}
+.cp__head{display:flex;align-items:center;gap:9px;font-weight:700;font-size:16px;color:var(--st-text);margin-bottom:12px}
+.cp__muted{font-size:13px;color:var(--st-text-muted);line-height:1.5;margin:0 0 12px}
+.cp__ico{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:color-mix(in srgb,#2f6bed 12%,transparent);color:#2f6bed;flex:none}
+.cp__trial{display:flex;align-items:center;gap:8px;font-size:13px;color:#7c3aed;background:color-mix(in srgb,#7c3aed 9%,transparent);border:1px solid color-mix(in srgb,#7c3aed 22%,transparent);border-radius:10px;padding:9px 12px;margin-bottom:14px}
+.cp__hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px}
+.cp__hero-tile{border:1px solid var(--st-border);border-radius:12px;padding:14px 16px;background:var(--st-surface)}
+.cp__hero-tile--dep{background:color-mix(in srgb,#2f6bed 6%,transparent);border-color:color-mix(in srgb,#2f6bed 22%,transparent)}
+.cp__hero-lbl{font-size:12px;color:var(--st-text-muted)}
+.cp__hero-val{font-size:26px;font-weight:800;color:var(--st-text);line-height:1.15;margin:3px 0}
+.cp__hero-sub{font-size:11.5px;color:var(--st-text-muted)}
+.cp__neg{color:#e5484d}
+.cp__depctl{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.cp__dep-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--st-text-muted)}
+.cp__dep-input{width:150px}
+.cp__saved{font-size:12.5px;color:#1a7f4b;align-self:center}
+.cp__spin{animation:cpspin 1s linear infinite}
+@keyframes cpspin{to{transform:rotate(360deg)}}
+.cp__bar{height:8px;border-radius:999px;background:color-mix(in srgb,var(--st-text) 10%,transparent);overflow:hidden;margin:4px 0}
+.cp__bar--tall{height:10px;margin:12px 0 6px}
+.cp__bar-fill{height:100%;background:#2f6bed;border-radius:999px;transition:width .3s ease}
+.cp__bar-cap{display:flex;justify-content:space-between;font-size:12px;color:var(--st-text-muted);margin-bottom:8px}
+.cp__bar-cap span{display:inline-flex;align-items:center;gap:4px}
+.cp__stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:8px;padding-top:12px;border-top:1px dashed var(--st-border)}
+.cp__stats>div{display:flex;flex-direction:column}
+.cp__stats b{font-size:16px;color:var(--st-text)}
+.cp__stats span{font-size:11.5px;color:var(--st-text-muted)}
+.cp__two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px}
+.cp__tile{border:1px solid var(--st-border);border-radius:12px;padding:14px 16px;background:var(--st-surface)}
+.cp__tile--pick{outline:2px solid #7c3aed;outline-offset:2px}
+.cp__tile-val{font-size:22px;font-weight:800;color:var(--st-text)}
+.cp__tile-lbl{font-size:12px;color:var(--st-text-muted);margin-top:2px}
+.cp__break{margin-top:12px;display:flex;flex-direction:column;gap:2px}
+.cp__brk-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--st-border);font-size:13px}
+.cp__brk-ico{color:var(--st-text-muted)}
+.cp__brk-lbl{flex:1;color:var(--st-text)}
+.cp__brk-cnt{font-size:12px;color:var(--st-text-muted)}
+.cp__brk-size{font-weight:700;min-width:80px;text-align:right}
+.cp__line{display:flex;align-items:center;gap:10px;padding:10px 0 2px;font-size:13.5px}
+.cp__line--extra{margin-top:8px;border-top:1px solid var(--st-border)}
+.cp__l-ico{width:24px;color:var(--st-text-muted);display:flex;justify-content:center;flex:none}
+.cp__l-name{flex:1;color:var(--st-text)}
+.cp__l-meta{font-size:12px;color:var(--st-text-muted);margin-right:10px}
+.cp__l-val{font-weight:700;min-width:80px;text-align:right}
+.cp__svc{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.cp__svc-card{border:1px solid var(--st-border);border-radius:12px;padding:12px;background:var(--st-surface);display:flex;flex-direction:column;gap:4px}
+.cp__svc-head{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--st-text)}
+.cp__svc-hint{font-size:11.5px;color:var(--st-text-muted);min-height:28px}
+.cp__svc-cost{font-size:18px;font-weight:800;color:var(--st-text)}
+.cp__svc-sub{font-size:11px;color:var(--st-text-muted)}
+.cp__key{margin-top:4px}
+.cp__fee{display:flex;flex-direction:column;gap:4px;margin-top:12px;padding:14px 16px;border-radius:12px;background:color-mix(in srgb,var(--st-text) 4%,transparent)}
+.cp__fee span{font-size:13px;color:var(--st-text-muted)}
+.cp__fee b{font-size:24px;color:var(--st-text)}
+.cp__fee em{font-size:13px;font-weight:500;color:var(--st-text-muted);font-style:normal;margin-left:8px}
+.cp__table{width:100%;border-collapse:collapse;font-size:13px}
+.cp__table th{text-align:right;font-weight:600;color:var(--st-text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:6px 8px;border-bottom:1px solid var(--st-border)}
+.cp__table th:first-child{text-align:left}
+.cp__table td{text-align:right;padding:8px;border-bottom:1px solid color-mix(in srgb,var(--st-border) 60%,transparent);color:var(--st-text)}
+.cp__table td:first-child{text-align:left}
+.cp__empty{font-size:13px;color:var(--st-text-muted);padding:10px;border:1px dashed var(--st-border);border-radius:10px}
+.cp__note{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--st-text-muted);line-height:1.45;margin-top:12px}
+.cp__note svg{flex:none;margin-top:2px}
+`

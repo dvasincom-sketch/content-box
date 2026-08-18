@@ -29,6 +29,17 @@ export interface AiUsageStats {
   months: AiMonthStat[] // по возрастанию месяца
 }
 
+/** Данные блока «Расходы и депозит»: usage Аси + хранилище/комиссия/доп.услуги/депозит. */
+export interface AiBilling {
+  usage: AiUsageStats | null
+  deposit: number
+  storageRub: number
+  commissionRub: number
+  extrasRub: number
+  usedGb: number
+  mrrRub: number
+}
+
 type PoolLike = { query: (text: string, params: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }> }
 
 const SURFACES: AiSurfaceKey[] = ['compose', 'summary', 'support']

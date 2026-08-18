@@ -17,9 +17,9 @@ import { hasCap, type CapMatrix } from '@/lib/permissions'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
 import { AccessPanel } from './AccessPanel'
-import { TariffPanel, type TariffPanelData } from './TariffPanel'
-import { AiUsagePanel, type AiBilling } from './AiUsagePanel'
-import { AiKeyCard } from './AiKeyCard'
+import { type TariffPanelData } from './TariffPanel'
+import { CostsPanel } from './CostsPanel'
+import type { AiBilling } from '@/lib/aiUsageStats'
 
 type Social = { platform: string; url: string }
 type Perk = { type: PerkType; text: string }
@@ -182,7 +182,7 @@ export function SettingsView({
           </>
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}
-        {tab === 'tariff' && isOwner && (<><TariffPanel data={tariff} /><AiKeyCard /><AiUsagePanel data={aiBilling} /></>)}
+        {tab === 'tariff' && isOwner && <CostsPanel tariff={tariff} ai={aiBilling} />}
       </div>
     </>
   )
