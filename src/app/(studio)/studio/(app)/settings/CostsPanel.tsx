@@ -1,7 +1,7 @@
 'use client'
 import React from 'react'
 import {
-  LayoutDashboard, Wallet, HardDrive, Sparkles, Zap, Percent, Info, Check, Loader2,
+  LayoutDashboard, Wallet, HardDrive, Sparkles, Zap, Percent, Info,
   FileText, Captions, MessageCircle, TrendingUp, Image as ImageIcon, Music, Images, FileDown, Video as VideoIcon,
 } from 'lucide-react'
 import { formatBytes, type MediaSourceStat } from '@/lib/mediaStats'
@@ -50,24 +50,9 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
   const months = usage?.months ?? []
   const aiThisMonth = months.length ? months[months.length - 1].costRub : 0
 
-  const [deposit, setDeposit] = React.useState<number>(ai.deposit || 0)
-  const [editVal, setEditVal] = React.useState<string>(String(ai.deposit || 0))
-  const [saving, setSaving] = React.useState(false)
-  const [savedMsg, setSavedMsg] = React.useState<string | null>(null)
-
-  async function saveDeposit() {
-    const rubVal = Math.max(0, Math.round(Number(editVal) || 0))
-    setSaving(true); setSavedMsg(null)
-    try {
-      const res = await fetch('/studio/api/settings/ai-deposit', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ rub: rubVal }),
-      })
-      const j = await res.json().catch(() => null)
-      if (res.ok && j?.ok) { setDeposit(j.deposit ?? rubVal); setSavedMsg('Сохранено') }
-      else setSavedMsg('Не сохранилось')
-    } catch { setSavedMsg('Ошибка сети') } finally { setSaving(false) }
-  }
+  const deposit = ai.deposit || 0
+  const [topupOpen, setTopupOpen] = React.useState(false)
+  const [topupAmt, setTopupAmt] = React.useState(50000)
 
   const storageRub = ai.storageRub
   const commission = ai.commissionRub
@@ -122,15 +107,24 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
         </div>
 
         <div className="cp__depctl">
-          <span className="cp__ico"><Wallet size={15} /></span>
-          <label className="cp__dep-field">Депозит, ₽
-            <input type="number" min={0} step={1000} className="studio-input cp__dep-input" value={editVal} onChange={(e) => setEditVal(e.target.value)} />
-          </label>
-          <button type="button" className="studio-btn studio-btn--ghost" disabled={saving} onClick={() => void saveDeposit()}>
-            {saving ? <Loader2 size={15} className="cp__spin" /> : <Check size={15} />} Сохранить
-          </button>
-          {savedMsg && <span className="cp__saved">{savedMsg}</span>}
+          <button type="button" className="studio-btn studio-btn--primary" onClick={() => setTopupOpen((o) => !o)}><Wallet size={15} /> Пополнить депозит</button>
+          <span className="cp__dep-note">Пополнение — через оплату (YooKassa). Сейчас депозит зачисляет администратор платформы.</span>
         </div>
+        {topupOpen && (
+          <div className="cp__topup">
+            <div className="cp__topup-h">Пополнить депозит</div>
+            <div className="cp__topup-amts">
+              {[5000, 10000, 50000, 100000].map((a) => (
+                <button key={a} type="button" className={`cp__amt${topupAmt === a ? ' is-on' : ''}`} onClick={() => setTopupAmt(a)}>{fmt(a)} ₽</button>
+              ))}
+            </div>
+            <div className="cp__topup-row">
+              <button type="button" className="studio-btn studio-btn--primary" disabled title="Приём платежей скоро">Оплатить {fmt(topupAmt)} ₽ через YooKassa</button>
+              <span className="cp__soon">Скоро</span>
+            </div>
+            <p className="cp__topup-note">Приём платежей подключается вместе с биллингом. Пока пополнение депозита делает администратор платформы.</p>
+          </div>
+        )}
         {deposit > 0 && <div className="cp__bar"><div className="cp__bar-fill" style={{ width: `${Math.max(0, Math.min(100, (spent / deposit) * 100))}%` }} /></div>}
 
         {/* Мини-статистика */}
@@ -241,9 +235,15 @@ const CP_CSS = `
 .cp__hero-sub{font-size:11.5px;color:var(--st-text-muted)}
 .cp__neg{color:#e5484d}
 .cp__depctl{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.cp__dep-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--st-text-muted)}
-.cp__dep-input{width:150px}
-.cp__saved{font-size:12.5px;color:#1a7f4b;align-self:center}
+.cp__dep-note{font-size:12px;color:var(--st-text-muted);align-self:center;line-height:1.4}
+.cp__topup{border:1px solid var(--st-border);border-radius:12px;padding:14px;margin-top:12px;background:color-mix(in srgb,var(--st-text) 2%,transparent)}
+.cp__topup-h{font-size:13px;font-weight:700;color:var(--st-text);margin-bottom:10px}
+.cp__topup-amts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.cp__amt{border:1px solid var(--st-border);background:var(--st-surface);color:var(--st-text);border-radius:9px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600}
+.cp__amt.is-on{border-color:#2f6bed;background:color-mix(in srgb,#2f6bed 12%,transparent);color:#2f6bed}
+.cp__topup-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cp__soon{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--st-text-muted);background:color-mix(in srgb,var(--st-text) 8%,transparent);border-radius:999px;padding:3px 9px}
+.cp__topup-note{font-size:12px;color:var(--st-text-muted);line-height:1.45;margin:10px 0 0}
 .cp__spin{animation:cpspin 1s linear infinite}
 @keyframes cpspin{to{transform:rotate(360deg)}}
 .cp__bar{height:8px;border-radius:999px;background:color-mix(in srgb,var(--st-text) 10%,transparent);overflow:hidden;margin:4px 0}

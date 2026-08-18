@@ -46,9 +46,10 @@ export const SiteSettings: CollectionConfig = {
       type: 'number',
       label: 'Депозит на ИИ (₽)',
       defaultValue: 0,
-      admin: { description: 'Аванс тенанта на оплату токенов ИИ. Из него ежемесячно списывается стоимость. Виден только staff.' },
+      admin: { description: 'Аванс тенанта на оплату токенов ИИ (пополняется через оплату / вручную суперадмином). Из него списывается стоимость. Виден только staff; изменяется только суперадмином.' },
       access: {
         read: ({ req: { user } }) => isSuperAdmin(user) || Boolean(getUserTenantID(user)),
+        update: ({ req: { user } }) => isSuperAdmin(user),
       },
     },
     { name: 'logo', type: 'upload', relationTo: 'media', label: 'Логотип' },
