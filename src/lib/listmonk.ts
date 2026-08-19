@@ -52,6 +52,23 @@ type LmCampaign = {
   tags?: string[]
 }
 
+/** Тело одного выпуска (кампании) — чтобы владелец мог открыть письмо, которое
+ *  ушло подписчикам. Проверяем, что кампания принадлежит этому тенанту (по тегу
+ *  tenant:<id>) — иначе null, чтобы нельзя было подсмотреть чужой выпуск. */
+export async function getTenantCampaignHtml(
+  tenantId: string | number,
+  campaignId: number | string,
+): Promise<{ subject: string; body: string; createdAt: string } | null> {
+  const idNum = Number(campaignId)
+  if (!Number.isFinite(idNum) || idNum <= 0) return null
+  const j = await lm<{ data?: LmCampaign & { body?: string } }>(`/api/campaigns/${idNum}`)
+  const c = j?.data
+  if (!c) return null
+  const tag = `tenant:${tenantId}`
+  if (!Array.isArray(c.tags) || !c.tags.includes(tag)) return null
+  return { subject: c.subject || '', body: (c.body as string) || '', createdAt: c.created_at || '' }
+}
+
 /** Дайджесты (кампании) тенанта — свежие первыми. Пусто, если Listmonk не подключён. */
 export async function getTenantDigests(tenantId: string | number): Promise<DigestStat[]> {
   const j = await lm<{ data?: { results?: LmCampaign[] } }>(

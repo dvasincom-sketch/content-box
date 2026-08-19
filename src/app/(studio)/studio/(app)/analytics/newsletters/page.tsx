@@ -5,7 +5,16 @@ import { getPayload, type Where } from 'payload'
 import config from '@/payload.config'
 import { Mail, Users, ShieldCheck } from 'lucide-react'
 import { requireAuthor } from '@/lib/currentAuthor'
-import { listmonkEnabled, getTenantDigests, type DigestStat } from '@/lib/listmonk'
+
+type DigestIssueRow = {
+  id: number | string
+  subject: string
+  sentAt?: string | null
+  createdAt: string
+  recipients?: number | null
+  opens?: number | null
+  clicks?: number | null
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -58,8 +67,15 @@ export default async function NewslettersAnalytics() {
   const paid = perTier.reduce((s, t) => s + t.count, 0)
   const free = Math.max(0, total - paid)
 
-  const digests: DigestStat[] = await getTenantDigests(tenantId)
-  const rate = (n: number, d: number) => (d > 0 ? Math.round((n / d) * 100) : 0)
+  const issuesRes = await payload.find({
+    collection: 'digest-issues' as any,
+    where: { tenant: { equals: tenantId } },
+    sort: '-sentAt',
+    limit: 50,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const issues = issuesRes.docs as unknown as DigestIssueRow[]
 
   return (
     <>
@@ -86,33 +102,29 @@ export default async function NewslettersAnalytics() {
         {/* Главное — сами выпуски дайджеста и отклик на них. */}
         <section className="studio-card">
           <div className="an__list-head"><Mail size={16} /> Выпуски дайджеста</div>
-          {!listmonkEnabled() ? (
-            <div className="an__empty">
-              Платформа отправляет дайджест новинок вашим подписчикам автоматически.
-              Как только выпуски начнут уходить, здесь появится их история: тема, дата,
-              сколько получателей, а также открытия и клики по каждому выпуску.
-            </div>
-          ) : digests.length === 0 ? (
+          {issues.length === 0 ? (
             <div className="an__empty">
               Дайджест ещё не отправлялся. Первый выпуск появится здесь автоматически —
-              вместе с откликом аудитории (открытия и клики).
+              вместе с откликом аудитории: сколько получателей, открытий и кликов.
             </div>
           ) : (
             <div className="nl-table">
               <div className="nl-row nl-row--head">
                 <span>Выпуск</span><span>Получатели</span><span>Открытий</span><span>Кликов</span>
               </div>
-              {digests.map((d) => (
+              {issues.map((d) => (
                 <div key={d.id} className="nl-row">
                   <span className="nl-row__subj" title={d.subject}>
-                    {d.subject}
+                    <Link href={`/studio/analytics/newsletters/${d.id}`} style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                      {d.subject}
+                    </Link>
                     <span style={{ color: 'var(--st-text-muted)', fontWeight: 400 }}>
-                      {' · '}{fmtDate(d.createdAt)}{d.segment ? ` · ${d.segment}` : ''}
+                      {' · '}{fmtDate(d.sentAt || d.createdAt)}
                     </span>
                   </span>
-                  <span>{d.sent}</span>
-                  <span>{rate(d.views, d.sent)}%</span>
-                  <span>{rate(d.clicks, d.sent)}%</span>
+                  <span>{d.recipients ?? 0}</span>
+                  <span>{d.opens ?? 0}</span>
+                  <span>{d.clicks ?? 0}</span>
                 </div>
               ))}
             </div>

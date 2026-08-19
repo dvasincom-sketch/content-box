@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { publishedWhere } from '@/lib/published'
 import { emailBrandForTenant, digestEmail, type DigestItem } from '@/emails'
 import { listmonkSendEnabled, sendDigestCampaign } from '@/lib/listmonkSend'
+import { instrumentDigestHtml } from '@/lib/digestTracking'
 
 /**
  * Планировщик дайджеста. Дёргается по расписанию (внешний cron) с секретом
@@ -153,6 +154,7 @@ export async function POST(req: NextRequest) {
     let recipients = 0
     let sent = 0
     let failed = 0
+    let via: 'listmonk' | 'smtp' | 'none' = 'none'
 
     if (items.length > 0 || chapterItemsByBook.size > 0) {
       const subsRes = await payload.find({
@@ -189,7 +191,38 @@ export async function POST(req: NextRequest) {
           subject: mail.subject,
           html: mail.html,
         })
-        if (sentViaListmonk) sent = optIn.length
+        if (sentViaListmonk) {
+          sent = optIn.length
+          via = 'listmonk'
+        }
+      }
+
+      // Прямая рассылка (SMTP): заводим выпуск в digest-issues и вшиваем в каждое
+      // письмо свой трекинг (пиксель открытий + кликовый редирект). Тело выпуска
+      // храним по общим новинкам (без персональных глав) — его владелец сможет
+      // открыть в аналитике.
+      let issueId: number | null = null
+      if (!dryRun && !sentViaListmonk && items.length > 0) {
+        try {
+          const issueMail = digestEmail({ brand, siteUrl, items, unsubscribeUrl: `${siteUrl}/unsubscribe` })
+          const created = (await payload.create({
+            collection: 'digest-issues' as any,
+            data: {
+              tenant: tenantId,
+              subject: issueMail.subject,
+              html: issueMail.html,
+              sentAt: runStartISO,
+              recipients,
+              itemsCount: items.length,
+              opens: 0,
+              clicks: 0,
+            } as any,
+            overrideAccess: true,
+          })) as any
+          issueId = created?.id ?? null
+        } catch {
+          issueId = null
+        }
       }
 
       for (const sub of (sentViaListmonk ? [] : (subsRes.docs as any[]))) {
@@ -228,7 +261,8 @@ export async function POST(req: NextRequest) {
           continue
         }
         try {
-          await payload.sendEmail({ to: sub.email, subject: mail.subject, html: mail.html })
+          const html = issueId ? instrumentDigestHtml(mail.html, { siteUrl, issueId }) : mail.html
+          await payload.sendEmail({ to: sub.email, subject: mail.subject, html })
           sent++
         } catch {
           failed++
@@ -252,6 +286,8 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (via !== 'listmonk' && sent > 0) via = 'smtp'
+
     totalSent += sent
     report.push({
       tenant: tenant.name || tenantId,
@@ -261,6 +297,7 @@ export async function POST(req: NextRequest) {
       recipients,
       sent,
       failed,
+      via,
     })
   }
 
@@ -268,6 +305,9 @@ export async function POST(req: NextRequest) {
     ok: true,
     dryRun,
     runAt: runStartISO,
+    // Видит ли приложение креды Listmonk (LISTMONK_API_URL/USER/TOKEN). Если false —
+    // дайджест уходит напрямую через SMTP, без трекинга и без истории выпусков.
+    listmonk: listmonkSendEnabled(),
     tenants: report.length,
     totalSent,
     detail: report,
