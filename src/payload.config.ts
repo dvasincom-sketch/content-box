@@ -11,6 +11,7 @@ import sharp from 'sharp'
 
 import { isSuperAdmin } from './access'
 import { meiliSearchPlugin } from './search/plugin'
+import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import { rusenderEmailAdapter } from './emails/rusenderAdapter'
 import { Tenants } from './collections/Tenants'
 import { Users } from './collections/Users'
@@ -179,9 +180,26 @@ export default buildConfig({
     ViewHistory,
   ],
   editor: lexicalEditor(),
-  // Почта через RuSender API (Bearer-токен + ID ключа). Подключается ТОЛЬКО при
-  // заданном RUSENDER_API_TOKEN — без него поведение прежнее (письма не шлём).
-  email: process.env.RUSENDER_API_TOKEN ? rusenderEmailAdapter() : undefined,
+  // Почта. Приоритет — SMTP (в т.ч. RuSender SMTP): если задан SMTP_HOST, шлём через
+  // nodemailer. Иначе — RuSender HTTP API (RUSENDER_API_TOKEN). Иначе — не шлём.
+  email: process.env.SMTP_HOST
+    ? nodemailerAdapter({
+        defaultFromAddress: process.env.EMAIL_FROM_ADDRESS || 'noreply@contentbox.site',
+        defaultFromName: process.env.EMAIL_FROM_NAME || 'Content Box',
+        // Не падаем на старте, если SMTP временно недоступен — проверку соединения пропускаем.
+        skipVerify: true,
+        transportOptions: {
+          host: process.env.SMTP_HOST,
+          port: Number(process.env.SMTP_PORT || 587),
+          secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : Number(process.env.SMTP_PORT || 587) === 465,
+          ...(process.env.SMTP_USER
+            ? { auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' } }
+            : {}),
+        },
+      })
+    : process.env.RUSENDER_API_TOKEN
+      ? rusenderEmailAdapter()
+      : undefined,
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
