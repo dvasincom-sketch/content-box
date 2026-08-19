@@ -92,7 +92,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     if (!target) { clearPendingTransfer(String(tenantId), ownerId); return apiError('Участник больше недоступен — начните заново') }
 
     await payload.update({ collection: 'users', id: target.id, data: { tenantRole: 'editor', studioRole: 'owner' } as any, overrideAccess: true })
-    await payload.update({ collection: 'users', id: ownerId, data: { tenantRole: 'admin', studioRole: 'admin' } as any, overrideAccess: true })
+    await payload.update({ collection: 'users', id: ownerId, data: { tenantRole: 'contributor', studioRole: 'author' } as any, overrideAccess: true })
     clearPendingTransfer(String(tenantId), ownerId)
 
     try { await logActivity(payload, { tenant: tenantId, user: ownerId, action: 'update', entity: 'access', title: `Передал права владельца: ${target.name || target.email}` }) } catch { /* лог не критичен */ }
