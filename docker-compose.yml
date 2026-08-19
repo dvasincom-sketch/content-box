@@ -46,6 +46,14 @@ services:
       KINESCOPE_PARENT_ID: ${KINESCOPE_PARENT_ID}
       RUSENDER_API_TOKEN: ${RUSENDER_API_TOKEN}
       RUSENDER_API_KEY_ID: ${RUSENDER_API_KEY_ID}
+      # SMTP (в т.ч. RuSender SMTP) для транзакционных писем. Если задан SMTP_HOST —
+      # приоритет у SMTP; иначе RuSender HTTP API выше. Timeweb пробрасывает только
+      # объявленное здесь, поэтому переменные обязаны быть перечислены.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_SECURE: ${SMTP_SECURE:-}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
       CRON_SECRET: ${CRON_SECRET}
