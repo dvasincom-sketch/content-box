@@ -52,6 +52,14 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     if (!target) return apiError('Выберите активного участника проекта')
     if (!ownerEmail) return apiError('У вашего аккаунта нет email для подтверждения передачи')
 
+    // Почтовый адаптер (RuSender) включается в payload.config ТОЛЬКО при наличии
+    // RUSENDER_API_TOKEN. Если его нет в рантайме — payload.sendEmail молча ничего
+    // не отправит, а сценарий рапортовал бы «код отправлен». Проверяем явно.
+    const emailReady = !!(process.env.RUSENDER_API_TOKEN || '').trim() && !!(process.env.RUSENDER_API_KEY_ID || '').trim()
+    if (!emailReady) {
+      return apiError('Отправка писем на сервере не настроена — код подтверждения выслать нельзя. Сообщите администратору платформы (нужны RUSENDER_API_TOKEN и RUSENDER_API_KEY_ID).', 503)
+    }
+
     const issued = issueCode(String(tenantId), `owner-transfer:${ownerId}`, payload.secret)
     if (!issued.ok) {
       return apiError(issued.reason === 'cooldown' ? `Код уже отправлен. Повторно можно через ${issued.retryAfterSec} с` : 'Слишком много попыток — попробуйте позже', 429)
@@ -100,4 +108,27 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   }
 
   return apiError('Неизвестное действие')
+})
+
+/**
+ * Диагностика отправки писем (только владельцу студии): настроен ли RuSender в
+ * рантайме и есть ли email у владельца. Значения секретов НЕ раскрываются — только
+ * факт наличия. Имена похожих env отдаём, чтобы поймать опечатку/кириллицу в имени.
+ */
+export const GET = withAuthor(async ({ author }) => {
+  if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
+  const hasToken = !!(process.env.RUSENDER_API_TOKEN || '').trim()
+  const hasKeyId = !!(process.env.RUSENDER_API_KEY_ID || '').trim()
+  const fromAddress = (process.env.EMAIL_FROM_ADDRESS || '').trim()
+  return apiOk({
+    emailConfigured: hasToken && hasKeyId,
+    hasToken,
+    hasKeyId,
+    fromAddressSet: !!fromAddress,
+    fromAddressHost: fromAddress.includes('@') ? fromAddress.split('@')[1] : '',
+    ownerHasEmail: !!String((author.user as { email?: unknown }).email || '').trim(),
+    rusenderEnvKeys: Object.keys(process.env)
+      .filter((k) => /rusender|email_from|email_reply/i.test(k))
+      .map((k) => ({ name: k, ascii: /^[\x20-\x7E]+$/.test(k) })),
+  })
 })
