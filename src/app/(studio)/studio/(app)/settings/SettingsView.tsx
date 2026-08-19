@@ -11,6 +11,7 @@ import { HomeBuilder } from './HomeBuilder'
 import { TemplatesPanel } from './TemplatesPanel'
 import { ImageUploadField } from './ImageUploadField'
 import { BgDecorPicker } from './BgDecorPicker'
+import { ThemeLibrary } from './ThemeLibrary'
 import { GoalsPanel, type Goal } from './GoalsPanel'
 import { DonatePresetsPanel, type DonatePreset } from './DonatePresetsPanel'
 import { hasCap, type CapMatrix } from '@/lib/permissions'
@@ -66,6 +67,9 @@ export function SettingsView({
   savedTemplates,
   appliedTemplate,
   bgDecor,
+  customThemes,
+  themeSource,
+  activeCustomThemeId,
   goals,
   donatePresets,
   members,
@@ -83,6 +87,9 @@ export function SettingsView({
   savedTemplates: HomeSavedTemplate[]
   appliedTemplate: string | null
   bgDecor: string | null
+  customThemes: { id: number; name: string; theme: any }[]
+  themeSource: 'preset' | 'custom'
+  activeCustomThemeId: number | null
   goals: Goal[]
   donatePresets: DonatePreset[]
   members: Member[]
@@ -168,6 +175,13 @@ export function SettingsView({
             </section>
             )}
             {canAppearance && <BgDecorPicker initial={bgDecor} />}
+            {canAppearance && (
+              <ThemeLibrary
+                initialThemes={customThemes}
+                initialSource={themeSource}
+                initialActiveId={activeCustomThemeId}
+              />
+            )}
           </>
         )}
         {tab === 'home' && <HomeBlock homeSections={homeSections} />}

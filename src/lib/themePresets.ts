@@ -170,10 +170,68 @@ export function getPreset(id?: string | null): ThemePreset {
  * Клиентский тумблер флипает .theme-dark/.theme-light — нужный набор токенов
  * применяется мгновенно. Заменяет прежний хардкод цветовых токенов в styles.css.
  */
-export function presetThemeCss(presetId?: string | null): string {
-  const p = getPreset(presetId)
+/** CSS обеих версий из готовой пары палитр (scoped by class). */
+export function themeCss(dark: PresetColors, light: PresetColors): string {
   const vars = (c: PresetColors) =>
     `--brand-bg:${c.bg};--brand-surface:${c.surface};--brand-text:${c.text};--brand-primary:${c.primary};--brand-accent:${c.accent}` +
     (c.header ? `;--brand-header:${c.header}` : '')
-  return `.theme-dark{${vars(p.dark)}}.theme-light{${vars(p.light)}}`
+  return `.theme-dark{${vars(dark)}}.theme-light{${vars(light)}}`
+}
+
+export function presetThemeCss(presetId?: string | null): string {
+  const p = getPreset(presetId)
+  return themeCss(p.dark, p.light)
+}
+
+const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
+
+/** Санитайзим набор цветов, подставляя фолбэк по каждому токену. */
+function normColors(c: any, fb: PresetColors): PresetColors {
+  const hex = (v: any, d: string) => (typeof v === 'string' && HEX_RE.test(v.trim()) ? v.trim() : d)
+  const out: PresetColors = {
+    bg: hex(c?.bg, fb.bg),
+    surface: hex(c?.surface, fb.surface),
+    primary: hex(c?.primary, fb.primary),
+    accent: hex(c?.accent, fb.accent),
+    text: hex(c?.text, fb.text),
+  }
+  if (typeof c?.header === 'string' && HEX_RE.test(String(c.header).trim())) out.header = String(c.header).trim()
+  return out
+}
+
+/** true, если набор содержит все 5 обязательных токенов валидными hex. */
+export function isValidThemeColors(c: any): boolean {
+  return (
+    !!c &&
+    (['bg', 'surface', 'primary', 'accent', 'text'] as const).every(
+      (k) => typeof c[k] === 'string' && HEX_RE.test(String(c[k]).trim()),
+    )
+  )
+}
+
+/** Валидация+нормализация темы из студии (dark+light). null — если невалидна. */
+export function sanitizeCustomTheme(input: any): { dark: PresetColors; light: PresetColors } | null {
+  if (!input || typeof input !== 'object') return null
+  if (!isValidThemeColors(input.dark) || !isValidThemeColors(input.light)) return null
+  const base = THEME_PRESETS[0]
+  return { dark: normColors(input.dark, base.dark), light: normColors(input.light, base.light) }
+}
+
+/**
+ * Активная палитра тенанта: своя тема (themeSource='custom' + customTheme.theme)
+ * перекрывает цвета пресета; иначе — цвета пресета. Шрифты и декор в MVP остаются
+ * от пресета (см. brandVars / layout.tsx).
+ */
+export function resolveThemeColors(
+  settings?: { themePreset?: string | null; themeSource?: string | null } | null,
+  customTheme?: { theme?: any } | null,
+): { dark: PresetColors; light: PresetColors } {
+  const p = getPreset(settings?.themePreset)
+  if (settings?.themeSource === 'custom' && customTheme?.theme) {
+    return {
+      dark: normColors(customTheme.theme.dark, p.dark),
+      light: normColors(customTheme.theme.light, p.light),
+    }
+  }
+  return { dark: p.dark, light: p.light }
 }

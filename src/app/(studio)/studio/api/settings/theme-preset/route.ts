@@ -27,7 +27,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     await payload.update({
       collection: 'site-settings',
       id: settings.id,
-      data: { themePreset: preset } as any,
+      data: { themePreset: preset, themeSource: 'preset' } as any,
       overrideAccess: true,
     })
     await logActivity(payload, { tenant: tenantId, user: author.user.id, action: 'update', entity: 'оформление', title: 'Тема сайта' })

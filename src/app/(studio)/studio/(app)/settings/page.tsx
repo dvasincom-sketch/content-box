@@ -78,6 +78,25 @@ export default async function SettingsPage() {
     ? ((settings as { donatePresets: { amount?: unknown; label?: unknown }[] }).donatePresets).map((p) => ({ amount: Number(p.amount) || 0, label: String(p.label ?? '') }))
     : []
 
+  // Библиотека своих тем (вкладка «Оформление»): список палитр тенанта + какая активна.
+  const customThemesRes = await payload.find({
+    collection: 'custom-themes' as any,
+    where: { tenant: { equals: author!.tenantId } },
+    sort: '-createdAt',
+    limit: 50,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const customThemes = (customThemesRes.docs as any[])
+    .filter((t) => t.theme && t.theme.dark && t.theme.light)
+    .map((t) => ({
+      id: Number(t.id),
+      name: String(t.name || 'Без названия'),
+      theme: t.theme,
+    }))
+  const themeSource: 'preset' | 'custom' = settings?.themeSource === 'custom' ? 'custom' : 'preset'
+  const activeCustomThemeId = settings?.activeCustomTheme != null ? Number(settings.activeCustomTheme) : null
+
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     id: t.id,
     name: t.name,
@@ -170,6 +189,9 @@ export default async function SettingsPage() {
       savedTemplates={savedTemplates}
       appliedTemplate={appliedTemplate}
       bgDecor={bgDecor}
+      customThemes={customThemes}
+      themeSource={themeSource}
+      activeCustomThemeId={activeCustomThemeId}
       goals={goals}
       donatePresets={donatePresets}
       members={members}

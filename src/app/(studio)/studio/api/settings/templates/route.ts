@@ -114,6 +114,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       const patch: Record<string, unknown> = {
         homeSections: cleanSections(tpl.sections),
         appliedTemplate: tpl.id,
+        // Применение шаблона возвращает палитру к пресету (снимает свою тему).
+        themeSource: 'preset',
       }
       if (theme) patch.themePreset = theme
       if (tpl.content?.hero) patch.hero = { ...(settings.hero ?? {}), ...tpl.content.hero }

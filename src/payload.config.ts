@@ -36,6 +36,7 @@ import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
 import { AiUsage } from './collections/AiUsage'
 import { DigestIssues } from './collections/DigestIssues'
+import { CustomThemes } from './collections/CustomThemes'
 import { Activity } from './collections/Activity'
 import { SubscriptionEvents } from './collections/SubscriptionEvents'
 import { SubscriberActivity } from './collections/SubscriberActivity'
@@ -170,6 +171,7 @@ export default buildConfig({
     ActivityEvents,
     AiUsage,
     DigestIssues,
+    CustomThemes,
     Activity,
     SubscriptionEvents,
     SubscriberActivity,
@@ -339,6 +341,7 @@ export default buildConfig({
         'activity-events': { useTenantAccess: false },
         'ai-usage': { useTenantAccess: false },
         'digest-issues': { useTenantAccess: false },
+        'custom-themes': { useTenantAccess: false },
         submissions: { useTenantAccess: false },
         'bug-reports': { useTenantAccess: false },
         bookmarks: { useTenantAccess: false },

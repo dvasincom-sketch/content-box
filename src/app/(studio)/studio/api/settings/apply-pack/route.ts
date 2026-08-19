@@ -51,6 +51,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     : (PRESET_IDS.includes(pack.themePreset) ? pack.themePreset : null)
   if (theme) patch.themePreset = theme
   patch.appliedTemplate = pack.id
+  // Применение пака возвращает палитру к пресету (снимает активную свою тему).
+  patch.themeSource = 'preset'
 
   if (mode === 'overwrite') {
     patch.homeSections = packSections

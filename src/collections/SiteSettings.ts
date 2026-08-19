@@ -72,6 +72,29 @@ export const SiteSettings: CollectionConfig = {
       },
     },
     {
+      // Источник активной палитры: пресет/шаблон или своя тема из custom-themes.
+      // Управляется студией; при выборе пресета/шаблона сбрасывается в 'preset'.
+      name: 'themeSource',
+      type: 'select',
+      label: 'Источник палитры',
+      defaultValue: 'preset',
+      options: [
+        { label: 'Пресет/шаблон', value: 'preset' },
+        { label: 'Своя тема', value: 'custom' },
+      ],
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Служебное: правится студией.' },
+    },
+    {
+      // id активной пользовательской темы (custom-themes). Действует при
+      // themeSource='custom'. Храним как число, чтобы не тащить FK-relation.
+      name: 'activeCustomTheme',
+      type: 'number',
+      label: 'Активная своя тема (id)',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Служебное: правится студией.' },
+    },
+    {
       name: 'bgDecor',
       type: 'select',
       label: 'Фоновый декор',

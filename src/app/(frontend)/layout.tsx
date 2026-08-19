@@ -28,7 +28,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { THEME_INIT } from '@/lib/themeInit'
 import { BRAND_CACHE } from '@/lib/brandCache'
-import { presetThemeCss, getPreset } from '@/lib/themePresets'
+import { themeCss, resolveThemeColors, getPreset } from '@/lib/themePresets'
 import { getBgDecor } from '@/lib/bgDecors'
 import { PWARegister } from '@/components/PWARegister'
 import { BugReportWidget } from '@/components/BugReportWidget'
@@ -51,10 +51,18 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const { nav: footerNav, columns: footerColumns } = footerFromTree(footerTree)
   const navItems: { label: string; url: string }[] = []
   let subscriberAvatarUrl: string | null = null
+  // Активная своя тема (палитра) — если тенант её выбрал. Цвета перекроют пресет.
+  let activeCustomTheme: unknown = null
 
   if (tenant?.id) {
     const payloadConfig = await config
     const payload = await getPayload({ config: payloadConfig })
+
+    if (settings?.themeSource === 'custom' && settings?.activeCustomTheme) {
+      activeCustomTheme = await payload
+        .findByID({ collection: 'custom-themes' as any, id: Number(settings.activeCustomTheme), depth: 0, overrideAccess: true })
+        .catch(() => null)
+    }
     const pagesRes = await payload.find({
       collection: 'pages',
       where: {
@@ -93,10 +101,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const logoUrl = logo && typeof logo === 'object' ? logo.url : null
   const logoAlt = logo && typeof logo === 'object' ? logo.alt : null
   const preset = getPreset(settings?.themePreset)
+  // Активная палитра: своя тема перекрывает цвета пресета (шрифты/декор — от пресета).
+  const themeColors = resolveThemeColors(settings, activeCustomTheme as { theme?: unknown } | null)
   // Фоновый декор: выбор автора (bgDecor) приоритетнее дефолта пресета (preset.decor).
   const decorSlug = (settings as { bgDecor?: string } | null)?.bgDecor
   const decor = getBgDecor(decorSlug && decorSlug !== 'none' ? decorSlug : preset.decor)
-  const themeColor = preset.light.bg
+  const themeColor = themeColors.light.bg
   const legalName = tenant?.name ?? ''
   const year = new Date().getFullYear()
   const copyrightText = legalName
@@ -117,7 +127,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         {/* Цвета выбранного пресета: обе версии (.theme-dark/.theme-light),
             scoped by class. Тумблер темы флипает класс — применяется мгновенно. */}
-        <style dangerouslySetInnerHTML={{ __html: presetThemeCss(settings?.themePreset) }} />
+        <style dangerouslySetInnerHTML={{ __html: themeCss(themeColors.dark, themeColors.light) }} />
         {/* Кэш бренд-цветов для экрана переподключения из service worker */}
         <script dangerouslySetInnerHTML={{ __html: BRAND_CACHE }} />
         {/* PWA: динамический манифест на тенанта, иконки и мета для установки */}
