@@ -135,7 +135,7 @@ type TextMode = 'verbatim' | 'condense' | 'brief'
 type ChunkHandlers = {
   onPlan?: (parts: number) => void
   onPart?: (blocks: PBlock[], i: number, n: number) => void
-  onDone?: (d: { note: string; suggest: { title?: string; tags?: string[] } | null; cost: number; truncated: boolean; blocks: PBlock[] }) => void
+  onDone?: (d: { note: string; suggest: { title?: string; tags?: string[] } | null; cost: number; truncated: boolean; failed: number; blocks: PBlock[] }) => void
   onError?: (msg: string) => void
 }
 
@@ -145,6 +145,37 @@ type ChunkHandlers = {
  * соединения — прокси не рвёт и не буферизует ответ. Аккумулятор живёт ВНЕ рендера
  * (иначе react-hooks/immutability ругается на мутацию массива из рендера).
  */
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** Запрос одной части с ретраями: сетевые сбои и 5xx/429 (частый таймаут прокси на
+ *  медленном вызове модели) повторяем несколько раз, прежде чем сдаться. */
+async function fetchComposePart(text: string, i: number, existing: { type: string; title: string }[], opt: { mode: TextMode; brief: string }): Promise<{ ok: true; j: Record<string, unknown> } | { ok: false; error: string }> {
+  let lastError = 'Не удалось обработать часть.'
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await sleep(700 * attempt)
+    try {
+      const res = await fetch('/studio/api/compose', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ text, part: { i }, existing: i === 0 ? existing : [], mode: opt.mode, brief: opt.brief }),
+      })
+      const j = (await res.json().catch(() => null)) as Record<string, unknown> | null
+      if (res.ok && j && j.ok === true) return { ok: true, j }
+      lastError = String((j && j.error) || `Ошибка ${res.status}`)
+      if (res.status < 500 && res.status !== 429) return { ok: false, error: lastError }
+    } catch {
+      lastError = 'Соединение прервалось (возможно, часть обрабатывалась дольше таймаута).'
+    }
+  }
+  return { ok: false, error: lastError }
+}
+
+/**
+ * Разбор длинного текста короткими запросами: клиент сам идёт по частям (part.i),
+ * сервер режет текст и обрабатывает один фрагмент за запрос. Каждая часть с ретраями;
+ * если часть всё же не удалась — НЕ обрываем весь разбор, а пропускаем её и идём
+ * дальше (иначе один сбой в середине терял всю вторую половину). Аккумулятор — вне
+ * рендера (react-hooks/immutability).
+ */
 async function runComposeChunks(text: string, existing: { type: string; title: string }[], opt: { mode: TextMode; brief: string }, h: ChunkHandlers): Promise<void> {
   const all: PBlock[] = []
   let n = 1
@@ -152,20 +183,16 @@ async function runComposeChunks(text: string, existing: { type: string; title: s
   let suggest: { title?: string; tags?: string[] } | null = null
   let cost = 0
   let truncated = false
+  let failed = 0
   for (let i = 0; i < n; i++) {
-    let j: Record<string, unknown> | null = null
-    try {
-      const res = await fetch('/studio/api/compose', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ text, part: { i }, existing: i === 0 ? existing : [], mode: opt.mode, brief: opt.brief }),
-      })
-      j = (await res.json().catch(() => null)) as Record<string, unknown> | null
-      if (!res.ok || !j || j.ok !== true) { h.onError?.(String((j && j.error) || 'Не удалось обработать текст. Попробуйте ещё раз.')); return }
-    } catch {
-      if (all.length) h.onDone?.({ note: note + ' (соединение прервалось — показаны готовые части)', suggest, cost, truncated: true, blocks: all })
-      else h.onError?.('Соединение прервалось — попробуйте ещё раз.')
-      return
+    const r = await fetchComposePart(text, i, existing, opt)
+    if (!r.ok) {
+      if (i === 0) { h.onError?.(r.error); return }
+      failed++
+      h.onPart?.([], i + 1, n)
+      continue
     }
+    const j = r.j
     if (i === 0) {
       n = Math.max(1, Number(j.parts) || 1)
       note = String(j.note || '')
@@ -178,7 +205,7 @@ async function runComposeChunks(text: string, existing: { type: string; title: s
     for (const b of bl) all.push(b)
     h.onPart?.(bl, i + 1, n)
   }
-  h.onDone?.({ note, suggest, cost, truncated, blocks: all })
+  h.onDone?.({ note, suggest, cost, truncated, failed, blocks: all })
 }
 
 /** Короткая подпись блока для лёгкого списка во время разбора (без тяжёлого HTML). */
@@ -286,12 +313,13 @@ export function AiComposeModal({ open, onClose, onInsert, onApplySuggest, existi
       await runComposeChunks(t, existing, { mode, brief: brief.trim() }, {
         onPlan: (parts) => { setPhase('review'); setProgress({ i: 0, n: parts }) },
         onPart: (bl, i, n) => { setBlocks((prev) => [...prev, ...bl]); setProgress({ i, n }) },
-        onDone: ({ note, suggest, cost, truncated, blocks }) => {
+        onDone: ({ note, suggest, cost, truncated, failed, blocks }) => {
           setBlocks(blocks); setInitialProposal(blocks); setExcluded(new Set())
           setCost(cost || null)
           setSuggest(suggest && typeof suggest === 'object' ? suggest : null)
-          const extra = truncated ? ' Текст очень длинный — разобрана начальная часть; остальное добавьте отдельной публикацией.' : ''
-          setLog([{ role: 'assistant', content: (note || 'Готово.') + extra }])
+          const truncNote = truncated ? ' Текст очень длинный — разобрана начальная часть; остальное добавьте отдельной публикацией.' : ''
+          const failNote = failed > 0 ? ` Не удалось обработать частей: ${failed}. Готовые блоки ниже; можно запустить разбор ещё раз, чтобы дособрать пропущенное.` : ''
+          setLog([{ role: 'assistant', content: (note || 'Готово.') + truncNote + failNote }])
         },
         onError: (msg) => { setError(msg); setPhase('input') },
       })

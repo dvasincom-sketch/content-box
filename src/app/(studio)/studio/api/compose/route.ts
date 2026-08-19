@@ -49,8 +49,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
   // Потоковый разбор по частям: клиент шлёт part.i, сервер сам режет текст и
   // обрабатывает один фрагмент за запрос (быстрый ответ, без долгого соединения).
   if (data.part && Number.isInteger(data.part.i)) {
-    const MAX_CHARS = 120_000, MAX_PARTS = 16
-    const chunks = chunkComposeText(text.slice(0, MAX_CHARS), 8000)
+    const MAX_CHARS = 120_000, MAX_PARTS = 24
+    // Меньше символов в части → короче один вызов Аси → реже упирается в таймаут прокси.
+    const chunks = chunkComposeText(text.slice(0, MAX_CHARS), 6000)
     const nParts = Math.min(chunks.length, MAX_PARTS)
     const i = Math.max(0, Math.min(Number(data.part.i), nParts - 1))
     const frag = chunks[i]
