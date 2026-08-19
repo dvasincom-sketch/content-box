@@ -55,10 +55,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     // Почтовый адаптер (RuSender) включается в payload.config ТОЛЬКО при наличии
     // RUSENDER_API_TOKEN. Если его нет в рантайме — payload.sendEmail молча ничего
     // не отправит, а сценарий рапортовал бы «код отправлен». Проверяем явно.
-    const smtpReady = !!(process.env.SMTP_HOST || '').trim()
-    const apiReady = !!(process.env.RUSENDER_API_TOKEN || '').trim() && !!(process.env.RUSENDER_API_KEY_ID || '').trim()
-    if (!smtpReady && !apiReady) {
-      return apiError('Отправка писем на сервере не настроена — код подтверждения выслать нельзя. Сообщите администратору платформы (SMTP_HOST для SMTP, либо RUSENDER_API_TOKEN + RUSENDER_API_KEY_ID для API).', 503)
+    const emailReady = !!(process.env.RUSENDER_API_TOKEN || '').trim() && !!(process.env.RUSENDER_API_KEY_ID || '').trim()
+    if (!emailReady) {
+      return apiError('Отправка писем на сервере не настроена — код подтверждения выслать нельзя. Сообщите администратору платформы (нужны RUSENDER_API_TOKEN и RUSENDER_API_KEY_ID).', 503)
     }
 
     const issued = issueCode(String(tenantId), `owner-transfer:${ownerId}`, payload.secret)
@@ -120,21 +119,16 @@ export const GET = withAuthor(async ({ author }) => {
   if (isContributor(author)) return apiError('Доступно только владельцу студии', 403)
   const hasToken = !!(process.env.RUSENDER_API_TOKEN || '').trim()
   const hasKeyId = !!(process.env.RUSENDER_API_KEY_ID || '').trim()
-  const smtpHost = (process.env.SMTP_HOST || '').trim()
-  const smtpReady = !!smtpHost
-  const apiReady = hasToken && hasKeyId
   const fromAddress = (process.env.EMAIL_FROM_ADDRESS || '').trim()
   return apiOk({
-    emailConfigured: smtpReady || apiReady,
-    transport: smtpReady ? 'smtp' : apiReady ? 'rusender-api' : 'none',
-    smtp: { host: smtpHost, portSet: !!(process.env.SMTP_PORT || '').trim(), userSet: !!(process.env.SMTP_USER || '').trim(), passSet: !!(process.env.SMTP_PASS || '').trim() },
+    emailConfigured: hasToken && hasKeyId,
     hasToken,
     hasKeyId,
     fromAddressSet: !!fromAddress,
     fromAddressHost: fromAddress.includes('@') ? fromAddress.split('@')[1] : '',
     ownerHasEmail: !!String((author.user as { email?: unknown }).email || '').trim(),
-    mailEnvKeys: Object.keys(process.env)
-      .filter((k) => /rusender|email_from|email_reply|smtp/i.test(k))
+    rusenderEnvKeys: Object.keys(process.env)
+      .filter((k) => /rusender|email_from|email_reply/i.test(k))
       .map((k) => ({ name: k, ascii: /^[\x20-\x7E]+$/.test(k) })),
   })
 })
