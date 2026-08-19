@@ -24,7 +24,7 @@ async function tenantComposeKey(payload: Payload, tenantId: number): Promise<str
 }
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (!authorCan(author, 'gallery', 'edit')) return apiError('Недостаточно прав', 403)
+  if (!authorCan(author, 'gallery', 'editAny')) return apiError('Недостаточно прав', 403)
   const key = await tenantComposeKey(payload, tenantId)
   if (!key) return apiError('AI-ассистент не подключён', 503)
 

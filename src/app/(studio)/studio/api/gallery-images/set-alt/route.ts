@@ -8,7 +8,7 @@ import { withAuthor, apiError, apiOk, belongsToTenant, authorCan } from '../../_
 export const runtime = 'nodejs'
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
-  if (!authorCan(author, 'gallery', 'edit')) return apiError('Недостаточно прав', 403)
+  if (!authorCan(author, 'gallery', 'editAny')) return apiError('Недостаточно прав', 403)
   let data: { items?: unknown } | undefined
   try { data = await req.json() } catch { data = undefined }
   if (data === undefined) return apiError('Некорректный запрос')
