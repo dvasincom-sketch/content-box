@@ -51,6 +51,13 @@ export async function POST(req: NextRequest) {
   const dryRun = ['1', 'true', 'yes'].includes((url.searchParams.get('dryRun') || '').toLowerCase())
   const daysParam = parseInt(url.searchParams.get('days') || '', 10)
   const windowDays = Number.isFinite(daysParam) && daysParam > 0 ? daysParam : DEFAULT_WINDOW_DAYS
+  // Перекрытие окна (под секретом): ?since=<ISO> берёт материалы с этой даты
+  // вместо водяной метки lastDigestAt — для повторной/тестовой рассылки, т.к.
+  // сама метка readOnly и через админку её не откатить. ?domain=<host> — шлём
+  // только одному тенанту (точечный тест, не задевая остальные сайты).
+  const sinceParam = (url.searchParams.get('since') || '').trim()
+  const sinceOverride = sinceParam && !Number.isNaN(Date.parse(sinceParam)) ? new Date(sinceParam) : null
+  const domainFilter = (url.searchParams.get('domain') || '').trim().toLowerCase()
 
   const runStart = new Date()
   const runStartISO = runStart.toISOString()
@@ -77,6 +84,7 @@ export async function POST(req: NextRequest) {
     const tenantId = tenant.id
     const domain = tenant.domain as string | undefined
     if (!domain) continue
+    if (domainFilter && domain.toLowerCase() !== domainFilter) continue
 
     const settingsRes = await payload.find({
       collection: 'site-settings',
@@ -86,9 +94,11 @@ export async function POST(req: NextRequest) {
       overrideAccess: true,
     })
     const settings = settingsRes.docs[0] as any
-    const since = settings?.lastDigestAt
-      ? new Date(settings.lastDigestAt)
-      : new Date(runStart.getTime() - windowDays * 24 * 60 * 60 * 1000)
+    const since = sinceOverride
+      ? sinceOverride
+      : settings?.lastDigestAt
+        ? new Date(settings.lastDigestAt)
+        : new Date(runStart.getTime() - windowDays * 24 * 60 * 60 * 1000)
 
     const pubsRes = await payload.find({
       collection: 'publications',
