@@ -3,13 +3,16 @@
 import React, { useState } from 'react'
 import { Check, Loader2, Plus, Trash2, Pencil, X, Palette } from 'lucide-react'
 import { THEME_PRESETS, type PresetColors } from '@/lib/themePresets'
+import { StudioSelect } from '../_ui/StudioSelect'
 
 /**
  * Библиотека своих тем (Студия → Оформление). Автор собирает палитру (цвета для
  * тёмной и светлой версий), сохраняет её как именованную тему и активирует —
  * активная перекрывает цвета пресета/шаблона. Шрифты в MVP остаются от пресета.
  *
- * Данные пишутся в custom-themes через /studio/api/settings/custom-themes(/activate).
+ * Контролы — в фирменном стиле студии: StudioSelect вместо нативного <select>,
+ * studio-input для полей, свотч поверх скрытого color-input (нативная пипетка
+ * ОС остаётся — её вид системный, но триггер брендированный).
  */
 
 type Colors5 = { bg: string; surface: string; primary: string; accent: string; text: string }
@@ -25,6 +28,7 @@ const TOKENS: { key: keyof Colors5; label: string }[] = [
 ]
 
 const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
+const PRESET_OPTIONS = THEME_PRESETS.map((p) => ({ value: p.id, label: p.name }))
 
 function pick5(c: PresetColors): Colors5 {
   return { bg: c.bg, surface: c.surface, primary: c.primary, accent: c.accent, text: c.text }
@@ -37,7 +41,7 @@ function seedFrom(id: string): ThemeData {
 
 function Swatch({ colors, label }: { colors: Colors5; label: string }) {
   return (
-    <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(0,0,0,.08)', minWidth: 120 }}>
+    <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid var(--st-border)', minWidth: 120 }}>
       <div style={{ background: colors.bg, padding: 10 }}>
         <div style={{ background: colors.surface, borderRadius: 8, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ width: 12, height: 12, borderRadius: 999, background: colors.primary, display: 'inline-block' }} />
@@ -50,26 +54,36 @@ function Swatch({ colors, label }: { colors: Colors5; label: string }) {
   )
 }
 
+/** Строка цвета: подпись + фирменный свотч (скрытый нативный color-input) + hex. */
 function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const valid = HEX_RE.test(value.trim())
   return (
-    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-      <span style={{ width: 110, fontSize: 13, color: 'var(--st-text-muted)' }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
+      <span style={{ width: 104, fontSize: 13, color: 'var(--st-text-muted)' }}>{label}</span>
+      <label
+        style={{
+          position: 'relative', width: 30, height: 30, flex: 'none', borderRadius: 8, cursor: 'pointer',
+          background: valid ? value : 'var(--st-surface)',
+          border: '1px solid var(--st-border)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.06)',
+        }}
+        aria-label={`${label}: выбрать цвет`}
+      >
+        <input
+          type="color"
+          value={valid ? value : '#000000'}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, border: 0, padding: 0, cursor: 'pointer' }}
+        />
+      </label>
       <input
-        type="color"
-        value={valid ? value : '#000000'}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ width: 34, height: 28, padding: 0, border: '1px solid rgba(0,0,0,.15)', borderRadius: 6, background: 'none', cursor: 'pointer' }}
-        aria-label={label}
-      />
-      <input
+        className="studio-input"
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}
-        style={{ width: 96, fontFamily: 'ui-monospace, monospace', fontSize: 12, padding: '4px 6px', border: `1px solid ${valid ? 'rgba(0,0,0,.15)' : '#e5484d'}`, borderRadius: 6 }}
+        style={{ width: 116, fontFamily: 'ui-monospace, monospace', textTransform: 'uppercase' }}
       />
-    </label>
+    </div>
   )
 }
 
@@ -87,9 +101,16 @@ export function ThemeLibrary({
   const [activeId, setActiveId] = useState<number | null>(initialActiveId)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [seedId, setSeedId] = useState('')
 
   // Редактор: null — закрыт; { id? } — создание/редактирование.
   const [editing, setEditing] = useState<{ id?: number; name: string; theme: ThemeData } | null>(null)
+
+  function openEditor(next: { id?: number; name: string; theme: ThemeData }) {
+    setSeedId('')
+    setError(null)
+    setEditing(next)
+  }
 
   async function call(url: string, method: string, body: unknown) {
     const res = await fetch(url, {
@@ -181,10 +202,9 @@ export function ThemeLibrary({
             Сейчас активна ваша тема.{' '}
             <button
               type="button"
-              className="studio-link"
               onClick={() => activate('preset')}
               disabled={busy === 'act-preset'}
-              style={{ background: 'none', border: 0, padding: 0, color: 'var(--st-primary, #7C3AED)', cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ background: 'none', border: 0, padding: 0, color: 'var(--st-primary)', cursor: 'pointer', textDecoration: 'underline', font: 'inherit' }}
             >
               Вернуть палитру пресета
             </button>
@@ -196,10 +216,10 @@ export function ThemeLibrary({
         {themes.map((t) => {
           const isActive = source === 'custom' && activeId === t.id
           return (
-            <div key={t.id} className="studio-card" style={{ padding: 12, border: isActive ? '2px solid var(--st-primary, #7C3AED)' : undefined }}>
+            <div key={t.id} className="studio-card" style={{ padding: 12, border: isActive ? '2px solid var(--st-primary)' : undefined }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <strong style={{ fontSize: 14 }}>{t.name}</strong>
-                {isActive && <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--st-primary, #7C3AED)', fontSize: 12 }}><Check size={13} /> активна</span>}
+                {isActive && <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--st-primary)', fontSize: 12 }}><Check size={13} /> активна</span>}
               </div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                 <Swatch colors={t.theme.dark} label="Тёмная" />
@@ -211,10 +231,10 @@ export function ThemeLibrary({
                     {busy === `act-${t.id}` ? <Loader2 size={13} className="spin" /> : 'Сделать активной'}
                   </button>
                 )}
-                <button type="button" className="studio-btn" onClick={() => setEditing({ id: t.id, name: t.name, theme: t.theme })}>
+                <button type="button" className="studio-btn" onClick={() => openEditor({ id: t.id, name: t.name, theme: t.theme })}>
                   <Pencil size={13} /> Изменить
                 </button>
-                <button type="button" className="studio-btn" onClick={() => remove(t.id)} disabled={busy === `del-${t.id}`}>
+                <button type="button" className="studio-btn" onClick={() => remove(t.id)} disabled={busy === `del-${t.id}`} aria-label="Удалить тему">
                   {busy === `del-${t.id}` ? <Loader2 size={13} className="spin" /> : <Trash2 size={13} />}
                 </button>
               </div>
@@ -225,8 +245,8 @@ export function ThemeLibrary({
         <button
           type="button"
           className="studio-card"
-          onClick={() => setEditing({ name: '', theme: seedFrom(THEME_PRESETS[0].id) })}
-          style={{ padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 150, border: '1px dashed rgba(0,0,0,.2)', cursor: 'pointer', color: 'var(--st-text-muted)' }}
+          onClick={() => openEditor({ name: '', theme: seedFrom(THEME_PRESETS[0].id) })}
+          style={{ padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 150, border: '1px dashed var(--st-border)', cursor: 'pointer', color: 'var(--st-text-muted)' }}
         >
           <Plus size={22} />
           <span>Создать тему</span>
@@ -236,44 +256,42 @@ export function ThemeLibrary({
       {error && <div className="settings__err" style={{ marginTop: 10 }}>{error}</div>}
 
       {editing && (
-        <div className="theme-editor" style={{ marginTop: 16, padding: 16, border: '1px solid rgba(0,0,0,.12)', borderRadius: 12, background: 'var(--st-surface, #fff)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <div className="studio-card" style={{ marginTop: 16, padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <strong>{editing.id ? 'Редактирование темы' : 'Новая тема'}</strong>
-            <button type="button" onClick={() => setEditing(null)} style={{ marginLeft: 'auto', background: 'none', border: 0, cursor: 'pointer' }} aria-label="Закрыть">
+            <button type="button" onClick={() => setEditing(null)} style={{ marginLeft: 'auto', background: 'none', border: 0, cursor: 'pointer', color: 'var(--st-text-muted)' }} aria-label="Закрыть">
               <X size={18} />
             </button>
           </div>
 
-          <label style={{ display: 'block', marginBottom: 12 }}>
-            <span style={{ display: 'block', fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Название</span>
-            <input
-              type="text"
-              value={editing.name}
-              onChange={(e) => setEditing((ed) => (ed ? { ...ed, name: e.target.value } : ed))}
-              placeholder="Например, «Мятная ночь»"
-              maxLength={60}
-              style={{ width: '100%', maxWidth: 320, padding: '7px 10px', border: '1px solid rgba(0,0,0,.15)', borderRadius: 8 }}
-            />
-          </label>
-
-          <label style={{ display: 'block', marginBottom: 16 }}>
-            <span style={{ display: 'block', fontSize: 13, color: 'var(--st-text-muted)', marginBottom: 4 }}>Взять за основу</span>
-            <select
-              onChange={(e) => { const v = e.target.value; if (v) setEditing((ed) => (ed ? { ...ed, theme: seedFrom(v) } : ed)) }}
-              defaultValue=""
-              style={{ padding: '7px 10px', border: '1px solid rgba(0,0,0,.15)', borderRadius: 8 }}
-            >
-              <option value="">— выбрать пресет —</option>
-              {THEME_PRESETS.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 18 }}>
+            <label className="studio-field" style={{ flex: '1 1 240px', maxWidth: 340 }}>
+              <span className="studio-field__label">Название</span>
+              <input
+                className="studio-input"
+                type="text"
+                value={editing.name}
+                onChange={(e) => setEditing((ed) => (ed ? { ...ed, name: e.target.value } : ed))}
+                placeholder="Например, «Мятная ночь»"
+                maxLength={60}
+              />
+            </label>
+            <label className="studio-field" style={{ flex: '0 1 240px' }}>
+              <span className="studio-field__label">Взять за основу</span>
+              <StudioSelect
+                value={seedId}
+                onChange={(v) => { setSeedId(v); if (v) setEditing((ed) => (ed ? { ...ed, theme: seedFrom(v) } : ed)) }}
+                options={PRESET_OPTIONS}
+                placeholder="— выбрать пресет —"
+                ariaLabel="Взять палитру за основу"
+              />
+            </label>
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
             {(['dark', 'light'] as const).map((mode) => (
               <div key={mode}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <strong style={{ fontSize: 13 }}>{mode === 'dark' ? 'Тёмная версия' : 'Светлая версия'}</strong>
                   <div style={{ marginLeft: 'auto' }}>
                     <Swatch colors={editing.theme[mode]} label={mode === 'dark' ? 'Тёмная' : 'Светлая'} />
@@ -291,7 +309,7 @@ export function ThemeLibrary({
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 18 }}>
             <button type="button" className="studio-btn studio-btn--primary" onClick={saveEditor} disabled={busy === 'save'}>
               {busy === 'save' ? <Loader2 size={14} className="spin" /> : 'Сохранить тему'}
             </button>

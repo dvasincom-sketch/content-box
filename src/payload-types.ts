@@ -90,6 +90,8 @@ export interface Config {
     reactions: Reaction;
     'activity-events': ActivityEvent;
     'ai-usage': AiUsage;
+    'digest-issues': DigestIssue;
+    'custom-themes': CustomTheme;
     'studio-activity': StudioActivity;
     'subscription-events': SubscriptionEvent;
     'subscriber-activity': SubscriberActivity;
@@ -129,6 +131,8 @@ export interface Config {
     reactions: ReactionsSelect<false> | ReactionsSelect<true>;
     'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
     'ai-usage': AiUsageSelect<false> | AiUsageSelect<true>;
+    'digest-issues': DigestIssuesSelect<false> | DigestIssuesSelect<true>;
+    'custom-themes': CustomThemesSelect<false> | CustomThemesSelect<true>;
     'studio-activity': StudioActivitySelect<false> | StudioActivitySelect<true>;
     'subscription-events': SubscriptionEventsSelect<false> | SubscriptionEventsSelect<true>;
     'subscriber-activity': SubscriberActivitySelect<false> | SubscriberActivitySelect<true>;
@@ -329,7 +333,7 @@ export interface SiteSetting {
    */
   aiComposeKey?: string | null;
   /**
-   * Аванс тенанта на оплату токенов ИИ. Из него ежемесячно списывается стоимость. Виден только staff.
+   * Аванс тенанта на оплату токенов ИИ (пополняется через оплату / вручную суперадмином). Из него списывается стоимость. Виден только staff; изменяется только суперадмином.
    */
   aiDepositRub?: number | null;
   logo?: (number | null) | Media;
@@ -341,6 +345,14 @@ export interface SiteSetting {
    * Готовый пресет: палитра (светлая + тёмная версии) и пара шрифтов уже подобраны под нишу. Выбирается в Студии.
    */
   themePreset?: ('neon-dawn' | 'warm-earth' | 'digital-monolith' | 'tropic-sunset' | 'amber-pulse' | 'frost') | null;
+  /**
+   * Служебное: правится студией.
+   */
+  themeSource?: ('preset' | 'custom') | null;
+  /**
+   * Служебное: правится студией.
+   */
+  activeCustomTheme?: number | null;
   /**
    * Фоновые объекты из библиотеки (пальмы, звёзды, горы и т.д.) — приглушённо, в цвете темы, за контентом. Выбирается в Студии.
    */
@@ -1552,6 +1564,47 @@ export interface AiUsage {
   createdAt: string;
 }
 /**
+ * История выпусков дайджеста и отклик (служебное, только чтение).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "digest-issues".
+ */
+export interface DigestIssue {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  subject: string;
+  html?: string | null;
+  sentAt?: string | null;
+  recipients?: number | null;
+  itemsCount?: number | null;
+  opens?: number | null;
+  clicks?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Пользовательские палитры (свет/тьма). Управляются из студии.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "custom-themes".
+ */
+export interface CustomTheme {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  name: string;
+  theme?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Журнал действий участников студии.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1885,6 +1938,14 @@ export interface PayloadLockedDocument {
         value: number | AiUsage;
       } | null)
     | ({
+        relationTo: 'digest-issues';
+        value: number | DigestIssue;
+      } | null)
+    | ({
+        relationTo: 'custom-themes';
+        value: number | CustomTheme;
+      } | null)
+    | ({
         relationTo: 'studio-activity';
         value: number | StudioActivity;
       } | null)
@@ -2048,6 +2109,8 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   logo?: T;
   appIcon?: T;
   themePreset?: T;
+  themeSource?: T;
+  activeCustomTheme?: T;
   bgDecor?: T;
   authorStats?:
     | T
@@ -2688,6 +2751,33 @@ export interface AiUsageSelect<T extends boolean = true> {
   ok?: T;
   actorType?: T;
   meta?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "digest-issues_select".
+ */
+export interface DigestIssuesSelect<T extends boolean = true> {
+  tenant?: T;
+  subject?: T;
+  html?: T;
+  sentAt?: T;
+  recipients?: T;
+  itemsCount?: T;
+  opens?: T;
+  clicks?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "custom-themes_select".
+ */
+export interface CustomThemesSelect<T extends boolean = true> {
+  tenant?: T;
+  name?: T;
+  theme?: T;
   updatedAt?: T;
   createdAt?: T;
 }
