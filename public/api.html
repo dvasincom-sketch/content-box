@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API для разработчиков — Контент Бокс</title>
+<meta name="description" content="Внешний API Контент Бокс: программное создание публикаций для переезда контента с других платформ и автоматизации. Аутентификация по X-API-KEY.">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="canonical" href="https://contentbox.site/api.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Контент Бокс">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:url" content="https://contentbox.site/api.html">
+<meta property="og:title" content="Внешний API Контент Бокс">
+<meta property="og:description" content="Программное создание публикаций: переезд с другой платформы и автоматизация.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .theme-dark {
+    --bg:#0a0a0b; --surface:#131316; --surface-2:#1a1a1e; --surface-hover:#202027;
+    --border:#26262c; --border-strong:#35353d;
+    --text:#f4f4f5; --muted:#a1a1aa; --faint:#6b6b74;
+    --accent:#ffffff; --accent-text:#0a0a0b; --accent-hover:#e4e4e7;
+    --success:#4ade80; --danger:#f87171; --warning:#fbbf24;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 20px 50px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+  .theme-light {
+    --bg:#fafafa; --surface:#ffffff; --surface-2:#f4f4f5; --surface-hover:#ececee;
+    --border:#e4e4e7; --border-strong:#d4d4d8;
+    --text:#18181b; --muted:#52525b; --faint:#a1a1aa;
+    --accent:#18181b; --accent-text:#ffffff; --accent-hover:#27272a;
+    --success:#16a34a; --danger:#dc2626; --warning:#d97706;
+    --shadow:0 1px 2px rgba(0,0,0,.06), 0 20px 50px rgba(0,0,0,.10);
+    color-scheme:light;
+  }
+  :root {
+    --sans:'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    --ease:cubic-bezier(.4,0,.2,1);
+    --radius-sm:6px; --radius:10px; --radius-lg:14px;
+    --maxw:840px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.5; -webkit-font-smoothing:antialiased; transition:background .3s var(--ease), color .3s var(--ease)}
+  a{color:inherit}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 20px}
+  .top{position:sticky; top:0; z-index:20; background:color-mix(in srgb,var(--bg) 82%,transparent); backdrop-filter:blur(20px) saturate(1.4); border-bottom:1px solid var(--border)}
+  .top__in{display:flex; align-items:center; justify-content:space-between; height:60px}
+  .logo{display:inline-flex; align-items:center; gap:9px; font-weight:700; font-size:16px; text-decoration:none; color:var(--text)}
+  .logo__mono{font-family:var(--mono); font-weight:500}
+  .logo__mark{display:inline-flex; width:26px; height:26px; color:var(--text)}
+  .top__right{display:flex; align-items:center; gap:8px}
+  .ghost{display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border:1px solid var(--border-strong); border-radius:var(--radius); background:transparent; color:var(--text); font:inherit; font-size:14px; font-weight:600; text-decoration:none; cursor:pointer; transition:background .15s var(--ease)}
+  .ghost:hover{background:var(--surface-hover)}
+  .icon-btn{width:36px; height:36px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border-strong); border-radius:var(--radius); background:transparent; color:var(--text); cursor:pointer}
+  .icon-btn svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+
+  .hero{padding:64px 0 40px; border-bottom:1px solid var(--border)}
+  .kicker{font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:14px}
+  .hero h1{font-size:clamp(30px,6vw,46px); line-height:1.05; letter-spacing:-.02em; margin:0 0 16px; font-weight:700}
+  .hero p{font-size:17px; color:var(--muted); max-width:62ch; margin:0}
+
+  main{padding:10px 0 40px}
+  .sec{padding:34px 0 6px; border-bottom:1px solid var(--border)}
+  .sec:last-of-type{border-bottom:none}
+  .sec__tag{font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); margin-bottom:10px}
+  .sec h2{font-size:clamp(20px,3.4vw,26px); font-weight:700; letter-spacing:-.02em; margin:0 0 12px}
+  .sec h3{font-size:16px; font-weight:700; margin:22px 0 8px}
+  .sec p{font-size:15px; color:var(--muted); max-width:68ch; line-height:1.6; margin:0 0 12px}
+  .sec ul{margin:0 0 12px; padding-left:20px; color:var(--muted); font-size:15px; line-height:1.6}
+  .sec ul li{margin:4px 0}
+  code.inline{font-family:var(--mono); font-size:12.5px; background:color-mix(in srgb,var(--text) 8%,transparent); padding:1px 6px; border-radius:5px; color:var(--text)}
+
+  .endpoint{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-family:var(--mono); font-size:14px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; margin:0 0 16px}
+  .method{font-weight:600; color:var(--accent-text); background:var(--success); border-radius:6px; padding:2px 9px; font-size:12.5px; letter-spacing:.04em}
+  .endpoint .path{word-break:break-all; color:var(--text)}
+
+  pre{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; overflow:auto; margin:0 0 16px; box-shadow:var(--shadow)}
+  pre code{font-family:var(--mono); font-size:12.5px; line-height:1.6; color:var(--text); white-space:pre}
+
+  .tbl{width:100%; border-collapse:collapse; margin:0 0 16px; font-size:14px; display:block; overflow-x:auto}
+  .tbl th,.tbl td{text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top}
+  .tbl th{font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--faint); font-weight:600; white-space:nowrap}
+  .tbl td:first-child{font-family:var(--mono); font-size:12.5px; color:var(--text); white-space:nowrap}
+  .tbl td:nth-child(2){font-family:var(--mono); font-size:12px; color:var(--muted); white-space:nowrap}
+  .tbl td:last-child{color:var(--muted)}
+  .req{color:var(--warning); font-family:var(--mono); font-size:11px}
+
+  .note{margin:6px 0 16px; padding:13px 15px; border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border)); border-radius:var(--radius); background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+  .note__h{font-size:12px; font-weight:700; letter-spacing:.02em; margin-bottom:5px}
+  .note__b{font-size:13.5px; color:var(--muted); line-height:1.55}
+
+  .foot{border-top:1px solid var(--border); padding:30px 0 44px; margin-top:20px}
+  .foot__in{display:flex; flex-wrap:wrap; align-items:center; gap:14px; justify-content:space-between}
+  .foot__links{display:flex; flex-wrap:wrap; gap:18px}
+  .foot__links a{color:var(--muted); text-decoration:none; font-size:14px}
+  .foot__links a:hover{color:var(--text)}
+  .foot__copy{color:var(--faint); font-size:13px}
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top__in">
+      <a class="logo" href="/">
+        <span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span>
+        Контент&nbsp;<span class="logo__mono">Бокс</span>
+      </a>
+      <div class="top__right">
+        <a class="ghost" href="/update">Обновления</a>
+        <a class="ghost" href="/">На главную</a>
+        <button class="icon-btn" id="themeBtn" aria-label="Сменить тему"><svg id="themeIcon" viewBox="0 0 24 24"></svg></button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="kicker">API для разработчиков</div>
+      <h1>Внешний API Контент&nbsp;Бокс</h1>
+      <p>Программно создавайте публикации: переносите контент с другой платформы с сохранением дат и уровней доступа или автоматизируйте рутину. Аутентификация — по ключу проекта в заголовке <code class="inline">X-API-KEY</code>.</p>
+    </div>
+  </section>
+
+  <main>
+    <div class="wrap">
+
+      <section class="sec">
+        <div class="sec__tag">Быстрый старт</div>
+        <h2>За три шага</h2>
+        <ul>
+          <li>Откройте <b>Студия → Настройки → API</b> и нажмите «Сгенерировать ключ». Скопируйте его — значение показывается один раз.</li>
+          <li>Передавайте ключ в заголовке <code class="inline">X-API-KEY</code>. По ключу определяется ваш проект — домен указывать не нужно.</li>
+          <li>Отправьте <code class="inline">POST</code> на эндпоинт ниже. В ответ придёт ID и ссылки на пост.</li>
+        </ul>
+        <div class="note">
+          <div class="note__h">Безопасность</div>
+          <div class="note__b">Ключ храните в секрете (переменная окружения на вашей стороне). Мы не храним само значение — только его хеш; при утечке просто перегенерируйте ключ в настройках, старый сразу перестанет работать.</div>
+        </div>
+      </section>
+
+      <section class="sec">
+        <div class="sec__tag">Аутентификация</div>
+        <h2>Заголовки</h2>
+        <pre><code>X-API-KEY: cbx_ваш_ключ
+Content-Type: application/json
+accept: application/json</code></pre>
+        <p>Один ключ на проект. Перегенерация немедленно отзывает прежний.</p>
+      </section>
+
+      <section class="sec">
+        <div class="sec__tag">Публикации</div>
+        <h2>Создать публикацию</h2>
+        <div class="endpoint"><span class="method">POST</span> <span class="path">https://contentbox.site/api/ext/v1/publications</span></div>
+
+        <h3>Тело запроса</h3>
+        <table class="tbl">
+          <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
+          <tbody>
+            <tr><td>title <span class="req">обяз.</span></td><td>string</td><td>Заголовок, 4–256 символов.</td></tr>
+            <tr><td>text</td><td>string</td><td>Тело поста.</td></tr>
+            <tr><td>format</td><td>string</td><td><code class="inline">markdown</code> (по умолчанию) или <code class="inline">plain</code>. HTML — позже.</td></tr>
+            <tr><td>publishedAt</td><td>string</td><td>Дата публикации в ISO 8601 (напр. <code class="inline">2026-06-17</code>). Пусто — текущий момент.</td></tr>
+            <tr><td>categorySlug</td><td>string</td><td>Slug раздела, куда попадёт публикация. Или <code class="inline">categoryId</code>.</td></tr>
+            <tr><td>extraCategorySlugs</td><td>string[]</td><td>Дополнительные разделы.</td></tr>
+            <tr><td>access</td><td>string</td><td><code class="inline">all</code> — бесплатно; <code class="inline">tier</code> — по подписке (см. minTierSlug).</td></tr>
+            <tr><td>minTierSlug</td><td>string</td><td>Уровень при <code class="inline">access=tier</code>. Пусто — низший платный уровень проекта.</td></tr>
+            <tr><td>coverUrl</td><td>string</td><td>Ссылка на обложку — скачаем и положим в наше хранилище.</td></tr>
+            <tr><td>tags</td><td>string[]</td><td>Теги публикации.</td></tr>
+            <tr><td>featured</td><td>boolean</td><td>Закрепить/выделить.</td></tr>
+            <tr><td>isNews</td><td>boolean</td><td>Пометить как новость.</td></tr>
+            <tr><td>seoTitle</td><td>string</td><td>SEO-заголовок страницы.</td></tr>
+            <tr><td>seoDescription</td><td>string</td><td>SEO-описание.</td></tr>
+            <tr><td>externalRef</td><td>string</td><td>Ваш ID поста на прежней платформе (напр. <code class="inline">sponsr:51753</code>). Дедуп: повторный импорт не создаст дубль.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Пример запроса</h3>
+        <pre><code>curl -X POST 'https://contentbox.site/api/ext/v1/publications' \
+  -H 'X-API-KEY: cbx_ваш_ключ' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "Мой первый перенесённый пост",
+    "text": "## Привет\n\nЭто **пост** с [ссылкой](https://example.com).",
+    "format": "markdown",
+    "publishedAt": "2026-06-17",
+    "categorySlug": "weverse-live",
+    "access": "tier",
+    "coverUrl": "https://example.com/cover.jpg",
+    "tags": ["bts", "live"],
+    "externalRef": "sponsr:51753"
+  }'</code></pre>
+
+        <h3>Ответ (200)</h3>
+        <pre><code>{
+  "data": {
+    "id": 123,
+    "url": "https://ваш-домен/publication/moy-pervyy-perenesyonnyy-post",
+    "editor": "https://ваш-домен/studio/posts/123"
+  }
+}</code></pre>
+
+        <h3>Ошибки</h3>
+        <pre><code>{ "message": "Неверный или отсутствующий X-API-KEY", "statusCode": 401 }
+{ "message": "title должен быть 4..256 символов", "statusCode": 400 }
+{ "message": "Категория не найдена: weverse-live", "statusCode": 400 }</code></pre>
+      </section>
+
+      <section class="sec">
+        <div class="sec__tag">Заметки</div>
+        <h2>Как это работает</h2>
+        <ul>
+          <li><b>Доступ.</b> <code class="inline">all</code> — публикация бесплатна и видна всем. <code class="inline">tier</code> без <code class="inline">minTierSlug</code> — доступ по любой активной подписке (низший платный уровень).</li>
+          <li><b>Даты.</b> <code class="inline">publishedAt</code> сохраняется как есть — оригинальная хронология при переезде не теряется. Дата в будущем = отложенная публикация.</li>
+          <li><b>Повторный импорт.</b> С <code class="inline">externalRef</code> повторный запуск вернёт уже созданную публикацию, а не создаст дубль — можно гонять миграцию несколько раз безопасно.</li>
+          <li><b>Обложки.</b> <code class="inline">coverUrl</code> скачивается один раз в наше хранилище — на вашей стороне картинка может исчезнуть, у нас останется.</li>
+        </ul>
+        <div class="note">
+          <div class="note__h">Скоро</div>
+          <div class="note__b">Внешнее видео по ссылке (VK/Дзен), приём постов пачкой одним запросом, HTML-контент и приветственные письма подписчикам. Следите за разделом «Обновления».</div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot__in">
+      <a class="logo" href="/"><span class="logo__mark" aria-hidden="true"><svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg"><g transform="translate(26 26)"><path d="M-16 -16 H16 V0 L0 16 H-16 Z" fill="currentColor" opacity="0.9"/><path d="M16 -16 V16 H-16 L16 -16 Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></g></svg></span>Контент&nbsp;<span class="logo__mono">Бокс</span></a>
+      <div class="foot__links">
+        <a href="/update">Обновления</a><a href="/api.html">API</a><a href="mailto:hey@contentbox.site">hey@contentbox.site</a>
+      </div>
+      <div class="foot__copy">© 2026 Контент Бокс</div>
+    </div>
+  </footer>
+
+<script>
+  (function(){ var saved=null; try{ saved=localStorage.getItem('cb-theme2'); }catch(e){}
+    if(saved==='light') document.documentElement.className='theme-light'; })();
+  var icon=document.getElementById('themeIcon'), btn=document.getElementById('themeBtn');
+  var moon='<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>';
+  var sun='<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4l1.4-1.4"/>';
+  function sync(){ if(icon) icon.innerHTML = document.documentElement.className==='theme-light' ? moon : sun; }
+  sync();
+  if(btn) btn.addEventListener('click',function(){ var light=document.documentElement.className==='theme-light'; document.documentElement.className=light?'theme-dark':'theme-light'; try{localStorage.setItem('cb-theme2', light?'dark':'light');}catch(e){} sync(); });
+</script>
+</body>
+</html>

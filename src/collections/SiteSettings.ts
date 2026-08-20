@@ -94,6 +94,38 @@ export const SiteSettings: CollectionConfig = {
       access: { create: () => false, update: () => false },
       admin: { readOnly: true, description: 'Служебное: правится студией.' },
     },
+    // ── Ключ внешнего API (миграция/автоматизация) ──────────────────────────
+    // Значение ключа НЕ храним — только sha256-хеш (для резолва тенанта по
+    // X-API-KEY), префикс (показать «cbx_ab12…») и даты. Всё server-only.
+    {
+      name: 'externalApiKeyHash',
+      type: 'text',
+      index: true,
+      label: 'Внешний API — хеш ключа',
+      access: { create: () => false, update: () => false },
+      admin: { hidden: true },
+    },
+    {
+      name: 'externalApiKeyPrefix',
+      type: 'text',
+      label: 'Внешний API — префикс ключа',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Начало ключа для опознания (сам ключ не хранится).' },
+    },
+    {
+      name: 'externalApiKeyCreatedAt',
+      type: 'date',
+      label: 'Внешний API — ключ создан',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true },
+    },
+    {
+      name: 'externalApiKeyLastUsedAt',
+      type: 'date',
+      label: 'Внешний API — последнее использование',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true },
+    },
     {
       name: 'bgDecor',
       type: 'select',

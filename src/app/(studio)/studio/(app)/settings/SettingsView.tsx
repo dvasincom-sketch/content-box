@@ -12,6 +12,7 @@ import { TemplatesPanel } from './TemplatesPanel'
 import { ImageUploadField } from './ImageUploadField'
 import { BgDecorPicker } from './BgDecorPicker'
 import { ThemeLibrary } from './ThemeLibrary'
+import { ExternalApiPanel } from './ExternalApiPanel'
 import { GoalsPanel, type Goal } from './GoalsPanel'
 import { DonatePresetsPanel, type DonatePreset } from './DonatePresetsPanel'
 import { hasCap, type CapMatrix } from '@/lib/permissions'
@@ -36,7 +37,7 @@ type Tier = {
   perks: Perk[]
 }
 
-type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers' | 'access' | 'tariff'
+type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers' | 'access' | 'tariff' | 'api'
 export type Member = { id: number | string; email: string; name: string; status: string; isSelf: boolean; studioRole?: string | null; capabilities?: import('@/lib/permissions').CapMatrix | null }
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -47,6 +48,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'tiers', label: 'Монетизация' },
   { id: 'access', label: 'Доступ' },
   { id: 'tariff', label: 'Тариф' },
+  { id: 'api', label: 'API' },
 ]
 
 const PLATFORMS = [
@@ -108,6 +110,7 @@ export function SettingsView({
       case 'tiers': return hasCap(abilities, 'tiers', 'manage') || hasCap(abilities, 'goals', 'manage')
       case 'access': return false
       case 'tariff': return false
+      case 'api': return false
       default: return false
     }
   }
@@ -197,6 +200,7 @@ export function SettingsView({
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}
         {tab === 'tariff' && isOwner && <CostsPanel tariff={tariff} ai={aiBilling} />}
+        {tab === 'api' && isOwner && <ExternalApiPanel />}
       </div>
     </>
   )

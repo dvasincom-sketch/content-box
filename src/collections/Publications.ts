@@ -53,6 +53,16 @@ export const Publications: CollectionConfig = {
       admin: { description: 'Заполняется для шаблона «Профиль».' },
     },
     { name: 'publishedAt', type: 'date', label: 'Дата публикации' },
+    {
+      // Идентификатор источника при импорте через внешний API (напр.
+      // `sponsr:51753`). Дедуп повторного переноса. Пишет только сервер.
+      name: 'externalRef',
+      type: 'text',
+      index: true,
+      label: 'Внешний идентификатор',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Источник импорта (дедуп). Заполняется сервером.' },
+    },
     { name: 'prevVersion', type: 'json', label: 'Предыдущая версия', admin: { hidden: true } },
     { name: 'eventDate', type: 'date', label: 'Дата события', admin: { description: 'Для разделов-событий: дата лайва/мероприятия. По ней сортируется список и рисуется оранжевая плашка.' } },
     { name: 'category', type: 'relationship', relationTo: 'categories', label: 'Основная категория' },

@@ -109,6 +109,7 @@ import * as migration_20260818_110000_add_ai_deposit from './20260818_110000_add
 import * as migration_20260819_120000_add_digest_issues from './20260819_120000_add_digest_issues';
 import * as migration_20260819_130000_add_custom_themes from './20260819_130000_add_custom_themes';
 import * as migration_20260819_140000_add_video_external_ref from './20260819_140000_add_video_external_ref';
+import * as migration_20260819_150000_add_external_api from './20260819_150000_add_external_api';
 
 export const migrations = [
   {
@@ -665,5 +666,10 @@ export const migrations = [
     up: migration_20260819_140000_add_video_external_ref.up,
     down: migration_20260819_140000_add_video_external_ref.down,
     name: '20260819_140000_add_video_external_ref',
+  },
+  {
+    up: migration_20260819_150000_add_external_api.up,
+    down: migration_20260819_150000_add_external_api.down,
+    name: '20260819_150000_add_external_api',
   },
 ];
