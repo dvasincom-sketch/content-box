@@ -8,6 +8,7 @@ import { ActivityFeed } from './ActivityFeed'
 import { ConfirmDialog } from './ConfirmDialog'
 import { PermissionsModal } from './PermissionsModal'
 import { OwnerTransferPanel } from './OwnerTransferPanel'
+import { ExternalApiPanel } from './ExternalApiPanel'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { matchPreset, PRESET_LABELS, ASSIGNABLE_PRESETS } from '@/lib/permissions'
 
@@ -211,6 +212,7 @@ export function AccessPanel({ members }: { members: Member[] }) {
       </div>
     </div>
     <OwnerTransferPanel targets={transferTargets} />
+    <ExternalApiPanel />
     <ActivityFeed />
     {permMember && (
       <PermissionsModal member={permMember} onClose={() => { setPermMember(null); router.refresh() }} />

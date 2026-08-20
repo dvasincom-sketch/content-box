@@ -353,6 +353,13 @@ export interface SiteSetting {
    * Служебное: правится студией.
    */
   activeCustomTheme?: number | null;
+  externalApiKeyHash?: string | null;
+  /**
+   * Начало ключа для опознания (сам ключ не хранится).
+   */
+  externalApiKeyPrefix?: string | null;
+  externalApiKeyCreatedAt?: string | null;
+  externalApiKeyLastUsedAt?: string | null;
   /**
    * Фоновые объекты из библиотеки (пальмы, звёзды, горы и т.д.) — приглушённо, в цвете темы, за контентом. Выбирается в Студии.
    */
@@ -728,6 +735,10 @@ export interface Publication {
     | boolean
     | null;
   publishedAt?: string | null;
+  /**
+   * Источник импорта (дедуп). Заполняется сервером.
+   */
+  externalRef?: string | null;
   prevVersion?:
     | {
         [k: string]: unknown;
@@ -1073,6 +1084,10 @@ export interface Video {
    */
   episode?: number | null;
   publishedAt?: string | null;
+  /**
+   * Источник импорта (для дедупликации). Заполняется сервером.
+   */
+  externalRef?: string | null;
   /**
    * Свободные теги — связывают материалы из разных категорий. Slug считается автоматически.
    */
@@ -2111,6 +2126,10 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   themePreset?: T;
   themeSource?: T;
   activeCustomTheme?: T;
+  externalApiKeyHash?: T;
+  externalApiKeyPrefix?: T;
+  externalApiKeyCreatedAt?: T;
+  externalApiKeyLastUsedAt?: T;
   bgDecor?: T;
   authorStats?:
     | T
@@ -2266,6 +2285,7 @@ export interface PublicationsSelect<T extends boolean = true> {
   template?: T;
   profile?: T;
   publishedAt?: T;
+  externalRef?: T;
   prevVersion?: T;
   eventDate?: T;
   category?: T;
@@ -2506,6 +2526,7 @@ export interface VideosSelect<T extends boolean = true> {
   season?: T;
   episode?: T;
   publishedAt?: T;
+  externalRef?: T;
   tags?:
     | T
     | {
