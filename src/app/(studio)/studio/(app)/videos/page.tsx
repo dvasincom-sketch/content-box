@@ -7,7 +7,6 @@ import { can } from '@/access'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../_ui/StudioUpsell'
 import { VideosManager } from './VideosManager'
-import { VkPlaylistImportPanel } from './VkPlaylistImportPanel'
 
 /**
  * Экран «Видео» студии. Таблица видео тенанта + папки (дерево) + добавление.
@@ -133,12 +132,5 @@ export default async function VideosPage() {
     }
   })
 
-  const canCreate = can(author!.user as any, 'videos', 'create')
-
-  return (
-    <>
-      {canCreate && <VkPlaylistImportPanel categories={categories} />}
-      <VideosManager initialVideos={videos} tiers={tiers} categories={categories} canCreate={canCreate} />
-    </>
-  )
+  return <VideosManager initialVideos={videos} tiers={tiers} categories={categories} canCreate={can(author!.user as any, 'videos', 'create')} />
 }

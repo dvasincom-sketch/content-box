@@ -1,6 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk, belongsToTenant, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { parseVideoEmbed } from '@/lib/videoEmbed'
+import { checkEmbedAvailability } from '@/lib/vkValidate'
 import { parseVkPlaylistUrl, fetchVkPlaylist, vkTokenConfigured, type VkVideoItem } from '@/lib/vkPlaylist'
 import { shrinkForWeb, storageName } from '@/lib/imageIngest'
 import { logActivity } from '@/lib/logActivity'
@@ -30,6 +31,10 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const categoryId = numOrNull(data.categoryId)
   if (categoryId == null) return apiError('Выберите категорию для импорта')
   if (!(await belongsToTenant(payload, 'categories', categoryId, tenantId))) return apiError('Категория не найдена')
+
+  // Строгая проверка доступности каждого ролика (медленнее). Без неё статус
+  // ставим 'ok' по факту наличия в плейлисте (токен его прочитал).
+  const verify = data.verify === true
 
   if (!vkTokenConfigured()) return apiError('На сервере не задан VK_SERVICE_TOKEN — импорт из VK недоступен.', 503)
 
@@ -76,6 +81,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       coverId = null // обложка не критична
     }
 
+    const embedStatus = verify ? await checkEmbedAvailability(parsed.src) : 'ok'
+
     try {
       const title = it.title || `Видео · VK`
       await payload.create({
@@ -87,6 +94,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
           embedProvider: parsed.provider,
           embedSrc: parsed.src,
           embedAspect: parsed.aspect,
+          embedStatus,
+          embedCheckedAt: new Date().toISOString(),
           description: it.description || undefined,
           durationSec: it.durationSec || undefined,
           category: categoryId,

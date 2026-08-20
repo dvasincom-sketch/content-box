@@ -8,9 +8,10 @@ import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
   Upload, X, Play, Folder, Pencil, ChevronRight, ChevronDown,
   ChevronLeft, Search, MapPin, Globe, AlertTriangle,
-  ArrowDownWideNarrow, ArrowUpNarrowWide, Settings, Info,
+  ArrowDownWideNarrow, ArrowUpNarrowWide, Settings, Info, DownloadCloud,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
+import { VkPlaylistImportModal } from './VkPlaylistImportPanel'
 import { StudioSelect } from '../_ui/StudioSelect'
 
 type Tier = { id: number | string; name: string }
@@ -209,6 +210,7 @@ export function VideosManager({
   useEffect(() => setCategories(initialCategories), [initialCategories])
 
   const [adding, setAdding] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [filter, setFilter] = useState<string>(FILTER_ALL) // FILTER_ALL | FILTER_NONE | categoryId
   const [providerFilter, setProviderFilter] = useState<string>(PROVIDER_ALL)
   const [problemFilter, setProblemFilter] = useState(false)
@@ -295,10 +297,16 @@ export function VideosManager({
           <div className="studio-page-head__sub">Всего: {videos.length}</div>
         </div>
         {canCreate && (
-        <button className="studio-btn studio-btn--primary" onClick={() => setAdding((v) => !v)}>
-          <Plus size={18} />
-          Добавить видео
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="studio-btn" onClick={() => setImportOpen(true)}>
+            <DownloadCloud size={17} />
+            Импорт
+          </button>
+          <button className="studio-btn studio-btn--primary" onClick={() => setAdding((v) => !v)}>
+            <Plus size={18} />
+            Добавить видео
+          </button>
+        </div>
         )}
       </div>
 
@@ -311,6 +319,17 @@ export function VideosManager({
             router.refresh()
           }}
           onCancel={() => setAdding(false)}
+        />
+      )}
+
+      {importOpen && (
+        <VkPlaylistImportModal
+          categories={flatCategories}
+          onClose={() => setImportOpen(false)}
+          onDone={() => {
+            setImportOpen(false)
+            router.refresh()
+          }}
         />
       )}
 
