@@ -35,6 +35,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   // Строгая проверка доступности каждого ролика (медленнее). Без неё статус
   // ставим 'ok' по факту наличия в плейлисте (токен его прочитал).
   const verify = data.verify === true
+  // Создавать публикацию на каждый ролик (заголовок + обложка + прикреплённое
+  // видео) в выбранной категории — режим «одно видео = одна публикация».
+  const createPublication = data.createPublication === true
 
   if (!vkTokenConfigured()) return apiError('На сервере не задан VK_SERVICE_TOKEN — импорт из VK недоступен.', 503)
 
@@ -57,6 +60,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   let added = 0
   let skipped = 0
   let unavailable = 0
+  let publications = 0
 
   for (const it of items) {
     const externalRef = extRef(it)
@@ -82,14 +86,15 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     }
 
     const embedStatus = verify ? await checkEmbedAvailability(parsed.src) : 'ok'
+    const title = it.title || `Видео · VK`
+    const pubDate = it.dateSec ? new Date(it.dateSec * 1000).toISOString() : new Date().toISOString()
 
     try {
-      const title = it.title || `Видео · VK`
-      await payload.create({
+      const vdoc = (await payload.create({
         collection: 'videos',
         data: {
           title,
-          slug: await uniqueSlug(payload, tenantId, slugify(title) || 'video'),
+          slug: await uniqueSlug(payload, 'videos', tenantId, slugify(title) || 'video'),
           provider: 'embed',
           embedProvider: parsed.provider,
           embedSrc: parsed.src,
@@ -98,17 +103,44 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
           embedCheckedAt: new Date().toISOString(),
           description: it.description || undefined,
           durationSec: it.durationSec || undefined,
-          category: categoryId,
+          // В режиме публикаций видео не кладём в категорию (публично его
+          // показывает публикация); иначе — как раньше, в выбранную категорию.
+          category: createPublication ? null : categoryId,
           cover: coverId,
           externalRef,
-          publishedAt: it.dateSec ? new Date(it.dateSec * 1000).toISOString() : new Date().toISOString(),
+          publishedAt: pubDate,
           tenant: tenantId,
           owner: author.user.id,
         } as any,
         overrideAccess: true,
-      })
+      })) as any
       existing.add(externalRef)
       added++
+
+      // «Одно видео = одна публикация»: публикация с заголовком, обложкой и
+      // прикреплённым видео в выбранной категории. Не критично к падению.
+      if (createPublication && vdoc?.id) {
+        try {
+          await payload.create({
+            collection: 'publications',
+            data: {
+              title,
+              slug: await uniqueSlug(payload, 'publications', tenantId, slugify(title) || 'video'),
+              template: 'article',
+              cover: coverId,
+              category: categoryId,
+              relatedVideos: [vdoc.id],
+              publishedAt: pubDate,
+              tenant: tenantId,
+              owner: author.user.id,
+            } as any,
+            overrideAccess: true,
+          })
+          publications++
+        } catch {
+          /* публикация не критична — видео уже создано */
+        }
+      }
     } catch {
       unavailable++
     }
@@ -126,7 +158,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     /* лог не критичен */
   }
 
-  return apiOk({ added, skipped, unavailable, total: items.length })
+  return apiOk({ added, skipped, unavailable, publications, total: items.length })
 })
 
 function extRef(it: VkVideoItem): string {
@@ -163,11 +195,11 @@ async function ingestCover(
 }
 
 /** Свободный slug в пределах тенанта: video, video-2, … */
-async function uniqueSlug(payload: any, tenantId: number, base: string): Promise<string> {
+async function uniqueSlug(payload: any, collection: string, tenantId: number, base: string): Promise<string> {
   let candidate = base
   for (let n = 1; n < 200; n++) {
     const res = await payload.find({
-      collection: 'videos',
+      collection: collection as any,
       where: { and: [{ tenant: { equals: tenantId } }, { slug: { equals: candidate } }] },
       limit: 1,
       depth: 0,

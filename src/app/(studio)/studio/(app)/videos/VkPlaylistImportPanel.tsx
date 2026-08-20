@@ -12,7 +12,7 @@ import { StudioSelect } from '../_ui/StudioSelect'
  */
 
 type Category = { id: number | string; title: string; depth?: number }
-type Result = { added: number; skipped: number; unavailable: number; total: number }
+type Result = { added: number; skipped: number; unavailable: number; publications?: number; total: number }
 
 export function VkPlaylistImportModal({
   categories,
@@ -26,6 +26,7 @@ export function VkPlaylistImportModal({
   const [url, setUrl] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [verify, setVerify] = useState(false)
+  const [createPublication, setCreatePublication] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<Result | null>(null)
@@ -43,11 +44,11 @@ export function VkPlaylistImportModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ playlistUrl: url.trim(), categoryId, verify }),
+        body: JSON.stringify({ playlistUrl: url.trim(), categoryId, verify, createPublication }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) setError(json.error || 'Не удалось импортировать')
-      else setResult({ added: json.added || 0, skipped: json.skipped || 0, unavailable: json.unavailable || 0, total: json.total || 0 })
+      else setResult({ added: json.added || 0, skipped: json.skipped || 0, unavailable: json.unavailable || 0, publications: json.publications || 0, total: json.total || 0 })
     } catch {
       setError('Ошибка соединения')
     } finally {
@@ -94,11 +95,14 @@ export function VkPlaylistImportModal({
             placeholder="https://vkvideo.ru/playlist/-217576166_30"
             spellCheck={false}
             autoFocus
+            style={{ width: '100%', boxSizing: 'border-box' }}
           />
         </label>
 
-        <label className="studio-field" style={{ display: 'block', marginBottom: 12 }}>
-          <span className="studio-field__label">Категория (раздел «Смотреть»)</span>
+        {/* НЕ <label>: обёртка label пробрасывает клик по опции на триггер и
+            селект тут же переоткрывается. */}
+        <div className="studio-field" style={{ display: 'block', marginBottom: 12 }}>
+          <span className="studio-field__label">Категория</span>
           <StudioSelect
             value={categoryId}
             onChange={setCategoryId}
@@ -107,6 +111,13 @@ export function VkPlaylistImportModal({
             ariaLabel="Категория для импорта"
             searchable
           />
+        </div>
+
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10, cursor: 'pointer', fontSize: 13 }}>
+          <input type="checkbox" checked={createPublication} onChange={(e) => setCreatePublication(e.target.checked)} style={{ marginTop: 2 }} />
+          <span>
+            Создавать публикацию для каждого ролика <span style={{ color: 'var(--st-text-muted)' }}>(в выбранной категории появится публикация с заголовком, обложкой и прикреплённым видео — «одно видео = одна публикация»; само видео уходит в медиатеку)</span>
+          </span>
         </label>
 
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 4, cursor: 'pointer', fontSize: 13 }}>
@@ -120,7 +131,10 @@ export function VkPlaylistImportModal({
         {result && (
           <div className="nl-policy" style={{ marginTop: 12 }}>
             <Check size={18} style={{ color: 'var(--st-primary)' }} />
-            <span>Готово. Добавлено <b>{result.added}</b> · пропущено (уже есть) <b>{result.skipped}</b> · недоступно <b>{result.unavailable}</b> из <b>{result.total}</b>.</span>
+            <span>
+              Готово. Добавлено <b>{result.added}</b> · пропущено (уже есть) <b>{result.skipped}</b> · недоступно <b>{result.unavailable}</b>
+              {result.publications ? <> · публикаций <b>{result.publications}</b></> : null} из <b>{result.total}</b>.
+            </span>
           </div>
         )}
 

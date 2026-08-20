@@ -276,7 +276,9 @@ export function ThemeLibrary({
                 maxLength={60}
               />
             </label>
-            <label className="studio-field" style={{ flex: '0 1 240px' }}>
+            {/* НЕ <label>: обёртка label пробрасывает клик по опции на триггер
+                селекта, и он тут же переоткрывается. */}
+            <div className="studio-field" style={{ flex: '0 1 240px' }}>
               <span className="studio-field__label">Взять за основу</span>
               <StudioSelect
                 value={seedId}
@@ -285,7 +287,7 @@ export function ThemeLibrary({
                 placeholder="— выбрать пресет —"
                 ariaLabel="Взять палитру за основу"
               />
-            </label>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
