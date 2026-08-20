@@ -391,6 +391,20 @@ export const Videos: CollectionConfig = {
       type: 'date',
       label: 'Дата публикации',
     },
+    {
+      // Идентификатор источника при импорте (напр. `vk:-217576166_456…`). Нужен
+      // для дедупликации при повторном импорте плейлиста. Пишет только сервер.
+      name: 'externalRef',
+      type: 'text',
+      index: true,
+      label: 'Внешний идентификатор',
+      access: { create: () => false, update: () => false },
+      admin: {
+        readOnly: true,
+        condition: (data) => data?.provider === 'embed',
+        description: 'Источник импорта (для дедупликации). Заполняется сервером.',
+      },
+    },
     tagsField,
     // `tenant` инжектит multi-tenant плагин.
   ],
