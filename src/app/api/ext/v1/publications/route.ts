@@ -8,7 +8,7 @@ import { shrinkForWeb, storageName } from '@/lib/imageIngest'
 
 /**
  * Внешний API создания публикации (Фаза 1). Авторизация — X-API-KEY (тенант по
- * ключу, не по хосту). Формат ответа как у Sponsr: { data: { id, url, editor } }.
+ * ключу, не по хосту). Формат ответа: { data: { id, url, editor } }.
  *
  * POST /api/ext/v1/publications
  * Body: { title, text, format(markdown|plain), publishedAt, categorySlug|categoryId,

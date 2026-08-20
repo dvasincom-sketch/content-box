@@ -93,6 +93,12 @@
   .note__h{font-size:12px; font-weight:700; letter-spacing:.02em; margin-bottom:5px}
   .note__b{font-size:13.5px; color:var(--muted); line-height:1.55}
 
+  .pre-wrap{position:relative}
+  .pre-wrap pre{padding-top:34px}
+  .copy-btn{position:absolute; top:8px; right:8px; display:inline-flex; align-items:center; gap:5px; font:inherit; font-size:12px; font-weight:600; padding:4px 10px; border:1px solid var(--border-strong); border-radius:6px; background:var(--surface-2); color:var(--muted); cursor:pointer; transition:background .15s var(--ease), color .15s var(--ease)}
+  .copy-btn:hover{background:var(--surface-hover); color:var(--text)}
+  .copy-btn.ok{color:var(--success); border-color:color-mix(in srgb,var(--success) 45%,var(--border))}
+
   .foot{border-top:1px solid var(--border); padding:30px 0 44px; margin-top:20px}
   .foot__in{display:flex; flex-wrap:wrap; align-items:center; gap:14px; justify-content:space-between}
   .foot__links{display:flex; flex-wrap:wrap; gap:18px}
@@ -131,7 +137,7 @@
         <div class="sec__tag">Быстрый старт</div>
         <h2>За три шага</h2>
         <ul>
-          <li>Откройте <b>Студия → Настройки → API</b> и нажмите «Сгенерировать ключ». Скопируйте его — значение показывается один раз.</li>
+          <li>Откройте <b>Студия → Настройки → Доступ</b>, блок «Внешний API», и нажмите «Сгенерировать ключ». Скопируйте его — значение показывается один раз.</li>
           <li>Передавайте ключ в заголовке <code class="inline">X-API-KEY</code>. По ключу определяется ваш проект — домен указывать не нужно.</li>
           <li>Отправьте <code class="inline">POST</code> на эндпоинт ниже. В ответ придёт ID и ссылки на пост.</li>
         </ul>
@@ -173,7 +179,7 @@ accept: application/json</code></pre>
             <tr><td>isNews</td><td>boolean</td><td>Пометить как новость.</td></tr>
             <tr><td>seoTitle</td><td>string</td><td>SEO-заголовок страницы.</td></tr>
             <tr><td>seoDescription</td><td>string</td><td>SEO-описание.</td></tr>
-            <tr><td>externalRef</td><td>string</td><td>Ваш ID поста на прежней платформе (напр. <code class="inline">sponsr:51753</code>). Дедуп: повторный импорт не создаст дубль.</td></tr>
+            <tr><td>externalRef</td><td>string</td><td>Ваш ID поста на прежней платформе (напр. <code class="inline">ext:51753</code>). Дедуп: повторный импорт не создаст дубль.</td></tr>
           </tbody>
         </table>
 
@@ -190,7 +196,7 @@ accept: application/json</code></pre>
     "access": "tier",
     "coverUrl": "https://example.com/cover.jpg",
     "tags": ["bts", "live"],
-    "externalRef": "sponsr:51753"
+    "externalRef": "ext:51753"
   }'</code></pre>
 
         <h3>Ответ (200)</h3>
@@ -206,6 +212,33 @@ accept: application/json</code></pre>
         <pre><code>{ "message": "Неверный или отсутствующий X-API-KEY", "statusCode": 401 }
 { "message": "title должен быть 4..256 символов", "statusCode": 400 }
 { "message": "Категория не найдена: weverse-live", "statusCode": 400 }</code></pre>
+      </section>
+
+      <section class="sec">
+        <div class="sec__tag">Массовый перенос</div>
+        <h2>Как перенести весь архив</h2>
+        <p>Отдельного «пакетного» метода пока нет (появится позже) — массовый перенос делается циклом: на каждый пост из вашего экспорта отправляется один запрос, описанный выше. Три вещи делают это безопасным:</p>
+        <ul>
+          <li><b>externalRef.</b> Проставьте у каждого поста ваш исходный ID (напр. <code class="inline">ext:51753</code>). Тогда цикл можно запускать сколько угодно раз: уже перенесённые посты пропускаются, а не дублируются — удобно догонять сбойные.</li>
+          <li><b>publishedAt.</b> Передавайте оригинальную дату — хронология на сайте выстроится сама, порядок восстанавливать не нужно.</li>
+          <li><b>Темп.</b> Небольшая пауза между запросами бережёт сервер (обложки скачиваются на нашей стороне).</li>
+        </ul>
+        <h3>Пример: перенос из JSON-экспорта</h3>
+        <p>Приведите экспорт прежней платформы к массиву объектов в формате тела запроса (сопоставьте свои поля с нашими), сохраните в <code class="inline">posts.json</code> и прогоните:</p>
+        <pre><code>export CBX_KEY='cbx_ваш_ключ'
+
+# posts.json — массив постов вида { "title": …, "text": …, "publishedAt": …,
+#   "categorySlug": …, "access": …, "coverUrl": …, "externalRef": … }
+jq -c '.[]' posts.json | while read -r post; do
+  curl -s -o /dev/null -w '%{http_code} ' \
+    -X POST 'https://contentbox.site/api/ext/v1/publications' \
+    -H "X-API-KEY: $CBX_KEY" \
+    -H 'Content-Type: application/json' \
+    -d "$post"
+  echo
+  sleep 0.3
+done</code></pre>
+        <p>Скрипт печатает HTTP-код по каждому посту (200 — создан или найден по externalRef). Сбой одного поста не роняет остальные; повторный запуск до-переносит пропущенное.</p>
       </section>
 
       <section class="sec">
@@ -245,6 +278,21 @@ accept: application/json</code></pre>
   function sync(){ if(icon) icon.innerHTML = document.documentElement.className==='theme-light' ? moon : sun; }
   sync();
   if(btn) btn.addEventListener('click',function(){ var light=document.documentElement.className==='theme-light'; document.documentElement.className=light?'theme-dark':'theme-light'; try{localStorage.setItem('cb-theme2', light?'dark':'light');}catch(e){} sync(); });
+
+  // Кнопки «Копировать» на всех блоках кода.
+  function cbFallback(text){ try{ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }catch(e){} }
+  document.querySelectorAll('pre').forEach(function(pre){
+    var wrap=document.createElement('div'); wrap.className='pre-wrap';
+    pre.parentNode.insertBefore(wrap, pre); wrap.appendChild(pre);
+    var b=document.createElement('button'); b.type='button'; b.className='copy-btn'; b.textContent='Копировать';
+    wrap.appendChild(b);
+    b.addEventListener('click', function(){
+      var t=pre.innerText;
+      function done(){ b.textContent='Скопировано'; b.classList.add('ok'); setTimeout(function(){ b.textContent='Копировать'; b.classList.remove('ok'); }, 1500); }
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done, function(){ cbFallback(t); done(); }); }
+      else { cbFallback(t); done(); }
+    });
+  });
 </script>
 </body>
 </html>

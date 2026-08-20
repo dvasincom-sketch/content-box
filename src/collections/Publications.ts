@@ -55,7 +55,7 @@ export const Publications: CollectionConfig = {
     { name: 'publishedAt', type: 'date', label: 'Дата публикации' },
     {
       // Идентификатор источника при импорте через внешний API (напр.
-      // `sponsr:51753`). Дедуп повторного переноса. Пишет только сервер.
+      // `ext:51753`). Дедуп повторного переноса. Пишет только сервер.
       name: 'externalRef',
       type: 'text',
       index: true,
