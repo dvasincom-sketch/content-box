@@ -14,6 +14,7 @@ import { BgDecorPicker } from './BgDecorPicker'
 import { ThemeLibrary } from './ThemeLibrary'
 import { GoalsPanel, type Goal } from './GoalsPanel'
 import { DonatePresetsPanel, type DonatePreset } from './DonatePresetsPanel'
+import { YookassaPanel } from './YookassaPanel'
 import { hasCap, type CapMatrix } from '@/lib/permissions'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
@@ -193,6 +194,7 @@ export function SettingsView({
             <TiersBlock initial={initialTiers} />
             <GoalsPanel initial={goals} />
             <DonatePresetsPanel initial={donatePresets} />
+            {isOwner && <YookassaPanel />}
           </>
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}

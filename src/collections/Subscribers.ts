@@ -222,6 +222,43 @@ export const Subscribers: CollectionConfig = {
         description: 'Дата окончания текущей оплаченной подписки. Меняет только суперадмин.',
       },
     },
+    // ── Рекуррентные платежи ЮKassa (пишет только сервер: вебхук/крон) ────────
+    {
+      name: 'autoRenew',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Автопродление',
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
+      admin: { description: 'Включается при оплате с сохранением карты; выключается при отмене подписки.' },
+    },
+    {
+      name: 'yookassaPaymentMethodId',
+      type: 'text',
+      label: 'ЮKassa: сохранённый способ оплаты',
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
+      admin: { readOnly: true, description: 'payment_method_id для автосписаний. Пишет сервер.' },
+    },
+    {
+      name: 'cardLabel',
+      type: 'text',
+      label: 'Карта',
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
+      admin: { readOnly: true, description: 'Маска карты, напр. VISA ****4567.' },
+    },
+    {
+      name: 'subscriptionSince',
+      type: 'date',
+      label: 'Подписка оформлена',
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
+      admin: { readOnly: true },
+    },
+    {
+      name: 'lastPaymentAt',
+      type: 'date',
+      label: 'Последний платёж',
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
+      admin: { readOnly: true },
+    },
     {
       name: 'isBlocked',
       type: 'checkbox',

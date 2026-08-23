@@ -126,6 +126,49 @@ export const SiteSettings: CollectionConfig = {
       access: { create: () => false, update: () => false },
       admin: { readOnly: true },
     },
+    // ── Приём платежей: ЮKassa магазина автора (Вариант 1) ───────────────────
+    // Правит студия (owner) через роут с overrideAccess. Секрет наружу не отдаём.
+    {
+      name: 'yookassaShopId',
+      type: 'text',
+      label: 'ЮKassa: shopId',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Магазин ЮKassa автора. Правится в студии.' },
+    },
+    {
+      name: 'yookassaSecret',
+      type: 'text',
+      label: 'ЮKassa: секретный ключ',
+      access: { create: () => false, update: () => false, read: () => false },
+      admin: { hidden: true },
+    },
+    {
+      name: 'yookassaMode',
+      type: 'select',
+      defaultValue: 'test',
+      options: [
+        { label: 'Тест', value: 'test' },
+        { label: 'Боевой', value: 'live' },
+      ],
+      label: 'ЮKassa: режим',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true },
+    },
+    {
+      name: 'yookassaTaxSystem',
+      type: 'number',
+      label: 'ЮKassa: СНО (код 1–6)',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Система налогообложения для чека 54-ФЗ.' },
+    },
+    {
+      name: 'yookassaVatCode',
+      type: 'number',
+      defaultValue: 1,
+      label: 'ЮKassa: ставка НДС (код 1–6)',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Код ставки НДС для чека (1 = без НДС).' },
+    },
     {
       name: 'bgDecor',
       type: 'select',
