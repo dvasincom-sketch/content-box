@@ -87,7 +87,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
     const embedStatus = verify ? await checkEmbedAvailability(parsed.src) : 'ok'
     const title = it.title || `Видео · VK`
-    const pubDate = it.dateSec ? new Date(it.dateSec * 1000).toISOString() : new Date().toISOString()
+    // Дата публикации = момент добавления в студию (не дата ролика в VK).
+    const pubDate = new Date().toISOString()
 
     try {
       const vdoc = (await payload.create({

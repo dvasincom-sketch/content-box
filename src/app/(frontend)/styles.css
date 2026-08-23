@@ -2554,9 +2554,13 @@ svg {
 
 .vseries__seasons {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   padding: 10px;
-  overflow-x: auto;
+  /* Было overflow-x:auto — по спецификации это форсит overflow-y в auto, и строка
+     вкладок становилась вертикальным скролл-контейнером, обрезавшим пилюли по
+     высоте (сезон-таб «съедался» сверху). Переносим вкладки на новую строку. */
   border-bottom: 1px solid var(--brand-border);
 }
 .vseries__season-tab {
