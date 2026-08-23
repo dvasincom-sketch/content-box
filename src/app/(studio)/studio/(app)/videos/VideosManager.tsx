@@ -8,7 +8,7 @@ import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
   Upload, X, Play, Folder, Pencil, ChevronRight, ChevronDown,
   ChevronLeft, Search, MapPin, Globe, AlertTriangle,
-  ArrowDownWideNarrow, ArrowUpNarrowWide, Settings, Info, DownloadCloud,
+  ArrowDownWideNarrow, ArrowUpNarrowWide, Settings, Info, DownloadCloud, Trash2,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { VkPlaylistImportModal } from './VkPlaylistImportPanel'
@@ -211,6 +211,9 @@ export function VideosManager({
 
   const [adding, setAdding] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
   const [filter, setFilter] = useState<string>(FILTER_ALL) // FILTER_ALL | FILTER_NONE | categoryId
   const [providerFilter, setProviderFilter] = useState<string>(PROVIDER_ALL)
   const [problemFilter, setProblemFilter] = useState(false)
@@ -258,8 +261,10 @@ export function VideosManager({
     if (providerFilter === PROVIDER_SELF) out = out.filter((v) => v.provider === 'self')
     else if (providerFilter === PROVIDER_EXTERNAL) out = out.filter((v) => v.provider !== 'self')
     if (problemFilter) out = out.filter((v) => videoState(v) !== 'ok')
+    const q = query.trim().toLowerCase()
+    if (q) out = out.filter((v) => (v.title || '').toLowerCase().includes(q))
     return out
-  }, [videos, filter, providerFilter, problemFilter])
+  }, [videos, filter, providerFilter, problemFilter, query])
 
   const sortedVideos = useMemo(() => {
     const arr = [...filteredVideos]
@@ -279,7 +284,7 @@ export function VideosManager({
     [sortedVideos, curPage, per],
   )
   // Смена фильтра/сортировки/размера страницы — сбрасываем на первую страницу.
-  useEffect(() => { setPage(1) }, [filter, providerFilter, problemFilter, sortDir, per])
+  useEffect(() => { setPage(1) }, [filter, providerFilter, problemFilter, sortDir, per, query])
 
   const sectionFilterLabel = useMemo(() => {
     if (filter === FILTER_ALL) return `Все видео (${videos.length})`
@@ -288,6 +293,77 @@ export function VideosManager({
     const c = flatCategories.find((x) => String(x.id) === filter)
     return c ? c.title : 'Все видео'
   }, [filter, flatCategories, videos.length, noSectionCount, unavailableCount])
+
+  // ── Выбор строк и удаление ────────────────────────────────────────────────
+  const pageIds = useMemo(() => visibleVideos.map((v) => String(v.id)), [visibleVideos])
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id))
+  const toggleAll = () =>
+    setSelected((s) => {
+      const n = new Set(s)
+      if (allPageSelected) pageIds.forEach((id) => n.delete(id))
+      else pageIds.forEach((id) => n.add(id))
+      return n
+    })
+  const toggleOne = (id: string) =>
+    setSelected((s) => {
+      const n = new Set(s)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
+
+  async function deleteVideoReq(id: string | number): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const res = await fetch('/studio/api/videos/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ videoId: id }),
+      })
+      const j = await res.json().catch(() => ({}))
+      return { ok: res.ok, error: j?.error }
+    } catch {
+      return { ok: false, error: 'Ошибка соединения' }
+    }
+  }
+
+  async function handleDeleteRow(v: Vid) {
+    if (!window.confirm(`Удалить видео «${v.title}»? Действие необратимо.`)) return
+    const r = await deleteVideoReq(v.id)
+    if (!r.ok) {
+      window.alert(r.error || 'Не удалось удалить')
+      return
+    }
+    setVideos((list) => list.filter((x) => String(x.id) !== String(v.id)))
+    setSelected((s) => {
+      const n = new Set(s)
+      n.delete(String(v.id))
+      return n
+    })
+  }
+
+  async function handleBulkDelete() {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    if (!window.confirm(`Удалить выбранные видео (${ids.length})? Действие необратимо.`)) return
+    setBulkBusy(true)
+    let deleted = 0
+    let blocked = 0
+    for (const id of ids) {
+      const r = await deleteVideoReq(id)
+      if (r.ok) {
+        deleted++
+        setVideos((list) => list.filter((x) => String(x.id) !== String(id)))
+      } else {
+        blocked++
+      }
+    }
+    setBulkBusy(false)
+    setSelected(new Set())
+    if (blocked > 0) {
+      window.alert(`Удалено: ${deleted}. Пропущено: ${blocked} — прикреплены к публикациям или ошибка. Открепите их от публикаций и повторите.`)
+    }
+  }
 
   return (
     <>
@@ -364,6 +440,16 @@ export function VideosManager({
         </div>
 
         <div className="folderbar__filter" style={{ marginLeft: 'auto', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+            <Search size={14} style={{ position: 'absolute', left: 10, color: 'var(--st-text-muted)', pointerEvents: 'none' }} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Поиск по названию…"
+              aria-label="Поиск видео по названию"
+              style={{ padding: '7px 10px 7px 30px', borderRadius: 8, border: '1px solid var(--st-border)', background: 'var(--st-surface)', color: 'var(--st-text)', fontSize: 13, width: 210 }}
+            />
+          </div>
           {(brokenCount > 0 || processingCount > 0) && (
             <button
               type="button"
@@ -407,10 +493,29 @@ export function VideosManager({
           <div className="studio-empty__text">Задайте видео раздел «Смотреть» в карандаше (там же сезон и эпизод).</div>
         </div>
       ) : (
+        <>
+        {selected.size > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', marginBottom: 10, borderRadius: 10, background: 'var(--st-surface)', border: '1px solid var(--st-border)' }}>
+            <span style={{ fontSize: 14 }}>Выбрано: <b>{selected.size}</b></span>
+            <button type="button" className="studio-btn" onClick={() => setSelected(new Set())} disabled={bulkBusy}>Снять выбор</button>
+            <button
+              type="button"
+              className="studio-btn"
+              style={{ marginLeft: 'auto', color: '#dc2626', borderColor: '#dc2626' }}
+              onClick={handleBulkDelete}
+              disabled={bulkBusy}
+            >
+              {bulkBusy ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />} Удалить выбранные
+            </button>
+          </div>
+        )}
         <div className="vidtable__wrap">
           <table className="vidtable">
             <thead>
               <tr>
+                <th style={{ width: 36, textAlign: 'center' }}>
+                  <input type="checkbox" checked={allPageSelected} onChange={toggleAll} aria-label="Выбрать все на странице" />
+                </th>
                 <th className="vidtable__th-thumb"></th>
                 <th>Название</th>
                 <th className="vidtable__th-dur">Длительность</th>
@@ -429,11 +534,15 @@ export function VideosManager({
                   video={v}
                   categoryPath={v.categoryId ? catPathById.get(String(v.categoryId)) || null : null}
                   onEdit={() => router.push(`/studio/videos/${v.id}`)}
+                  selected={selected.has(String(v.id))}
+                  onToggleSelect={() => toggleOne(String(v.id))}
+                  onDelete={() => handleDeleteRow(v)}
                 />
               ))}
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {total > PER_OPTIONS[0] && (
@@ -570,10 +679,16 @@ function VideoRow({
   video,
   categoryPath,
   onEdit,
+  selected,
+  onToggleSelect,
+  onDelete,
 }: {
   video: Vid
   categoryPath: string | null
   onEdit: () => void
+  selected: boolean
+  onToggleSelect: () => void
+  onDelete: () => void
 }) {
   const [ready, setReady] = useState<boolean | null>(null)
   const [pct, setPct] = useState<string | null>(null)
@@ -620,7 +735,11 @@ function VideoRow({
   }, [video.id, video.videoRef, isEmbed])
 
   return (
-    <tr className="vidtable__row">
+    <tr className={`vidtable__row${selected ? ' is-selected' : ''}`}>
+      {/* Чекбокс выбора для массовых действий */}
+      <td style={{ textAlign: 'center' }}>
+        <input type="checkbox" checked={selected} onChange={onToggleSelect} aria-label="Выбрать видео" />
+      </td>
       {/* Тумба-превью */}
       <td className="vidtable__thumb-cell">
         <button
@@ -753,6 +872,14 @@ function VideoRow({
           title="Редактировать видео"
         >
           <Pencil size={15} />
+        </button>
+        <button
+          className="catmgr__icon-btn"
+          onClick={onDelete}
+          title="Удалить видео"
+          style={{ color: '#dc2626' }}
+        >
+          <Trash2 size={15} />
         </button>
       </td>
 
