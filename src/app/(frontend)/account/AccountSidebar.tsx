@@ -12,6 +12,7 @@ type NavItem = { href: string; label: string; Icon: typeof User; exact?: boolean
 // Основные разделы контента — на мобильном становятся лентой вкладок.
 const NAV_PRIMARY: NavItem[] = [
   { href: '/account', label: 'Профиль', Icon: User, exact: true },
+  { href: '/account/subscription', label: 'Моя подписка', Icon: CreditCard },
   { href: '/account/feed', label: 'Лента', Icon: Rss },
   { href: '/account/publications', label: 'Мои публикации', Icon: FileText },
   { href: '/account/library', label: 'Библиотека', Icon: BookOpen },
@@ -22,7 +23,7 @@ const NAV_PRIMARY: NavItem[] = [
 // Вторичное (сервис/редкое) — на десктопе в общем списке, на мобильном под «⋯».
 const NAV_SECONDARY: NavItem[] = [
   { href: '/account/settings', label: 'Настройки', Icon: Settings },
-  { href: '/subscribe', label: 'Подписка', Icon: CreditCard },
+  { href: '/subscribe', label: 'Тарифы', Icon: CreditCard },
 ]
 
 export function AccountSidebar({
