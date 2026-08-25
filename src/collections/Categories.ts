@@ -64,6 +64,15 @@ export const Categories: CollectionConfig = {
     },
     { name: 'order', type: 'number', defaultValue: 0, label: 'Сортировка' },
     {
+      name: 'contentOrder',
+      type: 'json',
+      label: 'Порядок содержимого',
+      admin: {
+        description:
+          'Ручной порядок смешанного списка (подкатегории + публикации): массив ссылок [{ "k": "c"|"p", "id": number }]. Управляется из студии перетаскиванием — вручную обычно не трогают.',
+      },
+    },
+    {
       name: 'showInHeader',
       type: 'checkbox',
       defaultValue: false,

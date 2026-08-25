@@ -92,6 +92,7 @@ export interface Config {
     'ai-usage': AiUsage;
     'digest-issues': DigestIssue;
     'custom-themes': CustomTheme;
+    'subscription-payments': SubscriptionPayment;
     'studio-activity': StudioActivity;
     'subscription-events': SubscriptionEvent;
     'subscriber-activity': SubscriberActivity;
@@ -133,6 +134,7 @@ export interface Config {
     'ai-usage': AiUsageSelect<false> | AiUsageSelect<true>;
     'digest-issues': DigestIssuesSelect<false> | DigestIssuesSelect<true>;
     'custom-themes': CustomThemesSelect<false> | CustomThemesSelect<true>;
+    'subscription-payments': SubscriptionPaymentsSelect<false> | SubscriptionPaymentsSelect<true>;
     'studio-activity': StudioActivitySelect<false> | StudioActivitySelect<true>;
     'subscription-events': SubscriptionEventsSelect<false> | SubscriptionEventsSelect<true>;
     'subscriber-activity': SubscriberActivitySelect<false> | SubscriberActivitySelect<true>;
@@ -360,6 +362,20 @@ export interface SiteSetting {
   externalApiKeyPrefix?: string | null;
   externalApiKeyCreatedAt?: string | null;
   externalApiKeyLastUsedAt?: string | null;
+  /**
+   * Магазин ЮKassa автора. Правится в студии.
+   */
+  yookassaShopId?: string | null;
+  yookassaSecret?: string | null;
+  yookassaMode?: ('test' | 'live') | null;
+  /**
+   * Система налогообложения для чека 54-ФЗ.
+   */
+  yookassaTaxSystem?: number | null;
+  /**
+   * Код ставки НДС для чека (1 = без НДС).
+   */
+  yookassaVatCode?: number | null;
   /**
    * Фоновые объекты из библиотеки (пальмы, звёзды, горы и т.д.) — приглушённо, в цвете темы, за контентом. Выбирается в Студии.
    */
@@ -646,6 +662,18 @@ export interface Category {
   } | null;
   order?: number | null;
   /**
+   * Ручной порядок смешанного списка (подкатегории + публикации): массив ссылок [{ "k": "c"|"p", "id": number }]. Управляется из студии перетаскиванием — вручную обычно не трогают.
+   */
+  contentOrder?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
    * Только для категорий верхнего уровня.
    */
   showInHeader?: boolean | null;
@@ -883,6 +911,20 @@ export interface Subscriber {
    * Дата окончания текущей оплаченной подписки. Меняет только суперадмин.
    */
   subscriptionUntil?: string | null;
+  /**
+   * Включается при оплате с сохранением карты; выключается при отмене подписки.
+   */
+  autoRenew?: boolean | null;
+  /**
+   * payment_method_id для автосписаний. Пишет сервер.
+   */
+  yookassaPaymentMethodId?: string | null;
+  /**
+   * Маска карты, напр. VISA ****4567.
+   */
+  cardLabel?: string | null;
+  subscriptionSince?: string | null;
+  lastPaymentAt?: string | null;
   isBlocked?: boolean | null;
   /**
    * Момент последнего входа. Ставит сервер (afterLogin).
@@ -1620,6 +1662,24 @@ export interface CustomTheme {
   createdAt: string;
 }
 /**
+ * История платежей подписок (служебное, только чтение).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscription-payments".
+ */
+export interface SubscriptionPayment {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  subscriber?: (number | null) | Subscriber;
+  tier?: (number | null) | SubscriptionTier;
+  amountRub?: number | null;
+  status?: ('pending' | 'succeeded' | 'canceled' | 'refunded') | null;
+  yookassaPaymentId?: string | null;
+  isRecurring?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Журнал действий участников студии.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1961,6 +2021,10 @@ export interface PayloadLockedDocument {
         value: number | CustomTheme;
       } | null)
     | ({
+        relationTo: 'subscription-payments';
+        value: number | SubscriptionPayment;
+      } | null)
+    | ({
         relationTo: 'studio-activity';
         value: number | StudioActivity;
       } | null)
@@ -2130,6 +2194,11 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   externalApiKeyPrefix?: T;
   externalApiKeyCreatedAt?: T;
   externalApiKeyLastUsedAt?: T;
+  yookassaShopId?: T;
+  yookassaSecret?: T;
+  yookassaMode?: T;
+  yookassaTaxSystem?: T;
+  yookassaVatCode?: T;
   bgDecor?: T;
   authorStats?:
     | T
@@ -2241,6 +2310,7 @@ export interface CategoriesSelect<T extends boolean = true> {
   cover?: T;
   description?: T;
   order?: T;
+  contentOrder?: T;
   showInHeader?: T;
   showInFooter?: T;
   videoSeries?: T;
@@ -2466,6 +2536,11 @@ export interface SubscribersSelect<T extends boolean = true> {
   level?: T;
   activeTier?: T;
   subscriptionUntil?: T;
+  autoRenew?: T;
+  yookassaPaymentMethodId?: T;
+  cardLabel?: T;
+  subscriptionSince?: T;
+  lastPaymentAt?: T;
   isBlocked?: T;
   lastSeenAt?: T;
   emailVerified?: T;
@@ -2799,6 +2874,21 @@ export interface CustomThemesSelect<T extends boolean = true> {
   tenant?: T;
   name?: T;
   theme?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscription-payments_select".
+ */
+export interface SubscriptionPaymentsSelect<T extends boolean = true> {
+  tenant?: T;
+  subscriber?: T;
+  tier?: T;
+  amountRub?: T;
+  status?: T;
+  yookassaPaymentId?: T;
+  isRecurring?: T;
   updatedAt?: T;
   createdAt?: T;
 }

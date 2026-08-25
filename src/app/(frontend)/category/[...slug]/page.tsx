@@ -7,11 +7,9 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import type { Metadata } from 'next'
-import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { ListPagination } from '@/components/ListPagination'
 import { RichText } from '@/components/RichText'
-import { CategoriesGridBlock } from '@/blocks/CategoriesGridBlock'
 import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
 import { VideoCardsBlock } from '@/blocks/VideoCardsBlock'
 import { VpnVideoNotice } from '@/components/VpnVideoNotice'
@@ -19,11 +17,17 @@ import { categoryHref } from '@/lib/categoryHref'
 import { ProfileView } from '@/app/(frontend)/publication/[slug]/ProfileView'
 import { CrossLinkCard } from '@/components/CrossLinkCard'
 import { publishedWhere } from '@/lib/published'
+import { CategoryContentGrid, type CategoryContentItem } from '@/blocks/CategoryContentGrid'
+import type { PublicationCard } from '@/blocks/LatestPublicationsBlock'
+import { mergeContentOrder } from '@/lib/categoryContentOrder'
 import { EventFilter } from './EventFilter'
 import '../../styles.css'
 import type { Payload } from 'payload'
 
 type Params = { slug: string[] }
+
+/** Максимум элементов, участвующих в ручной сортировке (чтобы не тянуть всё). */
+const CONTENT_CAP = 500
 
 /**
  * Категория по полному пути: спускаемся по сегментам от корня.
@@ -116,8 +120,8 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   const linkedArticle = (linkedRes.docs as any[])[0] || null
 
   // Категория-контейнер (posterLayout): её дочерние категории выводятся афишами
-  // (постерами 2:3), а публикации ветки на этой странице не показываются —
-  // эпизоды живут внутри дочерних разделов.
+  // (постерами 2:3). Публикации ветки тоже входят в общий список, но карточками
+  // афиш. Для остальных обычных разделов — единый смешанный список.
   const isPosterContainer = Boolean(category.posterLayout)
   const isVideoSeries = Boolean(category.videoSeries)
   const isEvent = Boolean(category.eventTemplate)
@@ -188,74 +192,10 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     )
   }
 
-  // Публикации всей ветки: категории, у которых текущая есть в цепочке предков.
-  // Для контейнера не нужны (показываем афиши детей), поэтому не запрашиваем.
-  let pubs: any[] = []
-  let cardStats = new Map<string, { comments: number; reactions: number }>()
-  let pubTotal = 0
-  let pubPages = 1
-  if (!isPosterContainer && !isVideoSeries) {
-    // Публикация показывается ТОЛЬКО в назначенных ей категориях (основная +
-    // дополнительные) — без роллапа по потомкам, поэтому в родительских разделах
-    // она не появляется. Раньше сюда подтягивалась вся ветка (breadcrumbs.doc),
-    // из-за чего материал «всплывал» и у предков.
-    const branchIDs = [category.id]
-
-    // Публикация попадает в раздел по ОСНОВНОЙ или по ДОПОЛНИТЕЛЬНОЙ категории.
-    const catMatch: any[] = [
-      { category: { in: branchIDs } },
-      { extraCategories: { in: branchIDs } },
-    ]
-    // Витрина «Новинки» (категория со slug 'new'): помимо привязанных к разделу —
-    // все публикации с активным флагом «Новинка» (14 дней), независимо от их
-    // собственной категории. По истечении окна публикация уходит из витрины и
-    // остаётся только в своих категориях.
-    if (category.slug === 'new') {
-      catMatch.push({
-        and: [
-          { isNew: { equals: true } },
-          { newUntil: { greater_than: new Date().toISOString() } },
-        ],
-      })
-    }
-
-    // Для событий — фильтр по диапазону дат события (если задан в запросе).
-    const eventRange: any[] = []
-    if (isEvent && evFrom) eventRange.push({ eventDate: { greater_than_equal: evFrom } })
-    if (isEvent && evTo) eventRange.push({ eventDate: { less_than_equal: `${evTo}T23:59:59.999` } })
-
-    const pubsRes = await payload.find({
-      collection: 'publications',
-      where: {
-        and: [
-          { tenant: { equals: tenant.id } },
-          // Без этого черновики ветки попадали в листинг категории, а из-за
-          // NULLS FIRST при '-publishedAt' — сразу наверх.
-          publishedWhere(),
-          { or: catMatch },
-          ...eventRange,
-        ],
-      },
-      // События: по умолчанию сначала новые (-eventDate), опц. сначала старые (eventDate).
-      sort: isEvent ? (evSort === 'old' ? 'eventDate' : '-eventDate') : '-publishedAt',
-      depth: 1,
-      limit: per,
-      page,
-      overrideAccess: true,
-    })
-    pubs = pubsRes.docs as any[]
-    pubTotal = pubsRes.totalDocs || pubs.length
-    pubPages = pubsRes.totalPages || 1
-
-    // Счётчики комментариев и реакций для карточек — один агрегирующий запрос.
-    cardStats = await getPublicationCardStats(
-      pubs.map((p) => p.id),
-      tenant.id as number,
-    )
-  }
-
-  // Видео-плейлист: эпизоды — видео, назначенные прямо этой категории.
-  // Группировку/сортировку по сезону и порядку делает блок (клиент).
+  // ── Видео-плейлист (сезоны/эпизоды) и одиночные видео-карточки ──────────────
+  // Эпизоды — видео, назначенные прямо этой категории. Для контейнера афиш не
+  // показываем (там дети — афиши). Ручная сортировка видео не затрагивает —
+  // задача про подкатегории и публикации.
   let seriesEpisodes: SeriesEpisode[] = []
   if (!isPosterContainer) {
     const vidsRes = await payload.find({
@@ -284,49 +224,135 @@ export default async function CategoryPage({ params, searchParams }: { params: P
     })
   }
 
-  // Контейнер афиш может содержать не только подкатегории, но и публикации,
-  // назначенные прямо ему — показываем их вертикальными постерами.
-  let posterPubs: any[] = []
-  if (isPosterContainer) {
-    const ppRes = await payload.find({
-      collection: 'publications',
-      where: {
-        and: [
-          { tenant: { equals: tenant.id } },
-          publishedWhere(),
-          { or: [{ category: { equals: category.id } }, { extraCategories: { in: [category.id] } }] },
-        ],
-      },
-      sort: '-publishedAt',
-      depth: 1,
-      limit: 60,
-      overrideAccess: true,
-    })
-    posterPubs = ppRes.docs as any[]
-  }
+  // ── Единый смешанный список: подкатегории + публикации в ручном порядке ─────
+  // Применяется ко всем типам со списком (обычный, контейнер афиш, события).
+  // Плейлист/страница обрабатываются выше и сюда не доходят.
+  const applyManualOrder = !isVideoSeries
 
-  // Прямые подкатегории. Для контейнера — это афиши; для обычной категории —
-  // плитки под публикациями. depth:1 — нужен cover.
+  // Прямые подкатегории (дефолтный порядок — по 'order').
   const childrenRes = await payload.find({
     collection: 'categories',
-    where: {
-      and: [{ tenant: { equals: tenant.id } }, { parent: { equals: category.id } }],
-    },
+    where: { and: [{ tenant: { equals: tenant.id } }, { parent: { equals: category.id } }] },
     sort: 'order',
-    limit: 100,
+    limit: CONTENT_CAP,
     depth: 1,
     overrideAccess: true,
   })
   const children = childrenRes.docs as any[]
 
+  // Публикации раздела: основная ИЛИ дополнительная категория. Витрина «Новинки»
+  // (slug 'new') добавляет все активные «новинки». События — фильтр по диапазону.
+  const catMatch: any[] = [
+    { category: { in: [category.id] } },
+    { extraCategories: { in: [category.id] } },
+  ]
+  if (category.slug === 'new') {
+    catMatch.push({
+      and: [
+        { isNew: { equals: true } },
+        { newUntil: { greater_than: new Date().toISOString() } },
+      ],
+    })
+  }
+  const eventRange: any[] = []
+  if (isEvent && evFrom) eventRange.push({ eventDate: { greater_than_equal: evFrom } })
+  if (isEvent && evTo) eventRange.push({ eventDate: { less_than_equal: `${evTo}T23:59:59.999` } })
+
+  const pubsRes = applyManualOrder
+    ? await payload.find({
+        collection: 'publications',
+        where: {
+          and: [
+            { tenant: { equals: tenant.id } },
+            publishedWhere(),
+            { or: catMatch },
+            ...eventRange,
+          ],
+        },
+        sort: isEvent ? (evSort === 'old' ? 'eventDate' : '-eventDate') : '-publishedAt',
+        depth: 1,
+        limit: CONTENT_CAP,
+        overrideAccess: true,
+      })
+    : { docs: [] as any[] }
+  const pubsAll = pubsRes.docs as any[]
+
+  // События с активным фильтром/сортировкой по дате — это явный выбор зрителя,
+  // ручной порядок в этом случае уступает дате (иначе фильтр «не работает»).
+  const eventDateOverride = isEvent && (evSort === 'old' || !!evFrom || !!evTo)
+  const useManual = applyManualOrder && !eventDateOverride
+
+  const catById = new Map<number, any>(children.map((c) => [Number(c.id), c]))
+  const pubById = new Map<number, any>(pubsAll.map((p) => [Number(p.id), p]))
+
+  const orderRefs = mergeContentOrder({
+    order: useManual ? category.contentOrder : [],
+    catIds: children.map((c) => c.id),
+    pubIds: pubsAll.map((p) => p.id),
+  })
+
+  // Пагинация — по объединённому списку. Контейнер афиш показываем целиком
+  // (как и раньше), без разбивки на страницы.
+  const paginate = !isPosterContainer
+  const totalItems = orderRefs.length
+  const totalPages = paginate ? Math.max(1, Math.ceil(totalItems / per)) : 1
+  const visibleRefs = paginate ? orderRefs.slice((page - 1) * per, page * per) : orderRefs
+
+  // Счётчики комментариев/реакций — только для видимых публикаций.
+  const visiblePubIds = visibleRefs.filter((r) => r.k === 'p').map((r) => r.id)
+  const cardStats = applyManualOrder
+    ? await getPublicationCardStats(visiblePubIds, tenant.id as number)
+    : new Map<string, { comments: number; reactions: number }>()
+
   const crumbs = (category.breadcrumbs ?? []) as { url?: string; label?: string }[]
 
-  // Обложка категории — фолбэк-превью для серий без собственной обложки
-  // (внешние VK/Дзен-вставки постера не имеют).
+  // Обложка категории — фолбэк-превью для серий без собственной обложки.
   const seriesCoverRaw =
     (category as any).cover && typeof (category as any).cover === 'object' ? (category as any).cover : null
   const seriesCoverUrl =
     seriesCoverRaw?.sizes?.card?.url || seriesCoverRaw?.sizes?.thumb?.url || seriesCoverRaw?.url || null
+
+  // Маппинг ссылки → карточка единой сетки (обычный/событийный раздел).
+  const pubToCard = (p: any): PublicationCard => {
+    const stats = cardStats.get(String(p.id))
+    return {
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      publishedAt: p.publishedAt,
+      minTierName: p.minTier && typeof p.minTier === 'object' ? p.minTier.name || p.minTier.slug || null : null,
+      cover: p.cover,
+      eventDate: isEvent ? (p.eventDate ?? null) : null,
+      commentCount: stats?.comments ?? 0,
+      reactionCount: stats?.reactions ?? 0,
+      hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
+      hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
+    }
+  }
+  const gridItems: CategoryContentItem[] = visibleRefs
+    .map((ref): CategoryContentItem | null => {
+      if (ref.k === 'c') {
+        const c = catById.get(ref.id)
+        if (!c) return null
+        const cov = c.cover && typeof c.cover === 'object' ? c.cover : null
+        return {
+          kind: 'category',
+          cat: {
+            id: c.id,
+            title: c.title,
+            href: categoryHref(c),
+            coverUrl: cov?.sizes?.card?.url || cov?.url || null,
+            coverAlt: cov?.alt || null,
+          },
+        }
+      }
+      const p = pubById.get(ref.id)
+      if (!p) return null
+      return { kind: 'publication', pub: pubToCard(p) }
+    })
+    .filter((x): x is CategoryContentItem => x !== null)
+
+  const emptyText = evFrom || evTo ? 'По заданным датам ничего не найдено.' : 'В этой категории пока нет материалов.'
 
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
@@ -360,144 +386,89 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           </div>
         )}
 
-        {!isVideoSeries && !isPosterContainer && seriesEpisodes.length > 0 && (
-          <>
-            <VpnVideoNotice />
-            <VideoCardsBlock episodes={seriesEpisodes} />
-          </>
-        )}
-
         {isVideoSeries ? (
           <>
             <VpnVideoNotice />
             <VideoSeriesBlock episodes={seriesEpisodes} seriesCoverUrl={seriesCoverUrl} />
           </>
-        ) : isPosterContainer ? (
-          // Контейнер: сетка афиш — прямые дочерние категории вертикальными
-          // постерами 2:3. Клик по афише → страница дочерней категории (эпизоды).
-          children.length > 0 || posterPubs.length > 0 ? (
-            <div className="poster-grid">
-              {children.map((c) => {
-                const cover = c.cover && typeof c.cover === 'object' ? c.cover : null
-                const posterUrl = cover?.sizes?.poster?.url || cover?.url || null
-                return (
-                  <a
-                    key={c.id}
-                    href={categoryHref(c)}
-                    className="poster-card"
-                    title={c.title}
-                  >
-                    <div className="poster-card__frame">
-                      {posterUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={posterUrl}
-                          alt={c.title}
-                          loading="lazy"
-                          className="poster-card__img"
-                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-                        />
-                      ) : (
-                        <div className="poster-card__placeholder" aria-hidden>
-                          {(c.title || '?').slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  </a>
-                )
-              })}
-              {posterPubs.map((p) => {
-                const cover = p.cover && typeof p.cover === 'object' ? p.cover : null
-                const posterUrl = cover?.sizes?.poster?.url || cover?.sizes?.card?.url || cover?.url || null
-                return (
-                  <a
-                    key={`p-${p.id}`}
-                    href={`/publication/${p.slug}`}
-                    className="poster-card"
-                    title={p.title}
-                  >
-                    <div className="poster-card__frame">
-                      {posterUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={posterUrl}
-                          alt={p.title}
-                          loading="lazy"
-                          className="poster-card__img"
-                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-                        />
-                      ) : (
-                        <div className="poster-card__placeholder" aria-hidden>
-                          {(p.title || '?').slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  </a>
-                )
-              })}
-            </div>
-          ) : category.description ? null : (
-            <p style={{ color: 'var(--brand-muted)' }}>
-              В этом разделе пока нет материалов.
-            </p>
-          )
-        ) : (pubs.length === 0 && !isEvent) ? (
-          // Если есть статья или подкатегории — раздел не пустой.
-          category.description || children.length > 0 || seriesEpisodes.length > 0 ? null : (
-            <p style={{ color: 'var(--brand-muted)' }}>
-              В этой категории пока нет материалов.
-            </p>
-          )
         ) : (
           <>
-            {pubs.length === 0 ? (
-              <p style={{ color: 'var(--brand-muted)' }}>{evFrom || evTo ? 'По заданным датам ничего не найдено.' : 'В этой категории пока нет материалов.'}</p>
-            ) : (
-          <LatestPublicationsBlock
-            heading=""
-            items={pubs.map((p) => {
-              const stats = cardStats.get(String(p.id))
-              return {
-                id: p.id,
-                slug: p.slug,
-                title: p.title,
-                publishedAt: p.publishedAt,
-                minTierName:
-                  p.minTier && typeof p.minTier === 'object'
-                    ? p.minTier.name || p.minTier.slug || null
-                    : null,
-                cover: p.cover,
-                eventDate: isEvent ? (p.eventDate ?? null) : null,
-                commentCount: stats?.comments ?? 0,
-                reactionCount: stats?.reactions ?? 0,
-                hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
-                hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
-              }
-            })}
-          />
+            {/* Одиночные видео раздела — горизонтальными карточками над списком
+                (не для контейнера афиш). */}
+            {!isPosterContainer && seriesEpisodes.length > 0 && (
+              <>
+                <VpnVideoNotice />
+                <VideoCardsBlock episodes={seriesEpisodes} />
+              </>
             )}
-            {pubs.length > 0 && (
-              <ListPagination page={page} totalPages={pubPages} per={per} total={pubTotal}
-                basePath={`/category/${(Array.isArray(slug) ? slug : [slug]).join('/')}`}
-                query={{ sort: isEvent && evSort === 'old' ? 'old' : undefined, from: evFrom || undefined, to: evTo || undefined }} />
+
+            {isPosterContainer ? (
+              // Контейнер: единая сетка афиш — подкатегории и публикации 2:3
+              // в ручном порядке. Клик ведёт в раздел/публикацию.
+              visibleRefs.length > 0 ? (
+                <div className="poster-grid">
+                  {visibleRefs.map((ref) => {
+                    if (ref.k === 'c') {
+                      const c = catById.get(ref.id)
+                      if (!c) return null
+                      const cover = c.cover && typeof c.cover === 'object' ? c.cover : null
+                      const posterUrl = cover?.sizes?.poster?.url || cover?.url || null
+                      return (
+                        <a key={`c-${c.id}`} href={categoryHref(c)} className="poster-card" title={c.title}>
+                          <div className="poster-card__frame">
+                            {posterUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={posterUrl} alt={c.title} loading="lazy" className="poster-card__img" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+                            ) : (
+                              <div className="poster-card__placeholder" aria-hidden>
+                                {(c.title || '?').slice(0, 1).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                        </a>
+                      )
+                    }
+                    const p = pubById.get(ref.id)
+                    if (!p) return null
+                    const cover = p.cover && typeof p.cover === 'object' ? p.cover : null
+                    const posterUrl = cover?.sizes?.poster?.url || cover?.sizes?.card?.url || cover?.url || null
+                    return (
+                      <a key={`p-${p.id}`} href={`/publication/${p.slug}`} className="poster-card" title={p.title}>
+                        <div className="poster-card__frame">
+                          {posterUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={posterUrl} alt={p.title} loading="lazy" className="poster-card__img" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+                          ) : (
+                            <div className="poster-card__placeholder" aria-hidden>
+                              {(p.title || '?').slice(0, 1).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      </a>
+                    )
+                  })}
+                </div>
+              ) : category.description ? null : (
+                <p style={{ color: 'var(--brand-muted)' }}>В этом разделе пока нет материалов.</p>
+              )
+            ) : visibleRefs.length > 0 ? (
+              <>
+                <CategoryContentGrid items={gridItems} />
+                {paginate && totalPages > 1 && (
+                  <ListPagination
+                    page={page}
+                    totalPages={totalPages}
+                    per={per}
+                    total={totalItems}
+                    basePath={`/category/${(Array.isArray(slug) ? slug : [slug]).join('/')}`}
+                    query={{ sort: isEvent && evSort === 'old' ? 'old' : undefined, from: evFrom || undefined, to: evTo || undefined }}
+                  />
+                )}
+              </>
+            ) : category.description || seriesEpisodes.length > 0 ? null : (
+              <p style={{ color: 'var(--brand-muted)' }}>{emptyText}</p>
             )}
           </>
-        )}
-
-        {/* Прямые подкатегории плитками — только для обычной категории.
-            У контейнера дети уже показаны афишами выше, дублировать не нужно. */}
-        {!isPosterContainer && !isVideoSeries && children.length > 0 && (
-          <div className="mt-14">
-            <CategoriesGridBlock
-              heading="Разделы"
-              items={children.map((c) => ({
-                id: c.id,
-                title: c.title,
-                href: categoryHref(c),
-                cover: c.cover,
-              }))}
-            />
-          </div>
         )}
       </div>
     </main>

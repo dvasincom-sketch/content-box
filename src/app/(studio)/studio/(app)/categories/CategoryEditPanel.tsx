@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { X, ImagePlus, Loader2, Check, Trash2 } from 'lucide-react'
+import { X, ImagePlus, Loader2, Check, Trash2, GripVertical, FolderOpen, FileText } from 'lucide-react'
 import { TiptapEditor } from '../posts/new/TiptapEditor'
 import { slugify } from '@/lib/slugify'
 import { StudioSelect } from '../_ui/StudioSelect'
@@ -21,6 +21,9 @@ export type EditableCat = {
 
 /** Ответ роута загрузки обложки /studio/api/categories/cover. */
 type CoverResponse = { error?: string; id?: number; url?: string | null }
+
+/** Элемент списка «Порядок содержимого»: подкатегория (c) или публикация (p). */
+type ContentItem = { k: 'c' | 'p'; id: number; title: string; coverUrl: string | null }
 
 /**
  * Выдвижная панель редактирования категории. Название, slug (авто-превью),
@@ -51,7 +54,51 @@ export function CategoryEditPanel({
   const [allCats, setAllCats] = useState<{ id: number; title: string; parentId: number | null }[]>([])
   const [parentSel, setParentSel] = useState<string>('__root__')
 
+  // Порядок содержимого (подкатегории + публикации) для drag-and-drop.
+  const [content, setContent] = useState<ContentItem[]>([])
+  const [contentLoaded, setContentLoaded] = useState(false)
+  const [contentLoading, setContentLoading] = useState(false)
+  const dragIndex = useRef<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
+
+  // Ручная сортировка доступна для типов со списком (обычный, контейнер афиш,
+  // события). У плейлиста порядок задаётся сезоном/эпизодом, у «страницы» списка нет.
+  const showOrder = !videoSeries && !pageMode
+
   const slugPreview = slugify(title)
+
+  // Содержимое раздела для редактора порядка — грузим один раз при открытии
+  // (список не зависит от выбранного типа, только от самого раздела).
+  useEffect(() => {
+    let stop = false
+    setContentLoading(true)
+    fetch(`/studio/api/categories/content?id=${encodeURIComponent(String(cat.id))}`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (stop) return
+        setContent(Array.isArray(j.items) ? (j.items as ContentItem[]) : [])
+        setContentLoaded(true)
+      })
+      .catch(() => {
+        if (!stop) setContentLoaded(true)
+      })
+      .finally(() => {
+        if (!stop) setContentLoading(false)
+      })
+    return () => {
+      stop = true
+    }
+  }, [cat.id])
+
+  function reorderContent(from: number, to: number) {
+    setContent((prev) => {
+      if (from === to || from < 0 || to < 0 || from >= prev.length || to >= prev.length) return prev
+      const next = prev.slice()
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+  }
 
   // Список категорий тенанта — для выбора родителя. Текущий родитель ставим в селект.
   useEffect(() => {
@@ -194,6 +241,11 @@ export function CategoryEditPanel({
           videoSeries,
           eventTemplate,
           parentId: parentSel === '__root__' ? null : Number(parentSel),
+          // Порядок отправляем только когда он релевантен типу и уже загружен —
+          // иначе быстрый «Сохранить» до загрузки затёр бы его пустым массивом.
+          ...(showOrder && contentLoaded
+            ? { contentOrder: content.map((i) => ({ k: i.k, id: i.id })) }
+            : {}),
         }),
       })
       const json = await res.json()
@@ -342,6 +394,68 @@ export function CategoryEditPanel({
               style={{ display: 'none' }}
             />
           </div>
+
+          {showOrder && (
+            <div className="studio-field">
+              <span className="studio-field__label">Порядок содержимого</span>
+              <div className="catedit__hint">
+                Перетащите элементы, чтобы задать порядок вывода на сайте. В список входят подкатегории и публикации этого раздела; публикации и разделы идут единой лентой. Новые элементы появляются в конце. Порядок применится после сохранения.
+              </div>
+              {contentLoading ? (
+                <div className="catorder__note">
+                  <Loader2 size={15} className="spin" /> Загрузка…
+                </div>
+              ) : content.length === 0 ? (
+                <div className="catorder__note">В разделе пока нет подкатегорий и публикаций.</div>
+              ) : (
+                <ul className="catorder">
+                  {content.map((it, i) => (
+                    <li
+                      key={`${it.k}-${it.id}`}
+                      className={`catorder__row${dragOver === i ? ' is-over' : ''}`}
+                      draggable
+                      onDragStart={() => {
+                        dragIndex.current = i
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        if (dragIndex.current !== null && dragIndex.current !== i) {
+                          reorderContent(dragIndex.current, i)
+                          dragIndex.current = i
+                        }
+                        setDragOver(i)
+                      }}
+                      onDragEnd={() => {
+                        dragIndex.current = null
+                        setDragOver(null)
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        dragIndex.current = null
+                        setDragOver(null)
+                      }}
+                    >
+                      <span className="catorder__grip" aria-hidden>
+                        <GripVertical size={16} />
+                      </span>
+                      {it.coverUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={it.coverUrl} alt="" className="catorder__thumb" />
+                      ) : (
+                        <span className="catorder__thumb catorder__thumb--empty" aria-hidden>
+                          {it.k === 'c' ? <FolderOpen size={13} /> : <FileText size={13} />}
+                        </span>
+                      )}
+                      <span className="catorder__title">{it.title}</span>
+                      <span className={`catorder__tag catorder__tag--${it.k}`}>
+                        {it.k === 'c' ? 'Раздел' : 'Публикация'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           <div className="studio-field">
             <span className="studio-field__label">Описание</span>

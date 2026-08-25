@@ -40,22 +40,16 @@ function fmtEventDate(iso?: string | null): string | null {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Moscow' })
 }
 
-export function LatestPublicationsBlock({ heading = 'Последние публикации', items }: LatestPublicationsBlockProps) {
-  if (!items || items.length === 0) return null
-
+/**
+ * Одна карточка публикации — вынесена, чтобы переиспользовать в едином смешанном
+ * списке категории (CategoryContentGrid) без дублирования разметки (обложка,
+ * бейджи, дата события, счётчики).
+ */
+export function PublicationCardView({ p }: { p: PublicationCard }) {
+  const badge = relativeDayLabel(p.publishedAt)
+  const evLabel = fmtEventDate(p.eventDate)
   return (
-    <section className="mt-10">
-      {heading && (
-        <h2 className="text-2xl lg:text-3xl font-bold mb-6" style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}>
-          {heading}
-        </h2>
-      )}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {items.map((p) => {
-          const badge = relativeDayLabel(p.publishedAt)
-          const evLabel = fmtEventDate(p.eventDate)
-          return (
-            <article key={p.id} className="c-card c-card--interactive c-spotlight overflow-hidden flex flex-col">
+    <article key={p.id} className="c-card c-card--interactive c-spotlight overflow-hidden flex flex-col">
               {/* Обложка — только при наличии картинки; без неё блок не выводим (без градиента) */}
               {(coverUrl(p.cover) || p.posterFallback) && (
                 <Link href={`/publication/${p.slug}`} prefetch={false} className="relative block aspect-video">
@@ -139,8 +133,23 @@ export function LatestPublicationsBlock({ heading = 'Последние публ
                 </div>
               </div>
             </article>
-          )
-        })}
+  )
+}
+
+export function LatestPublicationsBlock({ heading = 'Последние публикации', items }: LatestPublicationsBlockProps) {
+  if (!items || items.length === 0) return null
+
+  return (
+    <section className="mt-10">
+      {heading && (
+        <h2 className="text-2xl lg:text-3xl font-bold mb-6" style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}>
+          {heading}
+        </h2>
+      )}
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {items.map((p) => (
+          <PublicationCardView key={p.id} p={p} />
+        ))}
       </div>
     </section>
   )

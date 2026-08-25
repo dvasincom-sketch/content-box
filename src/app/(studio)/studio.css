@@ -2434,6 +2434,82 @@ select.studio-input {
   .catedit { max-width: 100%; }
 }
 
+/* Порядок содержимого (drag-and-drop подкатегорий и публикаций) */
+.catorder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.catorder__row {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-3);
+  padding: var(--st-space-2) var(--st-space-3);
+  background: var(--st-bg);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  cursor: grab;
+  user-select: none;
+  transition: border-color var(--st-dur) var(--st-ease), background var(--st-dur) var(--st-ease),
+    box-shadow var(--st-dur) var(--st-ease);
+}
+.catorder__row:hover { border-color: var(--st-border-strong); }
+.catorder__row:active { cursor: grabbing; }
+.catorder__row.is-over {
+  border-color: var(--st-accent);
+  box-shadow: 0 0 0 1px var(--st-accent) inset;
+}
+.catorder__grip {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: var(--st-text-faint);
+}
+.catorder__thumb {
+  width: 40px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--st-surface-2);
+}
+.catorder__thumb--empty {
+  display: grid;
+  place-items: center;
+  color: var(--st-text-faint);
+  border: 1px dashed var(--st-border-strong);
+}
+.catorder__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--st-text-sm);
+  color: var(--st-text);
+}
+.catorder__tag {
+  flex-shrink: 0;
+  font-size: var(--st-text-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--st-border);
+  color: var(--st-text-muted);
+  background: var(--st-surface);
+}
+.catorder__tag--c { color: var(--st-accent-text); background: var(--st-accent); border-color: var(--st-accent); }
+.catorder__note {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+  font-size: var(--st-text-sm);
+  color: var(--st-text-muted);
+}
+
 /* ============================================================================
    ВИДЕО (студия)
    ============================================================================ */
