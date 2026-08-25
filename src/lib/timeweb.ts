@@ -99,12 +99,15 @@ export async function getPreset(presetId: string): Promise<TwPreset | null> {
   return all.find((p) => String(p.id) === String(presetId)) || null
 }
 
+// Timeweb биллит по часам как месяц / ~732 (проверено: monthly_cost/hourly_cost).
+const HOURS_PER_MONTH = 730
+
 function normalizePreset(p: any): TwPreset {
-  // ASSUMPTION: поля цены/ядер — свериться. price_per_hour может отсутствовать —
-  // тогда считаем из месячной: месяц ≈ 720 ч.
+  // Свёрено с живым API: тариф отдаёт только МЕСЯЧНУЮ цену `price` (₽); поля
+  // цены-за-час нет — считаем из месячной делением на ~730.
   const priceMonth = numOrNull(p?.price ?? p?.price_month ?? p?.month_price)
   const pph = numOrNull(p?.price_per_hour ?? p?.hour_price ?? p?.price_hour)
-  const pricePerHour = pph != null ? pph : priceMonth != null ? round2(priceMonth / 720) : null
+  const pricePerHour = pph != null ? pph : priceMonth != null ? round2(priceMonth / HOURS_PER_MONTH) : null
   return {
     id: String(p?.id ?? ''),
     cpu: numOrNull(p?.cpu ?? p?.cpu_count ?? p?.vcpu),
@@ -117,10 +120,10 @@ function normalizePreset(p: any): TwPreset {
   }
 }
 
-/** Баланс аккаунта, ₽. ASSUMPTION: { finances: { balance } } или { balance }. */
+/** Баланс аккаунта, ₽. Свёрено: { finances: { total_balance, balance, ... } }. */
 export async function getBalance(): Promise<number | null> {
   const j = await tw('GET', '/account/finances')
-  const b = j?.finances?.balance ?? j?.balance ?? j?.finances?.total ?? null
+  const b = j?.finances?.total_balance ?? j?.finances?.balance ?? j?.balance ?? null
   return numOrNull(b)
 }
 

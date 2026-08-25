@@ -1,7 +1,7 @@
 import { withAuthor, apiError, authorCan } from '@/app/(studio)/studio/api/_lib'
 import { NextResponse } from 'next/server'
-import { boostConfig, boostReady, queueCounts, estimate, activeRunForTenant, getDeposit, reconcile } from '@/lib/boost'
-import { getPreset } from '@/lib/timeweb'
+import { loadBoostConfig, boostReady, queueCounts, estimate, activeRunForTenant, getDeposit, reconcile, getBoostConfigRow } from '@/lib/boost'
+import { getPreset, timewebToken } from '@/lib/timeweb'
 
 /**
  * Статус boost для студии (owner/финансовое право): готовность конфига, депозит,
@@ -14,12 +14,13 @@ export const GET = withAuthor(async ({ payload, tenantId, author }) => {
   // Best-effort: не роняем статус, если тик упал.
   try { await reconcile(payload) } catch { /* игнор */ }
 
-  const cfg = boostConfig()
+  const cfg = await loadBoostConfig(payload)
   const ready = boostReady(cfg)
-  const [counts, deposit, run] = await Promise.all([
+  const [counts, deposit, run, configRow] = await Promise.all([
     queueCounts(payload),
     getDeposit(payload, tenantId),
     activeRunForTenant(payload, tenantId),
+    getBoostConfigRow(payload),
   ])
 
   let preset = null
@@ -35,6 +36,24 @@ export const GET = withAuthor(async ({ payload, tenantId, author }) => {
     marginPct: cfg.marginPct,
     idleMinutes: cfg.idleMinutes,
     maxLifetimeMin: cfg.maxLifetimeMin,
+    hasToken: Boolean(timewebToken()),
+    // Текущий конфиг для формы настроек (значения из БД или дефолты).
+    config: {
+      enabled: cfg.enabled,
+      presetId: cfg.presetId,
+      imageId: cfg.imageId,
+      osId: cfg.osId,
+      location: cfg.location,
+      replicas: cfg.replicasOverride,
+      cpusPerWorker: cfg.cpusPerWorker,
+      marginPct: cfg.marginPct,
+      maxLifetimeMin: cfg.maxLifetimeMin,
+      idleMinutes: cfg.idleMinutes,
+      throughputPerHour: cfg.throughputPerHour,
+      whisperEnabled: cfg.whisperEnabled,
+      // Заданы ли поля именно в БД (чтобы не путать с env-дефолтом) — не критично для UI.
+      fromDb: Boolean(configRow),
+    },
     preset: preset ? { id: preset.id, cpu: preset.cpu, ramMb: preset.ramMb, pricePerHour: preset.pricePerHour, location: preset.location } : null,
     activeRun: run
       ? {

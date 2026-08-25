@@ -25,6 +25,7 @@ import {
 } from '@/lib/timeweb'
 
 export type BoostConfig = {
+  enabled: boolean
   presetId: string
   imageId: string
   osId: number | null
@@ -35,29 +36,89 @@ export type BoostConfig = {
   throughputPerHour: number
   cpusPerWorker: number
   replicasOverride: number | null
+  whisperEnabled: boolean
 }
 
-export function boostConfig(): BoostConfig {
-  return {
-    presetId: process.env.BOOST_PRESET_ID || '',
-    imageId: process.env.BOOST_IMAGE_ID || '',
-    osId: intOrNull(process.env.BOOST_OS_ID),
-    location: process.env.BOOST_LOCATION || null,
-    maxLifetimeMin: Number(process.env.BOOST_MAX_LIFETIME_MIN || 180),
-    marginPct: Number(process.env.BOOST_MARGIN_PCT || 30),
-    idleMinutes: Number(process.env.BOOST_IDLE_MINUTES || 10),
-    throughputPerHour: Number(process.env.BOOST_THROUGHPUT_PER_HOUR || 20),
-    cpusPerWorker: Number(process.env.BOOST_CPUS_PER_WORKER || 7),
-    replicasOverride: intOrNull(process.env.BOOST_REPLICAS),
+/** Сырая строка boost_config (id=1). Все поля опциональны (могут быть null). */
+export type BoostConfigRow = {
+  enabled: boolean | null
+  preset_id: string | null
+  image_id: string | null
+  os_id: number | null
+  location: string | null
+  replicas: number | null
+  cpus_per_worker: number | null
+  margin_pct: number | null
+  max_lifetime_min: number | null
+  idle_minutes: number | null
+  throughput_per_hour: number | null
+  whisper_enabled: boolean | null
+}
+
+/** Прочитать строку конфига (id=1). null, если таблицы/строки ещё нет. */
+export async function getBoostConfigRow(payload: Payload): Promise<BoostConfigRow | null> {
+  try {
+    const rows = await sqlRows<BoostConfigRow>(payload, `SELECT * FROM boost_config WHERE id = 1 LIMIT 1`)
+    return rows[0] || null
+  } catch {
+    return null // таблицы ещё нет (миграция не доехала) — работаем на env-дефолтах
   }
 }
 
-/** Готов ли boost к запуску по конфигу (токен + пресет + образ). */
+/**
+ * Итоговый конфиг: значения из boost_config (редактируются в студии без редеплоя)
+ * поверх env-дефолтов. Токен — всегда из env (секрет).
+ */
+export async function loadBoostConfig(payload: Payload): Promise<BoostConfig> {
+  const row = await getBoostConfigRow(payload)
+  const s = (db: unknown, env: string | undefined): string => {
+    const dv = db == null ? '' : String(db)
+    return dv || env || ''
+  }
+  const n = (db: unknown, env: string | undefined, dflt: number): number => {
+    if (db != null && Number.isFinite(Number(db))) return Number(db)
+    if (env != null && env !== '' && Number.isFinite(Number(env))) return Number(env)
+    return dflt
+  }
+  return {
+    enabled: row?.enabled != null ? Boolean(row.enabled) : (process.env.BOOST_ENABLED || '0') !== '0',
+    presetId: s(row?.preset_id, process.env.BOOST_PRESET_ID),
+    imageId: s(row?.image_id, process.env.BOOST_IMAGE_ID),
+    osId: row?.os_id != null ? Number(row.os_id) : intOrNull(process.env.BOOST_OS_ID),
+    location: s(row?.location, process.env.BOOST_LOCATION) || null,
+    maxLifetimeMin: n(row?.max_lifetime_min, process.env.BOOST_MAX_LIFETIME_MIN, 180),
+    marginPct: n(row?.margin_pct, process.env.BOOST_MARGIN_PCT, 30),
+    idleMinutes: n(row?.idle_minutes, process.env.BOOST_IDLE_MINUTES, 10),
+    throughputPerHour: n(row?.throughput_per_hour, process.env.BOOST_THROUGHPUT_PER_HOUR, 20),
+    cpusPerWorker: n(row?.cpus_per_worker, process.env.BOOST_CPUS_PER_WORKER, 7),
+    replicasOverride: row?.replicas != null ? Number(row.replicas) : intOrNull(process.env.BOOST_REPLICAS),
+    whisperEnabled: row?.whisper_enabled != null ? Boolean(row.whisper_enabled) : (process.env.BOOST_WHISPER_ENABLED || '1') !== '0',
+  }
+}
+
+/** Сохранить (upsert) поля конфига в boost_config id=1. Пустые/undefined пропускаем. */
+export async function saveBoostConfig(payload: Payload, patch: Partial<BoostConfigRow>): Promise<void> {
+  const cols: Record<string, unknown> = {}
+  const allowed: (keyof BoostConfigRow)[] = [
+    'enabled', 'preset_id', 'image_id', 'os_id', 'location', 'replicas',
+    'cpus_per_worker', 'margin_pct', 'max_lifetime_min', 'idle_minutes', 'throughput_per_hour', 'whisper_enabled',
+  ]
+  for (const k of allowed) if (k in patch) cols[k] = (patch as any)[k]
+  const keys = Object.keys(cols)
+  // Гарантируем строку id=1.
+  await sqlRows(payload, `INSERT INTO boost_config (id) VALUES (1) ON CONFLICT (id) DO NOTHING`)
+  if (keys.length === 0) return
+  const sets = keys.map((k, i) => `"${k}" = $${i + 1}`)
+  const params = keys.map((k) => cols[k])
+  await sqlRows(payload, `UPDATE boost_config SET ${sets.join(', ')}, updated_at = now() WHERE id = 1`, params)
+}
+
+/** Готов ли boost к запуску (токен из env + вкл + пресет + образ). */
 export function boostReady(cfg: BoostConfig): { ok: boolean; reason?: string } {
-  if (!timewebToken()) return { ok: false, reason: 'TIMEWEB_TOKEN не задан' }
-  if ((process.env.BOOST_ENABLED || '0') === '0') return { ok: false, reason: 'BOOST_ENABLED=0' }
-  if (!cfg.presetId) return { ok: false, reason: 'BOOST_PRESET_ID не задан' }
-  if (!cfg.imageId && cfg.osId == null) return { ok: false, reason: 'BOOST_IMAGE_ID (снапшот воркера) не задан' }
+  if (!timewebToken()) return { ok: false, reason: 'TIMEWEB_TOKEN не задан (env)' }
+  if (!cfg.enabled) return { ok: false, reason: 'Boost выключен в настройках' }
+  if (!cfg.presetId) return { ok: false, reason: 'Не выбран пресет (BOOST_PRESET_ID)' }
+  if (!cfg.imageId && cfg.osId == null) return { ok: false, reason: 'Не задан образ воркера (BOOST_IMAGE_ID)' }
   return { ok: true }
 }
 
@@ -154,7 +215,7 @@ export function cloudInit(cfg: BoostConfig, replicas: number, encodeThreads: num
     APP_INTERNAL_URL: process.env.BOOST_APP_URL || process.env.APP_PUBLIC_URL || '',
     ENCODE_THREADS: String(encodeThreads),
     WHISPER_THREADS: String(encodeThreads),
-    WHISPER_ENABLED: process.env.BOOST_WHISPER_ENABLED || '1',
+    WHISPER_ENABLED: cfg.whisperEnabled ? '1' : '0',
   }
   const envLines = Object.entries(env)
     .map(([k, v]) => `${k}=${String(v).replace(/\n/g, ' ')}`)
@@ -179,7 +240,7 @@ export async function startBoost(
   payload: Payload,
   tenantId: number,
 ): Promise<{ ok: true; run: BoostRun } | { ok: false; error: string }> {
-  const cfg = boostConfig()
+  const cfg = await loadBoostConfig(payload)
   const ready = boostReady(cfg)
   if (!ready.ok) return { ok: false, error: ready.reason || 'boost не сконфигурирован' }
 
@@ -261,7 +322,7 @@ async function deductDeposit(payload: Payload, tenantId: number, amountRub: numb
 export async function reconcile(payload: Payload): Promise<{ advanced: number }> {
   const runs = await sqlRows<BoostRun>(payload, `SELECT * FROM boost_runs WHERE status NOT IN ('done','failed') ORDER BY id ASC`)
   if (runs.length === 0) return { advanced: 0 }
-  const cfg = boostConfig()
+  const cfg = await loadBoostConfig(payload)
   const { busy } = await queueCounts(payload)
   let advanced = 0
 
@@ -328,7 +389,7 @@ export async function finalize(payload: Payload, run: BoostRun, cfg: BoostConfig
 export async function stopBoost(payload: Payload, tenantId: number): Promise<{ ok: boolean; error?: string }> {
   const run = await activeRunForTenant(payload, tenantId)
   if (!run) return { ok: false, error: 'Активного boost-прогона нет.' }
-  await finalize(payload, run, boostConfig(), null)
+  await finalize(payload, run, await loadBoostConfig(payload), null)
   return { ok: true }
 }
 

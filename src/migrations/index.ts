@@ -115,6 +115,7 @@ import * as migration_20260825_100000_add_category_content_order from './2026082
 import * as migration_20260825_110000_add_social_desc_whyus from './20260825_110000_add_social_desc_whyus';
 import * as migration_20260825_120000_add_social_platforms from './20260825_120000_add_social_platforms';
 import * as migration_20260825_130000_add_boost from './20260825_130000_add_boost';
+import * as migration_20260825_140000_add_boost_config from './20260825_140000_add_boost_config';
 
 export const migrations = [
   {
@@ -701,5 +702,10 @@ export const migrations = [
     up: migration_20260825_130000_add_boost.up,
     down: migration_20260825_130000_add_boost.down,
     name: '20260825_130000_add_boost',
+  },
+  {
+    up: migration_20260825_140000_add_boost_config.up,
+    down: migration_20260825_140000_add_boost_config.down,
+    name: '20260825_140000_add_boost_config',
   },
 ];
