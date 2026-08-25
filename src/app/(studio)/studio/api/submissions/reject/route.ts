@@ -19,7 +19,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     await payload.update({
       collection: 'submissions',
       id,
-      data: { status: 'rejected', rejectReason: String(data.reason || '').slice(0, 500), reviewedBy: (author as any).id } as any,
+      data: { status: 'rejected', rejectReason: String(data.reason || '').slice(0, 500), reviewedBy: author.user.id } as any,
       overrideAccess: true,
     })
     return apiOk()

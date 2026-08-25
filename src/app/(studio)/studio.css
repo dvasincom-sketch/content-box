@@ -5701,3 +5701,61 @@ a.session-expired__btn {
   color: var(--st-accent, inherit); font: inherit; text-decoration: underline;
 }
 .studio-linklike:disabled { opacity: .6; cursor: default; }
+
+/* ============================================================================
+   ИСТОРИЯ МОДЕРАЦИИ (обработанные заявки UGC)
+   ============================================================================ */
+.mod-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+}
+.mod-history__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--st-space-3);
+  padding: var(--st-space-3) var(--st-space-4);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-surface);
+}
+.mod-history__status {
+  flex-shrink: 0;
+  font-size: var(--st-text-xs);
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+.mod-history__status--approved {
+  color: #16794a;
+  background: color-mix(in srgb, #16a34a 14%, transparent);
+  border-color: color-mix(in srgb, #16a34a 30%, transparent);
+}
+.mod-history__status--rejected {
+  color: #b42318;
+  background: color-mix(in srgb, #dc2626 12%, transparent);
+  border-color: color-mix(in srgb, #dc2626 28%, transparent);
+}
+.mod-history__main { min-width: 0; flex: 1 1 auto; }
+.mod-history__title {
+  font-size: var(--st-text-sm);
+  font-weight: 550;
+  color: var(--st-text);
+}
+.mod-history__title a { color: var(--st-accent, inherit); text-decoration: none; }
+.mod-history__title a:hover { text-decoration: underline; }
+.mod-history__section { color: var(--st-text-muted); font-weight: 400; }
+.mod-history__meta {
+  margin-top: 2px;
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+}
+.mod-history__reason {
+  margin-top: 4px;
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+  font-style: italic;
+}

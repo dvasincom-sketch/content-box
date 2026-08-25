@@ -190,7 +190,13 @@ async function resolveListItems(
   source: HomeSectionSource | undefined,
   fallback: any[],
 ): Promise<any[]> {
-  if (!source || source.kind === 'auto') return fallback
+  if (!source || source.kind === 'auto') {
+    // «Авто» тянет готовый слот общей ленты (с дедупом между секциями). Поле
+    // «Сколько показывать» тут раньше игнорировалось — теперь режем ленту до
+    // заданного числа (ограничено размером слота ленты).
+    const lim = source?.limit && source.limit > 0 ? Math.min(source.limit, 50) : null
+    return lim ? fallback.slice(0, lim) : fallback
+  }
   const limit = source.limit && source.limit > 0 ? Math.min(source.limit, 50) : 12
   let where: any = null
   if (source.kind === 'category' && source.categoryId) {

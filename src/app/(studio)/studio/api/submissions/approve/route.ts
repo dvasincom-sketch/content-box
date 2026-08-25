@@ -68,7 +68,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     await payload.update({
       collection: 'submissions',
       id,
-      data: { status: 'approved', section, publication: pub.id, reviewedBy: (author as any).id } as any,
+      data: { status: 'approved', section, publication: pub.id, reviewedBy: author.user.id } as any,
       overrideAccess: true,
     })
     return apiOk({ publicationId: pub.id, slug })

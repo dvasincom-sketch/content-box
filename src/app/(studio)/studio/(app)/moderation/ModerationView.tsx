@@ -14,8 +14,40 @@ type Item = {
   categoryName: string | null
 }
 
+type HistoryItem = {
+  id: number
+  title: string
+  authorName: string
+  status: 'approved' | 'rejected'
+  section: 'feed' | 'community' | null
+  reviewerName: string | null
+  reviewedAt: string | null
+  rejectReason: string | null
+  publicationSlug: string | null
+}
+
+/** Дата модерации (МСК, чтобы не ловить рассинхрон серверной таймзоны). */
+function fmtDateTime(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Moscow',
+  })
+}
+
+const SECTION_LABEL: Record<'feed' | 'community', string> = {
+  feed: 'Общая лента',
+  community: 'Сообщество',
+}
+
 /** Очередь модерации: одобрить (выбор раздела; общая лента только платным) / отклонить. */
-export function ModerationView({ items: initial }: { items: Item[] }) {
+export function ModerationView({ items: initial, history = [] }: { items: Item[]; history?: HistoryItem[] }) {
   const router = useRouter()
   const [items, setItems] = useState(initial)
   const [busyId, setBusyId] = useState<number | null>(null)
@@ -126,6 +158,51 @@ export function ModerationView({ items: initial }: { items: Item[] }) {
                 </button>
               </div>
             </section>
+          ))}
+        </div>
+      )}
+
+      <div className="studio-page-head" style={{ marginTop: 40 }}>
+        <div>
+          <h2 style={{ fontSize: 'var(--st-text-lg)' }}>История модерации</h2>
+          <div className="studio-page-head__sub">Уже обработанные заявки — кто и когда проверил</div>
+        </div>
+      </div>
+
+      {history.length === 0 ? (
+        <p className="settings__hint">Пока ничего не обработано.</p>
+      ) : (
+        <div className="mod-history">
+          {history.map((h) => (
+            <div key={h.id} className="mod-history__row">
+              <span className={`mod-history__status mod-history__status--${h.status}`}>
+                {h.status === 'approved' ? 'Одобрена' : 'Отклонена'}
+              </span>
+              <div className="mod-history__main">
+                <div className="mod-history__title">
+                  {h.status === 'approved' && h.publicationSlug ? (
+                    <a href={`/publication/${h.publicationSlug}`} target="_blank" rel="noreferrer">
+                      {h.title}
+                    </a>
+                  ) : (
+                    h.title
+                  )}
+                  {h.status === 'approved' && h.section ? (
+                    <span className="mod-history__section"> · {SECTION_LABEL[h.section]}</span>
+                  ) : null}
+                </div>
+                <div className="mod-history__meta">
+                  Автор: {h.authorName}
+                  {' · '}
+                  Проверил: {h.reviewerName || '—'}
+                  {' · '}
+                  {fmtDateTime(h.reviewedAt)}
+                </div>
+                {h.status === 'rejected' && h.rejectReason ? (
+                  <div className="mod-history__reason">Причина: {h.rejectReason}</div>
+                ) : null}
+              </div>
+            </div>
           ))}
         </div>
       )}
