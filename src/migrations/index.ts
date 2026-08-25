@@ -116,6 +116,7 @@ import * as migration_20260825_110000_add_social_desc_whyus from './20260825_110
 import * as migration_20260825_120000_add_social_platforms from './20260825_120000_add_social_platforms';
 import * as migration_20260825_130000_add_boost from './20260825_130000_add_boost';
 import * as migration_20260825_140000_add_boost_config from './20260825_140000_add_boost_config';
+import * as migration_20260825_150000_add_boost_settings from './20260825_150000_add_boost_settings';
 
 export const migrations = [
   {
@@ -707,5 +708,10 @@ export const migrations = [
     up: migration_20260825_140000_add_boost_config.up,
     down: migration_20260825_140000_add_boost_config.down,
     name: '20260825_140000_add_boost_config',
+  },
+  {
+    up: migration_20260825_150000_add_boost_settings.up,
+    down: migration_20260825_150000_add_boost_settings.down,
+    name: '20260825_150000_add_boost_settings',
   },
 ];

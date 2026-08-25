@@ -55,13 +55,14 @@ export type BoostConfigRow = {
   whisper_enabled: boolean | null
 }
 
-/** Прочитать строку конфига (id=1). null, если таблицы/строки ещё нет. */
+/** Прочитать конфиг из коллекции boost-settings (первая строка). null, если
+ *  таблицы/строки ещё нет — тогда работаем на env-дефолтах. */
 export async function getBoostConfigRow(payload: Payload): Promise<BoostConfigRow | null> {
   try {
-    const rows = await sqlRows<BoostConfigRow>(payload, `SELECT * FROM boost_config WHERE id = 1 LIMIT 1`)
+    const rows = await sqlRows<BoostConfigRow>(payload, `SELECT * FROM boost_settings ORDER BY id ASC LIMIT 1`)
     return rows[0] || null
   } catch {
-    return null // таблицы ещё нет (миграция не доехала) — работаем на env-дефолтах
+    return null
   }
 }
 
@@ -96,22 +97,8 @@ export async function loadBoostConfig(payload: Payload): Promise<BoostConfig> {
   }
 }
 
-/** Сохранить (upsert) поля конфига в boost_config id=1. Пустые/undefined пропускаем. */
-export async function saveBoostConfig(payload: Payload, patch: Partial<BoostConfigRow>): Promise<void> {
-  const cols: Record<string, unknown> = {}
-  const allowed: (keyof BoostConfigRow)[] = [
-    'enabled', 'preset_id', 'image_id', 'os_id', 'location', 'replicas',
-    'cpus_per_worker', 'margin_pct', 'max_lifetime_min', 'idle_minutes', 'throughput_per_hour', 'whisper_enabled',
-  ]
-  for (const k of allowed) if (k in patch) cols[k] = (patch as any)[k]
-  const keys = Object.keys(cols)
-  // Гарантируем строку id=1.
-  await sqlRows(payload, `INSERT INTO boost_config (id) VALUES (1) ON CONFLICT (id) DO NOTHING`)
-  if (keys.length === 0) return
-  const sets = keys.map((k, i) => `"${k}" = $${i + 1}`)
-  const params = keys.map((k) => cols[k])
-  await sqlRows(payload, `UPDATE boost_config SET ${sets.join(', ')}, updated_at = now() WHERE id = 1`, params)
-}
+// Конфиг правится суперадмином в Payload-админке (коллекция boost-settings) —
+// студийного сохранения больше нет.
 
 /** Готов ли boost к запуску (токен из env + вкл + пресет + образ). */
 export function boostReady(cfg: BoostConfig): { ok: boolean; reason?: string } {

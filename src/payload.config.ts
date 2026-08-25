@@ -38,6 +38,7 @@ import { AiUsage } from './collections/AiUsage'
 import { DigestIssues } from './collections/DigestIssues'
 import { CustomThemes } from './collections/CustomThemes'
 import { SubscriptionPayments } from './collections/SubscriptionPayments'
+import { BoostSettings } from './collections/BoostSettings'
 import { Activity } from './collections/Activity'
 import { SubscriptionEvents } from './collections/SubscriptionEvents'
 import { SubscriberActivity } from './collections/SubscriberActivity'
@@ -174,6 +175,7 @@ export default buildConfig({
     DigestIssues,
     CustomThemes,
     SubscriptionPayments,
+    BoostSettings,
     Activity,
     SubscriptionEvents,
     SubscriberActivity,
