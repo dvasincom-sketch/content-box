@@ -114,6 +114,7 @@ import * as migration_20260823_100000_add_yookassa_recurring from './20260823_10
 import * as migration_20260825_100000_add_category_content_order from './20260825_100000_add_category_content_order';
 import * as migration_20260825_110000_add_social_desc_whyus from './20260825_110000_add_social_desc_whyus';
 import * as migration_20260825_120000_add_social_platforms from './20260825_120000_add_social_platforms';
+import * as migration_20260825_130000_add_boost from './20260825_130000_add_boost';
 
 export const migrations = [
   {
@@ -695,5 +696,10 @@ export const migrations = [
     up: migration_20260825_120000_add_social_platforms.up,
     down: migration_20260825_120000_add_social_platforms.down,
     name: '20260825_120000_add_social_platforms',
+  },
+  {
+    up: migration_20260825_130000_add_boost.up,
+    down: migration_20260825_130000_add_boost.down,
+    name: '20260825_130000_add_boost',
   },
 ];

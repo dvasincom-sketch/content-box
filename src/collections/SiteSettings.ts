@@ -52,6 +52,17 @@ export const SiteSettings: CollectionConfig = {
         update: ({ req: { user } }) => isSuperAdmin(user),
       },
     },
+    {
+      name: 'boostDepositRub',
+      type: 'number',
+      label: 'Депозит на Boost-транскод (₽)',
+      defaultValue: 0,
+      admin: { description: 'Аванс тенанта на ускоренную обработку видео (аренда мощного сервера Timeweb). Из него списывается фактическая стоимость аренды. Виден staff; пополняется суперадмином.' },
+      access: {
+        read: ({ req: { user } }) => isSuperAdmin(user) || Boolean(getUserTenantID(user)),
+        update: ({ req: { user } }) => isSuperAdmin(user),
+      },
+    },
     { name: 'logo', type: 'upload', relationTo: 'media', label: 'Логотип' },
     {
       name: 'appIcon',

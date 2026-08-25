@@ -16,6 +16,7 @@ import { GoalsPanel, type Goal } from './GoalsPanel'
 import { DonatePresetsPanel, type DonatePreset } from './DonatePresetsPanel'
 import { YookassaPanel } from './YookassaPanel'
 import { PaymentsHistoryPanel } from './PaymentsHistoryPanel'
+import { BoostPanel } from './BoostPanel'
 import { hasCap, type CapMatrix } from '@/lib/permissions'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
@@ -192,7 +193,12 @@ export function SettingsView({
           </>
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}
-        {tab === 'tariff' && isOwner && <CostsPanel tariff={tariff} ai={aiBilling} />}
+        {tab === 'tariff' && isOwner && (
+          <>
+            <CostsPanel tariff={tariff} ai={aiBilling} />
+            <BoostPanel />
+          </>
+        )}
       </div>
     </>
   )

@@ -5850,3 +5850,52 @@ a.session-expired__btn {
 .paymt__status--pending { color: #92650e; background: color-mix(in srgb, #eab308 16%, transparent); border-color: color-mix(in srgb, #eab308 32%, transparent); }
 .paymt__status--canceled { color: #b42318; background: color-mix(in srgb, #dc2626 12%, transparent); border-color: color-mix(in srgb, #dc2626 28%, transparent); }
 .paymt__status--refunded { color: var(--st-text-muted); background: var(--st-surface-2); border-color: var(--st-border); }
+
+/* Boost-панель */
+.boost__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: var(--st-space-3) var(--st-space-4);
+  margin-bottom: var(--st-space-4);
+  border: 1px solid color-mix(in srgb, #eab308 40%, transparent);
+  background: color-mix(in srgb, #eab308 12%, transparent);
+  border-radius: var(--st-radius-sm);
+  font-size: var(--st-text-sm);
+  color: var(--st-text);
+}
+.boost__notice svg { flex: none; margin-top: 2px; color: #a1660a; }
+.boost__run {
+  margin-top: var(--st-space-2);
+  padding: var(--st-space-4);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-bg);
+}
+.boost__run-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.boost__run-time { font-size: var(--st-text-xs); color: var(--st-text-muted); }
+.boost__run-meta {
+  margin-top: 6px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+}
+.boost__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--st-text-xs);
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: var(--st-accent-text);
+  background: var(--st-accent);
+}
+.boost__badge--provisioning,
+.boost__badge--deleting,
+.boost__badge--draining { color: #92650e; background: color-mix(in srgb, #eab308 16%, transparent); border-color: color-mix(in srgb, #eab308 32%, transparent); }
+.boost__badge--active { color: #16794a; background: color-mix(in srgb, #16a34a 14%, transparent); border-color: color-mix(in srgb, #16a34a 30%, transparent); }
+.boost__badge--failed { color: #b42318; background: color-mix(in srgb, #dc2626 12%, transparent); border-color: color-mix(in srgb, #dc2626 28%, transparent); }
