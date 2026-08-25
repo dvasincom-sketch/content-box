@@ -79,6 +79,96 @@ const BRAND: Record<string, { label: string; hint: string; Badge: React.FC }> = 
       </svg>
     ),
   },
+  tiktok: {
+    label: 'TikTok',
+    hint: 'Короткие видео',
+    Badge: () => (
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden>
+        <rect width="24" height="24" rx="7" fill="#010101" />
+        <path fill="#fff" d="M16.5 5.5c.4 1.3 1.3 2.3 2.6 2.6v2.2c-1 0-1.9-.3-2.7-.8v4.7c0 2.4-2 4.3-4.4 4.1-2-.2-3.6-1.9-3.6-4 0-2.3 2-4.1 4.3-4v2.3c-.3-.1-.6-.2-.9-.2-1 0-1.8.9-1.8 1.9s.8 1.9 1.9 1.9 1.9-.8 1.9-1.9V5.5z" />
+      </svg>
+    ),
+  },
+  x: {
+    label: 'X (Twitter)',
+    hint: 'Новости и анонсы',
+    Badge: () => (
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden>
+        <rect width="24" height="24" rx="7" fill="#000" />
+        <path fill="#fff" d="M13.9 10.6 19 5h-1.5l-4.3 4.8L9.8 5H5l5.4 7.6L5 19h1.5l4.6-5.2 3.7 5.2H19l-5.1-8.4zm-1.6 1.8-.5-.7-4-5.4h1.9l3 4.1.5.7 4.2 5.7h-1.9l-3.2-4.4z" />
+      </svg>
+    ),
+  },
+  facebook: {
+    label: 'Facebook',
+    hint: 'Новости и сообщество',
+    Badge: () => (
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden>
+        <rect width="24" height="24" rx="7" fill="#1877F2" />
+        <path fill="#fff" d="M15.5 8.5h-1.3c-.5 0-.7.3-.7.7V11h2l-.3 2h-1.7v6h-2.3v-6H9.5v-2h1.7V9c0-1.6 1-2.8 2.8-2.8h1.5z" />
+      </svg>
+    ),
+  },
+  ok: {
+    label: 'Одноклассники',
+    hint: 'Новости и общение',
+    Badge: () => (
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden>
+        <rect width="24" height="24" rx="7" fill="#EE8208" />
+        <text x="12" y="16" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="9" fontWeight={700} fill="#fff">OK</text>
+      </svg>
+    ),
+  },
+  dzen: {
+    label: 'Дзен',
+    hint: 'Статьи и видео',
+    Badge: () => (
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden>
+        <rect width="24" height="24" rx="7" fill="#000" />
+        <path fill="#fff" d="M12 5c.3 3.2 1.8 4.7 5 5-3.2.3-4.7 1.8-5 5-.3-3.2-1.8-4.7-5-5 3.2-.3 4.7-1.8 5-5z" />
+      </svg>
+    ),
+  },
+  rutube: {
+    label: 'RUTUBE',
+    hint: 'Все видео',
+    Badge: () => (
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden>
+        <rect width="24" height="24" rx="7" fill="#F73B4E" />
+        <path fill="#fff" d="M10 8.8v6.4l5.5-3.2z" />
+      </svg>
+    ),
+  },
+  twitch: {
+    label: 'Twitch',
+    hint: 'Прямые эфиры',
+    Badge: () => (
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden>
+        <rect width="24" height="24" rx="7" fill="#9146FF" />
+        <path fill="#fff" d="M8 6 6.5 8.5V17H9v2h1.8l2-2H16l2.5-2.5V6zm9.2 8.2L15.5 16h-2.7l-2 2v-2H8.5V7.5h8.7zM14 9.7h-1.2v3.3H14zm3.2 0H16v3.3h1.2z" />
+      </svg>
+    ),
+  },
+  discord: {
+    label: 'Discord',
+    hint: 'Чат сообщества',
+    Badge: () => (
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden>
+        <rect width="24" height="24" rx="7" fill="#5865F2" />
+        <path fill="#fff" d="M16.6 8.3c-.9-.4-1.9-.7-2.9-.9l-.2.4c-1-.2-2-.2-3 0l-.2-.4c-1 .2-2 .5-2.9.9-1.9 2.7-2.4 5.4-2.1 8 1.1.8 2.2 1.3 3.3 1.6l.7-1.1c-.4-.1-.8-.3-1.1-.5l.3-.2c2.1 1 4.5 1 6.6 0l.3.2c-.4.2-.7.4-1.1.5l.7 1.1c1.1-.3 2.2-.8 3.3-1.6.3-3-.5-5.7-2-8zM10.2 14c-.6 0-1.1-.6-1.1-1.2s.5-1.2 1.1-1.2 1.1.6 1.1 1.2-.5 1.2-1.1 1.2zm3.6 0c-.6 0-1.1-.6-1.1-1.2s.5-1.2 1.1-1.2 1.1.6 1.1 1.2-.5 1.2-1.1 1.2z" />
+      </svg>
+    ),
+  },
+  whatsapp: {
+    label: 'WhatsApp',
+    hint: 'Канал и общение',
+    Badge: () => (
+      <svg viewBox="0 0 24 24" width="46" height="46" aria-hidden>
+        <rect width="24" height="24" rx="7" fill="#25D366" />
+        <path fill="#fff" d="M12 6a6 6 0 0 0-5.1 9.1L6 18l3-.9A6 6 0 1 0 12 6zm3.4 8.3c-.1.4-.8.8-1.1.8-.3 0-.6.1-2-.5-1.7-.7-2.7-2.4-2.8-2.5-.1-.1-.7-.9-.7-1.7s.4-1.2.6-1.4c.1-.1.3-.2.4-.2h.3c.1 0 .3 0 .4.3l.5 1.2c0 .1.1.2 0 .3l-.2.3-.2.2c-.1.1-.2.2-.1.4.1.2.5.8 1.1 1.3.6.6 1.1.8 1.3.9.2.1.3.1.4-.1l.5-.6c.1-.2.3-.1.4-.1l1.2.6c.2.1.3.2.3.2.1.1.1.5 0 .8z" />
+      </svg>
+    ),
+  },
 }
 
 export function SocialLinksBlock({ heading = 'Присоединяйся к нашему сообществу', items }: SocialLinksBlockProps) {

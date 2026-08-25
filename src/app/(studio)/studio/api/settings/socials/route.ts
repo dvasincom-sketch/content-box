@@ -12,7 +12,10 @@ import { NextResponse } from 'next/server'
  * platform ∈ boosty|vk|telegram|youtube|instagram (валидируем).
  */
 
-const PLATFORMS = ['boosty', 'vk', 'telegram', 'youtube', 'instagram']
+const PLATFORMS = [
+  'boosty', 'vk', 'telegram', 'youtube', 'instagram',
+  'tiktok', 'x', 'facebook', 'ok', 'dzen', 'rutube', 'twitch', 'discord', 'whatsapp',
+]
 
 export const GET = withAuthor(async ({ payload, tenantId }) => {
   const settings = await findTenantSettings(payload, tenantId)

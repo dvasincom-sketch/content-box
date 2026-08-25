@@ -5782,3 +5782,71 @@ a.session-expired__btn {
   gap: var(--st-space-2);
 }
 .soceditp__row1 > :first-child { flex: 1 1 auto; min-width: 0; }
+
+/* Вкладка «Платежи»: сводка + таблица платежей */
+.paymt__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--st-space-3);
+  margin-bottom: var(--st-space-4);
+}
+.paymt__stat {
+  flex: 1 1 160px;
+  padding: var(--st-space-4);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-bg);
+}
+.paymt__stat-val {
+  font-size: var(--st-text-xl);
+  font-weight: 700;
+  color: var(--st-text);
+}
+.paymt__stat-label {
+  margin-top: 2px;
+  font-size: var(--st-text-xs);
+  color: var(--st-text-muted);
+}
+.paymt__table-wrap { overflow-x: auto; }
+.paymt__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--st-text-sm);
+}
+.paymt__table th,
+.paymt__table td {
+  text-align: left;
+  padding: var(--st-space-2) var(--st-space-3);
+  border-bottom: 1px solid var(--st-border);
+  white-space: nowrap;
+}
+.paymt__table th {
+  font-size: var(--st-text-xs);
+  font-weight: 600;
+  color: var(--st-text-muted);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.paymt__table td { color: var(--st-text); }
+.paymt__auto {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--st-surface-2);
+  color: var(--st-text-muted);
+  vertical-align: middle;
+}
+.paymt__status {
+  display: inline-block;
+  font-size: var(--st-text-xs);
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.paymt__status--succeeded { color: #16794a; background: color-mix(in srgb, #16a34a 14%, transparent); border-color: color-mix(in srgb, #16a34a 30%, transparent); }
+.paymt__status--pending { color: #92650e; background: color-mix(in srgb, #eab308 16%, transparent); border-color: color-mix(in srgb, #eab308 32%, transparent); }
+.paymt__status--canceled { color: #b42318; background: color-mix(in srgb, #dc2626 12%, transparent); border-color: color-mix(in srgb, #dc2626 28%, transparent); }
+.paymt__status--refunded { color: var(--st-text-muted); background: var(--st-surface-2); border-color: var(--st-border); }

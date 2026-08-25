@@ -134,21 +134,12 @@ export function ModerationView({ items: initial, history = [] }: { items: Item[]
                 <button
                   className="studio-btn studio-btn--primary"
                   disabled={busyId === item.id}
-                  onClick={() => approve(item, item.authorPaid ? 'feed' : 'community')}
-                  title={item.authorPaid ? 'В общую ленту' : 'Общая лента — только платным'}
+                  onClick={() => approve(item, 'community')}
+                  title="Опубликовать в ленте сообщества (видна зарегистрированным пользователям)"
                 >
                   {busyId === item.id ? <Loader2 size={16} className="spin" /> : <Check size={16} />}
-                  {item.authorPaid ? 'Одобрить в ленту' : 'Одобрить в сообщество'}
+                  Одобрить
                 </button>
-                {item.authorPaid && (
-                  <button
-                    className="studio-btn studio-btn--ghost"
-                    disabled={busyId === item.id}
-                    onClick={() => approve(item, 'community')}
-                  >
-                    В сообщество
-                  </button>
-                )}
                 <button
                   className="studio-btn studio-btn--ghost"
                   disabled={busyId === item.id}

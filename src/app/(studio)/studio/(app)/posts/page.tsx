@@ -59,7 +59,13 @@ export default async function StudioPostsPage({ searchParams }: { searchParams: 
     parentId: c.parent != null ? (typeof c.parent === 'object' ? c.parent.id : c.parent) : null,
   }))
 
-  const and: any[] = [{ tenant: { equals: author!.tenantId } }, ...(ownFilter ? [ownFilter] : [])]
+  // Публикации участников (UGC, у них выставлен author-подписчик) — ОТДЕЛЬНАЯ
+  // сущность и в список публикаций автора не попадают (живут в ленте сообщества).
+  const and: any[] = [
+    { tenant: { equals: author!.tenantId } },
+    { author: { exists: false } },
+    ...(ownFilter ? [ownFilter] : []),
+  ]
   if (q) and.push({ title: { like: q } })
   if (categoryIds.length) {
     // id категорий целочисленные — приводим строки из URL к числам, где можно.

@@ -32,7 +32,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (data === undefined) return apiError('Некорректный запрос')
   const id = Number(data.id)
   if (!id) return apiError('Не указана заявка')
-  let section: 'feed' | 'community' = data.section === 'community' ? 'community' : 'feed'
+  // Публикации участников — ОТДЕЛЬНАЯ сущность: всегда «сообщество», никогда не
+  // попадают в общую ленту редакции (и в студийный список публикаций автора).
+  const section = 'community' as const
 
   const sub = (await payload
     .findByID({ collection: 'submissions', id, depth: 1, overrideAccess: true })
@@ -43,8 +45,6 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
   const authorSub = sub.author
   const authorId = authorSub && typeof authorSub === 'object' ? authorSub.id : authorSub
-  const authorPaid = Boolean(authorSub && typeof authorSub === 'object' && authorSub.activeTier)
-  if (section === 'feed' && !authorPaid) section = 'community' // общая лента — только платным
 
   const categoryRel = sub.category
   const categoryId = categoryRel && typeof categoryRel === 'object' ? categoryRel.id : categoryRel

@@ -15,6 +15,7 @@ import { ThemeLibrary } from './ThemeLibrary'
 import { GoalsPanel, type Goal } from './GoalsPanel'
 import { DonatePresetsPanel, type DonatePreset } from './DonatePresetsPanel'
 import { YookassaPanel } from './YookassaPanel'
+import { PaymentsHistoryPanel } from './PaymentsHistoryPanel'
 import { hasCap, type CapMatrix } from '@/lib/permissions'
 import { type HomeSavedTemplate } from '@/lib/homePacks'
 import type { HomeSectionConfig } from '@/lib/homeSections'
@@ -36,7 +37,7 @@ type Tier = {
   perks: Perk[]
 }
 
-type SettingsTab = 'appearance' | 'home' | 'menu' | 'tiers' | 'access' | 'tariff'
+type SettingsTab = 'appearance' | 'home' | 'menu' | 'tiers' | 'payments' | 'access' | 'tariff'
 export type Member = { id: number | string; email: string; name: string; status: string; isSelf: boolean; studioRole?: string | null; capabilities?: import('@/lib/permissions').CapMatrix | null }
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -44,6 +45,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'home', label: 'Главная страница' },
   { id: 'menu', label: 'Меню и футер' },
   { id: 'tiers', label: 'Монетизация' },
+  { id: 'payments', label: 'Платежи' },
   { id: 'access', label: 'Доступ' },
   { id: 'tariff', label: 'Тариф' },
 ]
@@ -94,6 +96,7 @@ export function SettingsView({
       case 'home': return hasCap(abilities, 'home', 'manage')
       case 'menu': return hasCap(abilities, 'menu', 'manage')
       case 'tiers': return hasCap(abilities, 'tiers', 'manage') || hasCap(abilities, 'goals', 'manage')
+      case 'payments': return false
       case 'access': return false
       case 'tariff': return false
       default: return false
@@ -180,7 +183,12 @@ export function SettingsView({
             <TiersBlock initial={initialTiers} />
             <GoalsPanel initial={goals} />
             <DonatePresetsPanel initial={donatePresets} />
-            {isOwner && <YookassaPanel />}
+          </>
+        )}
+        {tab === 'payments' && isOwner && (
+          <>
+            <YookassaPanel />
+            <PaymentsHistoryPanel />
           </>
         )}
         {tab === 'access' && isOwner && <AccessPanel members={members} />}

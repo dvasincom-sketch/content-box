@@ -133,6 +133,11 @@ export async function mapDoc(
       // search/query.ts. Индекс хранит данные, отсечку по времени делает поиск.
       if (!doc?.publishedAt) return null
 
+      // Публикации участников (UGC, у них выставлен author-подписчик) — ОТДЕЛЬНАЯ
+      // сущность: живут только в ленте сообщества (для зарегистрированных) и в
+      // публичный поиск не попадают. Возврат null убирает их из индекса.
+      if (doc?.author) return null
+
       // Fold gallery captions into the body so photos are findable via their publication.
       const captions = Array.isArray(doc.gallery)
         ? doc.gallery.map((g: any) => g?.caption).filter(Boolean).join(' ')

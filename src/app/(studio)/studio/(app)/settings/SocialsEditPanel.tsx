@@ -22,6 +22,15 @@ const PLATFORMS = [
   { value: 'telegram', label: 'Telegram' },
   { value: 'youtube', label: 'YouTube' },
   { value: 'instagram', label: 'Instagram' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'x', label: 'X (Twitter)' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'ok', label: 'Одноклассники' },
+  { value: 'dzen', label: 'Дзен' },
+  { value: 'rutube', label: 'RUTUBE' },
+  { value: 'twitch', label: 'Twitch' },
+  { value: 'discord', label: 'Discord' },
+  { value: 'whatsapp', label: 'WhatsApp' },
 ]
 
 const HINT_PLACEHOLDER: Record<string, string> = {
@@ -30,6 +39,15 @@ const HINT_PLACEHOLDER: Record<string, string> = {
   vk: 'Всё видео проекта',
   youtube: 'Новости и шортсы',
   instagram: 'Бэкстейджи и сторис',
+  tiktok: 'Короткие видео',
+  x: 'Новости и анонсы',
+  facebook: 'Новости и сообщество',
+  ok: 'Новости и общение',
+  dzen: 'Статьи и видео',
+  rutube: 'Все видео',
+  twitch: 'Прямые эфиры',
+  discord: 'Чат сообщества',
+  whatsapp: 'Канал и общение',
 }
 
 export function SocialsEditPanel({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {

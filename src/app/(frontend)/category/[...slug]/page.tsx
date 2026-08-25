@@ -265,6 +265,9 @@ export default async function CategoryPage({ params, searchParams }: { params: P
           and: [
             { tenant: { equals: tenant.id } },
             publishedWhere(),
+            // Публикации участников (author-подписчик) — только в ленте сообщества,
+            // в разделах редакции не показываются.
+            { author: { exists: false } },
             { or: catMatch },
             ...eventRange,
           ],

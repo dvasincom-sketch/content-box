@@ -54,6 +54,28 @@ export default async function CommunityPage() {
   if (!ctx) return <div className="p-8">Тенант не определён.</div>
   const { tenant, settings } = ctx
   const viewer = await getCurrentSubscriber().catch(() => null)
+
+  // Лента сообщества — только для зарегистрированных пользователей. Гостю
+  // показываем приглашение войти/зарегистрироваться вместо публикаций участников.
+  if (!viewer) {
+    return (
+      <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
+        <div className="max-w-3xl mx-auto px-4 py-8">
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--brand-text)', marginBottom: 6 }}>Сообщество</h1>
+          <div className="c-card" style={{ padding: '28px 24px', textAlign: 'center', color: 'var(--brand-muted)' }}>
+            <p style={{ marginBottom: 18, lineHeight: 1.6 }}>
+              Лента публикаций участников доступна зарегистрированным пользователям. Войдите или создайте аккаунт, чтобы читать и публиковать материалы сообщества.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link href="/login" className="c-btn c-btn--primary">Войти</Link>
+              <Link href="/register" className="c-btn">Зарегистрироваться</Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
   const payload = await getPayload({ config: await config })
 
   const res = await payload.find({
