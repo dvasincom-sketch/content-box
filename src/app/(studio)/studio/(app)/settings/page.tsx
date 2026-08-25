@@ -64,9 +64,8 @@ export default async function SettingsPage() {
   const ogImg = settings?.seoDefaults?.ogImage
   const ogImageUrl = ogImg && typeof ogImg === 'object' ? ogImg.url : null
 
-  const socials = Array.isArray(settings?.socials)
-    ? settings.socials.map((s: any) => ({ platform: s.platform, url: s.url }))
-    : []
+  // Соцсети редактируются в конструкторе главной (секция «Соцсети»), отдельной
+  // вкладки настроек больше нет — сюда их тянуть не нужно.
 
   // Конфиг секций главной: порядок + видимость. Нормализуем здесь, чтобы вкладка
   // всегда получала валидный набор (пустой/битый → дефолт из всех секций).
@@ -183,7 +182,6 @@ export default async function SettingsPage() {
       logoUrl={logoUrl}
       appIconUrl={appIconUrl}
       ogImageUrl={ogImageUrl}
-      socials={socials}
       tiers={tiers}
       homeSections={homeSections}
       savedTemplates={savedTemplates}

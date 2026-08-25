@@ -23,7 +23,6 @@ import { type TariffPanelData } from './TariffPanel'
 import { CostsPanel } from './CostsPanel'
 import type { AiBilling } from '@/lib/aiUsageStats'
 
-type Social = { platform: string; url: string }
 type Perk = { type: PerkType; text: string }
 type Tier = {
   id: number | string
@@ -37,30 +36,20 @@ type Tier = {
   perks: Perk[]
 }
 
-type SettingsTab = 'appearance' | 'home' | 'socials' | 'menu' | 'tiers' | 'access' | 'tariff'
+type SettingsTab = 'appearance' | 'home' | 'menu' | 'tiers' | 'access' | 'tariff'
 export type Member = { id: number | string; email: string; name: string; status: string; isSelf: boolean; studioRole?: string | null; capabilities?: import('@/lib/permissions').CapMatrix | null }
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'appearance', label: 'Оформление' },
   { id: 'home', label: 'Главная страница' },
-  { id: 'socials', label: 'Соцсети' },
   { id: 'menu', label: 'Меню и футер' },
   { id: 'tiers', label: 'Монетизация' },
   { id: 'access', label: 'Доступ' },
   { id: 'tariff', label: 'Тариф' },
 ]
 
-const PLATFORMS = [
-  { value: 'boosty', label: 'Boosty' },
-  { value: 'vk', label: 'VK' },
-  { value: 'telegram', label: 'Telegram' },
-  { value: 'youtube', label: 'YouTube' },
-  { value: 'instagram', label: 'Instagram' },
-]
-
 export function SettingsView({
   logoUrl,
-  socials: initialSocials,
   tiers: initialTiers,
   homeSections,
   appIconUrl,
@@ -82,7 +71,6 @@ export function SettingsView({
   logoUrl: string | null
   appIconUrl: string | null
   ogImageUrl: string | null
-  socials: Social[]
   tiers: Tier[]
   homeSections: HomeSectionConfig[]
   savedTemplates: HomeSavedTemplate[]
@@ -104,7 +92,6 @@ export function SettingsView({
     switch (id) {
       case 'appearance': return hasCap(abilities, 'appearance', 'manage') || hasCap(abilities, 'authorShowcase', 'manage')
       case 'home': return hasCap(abilities, 'home', 'manage')
-      case 'socials': return hasCap(abilities, 'appearance', 'manage')
       case 'menu': return hasCap(abilities, 'menu', 'manage')
       case 'tiers': return hasCap(abilities, 'tiers', 'manage') || hasCap(abilities, 'goals', 'manage')
       case 'access': return false
@@ -186,7 +173,6 @@ export function SettingsView({
           </>
         )}
         {tab === 'home' && <HomeBlock homeSections={homeSections} />}
-        {tab === 'socials' && <SocialsBlock initial={initialSocials} />}
         {tab === 'menu' && <MenuBlock />}
         {tab === 'menu' && <PagesBlock />}
         {tab === 'tiers' && (
@@ -271,107 +257,6 @@ function TemplatesBlock({ savedTemplates, appliedTemplate }: { savedTemplates: H
 /* -------------------------------------------------------------------------- */
 /* Логотип                                                                     */
 
-
-/* -------------------------------------------------------------------------- */
-/* Соцсети                                                                     */
-/* -------------------------------------------------------------------------- */
-function SocialsBlock({ initial }: { initial: Social[] }) {
-  const [rows, setRows] = useState<Social[]>(initial)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
-
-  function add() {
-    setRows((r) => [...r, { platform: 'telegram', url: '' }])
-    setSaved(false)
-  }
-  function remove(i: number) {
-    setRows((r) => r.filter((_, idx) => idx !== i))
-    setSaved(false)
-  }
-  function update(i: number, patch: Partial<Social>) {
-    setRows((r) => r.map((row, idx) => (idx === i ? { ...row, ...patch } : row)))
-    setSaved(false)
-  }
-
-  async function save() {
-    setError(null)
-    setSaved(false)
-    // локальная проверка
-    for (const r of rows) {
-      if (!r.url.trim()) {
-        setError('У каждой соцсети должна быть ссылка')
-        return
-      }
-    }
-    setSaving(true)
-    try {
-      const res = await fetch('/studio/api/settings/socials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ socials: rows }),
-      })
-      const json = await res.json()
-      if (!res.ok) setError(json.error || 'Не удалось сохранить')
-      else setSaved(true)
-    } catch {
-      setError('Ошибка соединения')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <section className="settings__block">
-      <div className="settings__block-head">
-        <h2>Соцсети</h2>
-        <p>Ссылки в шапке и футере сайта.</p>
-      </div>
-
-      <div className="settings__socials">
-        {rows.length === 0 && (
-          <div className="settings__hint">Пока не добавлено ни одной ссылки.</div>
-        )}
-        {rows.map((row, i) => (
-          <div key={i} className="settings__social-row">
-            <StudioSelect
-              className="settings__social-platform"
-              value={row.platform}
-              onChange={(v) => update(i, { platform: v })}
-              options={PLATFORMS.map((p) => ({ value: p.value, label: p.label }))}
-              ariaLabel="Платформа"
-            />
-            <input
-              className="studio-input"
-              placeholder="https://…"
-              value={row.url}
-              onChange={(e) => update(i, { url: e.target.value })}
-            />
-            <button className="catmgr__icon-btn catmgr__icon-btn--danger" onClick={() => remove(i)} title="Удалить">
-              <Trash2 size={15} />
-            </button>
-          </div>
-        ))}
-
-        <button className="studio-btn studio-btn--ghost settings__add" onClick={add}>
-          <Plus size={16} />
-          Добавить ссылку
-        </button>
-
-        {error && <div className="settings__err">{error}</div>}
-
-        <div className="settings__save-row">
-          {saved && <span className="settings__saved"><Check size={15} /> Сохранено</span>}
-          <button className="studio-btn studio-btn--primary" onClick={save} disabled={saving}>
-            {saving ? <Loader2 size={16} className="spin" /> : null}
-            Сохранить соцсети
-          </button>
-        </div>
-      </div>
-    </section>
-  )
-}
 
 /* -------------------------------------------------------------------------- */
 /* Уровни подписки (только редактирование)                                     */

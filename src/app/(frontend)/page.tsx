@@ -22,6 +22,7 @@ import { categoryHref } from '@/lib/categoryHref'
 import { publishedWhere } from '@/lib/published'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { normalizeHomeSections, type HomeSectionType, type HomeSectionConfig, type HomeSectionSource } from '@/lib/homeSections'
+import { resolveWhyUs } from '@/lib/whyUs'
 import type { Metadata } from 'next'
 import { Fragment, type ReactNode } from 'react'
 import './styles.css'
@@ -337,12 +338,7 @@ export default async function HomePage() {
     whyUs: () => (
       <WhyUsBlock
         heading={`Почему ${tenant?.name ?? 'мы'}`}
-        items={[
-          { icon: 'library', title: 'Эксклюзивный контент', text: 'Материалы, которых нет в открытом доступе — только для вашей аудитории.' },
-          { icon: 'zap', title: 'Регулярные обновления', text: 'Новые публикации и видео выходят стабильно, а подписчики узнают о них первыми.' },
-          { icon: 'globe', title: 'Доступ по подписке', text: 'Гибкие уровни доступа: часть материалов открыта всем, часть — для подписчиков.' },
-          { icon: 'heart', title: 'Живое сообщество', text: 'Комментарии, реакции и обсуждения объединяют читателей вокруг вашего проекта.' },
-        ]}
+        items={resolveWhyUs((settings as any)?.whyUs)}
       />
     ),
     socials: () => <SocialLinksBlock items={(settings?.socials ?? []) as any[]} />,

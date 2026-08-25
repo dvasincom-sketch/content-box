@@ -553,8 +553,24 @@ export interface SiteSetting {
     | {
         platform: 'boosty' | 'vk' | 'telegram' | 'youtube' | 'instagram';
         url: string;
+        /**
+         * Короткое описание под названием (напр. «Анонсы и новые видео»). Пусто — подпись по умолчанию для площадки.
+         */
+        description?: string | null;
         id?: string | null;
       }[]
+    | null;
+  /**
+   * Карточки блока «Почему мы» на главной: массив [{ icon, title, text }]. Управляется в конструкторе главной. Пусто — карточки по умолчанию.
+   */
+  whyUs?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
     | null;
   seoDefaults?: {
     /**
@@ -2272,8 +2288,10 @@ export interface SiteSettingsSelect<T extends boolean = true> {
     | {
         platform?: T;
         url?: T;
+        description?: T;
         id?: T;
       };
+  whyUs?: T;
   seoDefaults?:
     | T
     | {

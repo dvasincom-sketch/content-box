@@ -14,6 +14,8 @@ import { HeroTeamEditPanel } from './HeroTeamEditPanel'
 import { HomeCategoriesEditPanel } from './HomeCategoriesEditPanel'
 import { HeroEditPanel } from './HeroEditPanel'
 import { BannerEditPanel } from './BannerEditPanel'
+import { SocialsEditPanel } from './SocialsEditPanel'
+import { WhyUsEditPanel } from './WhyUsEditPanel'
 import { SectionLibrary } from './SectionLibrary'
 import type { CatItem } from './CategoryMultiPicker'
 
@@ -87,6 +89,8 @@ const SECTION_EDITORS: Partial<Record<HomeSectionType, SectionEditor>> = {
   heroTeam: HeroTeamEditPanel,
   categories: HomeCategoriesEditPanel,
   broadcast: BannerEditPanel,
+  socials: SocialsEditPanel,
+  whyUs: WhyUsEditPanel,
 }
 
 /** Строка конструктора = конфиг секции + клиентский стабильный ключ (_uid). */

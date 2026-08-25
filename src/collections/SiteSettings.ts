@@ -486,7 +486,22 @@ export const SiteSettings: CollectionConfig = {
           ],
         },
         { name: 'url', type: 'text', required: true },
+        {
+          name: 'description',
+          type: 'text',
+          label: 'Подпись',
+          admin: { description: 'Короткое описание под названием (напр. «Анонсы и новые видео»). Пусто — подпись по умолчанию для площадки.' },
+        },
       ],
+    },
+    {
+      name: 'whyUs',
+      type: 'json',
+      label: '«Почему мы» — карточки',
+      admin: {
+        description:
+          'Карточки блока «Почему мы» на главной: массив [{ icon, title, text }]. Управляется в конструкторе главной. Пусто — карточки по умолчанию.',
+      },
     },
     {
       name: 'seoDefaults',

@@ -5759,3 +5759,26 @@ a.session-expired__btn {
   color: var(--st-text-muted);
   font-style: italic;
 }
+
+/* Редакторы секций-списков конструктора главной (соцсети, «Почему мы») */
+.soceditp__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-3);
+  margin-bottom: var(--st-space-3);
+}
+.soceditp__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--st-space-2);
+  padding: var(--st-space-3);
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-bg);
+}
+.soceditp__row1 {
+  display: flex;
+  align-items: center;
+  gap: var(--st-space-2);
+}
+.soceditp__row1 > :first-child { flex: 1 1 auto; min-width: 0; }

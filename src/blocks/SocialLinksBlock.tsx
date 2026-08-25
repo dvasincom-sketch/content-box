@@ -1,6 +1,6 @@
 import React from 'react'
 
-type Social = { platform?: string | null; url?: string | null }
+type Social = { platform?: string | null; url?: string | null; description?: string | null }
 
 export type SocialLinksBlockProps = {
   heading?: string
@@ -90,21 +90,25 @@ export function SocialLinksBlock({ heading = 'Присоединяйся к на
       <h2 className="text-2xl lg:text-3xl font-bold mb-6" style={{ color: 'var(--brand-text)', fontFamily: 'var(--font-heading)', fontWeight: 'var(--heading-weight)' as any }}>
         {heading}
       </h2>
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {links.map((s, i) => {
           const m = BRAND[s.platform!]
           const Badge = m.Badge
+          // Подпись владельца (если задана) → иначе дефолт площадки.
+          const hint = (s.description && s.description.trim()) || m.hint
           return (
             <a
               key={i}
               href={s.url!}
               target="_blank"
               rel="noopener noreferrer"
-              className="c-card c-card--interactive c-spotlight p-5 flex flex-col gap-3"
+              className="c-card c-card--interactive c-spotlight p-4 flex items-center gap-3"
             >
-              <span className="social-badge"><Badge /></span>
-              <span className="font-semibold" style={{ color: 'var(--brand-text)' }}>{m.label}</span>
-              <span className="text-sm" style={{ color: 'var(--brand-muted)' }}>{m.hint}</span>
+              <span className="social-badge" style={{ flex: 'none' }}><Badge /></span>
+              <span className="flex flex-col min-w-0">
+                <span className="font-semibold leading-tight" style={{ color: 'var(--brand-text)' }}>{m.label}</span>
+                <span className="text-sm leading-snug" style={{ color: 'var(--brand-muted)' }}>{hint}</span>
+              </span>
             </a>
           )
         })}
