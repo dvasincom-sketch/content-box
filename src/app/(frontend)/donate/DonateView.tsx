@@ -102,6 +102,7 @@ export function DonateView(props: DonateViewProps) {
   const [payError, setPayError] = useState<string | null>(null)
 
   const effAmount = custom.trim() ? Math.max(0, Math.floor(Number(custom.replace(/\D/g, '')) || 0)) : amount
+  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
 
   const withMessages = useMemo(() => supporters.filter((s) => !s.isAnonymous && s.message.trim()), [supporters])
   const topSupporters = useMemo(() => [...supporters].sort((a, b) => b.amountRub - a.amountRub).slice(0, 5), [supporters])
@@ -112,7 +113,7 @@ export function DonateView(props: DonateViewProps) {
   }
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (effAmount <= 0 || busy) return
+    if (effAmount <= 0 || busy || !emailOk) return
     setBusy(true)
     setPayError(null)
     try {
@@ -240,10 +241,11 @@ export function DonateView(props: DonateViewProps) {
               <span>Поддержать анонимно</span>
             </label>
 
-            <label className="dn-label">E-mail для чека (необязательно)</label>
-            <input className="dn-input" type="email" placeholder="you@mail.ru" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <label className="dn-label">E-mail для чека</label>
+            <input className="dn-input" type="email" required placeholder="you@mail.ru" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <p style={{ fontSize: 12, color: 'var(--brand-muted, #6b7280)', margin: '4px 0 0' }}>На эту почту ЮKassa пришлёт чек об оплате.</p>
 
-            <button type="submit" className="dn-btn dn-btn--primary dn-btn--lg dn-btn--block" disabled={effAmount <= 0 || busy}>
+            <button type="submit" className="dn-btn dn-btn--primary dn-btn--lg dn-btn--block" disabled={effAmount <= 0 || busy || !emailOk}>
               <Heart size={18} /> {busy ? 'Переход к оплате…' : `Поддержать на ${rub(effAmount)}`}
             </button>
             {payError && <p style={{ color: 'var(--danger, #dc2626)', fontSize: 13, marginTop: 8, textAlign: 'center' }}>{payError}</p>}

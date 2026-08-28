@@ -65,7 +65,9 @@ export async function POST(req: Request): Promise<Response> {
 
   const description = `Подарочная подписка «${tier.name}» ${months} мес — ${tenant.name}`.slice(0, 128)
   const receipt = buildReceipt({
-    email: (sub as any)?.email || null,
+    // Чек нужен покупателю; если он гость без e-mail — используем e-mail получателя
+    // (он обязателен и провалидирован), иначе магазин с фискализацией отклонит платёж.
+    email: (sub as any)?.email || recipientEmail || null,
     phone: (sub as any)?.phone || null,
     description,
     amountRub,

@@ -83,7 +83,14 @@ export function credsFromSettings(settings: any): YkCreds | null {
   return { shopId, secret }
 }
 
-/** Чек 54-ФЗ. Возвращает undefined, если нет ни email, ни телефона, ни СНО. */
+/**
+ * Чек 54-ФЗ. Возвращает undefined только если нет контакта покупателя
+ * (email/телефон обязателен для чека). СНО (tax_system_code) кладём лишь когда
+ * она задана: этот код обязателен, только если у магазина несколько систем
+ * налогообложения, иначе его слать не нужно. Отсутствие СНО — не повод не слать
+ * чек: магазин с включённой фискализацией без чека вернёт «Receipt is missing or
+ * illegal».
+ */
 export function buildReceipt(args: {
   email?: string | null
   phone?: string | null
@@ -95,8 +102,7 @@ export function buildReceipt(args: {
   const email = (args.email || '').trim()
   const phone = (args.phone || '').trim()
   if (!email && !phone) return undefined
-  if (!args.taxSystem) return undefined
-  return {
+  const receipt: YkReceipt = {
     customer: { ...(email ? { email } : {}), ...(phone ? { phone } : {}) },
     items: [
       {
@@ -108,8 +114,9 @@ export function buildReceipt(args: {
         payment_subject: 'service',
       },
     ],
-    tax_system_code: Number(args.taxSystem),
   }
+  if (args.taxSystem) receipt.tax_system_code = Number(args.taxSystem)
+  return receipt
 }
 
 /** Первый платёж: карта вводится на стороне ЮKassa, способ сохраняется. */

@@ -68,6 +68,14 @@ export async function POST(req: Request): Promise<Response> {
   } catch { /* без записи не критично — всё равно проведём платёж */ }
 
   const email = String(body?.email || (sub as any)?.email || '').trim()
+  const phone = String((sub as any)?.phone || '').trim()
+  // Для магазина с фискализацией чек обязателен, а чек требует контакт покупателя.
+  // Без e-mail (и телефона) ЮKassa вернёт «Receipt is missing or illegal» —
+  // просим e-mail заранее понятным сообщением.
+  if (!email && !phone) {
+    return NextResponse.json({ error: 'Укажите e-mail — на него придёт чек об оплате', needEmail: true }, { status: 400 })
+  }
+
   const description = `Поддержка проекта — ${tenant.name}`.slice(0, 128)
   const receipt = buildReceipt({
     email: email || null,
