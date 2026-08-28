@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
-import { getTenantFromHeaders } from '@/lib/tenant'
+import { resolvePayContext } from '@/lib/payContext'
 import { sqlRows } from '@/lib/sql'
 
 /**
@@ -10,28 +8,30 @@ import { sqlRows } from '@/lib/sql'
  * Код должен быть 'active' и принадлежать этому тенанту. Продлеваем подписку
  * получателя на N месяцев уровня, помечаем код 'redeemed'.
  *
+ * Тенант — по ХОСТУ (на /api/* нет x-tenant-id), tenantId передаём в
+ * getCurrentSubscriber, иначе он не увидит вошедшего.
+ *
  * Body: { code }
  */
 export const runtime = 'nodejs'
 
 export async function POST(req: Request): Promise<Response> {
-  const sub = await getCurrentSubscriber()
+  const pc = await resolvePayContext(req)
+  if (!pc) return NextResponse.json({ error: 'Тенант не определён' }, { status: 400 })
+  const { payload, tenantId } = pc
+
+  const sub = await getCurrentSubscriber(tenantId)
   if (!sub) return NextResponse.json({ error: 'Войдите, чтобы активировать подарок', needAuth: true }, { status: 401 })
-  const ctx = await getTenantFromHeaders()
-  if (!ctx) return NextResponse.json({ error: 'Тенант не определён' }, { status: 400 })
-  const { tenant } = ctx
 
   let body: any = {}
   try { body = await req.json() } catch { /* пусто */ }
   const code = String(body?.code || '').trim().toUpperCase()
   if (!code) return NextResponse.json({ error: 'Введите промокод' }, { status: 400 })
 
-  const payload = await getPayload({ config: await config })
-
   const rows = await sqlRows<any>(
     payload,
     `SELECT * FROM gift_codes WHERE code = $1 AND tenant_id = $2 LIMIT 1`,
-    [code, Number(tenant.id)],
+    [code, Number(tenantId)],
   ).catch(() => [])
   const gift = rows[0]
   if (!gift) return NextResponse.json({ error: 'Промокод не найден' }, { status: 404 })
