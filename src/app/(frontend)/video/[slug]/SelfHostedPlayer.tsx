@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Play, Pause, Maximize, Minimize, Volume2, VolumeX, Loader2, Captions, ListVideo, X, Settings } from 'lucide-react'
+import { Play, Pause, Maximize, Minimize, Volume2, VolumeX, Loader2, Captions, ListVideo, X, Settings, PictureInPicture2 } from 'lucide-react'
 
 /**
  * Плеер собственного HLS-видео (provider='self') с кастомными контролами и
@@ -97,6 +97,8 @@ export function SelfHostedPlayer({
   const [buffered, setBuffered] = useState(0)
   const [muted, setMuted] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const [pipActive, setPipActive] = useState(false)
+  const [pipSupported, setPipSupported] = useState(false)
   const [ready, setReady] = useState(false)
   const [controlsShown, setControlsShown] = useState(true)
   const [cues, setCues] = useState<Cue[]>([])
@@ -264,6 +266,45 @@ export function SelfHostedPlayer({
     if (typeof el.requestFullscreen !== "function" && vfs?.webkitEnterFullscreen) { vfs.webkitEnterFullscreen(); return }
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
     else el.requestFullscreen().catch(() => {})
+  }, [])
+
+  /* ── Картинка-в-картинке ─────────────────────────────────────────────── */
+  // Работает на самом <video> (hls.js кормит его через MSE): Chromium, Safari,
+  // iOS/iPadOS. Firefox своего Web API не даёт (там своя кнопка браузера) —
+  // тогда просто прячем нашу кнопку.
+  useEffect(() => {
+    const v = videoRef.current as (HTMLVideoElement & { webkitSetPresentationMode?: (m: string) => void }) | null
+    const doc = document as Document & { pictureInPictureEnabled?: boolean }
+    const supported = !!v && ((typeof v.requestPictureInPicture === 'function' && doc.pictureInPictureEnabled !== false) || typeof v.webkitSetPresentationMode === 'function')
+    setPipSupported(Boolean(supported))
+  }, [ready])
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    const onEnter = () => setPipActive(true)
+    const onLeave = () => setPipActive(false)
+    v.addEventListener('enterpictureinpicture', onEnter)
+    v.addEventListener('leavepictureinpicture', onLeave)
+    return () => {
+      v.removeEventListener('enterpictureinpicture', onEnter)
+      v.removeEventListener('leavepictureinpicture', onLeave)
+    }
+  }, [ready])
+
+  const togglePiP = useCallback(async () => {
+    const v = videoRef.current as (HTMLVideoElement & { webkitSetPresentationMode?: (m: string) => void; webkitPresentationMode?: string }) | null
+    if (!v) return
+    try {
+      const doc = document as Document & { pictureInPictureElement?: Element | null; exitPictureInPicture?: () => Promise<void> }
+      if (typeof v.requestPictureInPicture === 'function') {
+        if (doc.pictureInPictureElement) await doc.exitPictureInPicture?.()
+        else await v.requestPictureInPicture()
+      } else if (typeof v.webkitSetPresentationMode === 'function') {
+        // iOS/старый Safari
+        v.webkitSetPresentationMode(v.webkitPresentationMode === 'picture-in-picture' ? 'inline' : 'picture-in-picture')
+      }
+    } catch { /* пользователь отменил / не поддерживается — тихо игнорируем */ }
   }, [])
 
   const setQuality = useCallback((index: number) => {
@@ -509,6 +550,11 @@ export function SelfHostedPlayer({
                 </div>
               )}
             </div>
+          )}
+          {pipSupported && (
+            <button type="button" aria-label={pipActive ? 'Выйти из «картинка в картинке»' : 'Картинка в картинке'} onClick={togglePiP} style={{ ...btnStyle, opacity: pipActive ? 1 : 0.85 }}>
+              <PictureInPicture2 size={20} />
+            </button>
           )}
           <button type="button" aria-label={fullscreen ? 'Свернуть' : 'На весь экран'} onClick={toggleFullscreen} style={btnStyle}>
             {fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
