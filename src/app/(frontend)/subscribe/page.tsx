@@ -7,6 +7,7 @@ import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import { PerkIcon, type PerkType } from '@/components/studio/PerkIcon'
 import { GiftWidget } from '@/components/GiftWidget'
+import { SubscribeButton } from './SubscribeButton'
 import type { Metadata } from 'next'
 import '../styles.css'
 
@@ -199,13 +200,10 @@ function TierCard({ tier, highlighted }: { tier: Tier; highlighted: boolean }) {
         </ul>
       )}
 
-      <Link
-        href="/subscribe/soon"
+      <SubscribeButton
+        tierId={tier.id}
         className={`c-btn c-btn--block c-spotlight${highlighted ? ' c-btn--primary c-spotlight-bright' : ' c-btn--outline'}`}
-        style={{ marginTop: 'auto' }}
-      >
-        Оформить
-      </Link>
+      />
     </div>
   )
 }
