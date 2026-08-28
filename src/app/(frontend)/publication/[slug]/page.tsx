@@ -20,7 +20,8 @@ import { ASYA_MIN_TIER_PRICE } from '@/lib/asya'
 import { VpnVideoNotice } from '@/components/VpnVideoNotice'
 import { PublicGallery, type PublicGalleryItem } from './PublicGallery'
 import { ProfileView } from './ProfileView'
-import { videoThumbUrl } from '@/lib/videoThumb'
+import { videoThumbUrl, videoGifUrl } from '@/lib/videoThumb'
+import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
 import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
 import { CrossLinkCard, breadcrumbLabelPath } from '@/components/CrossLinkCard'
 import { TagChips } from '@/components/TagChips'
@@ -215,6 +216,26 @@ export default async function PublicationPage({ params }: { params: Promise<Para
         }),
       )
     : []
+
+  // Плейлист: если прикреплено больше одного медиа (видео/аудио) — показываем их
+  // как единый плейлист (тот же формат, что в категории-серии), а не стопкой
+  // отдельных плееров. Порядок сохраняем как у прикреплённых (episode ← индекс,
+  // если у видео нет своего номера серии).
+  const pubCoverForSeries = pub.cover && typeof pub.cover === 'object'
+    ? ((pub.cover as any).sizes?.card?.url || (pub.cover as any).url || null)
+    : null
+  const relatedEpisodes: SeriesEpisode[] = relatedVideos.map(({ video: v }, i) => ({
+    id: v.id,
+    title: v.title || 'Без названия',
+    slug: v.slug || '',
+    coverUrl: videoThumbUrl(v),
+    previewGif: videoGifUrl(v),
+    season: v.season ?? null,
+    episode: v.episode ?? i + 1,
+    durationSec: v.durationSec ?? null,
+    isFree: Boolean(v.isPreview) || !v.minTier,
+    minTierName: v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug || null : null,
+  }))
 
   // #2: «видео-центричный» шаблон — обложка+заголовок+видео без текстового тела.
   // Скрываем отдельную большую обложку сверху (постер плеера её дублирует).
@@ -453,8 +474,16 @@ export default async function PublicationPage({ params }: { params: Promise<Para
 
         {pubAccess.allowed ? (
           <>
-            {/* Прикреплённые видео — до описания, каждое со своим гейтингом */}
-            {relatedVideos.length > 0 && (
+            {/* Больше одного медиа — единый плейлист (формат категории-серии). */}
+            {relatedVideos.length > 1 && (
+              <div className="mb-8">
+                <VpnVideoNotice />
+                <VideoSeriesBlock episodes={relatedEpisodes} seriesCoverUrl={pubCoverForSeries} />
+              </div>
+            )}
+
+            {/* Одно прикреплённое видео — отдельный плеер со своим гейтингом и Асей */}
+            {relatedVideos.length === 1 && (
               <div className="flex flex-col gap-6 mb-8">
                 <VpnVideoNotice />
                 {relatedVideos.map(({ video, allowed, access }, i) => (
