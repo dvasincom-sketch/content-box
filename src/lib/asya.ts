@@ -11,8 +11,9 @@ const ASYA_KEY = process.env.ASYA_SUMMARY_KEY || ''
 /** Эндпоинт полировки глав. По умолчанию — сосед /summary (заменяем хвост на /chapters). */
 const ASYA_CHAPTERS_URL = process.env.ASYA_CHAPTERS_URL || ASYA_URL.replace(/\/summary\/?$/, '/chapters')
 
-/** Мин. цена тарифа (₽) для доступа к саммари от Аси. Ниже — апселл. */
-export const ASYA_MIN_TIER_PRICE = Number(process.env.ASYA_MIN_TIER_PRICE_RUB || 2000)
+/** Мин. цена тарифа (₽) для ГЕНЕРАЦИИ саммари от Аси. Ниже — апселл.
+ * (Готовое саммари из кэша доступно любому зарегистрированному без подписки.) */
+export const ASYA_MIN_TIER_PRICE = Number(process.env.ASYA_MIN_TIER_PRICE_RUB || 490)
 
 export function asyaEnabled(): boolean {
   return ASYA_KEY.trim().length > 0

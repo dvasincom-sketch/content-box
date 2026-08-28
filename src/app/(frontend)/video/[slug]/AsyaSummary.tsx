@@ -107,9 +107,9 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
   )
 
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div style={{ marginBottom: 16 }}>
       <style>{`
-        @keyframes asya-glow { 0%,100%{ box-shadow: 0 12px 30px -12px #b79aef, 0 0 0 1px rgba(255,255,255,.14) inset } 50%{ box-shadow: 0 16px 42px -8px #c3a0f2, 0 0 0 1px rgba(255,255,255,.22) inset } }
+        @keyframes asya-glow { 0%,100%{ box-shadow: 0 6px 16px -8px #b79aef, 0 0 0 1px rgba(255,255,255,.12) inset } 50%{ box-shadow: 0 8px 22px -6px #c3a0f2, 0 0 0 1px rgba(255,255,255,.18) inset } }
         @keyframes asya-orb { 0%,100%{ transform: scale(1) } 50%{ transform: scale(1.14) } }
         @keyframes asya-blink { 0%,50%{ opacity: 1 } 50.01%,100%{ opacity: 0 } }
         .asya-btn:hover { filter: brightness(1.06) }
@@ -121,8 +121,8 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
         onClick={ask}
         disabled={loading}
         style={{
-          display: 'inline-flex', alignItems: 'center', gap: 11, padding: '13px 22px', border: 'none',
-          cursor: 'pointer', borderRadius: 30, color: '#fff', fontWeight: 700, fontSize: 15,
+          display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 15px 8px 11px', border: 'none',
+          cursor: 'pointer', borderRadius: 22, color: '#fff', fontWeight: 600, fontSize: 13.5, lineHeight: 1,
           background: 'linear-gradient(135deg, #7e3a67, #4c3c9c)',
           animation: 'asya-glow 3.4s ease-in-out infinite',
         }}
@@ -130,13 +130,13 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
         <span
           aria-hidden
           style={{
-            width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+            width: 15, height: 15, borderRadius: '50%', flexShrink: 0,
             background: 'radial-gradient(circle at 34% 30%, #ffffff, #ffb3cc 42%, #c3a0f2 70%, #8fb8ff)',
-            boxShadow: '0 0 12px 2px rgba(255,214,238,.9), 0 0 0 1px rgba(255,255,255,.55)',
+            boxShadow: '0 0 8px 1px rgba(255,214,238,.85), 0 0 0 1px rgba(255,255,255,.5)',
             animation: loading ? 'asya-orb .8s ease-in-out infinite' : 'asya-orb 3s ease-in-out infinite',
           }}
         />
-        {loading ? 'Ася смотрит видео…' : data ? 'Что в этом видео' : 'Спросить Асю, что в этом видео'}
+        {loading ? 'Ася смотрит…' : data ? 'Что в видео' : 'Спросить Асю'}
       </button>
 
       {loading && (
@@ -148,7 +148,7 @@ export function AsyaSummary({ videoId, minPrice = 2000 }: { videoId: number | st
       {state === 'upsell' && (
         <div style={{ marginTop: 12, padding: '14px 16px', borderRadius: 14, background: 'linear-gradient(135deg, rgba(247,161,188,.12), rgba(183,154,239,.12))', border: '1px solid rgba(183,154,239,.4)' }}>
           <div style={{ fontWeight: 700, color: 'var(--brand-text)', marginBottom: 4 }}>Ася расскажет, что в этом видео ✨</div>
-          <div style={{ color: 'var(--brand-muted)', fontSize: 14, marginBottom: 10 }}>Краткое содержание от <a href="https://ася.online" target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>Аси</a> — в подписке от {minPrice} ₽ («Золотой» и выше).</div>
+          <div style={{ color: 'var(--brand-muted)', fontSize: 14, marginBottom: 10 }}>Краткое содержание от <a href="https://ася.online" target="_blank" rel="noopener" style={{ color: 'inherit', textDecoration: 'underline' }}>Аси</a> — в подписке от {minPrice} ₽. Готовое саммари доступно и без подписки — после входа.</div>
           <a href="/subscribe" style={{ display: 'inline-block', padding: '9px 18px', borderRadius: 22, color: '#fff', fontWeight: 700, textDecoration: 'none', background: 'linear-gradient(135deg, #f7a1bc, #b79aef)' }}>Оформить подписку</a>
         </div>
       )}
