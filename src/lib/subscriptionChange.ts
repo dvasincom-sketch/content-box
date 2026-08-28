@@ -54,8 +54,13 @@ export function planChange(newTier: TierLite, sub: SubState, now: Date = new Dat
   const dLeft = daysLeftUntil(sub.until, now)
 
   if (newPrice > cur) {
-    // Доплата за остаток по разнице (минимум 1 ₽, чтобы платёж прошёл).
-    const diff = Math.max(1, Math.round(((newPrice - cur) * dLeft) / PERIOD_DAYS))
+    // Доплата за остаток ТЕКУЩЕГО месяца по разнице тарифов. Тариф помесячный,
+    // поэтому пересчёт ограничиваем одним периодом (30 дней): даже если подписка
+    // оплачена далеко вперёд (subscriptionUntil на месяцы/год), повышение стоит
+    // не больше разницы в цене за месяц — иначе выходит абсурдная доплата
+    // (напр. (2000−490)×366/30 ≈ 18 422 ₽).
+    const dCharge = Math.min(dLeft, PERIOD_DAYS)
+    const diff = Math.max(1, Math.round(((newPrice - cur) * dCharge) / PERIOD_DAYS))
     return { kind: 'upgrade', amountRub: diff, daysLeft: dLeft }
   }
 
