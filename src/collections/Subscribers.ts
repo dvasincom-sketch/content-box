@@ -222,6 +222,16 @@ export const Subscribers: CollectionConfig = {
         description: 'Дата окончания текущей оплаченной подписки. Меняет только суперадмин.',
       },
     },
+    {
+      name: 'pendingTier',
+      type: 'relationship',
+      relationTo: 'subscription-tiers',
+      label: 'Запланированный уровень (со след. периода)',
+      access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
+      admin: {
+        description: 'Понижение уровня, запланированное на следующее продление. Применяется автосписанием, затем очищается. Пусто = смены не запланировано.',
+      },
+    },
     // ── Рекуррентные платежи ЮKassa (пишет только сервер: вебхук/крон) ────────
     {
       name: 'autoRenew',

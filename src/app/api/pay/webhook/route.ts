@@ -149,8 +149,11 @@ export async function POST(req: Request): Promise<Response> {
       const now = new Date()
       const cur = subscriber.subscriptionUntil ? new Date(subscriber.subscriptionUntil) : null
       const base = cur && cur > now ? cur : now
+      // Апгрейд — доплата за остаток: уровень поднимаем, дату окончания НЕ двигаем.
+      // Initial/renewal — помесячно продлеваем.
+      const isUpgrade = meta.kind === 'subscription_upgrade'
       const until = new Date(base)
-      until.setMonth(until.getMonth() + 1) // тариф помесячный
+      if (!isUpgrade) until.setMonth(until.getMonth() + 1) // тариф помесячный
 
       const cardLabel = cardMask(pay)
       const methodId = pay.payment_method?.id || null
@@ -163,6 +166,8 @@ export async function POST(req: Request): Promise<Response> {
           subscriptionUntil: until.toISOString(),
           autoRenew: true,
           lastPaymentAt: now.toISOString(),
+          // Апгрейд отменяет ранее запланированное понижение.
+          ...(isUpgrade ? { pendingTier: null } : {}),
           ...(methodId ? { yookassaPaymentMethodId: methodId } : {}),
           ...(cardLabel ? { cardLabel } : {}),
           ...(subscriber.subscriptionSince ? {} : { subscriptionSince: now.toISOString() }),

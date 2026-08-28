@@ -805,6 +805,12 @@ svg {
   align-items: stretch;
 }
 
+/* Фокус-вид: выбран один уровень (?tier=…) — карточка по центру. */
+.sub-grid--one {
+  grid-template-columns: minmax(0, 380px);
+  justify-content: center;
+}
+
 .sub-card {
   position: relative;
   display: flex;

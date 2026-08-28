@@ -4,7 +4,7 @@ import { Play, Camera, Send, Zap, Users } from 'lucide-react'
 
 export type SpotlightStat = { value: string; label: string }
 export type SpotlightSocial = { platform: string; url: string }
-export type SpotlightTier = { name: string; priceRub: number; perks: string[]; badge?: string | null; description?: string | null }
+export type SpotlightTier = { id?: number | string; name: string; priceRub: number; perks: string[]; badge?: string | null; description?: string | null }
 
 export type AuthorSpotlightBlockProps = {
   name: string
@@ -107,7 +107,7 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
                   <div className="spot__tier-name">{t.name}</div>
                   <div className="spot__tier-price">{price(t.priceRub)}</div>
                   {t.description && <p className="spot__desc">{t.description}</p>}
-                  <AppLink href={subscribeHref} className={'spot__btn' + (featured ? ' is-feat' : '')}>
+                  <AppLink href={t.id != null ? `${subscribeHref}?tier=${encodeURIComponent(String(t.id))}` : subscribeHref} className={'spot__btn' + (featured ? ' is-feat' : '')}>
                     Оформить
                   </AppLink>
                 </div>

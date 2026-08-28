@@ -3,11 +3,13 @@ import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getTenantFromHeaders } from '@/lib/tenant'
+import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
 import { PerkIcon, type PerkType } from '@/components/studio/PerkIcon'
 import { GiftWidget } from '@/components/GiftWidget'
 import { SubscribeButton } from './SubscribeButton'
+import { planChange, type SubState, type SubChangePlan } from '@/lib/subscriptionChange'
 import type { Metadata } from 'next'
 import '../styles.css'
 
@@ -33,10 +35,13 @@ type Tier = {
   weight: number
 }
 
-export default async function SubscribePage() {
+export default async function SubscribePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const ctx = await getTenantFromHeaders()
   if (!ctx) return <div className="p-8">Тенант не определён.</div>
   const { tenant, settings } = ctx
+
+  const sp = await searchParams
+  const focusTierId = typeof sp?.tier === 'string' ? sp.tier : ''
 
   const payload = await getPayload({ config: await config })
   const res = await payload.find({
@@ -62,6 +67,23 @@ export default async function SubscribePage() {
       : [],
   }))
 
+  // Текущее состояние подписки (если вошёл) — для расчёта апгрейд/даунгрейд.
+  const sub = await getCurrentSubscriber(tenant.id).catch(() => null)
+  const now = new Date()
+  let subState: SubState = { activeTierId: null, activePriceRub: 0, until: null }
+  if (sub) {
+    const v = (sub as any).activeTier
+    const activeTierId = ((): number | null => {
+      const id = v && typeof v === 'object' ? v.id : v
+      return id != null ? Number(id) : null
+    })()
+    const until = (sub as any).subscriptionUntil ? new Date((sub as any).subscriptionUntil) : null
+    const activePriceRub = activeTierId != null ? Number(tiers.find((t) => String(t.id) === String(activeTierId))?.priceRub || 0) : 0
+    subState = { activeTierId, activePriceRub, until }
+  }
+
+  const focusTier = focusTierId ? tiers.find((t) => String(t.id) === focusTierId) : undefined
+
   return (
     <main
       style={{
@@ -80,56 +102,73 @@ export default async function SubscribePage() {
           <span style={{ color: 'var(--brand-text)' }}>Подписка</span>
         </nav>
 
-        <header className="text-center mb-12">
-          <h1
-            className="text-3xl lg:text-5xl font-extrabold mb-4"
-            style={{ color: 'var(--brand-text)' }}
-          >
-            Оформить подписку
-          </h1>
-          <p
-            className="text-base lg:text-lg max-w-2xl mx-auto"
-            style={{ color: 'var(--brand-muted)', textWrap: 'balance' }}
-          >
-            Выберите уровень доступа. Высший уровень открывает весь контент уровней ниже.
-          </p>
-        </header>
-
-        <div className="gift-cta">
-          <GiftWidget mode="segment" tiers={tiers.map((t) => ({ id: t.id, name: t.name, priceRub: t.priceRub, description: t.description }))} selfHref="/subscribe" />
-          <span className="gift-cta__hint">Можно оформить подписку себе или подарить её другу</span>
-        </div>
-
-        {tiers.length === 0 ? (
-          <div
-            className="text-center py-16 rounded-2xl"
-            style={{
-              color: 'var(--brand-muted)',
-              background: 'color-mix(in srgb, var(--brand-primary) 8%, transparent)',
-            }}
-          >
-            Уровни подписки скоро появятся.
-          </div>
+        {focusTier ? (
+          <>
+            <header className="text-center mb-8">
+              <h1 className="text-3xl lg:text-4xl font-extrabold mb-3" style={{ color: 'var(--brand-text)' }}>
+                Вы выбрали уровень «{focusTier.name}»
+              </h1>
+              <p className="text-base max-w-xl mx-auto" style={{ color: 'var(--brand-muted)', textWrap: 'balance' }}>
+                Подтвердите оформление. Оплата картами РФ, подписку можно отменить в любой момент.
+              </p>
+            </header>
+            <div className="sub-grid sub-grid--one">
+              <TierCard tier={focusTier} highlighted plan={planChange({ id: focusTier.id, priceRub: focusTier.priceRub }, subState, now)} />
+            </div>
+            <p className="text-center text-sm mt-8">
+              <Link href="/subscribe" className="c-navlink" style={{ color: 'var(--brand-muted)' }}>← Показать все уровни</Link>
+            </p>
+          </>
         ) : (
-          <div className="sub-grid">
-            {tiers.map((tier) => (
-              <TierCard key={tier.id} tier={tier} highlighted={Boolean(tier.badge)} />
-            ))}
-          </div>
-        )}
+          <>
+            <header className="text-center mb-12">
+              <h1 className="text-3xl lg:text-5xl font-extrabold mb-4" style={{ color: 'var(--brand-text)' }}>
+                Оформить подписку
+              </h1>
+              <p className="text-base lg:text-lg max-w-2xl mx-auto" style={{ color: 'var(--brand-muted)', textWrap: 'balance' }}>
+                Выберите уровень доступа. Высший уровень открывает весь контент уровней ниже.
+              </p>
+            </header>
 
-        <p
-          className="text-center text-sm mt-10"
-          style={{ color: 'var(--brand-muted)' }}
-        >
-          Оплата картами РФ. Подписку можно отменить в любой момент.
-        </p>
+            <div className="gift-cta">
+              <GiftWidget mode="segment" tiers={tiers.map((t) => ({ id: t.id, name: t.name, priceRub: t.priceRub, description: t.description }))} selfHref="/subscribe" />
+              <span className="gift-cta__hint">Можно оформить подписку себе или подарить её другу</span>
+            </div>
+
+            {tiers.length === 0 ? (
+              <div
+                className="text-center py-16 rounded-2xl"
+                style={{
+                  color: 'var(--brand-muted)',
+                  background: 'color-mix(in srgb, var(--brand-primary) 8%, transparent)',
+                }}
+              >
+                Уровни подписки скоро появятся.
+              </div>
+            ) : (
+              <div className="sub-grid">
+                {tiers.map((tier) => (
+                  <TierCard
+                    key={tier.id}
+                    tier={tier}
+                    highlighted={Boolean(tier.badge)}
+                    plan={planChange({ id: tier.id, priceRub: tier.priceRub }, subState, now)}
+                  />
+                ))}
+              </div>
+            )}
+
+            <p className="text-center text-sm mt-10" style={{ color: 'var(--brand-muted)' }}>
+              Оплата картами РФ. Подписку можно отменить в любой момент.
+            </p>
+          </>
+        )}
       </div>
     </main>
   )
 }
 
-function TierCard({ tier, highlighted }: { tier: Tier; highlighted: boolean }) {
+function TierCard({ tier, highlighted, plan }: { tier: Tier; highlighted: boolean; plan: SubChangePlan }) {
   return (
     <div
       className={`sub-card${highlighted ? ' sub-card--hl' : ''}`}
@@ -141,7 +180,7 @@ function TierCard({ tier, highlighted }: { tier: Tier; highlighted: boolean }) {
         boxShadow: 'var(--brand-card-shadow)',
       }}
     >
-      {highlighted && (
+      {highlighted && tier.badge && (
         <div
           className="sub-card__badge"
           style={{ background: 'var(--brand-primary)', color: '#fff' }}
@@ -202,6 +241,7 @@ function TierCard({ tier, highlighted }: { tier: Tier; highlighted: boolean }) {
 
       <SubscribeButton
         tierId={tier.id}
+        plan={plan}
         className={`c-btn c-btn--block c-spotlight${highlighted ? ' c-btn--primary c-spotlight-bright' : ' c-btn--outline'}`}
       />
     </div>

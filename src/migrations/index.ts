@@ -118,6 +118,7 @@ import * as migration_20260825_130000_add_boost from './20260825_130000_add_boos
 import * as migration_20260825_140000_add_boost_config from './20260825_140000_add_boost_config';
 import * as migration_20260825_150000_add_boost_settings from './20260825_150000_add_boost_settings';
 import * as migration_20260825_160000_add_gift_codes from './20260825_160000_add_gift_codes';
+import * as migration_20260828_120000_add_pending_tier from './20260828_120000_add_pending_tier';
 
 export const migrations = [
   {
@@ -719,5 +720,10 @@ export const migrations = [
     up: migration_20260825_160000_add_gift_codes.up,
     down: migration_20260825_160000_add_gift_codes.down,
     name: '20260825_160000_add_gift_codes',
+  },
+  {
+    up: migration_20260828_120000_add_pending_tier.up,
+    down: migration_20260828_120000_add_pending_tier.down,
+    name: '20260828_120000_add_pending_tier',
   },
 ];

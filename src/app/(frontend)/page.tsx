@@ -127,6 +127,7 @@ async function getAuthorSpotlight(payload: Payload, tenant: any, settings: any) 
   if (membersVal) stats.push({ value: membersVal, label: (st.membersLabel && st.membersLabel.trim()) || 'участников' })
 
   const tiers = (tiersRes.docs as any[]).map((t) => ({
+    id: t.id as number | string,
     name: t.name as string,
     priceRub: Number(t.priceRub ?? 0),
     badge: typeof t.badge === 'string' && t.badge.trim() ? t.badge.trim() : null,
