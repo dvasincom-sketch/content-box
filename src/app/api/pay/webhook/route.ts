@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { credsFromSettings, getPayment } from '@/lib/yookassa'
+import { sqlRows } from '@/lib/sql'
 
 /**
  * Вебхук ЮKassa. Тенант берём из metadata.tenantId, креды — из его site-settings,
@@ -57,6 +58,37 @@ export async function POST(req: Request): Promise<Response> {
     }
     if (pay.status === 'succeeded' && sp.status !== 'succeeded') {
       await payload.update({ collection: 'support-payments', id: sp.id, data: { status: 'succeeded' } as any, overrideAccess: true }).catch(() => {})
+    }
+    return ok()
+  }
+
+  // ── Подарочная подписка («Подарить») ───────────────────────────────────────
+  if (meta.kind === 'gift') {
+    const giftId = meta.giftCodeId
+    if (!giftId) return ok()
+    const rows = await sqlRows<any>(payload, `SELECT * FROM gift_codes WHERE id = $1 AND tenant_id = $2 LIMIT 1`, [Number(giftId), Number(tenantId)]).catch(() => [])
+    const gift = rows[0]
+    if (!gift) return ok()
+    if (event === 'payment.canceled' || pay.status === 'canceled') {
+      if (gift.status === 'pending') await sqlRows(payload, `UPDATE gift_codes SET status='canceled', updated_at=now() WHERE id=$1`, [gift.id]).catch(() => {})
+      return ok()
+    }
+    if (pay.status === 'succeeded' && gift.status === 'pending') {
+      await sqlRows(payload, `UPDATE gift_codes SET status='active', updated_at=now() WHERE id=$1`, [gift.id]).catch(() => {})
+      // Письмо получателю с кодом и ссылкой активации (best-effort).
+      try {
+        const host = (settings as any)?.customDomain || (settings as any)?.domain || ''
+        const base = host ? `https://${host}` : ''
+        const redeemUrl = `${base}/gift/redeem?code=${encodeURIComponent(gift.code)}`
+        const from = gift.buyer_name ? ` от «${gift.buyer_name}»` : ''
+        await payload.sendEmail({
+          to: gift.recipient_email,
+          subject: 'Вам подарили подписку 🎁',
+          html: `<p>Здравствуйте!</p><p>Вам подарили подписку${from} на ${gift.months} мес.</p>
+                 <p>Ваш промокод: <b>${gift.code}</b></p>
+                 <p>Активируйте его${base ? ` по ссылке: <a href="${redeemUrl}">${redeemUrl}</a>` : ' на сайте в разделе «Активировать подарок»'}.</p>`,
+        } as any)
+      } catch { /* письмо не критично: код можно активировать вручную */ }
     }
     return ok()
   }

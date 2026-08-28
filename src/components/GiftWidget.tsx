@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
-import { Gift, X, Minus, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import React, { useState } from 'react'
+import { Gift, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export type GiftTier = { id: number | string; name: string; priceRub: number; description?: string }
 
@@ -45,54 +45,34 @@ export function GiftWidget({ tiers, mode = 'button', selfHref = '/subscribe', gi
 function GiftModal({ tiers, onClose }: { tiers: GiftTier[]; onClose: () => void }) {
   const [idx, setIdx] = useState(0)
   const [months, setMonths] = useState(1)
-  const [qty, setQty] = useState(1)
-  const [recipMode, setRecipMode] = useState<'fields' | 'csv'>('fields')
-  const [emails, setEmails] = useState<string[]>([''])
-  const [csv, setCsv] = useState('')
-  const [anon, setAnon] = useState(false)
-  const [done, setDone] = useState(false)
+  const [email, setEmail] = useState('')
+  const [buyerName, setBuyerName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const tier = tiers[idx]
-  const total = tier ? tier.priceRub * months * qty : 0
+  const total = tier ? tier.priceRub * months : 0
+  const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
 
-  // Кол-во строк email = количеству подарков
-  const emailFields = useMemo(() => {
-    const arr = [...emails]
-    while (arr.length < qty) arr.push('')
-    return arr.slice(0, qty)
-  }, [emails, qty])
-
-  function setEmail(i: number, v: string) {
-    setEmails((prev) => {
-      const arr = [...prev]
-      while (arr.length < qty) arr.push('')
-      arr[i] = v
-      return arr.slice(0, qty)
-    })
+  async function buy() {
+    if (!tier || !emailOk || busy) return
+    setBusy(true); setError(null)
+    try {
+      const res = await fetch('/api/pay/gift', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ tierId: tier.id, months, recipientEmail: email.trim(), buyerName: buyerName.trim() || undefined }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok || j?.error) { setError(j.error || 'Не удалось создать платёж'); setBusy(false); return }
+      if (j.confirmationUrl) { window.location.href = j.confirmationUrl; return }
+      setError('ЮKassa не вернула ссылку на оплату'); setBusy(false)
+    } catch { setError('Ошибка соединения'); setBusy(false) }
   }
-  function changeQty(d: number) { setQty((q) => Math.max(1, Math.min(20, q + d))) }
 
   if (!tier) {
     return (
       <Shell onClose={onClose}>
         <p className="gift-empty">Пока нет платных уровней для подарка. Добавьте тариф в студии.</p>
-      </Shell>
-    )
-  }
-
-  if (done) {
-    return (
-      <Shell onClose={onClose} title="Почти готово 🎁">
-        <div className="gift-thanks">
-          <span className="dn-ava dn-ava--lg"><Gift size={26} /></span>
-          <h3 className="dn-modal__title">Спасибо! Оплата подарка скоро заработает</h3>
-          <p className="dn-modal__text">
-            Приём оплаты через YooKassa сейчас подключается. Как только запустим — вы сможете
-            оплатить подарок «{tier.name}» ({months} мес × {qty}) на {rub(total)} и получить
-            ссылку для отправки получателю.
-          </p>
-          <button className="dn-btn dn-btn--primary dn-btn--block" onClick={onClose}>Понятно</button>
-        </div>
       </Shell>
     )
   }
@@ -113,56 +93,29 @@ function GiftModal({ tiers, onClose }: { tiers: GiftTier[]; onClose: () => void 
         {tiers.length > 1 && <div className="gift-dots">{tiers.map((_, i) => <span key={i} className={i === idx ? 'is-on' : ''} />)}</div>}
       </div>
 
-      <div className="gift-grid2">
-        <div>
-          <label className="gift-label">Период подписки</label>
-          <div className="gift-periods">
-            {PERIODS.map((p) => (
-              <button type="button" key={p} className={'gift-chip' + (months === p ? ' is-active' : '')} onClick={() => setMonths(p)}>{p} мес</button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="gift-label">Количество</label>
-          <div className="gift-qty">
-            <button type="button" onClick={() => changeQty(-1)} aria-label="Меньше"><Minus size={16} /></button>
-            <span>{qty}</span>
-            <button type="button" onClick={() => changeQty(1)} aria-label="Больше"><Plus size={16} /></button>
-          </div>
-        </div>
+      <label className="gift-label">Период подписки</label>
+      <div className="gift-periods">
+        {PERIODS.map((p) => (
+          <button type="button" key={p} className={'gift-chip' + (months === p ? ' is-active' : '')} onClick={() => setMonths(p)}>{p} мес</button>
+        ))}
       </div>
 
-      <div className="gift-row gift-row--head">
-        <label className="gift-label">Кому будем дарить?</label>
-        <div className="gift-toggle">
-          <button type="button" className={recipMode === 'fields' ? 'is-active' : ''} onClick={() => setRecipMode('fields')}>Отдельными полями</button>
-          <button type="button" className={recipMode === 'csv' ? 'is-active' : ''} onClick={() => setRecipMode('csv')}>Через запятую</button>
-        </div>
-      </div>
-      {recipMode === 'fields' ? (
-        <div className="gift-emails">
-          {emailFields.map((e, i) => (
-            <input key={i} className="dn-input" type="email" placeholder={`E-mail получателя${qty > 1 ? ` #${i + 1}` : ''}`} value={e} onChange={(ev) => setEmail(i, ev.target.value)} />
-          ))}
-        </div>
-      ) : (
-        <textarea className="dn-input" rows={2} placeholder="email1@mail.ru, email2@mail.ru" value={csv} onChange={(e) => setCsv(e.target.value)} />
-      )}
-      <p className="gift-hint">Получателей можно указать позже — ссылку для отправки подарка вы получите в разделе «Мои подписки».</p>
+      <label className="gift-label" style={{ marginTop: 12 }}>E-mail получателя</label>
+      <input className="dn-input" type="email" placeholder="friend@mail.ru" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <p className="gift-hint">На эту почту придёт промокод. Получатель активирует его на сайте.</p>
 
-      <label className="gift-anon">
-        <span>Отправить анонимно</span>
-        <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} />
-      </label>
+      <label className="gift-label">От кого (необязательно)</label>
+      <input className="dn-input" placeholder="Ваше имя" value={buyerName} onChange={(e) => setBuyerName(e.target.value)} />
 
       <div className="gift-total">
         <div className="gift-total__label">К оплате:</div>
-        <div className="gift-total__sum">{rub(total)} <span>({months} мес × {qty})</span></div>
+        <div className="gift-total__sum">{rub(total)} <span>({months} мес)</span></div>
         <p className="gift-total__note">Оплата сразу за выбранный период. Продление — по желанию получателя.</p>
       </div>
 
-      <button type="button" className="dn-btn dn-btn--primary dn-btn--lg dn-btn--block" onClick={() => setDone(true)}>
-        <Gift size={18} /> Купить в подарок
+      {error && <p style={{ color: 'var(--danger, #dc2626)', fontSize: 13, textAlign: 'center', marginBottom: 8 }}>{error}</p>}
+      <button type="button" className="dn-btn dn-btn--primary dn-btn--lg dn-btn--block" onClick={buy} disabled={busy || !emailOk}>
+        <Gift size={18} /> {busy ? 'Переход к оплате…' : 'Купить в подарок'}
       </button>
     </Shell>
   )
