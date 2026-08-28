@@ -89,7 +89,7 @@ export function SubscribeButton({ tierId, plan, className }: { tierId: string | 
         >
           {busy === 'next' ? 'Планирование…' : 'или со следующего периода'}
         </button>
-        <p style={{ fontSize: 12, color: 'var(--brand-muted)', textAlign: 'center', margin: 0 }}>
+        <p style={{ fontSize: 12, lineHeight: 1.4, color: 'var(--brand-muted)', textAlign: 'center', margin: 0 }}>
           «Сейчас» — переключим сразу, остаток пойдёт в доп. дни по новой цене. Без списания.
         </p>
         {error && <p style={{ color: 'var(--danger, #dc2626)', fontSize: 13, textAlign: 'center', margin: 0 }}>{error}</p>}
@@ -106,7 +106,7 @@ export function SubscribeButton({ tierId, plan, className }: { tierId: string | 
         {busy === 'pay' ? <Loader2 size={16} className="animate-spin" /> : null} {label}
       </button>
       {plan.kind === 'upgrade' && (
-        <p style={{ fontSize: 12, color: 'var(--brand-muted)', textAlign: 'center', marginTop: 6 }}>
+        <p style={{ fontSize: 12, lineHeight: 1.4, color: 'var(--brand-muted)', textAlign: 'center', marginTop: 6 }}>
           Доплата за оставшиеся дни. Дата окончания не изменится.
         </p>
       )}

@@ -23,6 +23,8 @@ import { publishedWhere } from '@/lib/published'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { normalizeHomeSections, type HomeSectionType, type HomeSectionConfig, type HomeSectionSource } from '@/lib/homeSections'
 import { resolveWhyUs } from '@/lib/whyUs'
+import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { planChange, type SubState } from '@/lib/subscriptionChange'
 import type { Metadata } from 'next'
 import { Fragment, type ReactNode } from 'react'
 import './styles.css'
@@ -126,6 +128,26 @@ async function getAuthorSpotlight(payload: Payload, tenant: any, settings: any) 
   const membersVal = (st.membersValue && st.membersValue.trim()) || (subs.totalDocs > 0 ? String(subs.totalDocs) : '')
   if (membersVal) stats.push({ value: membersVal, label: (st.membersLabel && st.membersLabel.trim()) || 'участников' })
 
+  // Текущее состояние подписки (если вошёл) — чтобы карточки на главной знали:
+  // «уже есть подписка» / «повысить» / «понизить», а не всегда «Оформить».
+  const sub = await getCurrentSubscriber(tenantId).catch(() => null)
+  let subState: SubState = { activeTierId: null, activePriceRub: 0, until: null }
+  if (sub) {
+    const rel = (sub as any).activeTier
+    const activeTierId = ((): number | null => {
+      const id = rel && typeof rel === 'object' ? rel.id : rel
+      return id != null ? Number(id) : null
+    })()
+    const until = (sub as any).subscriptionUntil ? new Date((sub as any).subscriptionUntil) : null
+    let activePriceRub = activeTierId != null ? Number((tiersRes.docs as any[]).find((t) => String(t.id) === String(activeTierId))?.priceRub || 0) : 0
+    if (activeTierId != null && activePriceRub === 0) {
+      const at: any = await payload.findByID({ collection: 'subscription-tiers', id: activeTierId, depth: 0, overrideAccess: true }).catch(() => null)
+      activePriceRub = Number(at?.priceRub || 0)
+    }
+    subState = { activeTierId, activePriceRub, until }
+  }
+  const now = new Date()
+
   const tiers = (tiersRes.docs as any[]).map((t) => ({
     id: t.id as number | string,
     name: t.name as string,
@@ -135,6 +157,7 @@ async function getAuthorSpotlight(payload: Payload, tenant: any, settings: any) 
     perks: Array.isArray(t.perks)
       ? (t.perks as any[]).map((pk) => pk?.text).filter((x: unknown): x is string => typeof x === 'string' && x.trim().length > 0)
       : [],
+    plan: planChange({ id: t.id, priceRub: Number(t.priceRub ?? 0) }, subState, now),
   }))
 
   const appIconM = settings?.appIcon && typeof settings.appIcon === 'object' ? settings.appIcon : null
