@@ -1,28 +1,28 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
-import { getTenantFromHeaders } from '@/lib/tenant'
+import { resolvePayContext } from '@/lib/payContext'
 import { credsFromSettings, buildReceipt, createInitialPayment } from '@/lib/yookassa'
 
 /**
  * Оформление подписки: авторизованный подписчик выбирает уровень → создаём
  * первый платёж на магазине ЮKassa ТЕНАНТА (с сохранением карты для автосписаний),
  * пишем subscription-payments(pending) и отдаём confirmationUrl (редирект на ЮKassa).
- * Активацию подписки делает вебхук после успешной оплаты — телу редиректа не верим.
+ * Активацию делает вебхук после успешной оплаты — телу редиректа не верим.
  *
- * Body: { tierId }
- * Ответ: { confirmationUrl } | { error }
+ * Тенант — по ХОСТУ (на /api/* нет x-tenant-id), tenantId передаём в
+ * getCurrentSubscriber, иначе он не увидит вошедшего.
+ *
+ * Body: { tierId } → { confirmationUrl } | { error }
  */
 export const runtime = 'nodejs'
 
 export async function POST(req: Request): Promise<Response> {
-  const sub = await getCurrentSubscriber()
-  if (!sub) return NextResponse.json({ error: 'Войдите, чтобы оформить подписку', needAuth: true }, { status: 401 })
+  const pc = await resolvePayContext(req)
+  if (!pc) return NextResponse.json({ error: 'Тенант не определён' }, { status: 400 })
+  const { payload, tenantId, tenant, settings } = pc
 
-  const ctx = await getTenantFromHeaders()
-  if (!ctx) return NextResponse.json({ error: 'Тенант не определён' }, { status: 400 })
-  const { tenant, settings } = ctx
+  const sub = await getCurrentSubscriber(tenantId)
+  if (!sub) return NextResponse.json({ error: 'Войдите, чтобы оформить подписку', needAuth: true }, { status: 401 })
 
   const creds = credsFromSettings(settings)
   if (!creds) return NextResponse.json({ error: 'Приём платежей пока не настроен автором' }, { status: 503 })
@@ -32,21 +32,16 @@ export async function POST(req: Request): Promise<Response> {
   const tierId = body?.tierId
   if (!tierId) return NextResponse.json({ error: 'Не указан уровень подписки' }, { status: 400 })
 
-  const payload = await getPayload({ config: await config })
-
-  // Уровень должен принадлежать этому тенанту и быть активным.
-  const tier: any = await payload
-    .findByID({ collection: 'subscription-tiers', id: tierId, depth: 0, overrideAccess: true })
-    .catch(() => null)
+  const tier: any = await payload.findByID({ collection: 'subscription-tiers', id: tierId, depth: 0, overrideAccess: true }).catch(() => null)
   const tTenant = tier && (typeof tier.tenant === 'object' ? tier.tenant?.id : tier.tenant)
-  if (!tier || String(tTenant) !== String(tenant.id) || tier.isActive === false) {
+  if (!tier || String(tTenant) !== String(tenantId) || tier.isActive === false) {
     return NextResponse.json({ error: 'Уровень подписки не найден' }, { status: 404 })
   }
 
   const amountRub = Number(tier.priceRub || 0)
   if (!(amountRub > 0)) return NextResponse.json({ error: 'Некорректная цена уровня' }, { status: 400 })
 
-  const host = req.headers.get('host') || ''
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
   const returnUrl = `https://${host}/account/subscription?paid=1`
   const description = `Подписка «${tier.name}» — ${tenant.name}`.slice(0, 128)
 
@@ -65,7 +60,7 @@ export async function POST(req: Request): Promise<Response> {
       description,
       returnUrl,
       metadata: {
-        tenantId: String(tenant.id),
+        tenantId: String(tenantId),
         subscriberId: String((sub as any).id),
         tierId: String(tier.id),
         kind: 'subscription_initial',
@@ -73,11 +68,10 @@ export async function POST(req: Request): Promise<Response> {
       receipt,
     })
 
-    // История/идемпотентность: запись pending с id платежа ЮKassa.
     await payload.create({
       collection: 'subscription-payments',
       data: {
-        tenant: tenant.id,
+        tenant: Number(tenantId),
         subscriber: (sub as any).id,
         tier: tier.id,
         amountRub,
@@ -88,9 +82,7 @@ export async function POST(req: Request): Promise<Response> {
       overrideAccess: true,
     }).catch(() => { /* запись не критична для редиректа */ })
 
-    if (!pay.confirmationUrl) {
-      return NextResponse.json({ error: 'ЮKassa не вернула ссылку на оплату' }, { status: 502 })
-    }
+    if (!pay.confirmationUrl) return NextResponse.json({ error: 'ЮKassa не вернула ссылку на оплату' }, { status: 502 })
     return NextResponse.json({ confirmationUrl: pay.confirmationUrl })
   } catch (e: any) {
     return NextResponse.json({ error: `Не удалось создать платёж: ${e?.message || e}` }, { status: 502 })
