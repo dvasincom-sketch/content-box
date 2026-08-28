@@ -97,6 +97,9 @@ export function DonateView(props: DonateViewProps) {
   const [anon, setAnon] = useState(false)
   const [name, setName] = useState(userName || '')
   const [modal, setModal] = useState(false)
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [payError, setPayError] = useState<string | null>(null)
 
   const effAmount = custom.trim() ? Math.max(0, Math.floor(Number(custom.replace(/\D/g, '')) || 0)) : amount
 
@@ -107,10 +110,38 @@ export function DonateView(props: DonateViewProps) {
     setGoalId(String(id))
     document.getElementById('dn-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
-    if (effAmount <= 0) return
-    setModal(true)
+    if (effAmount <= 0 || busy) return
+    setBusy(true)
+    setPayError(null)
+    try {
+      const res = await fetch('/api/pay/donate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          amountRub: effAmount,
+          goalId: goalId || undefined,
+          message: message || undefined,
+          isAnonymous: anon,
+          name: anon ? undefined : name || undefined,
+          email: email || undefined,
+        }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok || j?.error) {
+        setPayError(j.error || 'Не удалось создать платёж')
+        setBusy(false)
+        return
+      }
+      if (j.confirmationUrl) { window.location.href = j.confirmationUrl; return }
+      setPayError('ЮKassa не вернула ссылку на оплату')
+      setBusy(false)
+    } catch {
+      setPayError('Ошибка соединения')
+      setBusy(false)
+    }
   }
 
   return (
@@ -209,9 +240,13 @@ export function DonateView(props: DonateViewProps) {
               <span>Поддержать анонимно</span>
             </label>
 
-            <button type="submit" className="dn-btn dn-btn--primary dn-btn--lg dn-btn--block" disabled={effAmount <= 0}>
-              <Heart size={18} /> Поддержать на {rub(effAmount)}
+            <label className="dn-label">E-mail для чека (необязательно)</label>
+            <input className="dn-input" type="email" placeholder="you@mail.ru" value={email} onChange={(e) => setEmail(e.target.value)} />
+
+            <button type="submit" className="dn-btn dn-btn--primary dn-btn--lg dn-btn--block" disabled={effAmount <= 0 || busy}>
+              <Heart size={18} /> {busy ? 'Переход к оплате…' : `Поддержать на ${rub(effAmount)}`}
             </button>
+            {payError && <p style={{ color: 'var(--danger, #dc2626)', fontSize: 13, marginTop: 8, textAlign: 'center' }}>{payError}</p>}
             <p className="dn-trust"><Shield size={14} /> Оплата картами РФ и СБП, безопасно через YooKassa</p>
           </form>
 

@@ -139,6 +139,32 @@ export async function createInitialPayment(
   return { id: raw.id, confirmationUrl: raw.confirmation?.confirmation_url || null, raw }
 }
 
+/** Разовый платёж (донат/подарок): карта НЕ сохраняется, без автопродления. */
+export async function createOneTimePayment(
+  creds: YkCreds,
+  args: {
+    amountRub: number
+    description: string
+    returnUrl: string
+    metadata: Record<string, string>
+    receipt?: YkReceipt
+  },
+): Promise<{ id: string; confirmationUrl: string | null; raw: YkPayment }> {
+  const raw = await yoo(creds, '/payments', {
+    method: 'POST',
+    idempotenceKey: uuid(),
+    body: {
+      amount: { value: rub(args.amountRub), currency: 'RUB' },
+      capture: true,
+      confirmation: { type: 'redirect', return_url: args.returnUrl },
+      description: args.description.slice(0, 128),
+      metadata: args.metadata,
+      ...(args.receipt ? { receipt: args.receipt } : {}),
+    },
+  })
+  return { id: raw.id, confirmationUrl: raw.confirmation?.confirmation_url || null, raw }
+}
+
 /** Автосписание по ранее сохранённому способу (без участия пользователя). */
 export async function createRecurringPayment(
   creds: YkCreds,

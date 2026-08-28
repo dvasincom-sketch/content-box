@@ -44,6 +44,24 @@ export async function POST(req: Request): Promise<Response> {
   try { pay = await getPayment(creds, paymentId) } catch { return ok() }
 
   const meta = pay.metadata || obj.metadata || {}
+
+  // ── Разовая поддержка («Поддержать») ────────────────────────────────────────
+  if (meta.kind === 'donate') {
+    const spId = meta.supportPaymentId
+    if (!spId) return ok()
+    const sp: any = await payload.findByID({ collection: 'support-payments', id: spId, depth: 0, overrideAccess: true }).catch(() => null)
+    if (!sp || String(relId(sp.tenant)) !== String(tenantId)) return ok()
+    if (event === 'payment.canceled' || pay.status === 'canceled') {
+      if (sp.status !== 'succeeded') await payload.update({ collection: 'support-payments', id: sp.id, data: { status: 'canceled' } as any, overrideAccess: true }).catch(() => {})
+      return ok()
+    }
+    if (pay.status === 'succeeded' && sp.status !== 'succeeded') {
+      await payload.update({ collection: 'support-payments', id: sp.id, data: { status: 'succeeded' } as any, overrideAccess: true }).catch(() => {})
+    }
+    return ok()
+  }
+
+  // ── Подписка (initial/renewal) ──────────────────────────────────────────────
   const subscriberId = meta.subscriberId
   const tierId = meta.tierId
 
