@@ -2010,8 +2010,9 @@ function SelfUploadForm({
 
   async function importUrl() {
     setError(null)
-    if (!url.trim()) return setError('Вставьте ссылку на Яндекс.Диск')
-    if (!title.trim()) return setError('Укажите название')
+    // Можно вставить несколько ссылок — по одной в строке (или через запятую).
+    const urls = url.split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)
+    if (urls.length === 0) return setError('Вставьте ссылку на Яндекс.Диск')
     if (!minTierId) return setError('Выберите уровень доступа — своё видео доступно только по подписке')
     setUploading(true)
     try {
@@ -2020,8 +2021,10 @@ function SelfUploadForm({
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          url: url.trim(),
-          title: title.trim(),
+          urls,
+          // Название для одиночной ссылки можно задать вручную; для списка —
+          // подтянется из имени файла на Диске.
+          title: urls.length === 1 ? title.trim() : undefined,
           minTierId,
           categoryId: categoryId || null,
           season: season.trim() || null,
@@ -2031,7 +2034,14 @@ function SelfUploadForm({
       })
       const j = await res.json()
       if (!res.ok) { setError(j.error || 'Не удалось импортировать'); setUploading(false); return }
-      if (j.id != null) onCreated?.({ id: j.id, title: title.trim() })
+      if (Array.isArray(j.created)) j.created.forEach((c: any) => onCreated?.({ id: c.id, title: c.title }))
+      // Частичные ошибки — оставляем панель открытой с понятной сводкой.
+      if (Array.isArray(j.errors) && j.errors.length > 0) {
+        const sample = j.errors.slice(0, 3).map((e: any) => e.error).join('; ')
+        setError(`Добавлено видео: ${j.count}. Не удалось: ${j.errors.length} — ${sample}${j.errors.length > 3 ? '…' : ''}`)
+        setUploading(false)
+        return
+      }
       onDone()
     } catch {
       setError('Ошибка соединения')
@@ -2101,22 +2111,27 @@ function SelfUploadForm({
           оно занимает наше хранилище и обработку. Мы соберём HLS с несколькими
           качествами (подстраивается под зрителя, работает в РФ без VPN).{' '}
           {mode === 'url'
-            ? 'Файл заберём с Яндекс.Диска напрямую, без скачивания на ваше устройство.'
+            ? 'Файл заберём с Яндекс.Диска напрямую, без скачивания на ваше устройство. Можно вставить сразу несколько ссылок — по одной в строке; название каждого видео подтянется из имени файла.'
             : 'После загрузки видео обрабатывается — чем больше и длиннее файл, тем дольше. Это нормально: можно продолжать работу, статус обновится сам.'}
         </span>
       </div>
 
       {mode === 'url' ? (
         <label className="studio-field">
-          <span className="studio-field__label">Ссылка на Яндекс.Диск</span>
-          <input
+          <span className="studio-field__label">Ссылки на Яндекс.Диск (по одной в строке)</span>
+          <textarea
             className="studio-input"
-            placeholder="https://disk.yandex.ru/i/…"
+            placeholder={'https://disk.yandex.ru/i/…\nhttps://disk.yandex.ru/i/…\nhttps://disk.yandex.ru/i/…'}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             disabled={uploading}
             autoFocus
+            rows={5}
+            style={{ resize: 'vertical', minHeight: 96, lineHeight: 1.5 }}
           />
+          <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+            Название каждого видео подтянется из имени файла на Диске. До 50 ссылок за раз.
+          </div>
         </label>
       ) : (
       <div className="studio-field">
@@ -2149,10 +2164,14 @@ function SelfUploadForm({
       </div>
       )}
 
-      <label className="studio-field">
-        <span className="studio-field__label">Название</span>
-        <input className="studio-input" value={title} onChange={(e) => setTitle(e.target.value)} disabled={uploading} />
-      </label>
+      {/* В режиме ссылок название подтягивается из имени файла, поле не нужно.
+          Для одной ссылки его можно задать вручную на странице видео позже. */}
+      {mode === 'file' && (
+        <label className="studio-field">
+          <span className="studio-field__label">Название</span>
+          <input className="studio-input" value={title} onChange={(e) => setTitle(e.target.value)} disabled={uploading} />
+        </label>
+      )}
 
       <div className="vid__form-row">
         <label className="studio-field" style={{ flex: 1 }}>
@@ -2181,10 +2200,13 @@ function SelfUploadForm({
         tags={tags} setTags={setTags}
       />
 
-      {uploading && (
+      {uploading && mode === 'file' && (
         <div className="vid__form-hint">
           Загрузка: {pct}% {pct >= 100 ? '· создаём запись…' : ''}
         </div>
+      )}
+      {uploading && mode === 'url' && (
+        <div className="vid__form-hint">Импортируем ссылки и ставим в обработку…</div>
       )}
       {error && <div className="studio-login__error">{error}</div>}
 
