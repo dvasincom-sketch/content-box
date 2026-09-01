@@ -233,7 +233,9 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     season: v.season ?? null,
     episode: v.episode ?? i + 1,
     durationSec: v.durationSec ?? null,
-    isFree: Boolean(v.isPreview) || !v.minTier,
+    // Своё видео (self) без уровня — платное (замок), бесплатно только «превью».
+    // Внешняя вставка (embed) без уровня — бесплатна.
+    isFree: Boolean(v.isPreview) || (v.provider !== 'self' && !v.minTier),
     minTierName: v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug || null : null,
   }))
 

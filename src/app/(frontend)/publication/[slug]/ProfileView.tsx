@@ -271,7 +271,7 @@ export function ProfileView({
   }
   type TocItem = { id: string; label: string; subs: { id: string; label: string }[] }
   const toc: TocItem[] = []
-  blocks.forEach((b) => { if (b.type === 'hero' || b.type === 'facts' || b.title === '' || b.type === 'divider' || b.type === 'button') return; const subs = b.type === 'text' && b.body ? extractSubs(b.body, b.id) : []; toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type], subs }) })
+  blocks.forEach((b) => { if (b.type === 'hero' || b.type === 'facts' || b.title === '' || (b as { hideTitle?: boolean }).hideTitle === true || b.type === 'divider' || b.type === 'button') return; const subs = b.type === 'text' && b.body ? extractSubs(b.body, b.id) : []; toc.push({ id: b.id, label: b.title || BLOCK_LABEL[b.type], subs }) })
   const parentOf = new Map<string, string>()
   toc.forEach((t) => t.subs.forEach((sub) => parentOf.set(sub.id, t.id)))
 
@@ -390,7 +390,8 @@ export function ProfileView({
   }
   const renderBlock = (b: PBlock) => {
     const label = b.title || BLOCK_LABEL[b.type]
-    const noHead = b.title === ''
+    // Заголовок скрыт, если поле пустое ИЛИ явно выключен тумблером (служебные блоки).
+    const noHead = b.title === '' || (b as { hideTitle?: boolean }).hideTitle === true
     const head = noHead ? null : <Head id={b.id} label={label} />
     const fullCls = (b as { full?: boolean }).full ? ' pf__sec--full' : ''
     if (b.type === 'text') { const isSrc = /^\s*Источник/i.test(b.title || ''); return (<section className={`pf__sec${fullCls}${isSrc ? ' pf__sec--src' : ''}`} key={b.id}>{head}{paras(b.body || '', b.title === '' ? undefined : b.id)}</section>) }

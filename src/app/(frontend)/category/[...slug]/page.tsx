@@ -217,7 +217,8 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         season: v.season ?? null,
         episode: v.episode ?? null,
         durationSec: v.durationSec ?? null,
-        isFree: Boolean(v.isPreview) || !v.minTier,
+        // Своё видео (self) без уровня — платное (замок), бесплатно только «превью».
+        isFree: Boolean(v.isPreview) || (v.provider !== 'self' && !v.minTier),
         minTierName:
           v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug || null : null,
       }

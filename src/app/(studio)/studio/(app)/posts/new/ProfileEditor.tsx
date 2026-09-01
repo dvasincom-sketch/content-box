@@ -1,7 +1,7 @@
 'use client'
 import React from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading, PanelTop, Rows3, Info, Sparkles } from 'lucide-react'
+import { Plus, Trash2, ChevronUp, ChevronDown, ChevronRight, Type, Clock, ListCollapse, Image as ImageIcon, Film, Award, LayoutGrid, Images, Video, Columns3, Quote, GalleryHorizontalEnd, MousePointerClick, Minus, X, Newspaper, Check, Bold, Italic, List, Link2, Heading, PanelTop, Rows3, Info, Sparkles, Eye, EyeOff } from 'lucide-react'
 import { toBlocks, blankBlock, BLOCK_LABEL, type PBlock, type PBlockType, type PBAward } from '@/lib/profileBlocks'
 import { AWARD_ICONS, AWARD_ICON_MAP } from '@/lib/awardIcons'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
@@ -579,14 +579,35 @@ function BlockCard({ block, index, total, patch, move, remove, cats, media, coll
 }) {
   const full = (block as { full?: boolean }).full
   const enabled = (block as { enabled?: boolean }).enabled !== false
+  const titleHidden = (block as { hideTitle?: boolean }).hideTitle === true
   return (
     <div className={'pe__card' + (enabled ? '' : ' pe__card--off') + (collapsed ? ' pe__card--collapsed' : '')}>
       <div className="pe__card-head">
         <button type="button" className="pe__collapse" onClick={onToggleCollapse} title={collapsed ? 'Развернуть' : 'Свернуть'} aria-label={collapsed ? 'Развернуть' : 'Свернуть'}>{collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}</button>
         <span className="pe__ico"><BlockIcon type={block.type} /></span>
         <span className="pe__card-kind">{BLOCK_LABEL[block.type]}</span>
-        {block.type === 'hero' ? <div style={{ flex: 1 }} /> : <input className="studio-input pe__title" placeholder={BLOCK_LABEL[block.type]} value={block.title ?? ''} onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)} />}
+        {block.type === 'hero' ? <div style={{ flex: 1 }} /> : (
+          <input
+            className="studio-input pe__title"
+            placeholder={titleHidden ? 'Заголовок скрыт' : BLOCK_LABEL[block.type]}
+            value={block.title ?? ''}
+            onChange={(e) => patch({ title: e.target.value } as Partial<PBlock>)}
+            disabled={titleHidden}
+            style={titleHidden ? { opacity: 0.5 } : undefined}
+          />
+        )}
         <div className="pe__ctrls">
+          {block.type !== 'hero' && (
+            <button
+              type="button"
+              style={{ ...rowBtn, color: titleHidden ? 'var(--st-text-muted)' : 'var(--st-text)' }}
+              onClick={() => patch({ hideTitle: !titleHidden } as any)}
+              title={titleHidden ? 'Заголовок скрыт — нажмите, чтобы показать' : 'Скрыть заголовок (для служебных блоков)'}
+              aria-label="Показать или скрыть заголовок блока"
+            >
+              {titleHidden ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          )}
           <label className="homebld__toggle pe__toggle" title={enabled ? 'Блок показывается — нажмите, чтобы скрыть' : 'Блок скрыт — нажмите, чтобы показать'}>
             <input type="checkbox" checked={enabled} onChange={() => patch({ enabled: !enabled } as Partial<PBlock>)} />
             <span className="homebld__toggle-track" aria-hidden="true"><span className="homebld__toggle-thumb" /></span>

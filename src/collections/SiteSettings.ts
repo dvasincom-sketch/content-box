@@ -192,6 +192,15 @@ export const SiteSettings: CollectionConfig = {
       },
     },
     {
+      name: 'asyaWidgetEnabled',
+      type: 'checkbox',
+      label: 'Виджет Аси (кнопка в углу)',
+      defaultValue: true,
+      admin: {
+        description: 'Сквозная кнопка «Спросить Асю» в правом нижнем углу сайта. Выключается в Студии, если ассистент отвечает некорректно.',
+      },
+    },
+    {
       name: 'authorStats',
       type: 'group',
       label: 'Витрина «Об авторе» — счётчики',

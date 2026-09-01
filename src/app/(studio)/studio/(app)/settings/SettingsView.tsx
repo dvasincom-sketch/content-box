@@ -11,6 +11,7 @@ import { HomeBuilder } from './HomeBuilder'
 import { TemplatesPanel } from './TemplatesPanel'
 import { ImageUploadField } from './ImageUploadField'
 import { BgDecorPicker } from './BgDecorPicker'
+import { AsyaWidgetToggle } from './AsyaWidgetToggle'
 import { ThemeLibrary } from './ThemeLibrary'
 import { GoalsPanel, type Goal } from './GoalsPanel'
 import { DonatePresetsPanel, type DonatePreset } from './DonatePresetsPanel'
@@ -70,6 +71,7 @@ export function SettingsView({
   abilities,
   tariff,
   aiBilling,
+  asyaWidgetEnabled,
 }: {
   logoUrl: string | null
   appIconUrl: string | null
@@ -89,6 +91,7 @@ export function SettingsView({
   abilities: CapMatrix | null
   tariff: TariffPanelData | null
   aiBilling: AiBilling
+  asyaWidgetEnabled: boolean
 }) {
   const canTab = (id: SettingsTab): boolean => {
     if (isOwner) return true
@@ -167,6 +170,7 @@ export function SettingsView({
             </section>
             )}
             {canAppearance && <BgDecorPicker initial={bgDecor} />}
+            {canAppearance && <AsyaWidgetToggle initial={asyaWidgetEnabled} />}
             {canAppearance && (
               <ThemeLibrary
                 initialThemes={customThemes}

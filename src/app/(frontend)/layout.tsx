@@ -213,8 +213,11 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         )}
         {/* Баг-баунти: плашка «Нашёл баг» только на реальном тенанте. */}
         {ctx && <BugReportWidget authed={!!subscriber} source="site" loginHref="/account" />}
-        {/* Ассистент «Спросить Асю» — перк подписки; гейт и ответ решает сервер. */}
-        {ctx && asyaEnabled() && <AskAsya subscribeHref="/subscribe" loginHref="/login" />}
+        {/* Ассистент «Спросить Асю» — перк подписки; гейт и ответ решает сервер.
+            Автор может выключить виджет в Студии (asyaWidgetEnabled). */}
+        {ctx && asyaEnabled() && (ctx.settings as any)?.asyaWidgetEnabled !== false && (
+          <AskAsya subscribeHref="/subscribe" loginHref="/login" />
+        )}
       </body>
     </html>
   )

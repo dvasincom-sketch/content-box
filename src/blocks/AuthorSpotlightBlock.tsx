@@ -2,6 +2,7 @@ import React from 'react'
 import AppLink from '@/components/AppLink'
 import { Play, Camera, Send, Zap, Users } from 'lucide-react'
 import { SubscribeButton } from '@/app/(frontend)/subscribe/SubscribeButton'
+import { TierPerksModal } from '@/components/TierPerksModal'
 import type { SubChangePlan } from '@/lib/subscriptionChange'
 
 export type SpotlightStat = { value: string; label: string }
@@ -109,6 +110,7 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
                   <div className="spot__tier-name">{t.name}</div>
                   <div className="spot__tier-price">{price(t.priceRub)}</div>
                   {t.description && <p className="spot__desc">{t.description}</p>}
+                  <TierPerksModal name={t.name} perks={t.perks} price={t.priceRub} />
                   {t.id != null ? (
                     <SubscribeButton
                       tierId={t.id}
