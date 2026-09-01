@@ -201,6 +201,19 @@ export const SiteSettings: CollectionConfig = {
       },
     },
     {
+      // Переопределение шрифтов поверх пресета темы. Пусто = как в теме.
+      name: 'fontHeading',
+      type: 'text',
+      label: 'Шрифт заголовков (переопределение)',
+      admin: { description: 'Ключ шрифта (inter/montserrat/manrope/golos/ptsans/unbounded/roboto/ptserif). Пусто = как в выбранной теме. Правится в Студии.' },
+    },
+    {
+      name: 'fontBody',
+      type: 'text',
+      label: 'Шрифт текста (переопределение)',
+      admin: { description: 'Ключ шрифта. Пусто = как в выбранной теме. Правится в Студии.' },
+    },
+    {
       name: 'authorStats',
       type: 'group',
       label: 'Витрина «Об авторе» — счётчики',

@@ -3,12 +3,13 @@
 import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import * as tus from 'tus-js-client'
 import {
   Plus, Video as VideoIcon, Loader2, Check, Clock, Link as LinkIcon, Lock, Unlock,
   Upload, X, Play, Folder, Pencil, ChevronRight, ChevronDown,
   ChevronLeft, Search, MapPin, Globe, AlertTriangle,
-  ArrowDownWideNarrow, ArrowUpNarrowWide, Settings, Info, DownloadCloud, Trash2,
+  ArrowDownWideNarrow, ArrowUpNarrowWide, Settings, Info, DownloadCloud, Trash2, ImagePlus,
 } from 'lucide-react'
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { VkPlaylistImportModal } from './VkPlaylistImportPanel'
@@ -767,16 +768,14 @@ function VideoRow({
         </button>
       </td>
 
-      {/* Название — клик открывает страницу редактирования видео */}
+      {/* Название — ссылка на страницу редактирования видео. Настоящий <a href>,
+          чтобы работали ctrl/cmd-клик и клик колёсиком (открыть в новой вкладке). */}
       <td className="vidtable__title-cell">
-        <span
+        <Link
+          href={`/studio/videos/${video.id}`}
           className="vidtable__title vidtable__title--link"
           title={video.title}
-          role="link"
-          tabIndex={0}
-          onClick={onEdit}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit() } }}
-        >{video.title}</span>
+        >{video.title}</Link>
       </td>
 
       {/* Длительность + полный размер файла (для загруженных self-видео) */}
@@ -2247,6 +2246,29 @@ function EmbedFields({
   const [tags, setTags] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Своя обложка (media): у VK/Дзена есть своя превьюшка, но автор может задать свою.
+  const [coverId, setCoverId] = useState<number | null>(null)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [coverBusy, setCoverBusy] = useState(false)
+  const coverInput = useRef<HTMLInputElement>(null)
+
+  async function uploadCover(file: File) {
+    setCoverBusy(true)
+    setError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/studio/api/videos/cover', { method: 'POST', credentials: 'include', body: fd })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(j.error || 'Не удалось загрузить обложку'); return }
+      setCoverId(j.id ?? null)
+      setCoverUrl(j.url ?? null)
+    } catch {
+      setError('Ошибка загрузки обложки')
+    } finally {
+      setCoverBusy(false)
+    }
+  }
 
   async function submit() {
     setError(null)
@@ -2264,6 +2286,7 @@ function EmbedFields({
           // (хук enforceAccessPolicy), здесь передаём явно для ясности.
           minTierId: null,
           isPreview: true,
+          coverId: coverId ?? null,
           categoryId: categoryId || null,
           season: season.trim() || null,
           episode: episode.trim() || null,
@@ -2317,6 +2340,34 @@ function EmbedFields({
           плеер грузится с чужого домена (VK, Дзен), и адрес виден в исходнике
           страницы. Чтобы продавать доступ — загрузите видео в наше хранилище.
         </span>
+      </div>
+
+      <div className="studio-field">
+        <span className="studio-field__label">Своя обложка (необязательно)</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          {coverUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={coverUrl} alt="" style={{ width: 96, height: 54, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--st-border, rgba(0,0,0,.1))' }} />
+          )}
+          <button type="button" className="studio-btn studio-btn--ghost" onClick={() => coverInput.current?.click()} disabled={coverBusy}>
+            {coverBusy ? <Loader2 size={16} className="spin" /> : <ImagePlus size={16} />} {coverUrl ? 'Заменить обложку' : 'Загрузить обложку'}
+          </button>
+          {coverUrl && (
+            <button type="button" className="studio-btn studio-btn--ghost" onClick={() => { setCoverId(null); setCoverUrl(null) }} disabled={coverBusy} style={{ color: 'var(--st-danger, #c0392b)' }}>
+              Убрать
+            </button>
+          )}
+        </div>
+        <input
+          ref={coverInput}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCover(f); e.target.value = '' }}
+        />
+        <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+          Если не загрузить — возьмём превью с площадки (VK/Дзен).
+        </div>
       </div>
 
       <VideoMetaFields

@@ -23,8 +23,9 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
     .catch(() => null)
   if (!cat) return apiError('Категория не найдена', 404)
 
-  // Подкатегории (в дефолтном порядке по 'order'), публикации раздела (по дате).
-  const [childrenRes, pubsRes] = await Promise.all([
+  // Подкатегории (в дефолтном порядке по 'order'), публикации раздела (по дате),
+  // видео/аудио, привязанные к разделу (для списка «Видео в разделе»).
+  const [childrenRes, pubsRes, videosRes] = await Promise.all([
     payload.find({
       collection: 'categories',
       where: { and: [{ tenant: { equals: tenantId } }, { parent: { equals: cat.id } }] },
@@ -46,10 +47,25 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
       depth: 1,
       overrideAccess: true,
     }),
+    payload.find({
+      collection: 'videos',
+      where: { and: [{ tenant: { equals: tenantId } }, { category: { equals: cat.id } }] },
+      sort: 'episode',
+      limit: 500,
+      depth: 0,
+      overrideAccess: true,
+    }),
   ])
 
   const children = childrenRes.docs as any[]
   const pubs = pubsRes.docs as any[]
+  const videos = (videosRes.docs as any[]).map((v) => ({
+    id: v.id,
+    title: v.title || 'Без названия',
+    slug: v.slug || '',
+    provider: v.provider || 'self',
+    episode: v.episode ?? null,
+  }))
 
   const catById = new Map<number, any>(children.map((c) => [Number(c.id), c]))
   const pubById = new Map<number, any>(pubs.map((p) => [Number(p.id), p]))
@@ -69,7 +85,7 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
     return { k: 'p' as const, id: ref.id, title: p?.title || 'Без заголовка', coverUrl: coverUrlOf(p?.cover) }
   })
 
-  return NextResponse.json({ items })
+  return NextResponse.json({ items, videos })
 })
 
 /** Небольшое превью из upload-поля (thumbnail/card/url). */

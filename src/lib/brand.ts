@@ -1,4 +1,9 @@
-import { getPreset, FONT_STACK } from './themePresets'
+import { getPreset, FONT_STACK, type FontKey } from './themePresets'
+
+/** Ключ шрифта валиден, если есть в FONT_STACK. Иначе — наследуем тему. */
+function asFontKey(v: unknown): FontKey | null {
+  return typeof v === 'string' && v in FONT_STACK ? (v as FontKey) : null
+}
 
 /**
  * Брендовые токены → CSS-переменные.
@@ -21,11 +26,14 @@ import { getPreset, FONT_STACK } from './themePresets'
  */
 type CSSVars = React.CSSProperties & Record<`--${string}`, string>
 
-export function brandVars(settings?: { themePreset?: string | null } | null): CSSVars {
+export function brandVars(settings?: { themePreset?: string | null; fontHeading?: string | null; fontBody?: string | null } | null): CSSVars {
   const preset = getPreset(settings?.themePreset)
+  // Переопределение автора поверх пресета; пусто/невалидно = шрифт темы.
+  const heading = asFontKey(settings?.fontHeading) ?? preset.fonts.heading
+  const body = asFontKey(settings?.fontBody) ?? preset.fonts.body
   return {
-    ['--font-heading']: FONT_STACK[preset.fonts.heading],
-    ['--font-body']: FONT_STACK[preset.fonts.body],
+    ['--font-heading']: FONT_STACK[heading],
+    ['--font-body']: FONT_STACK[body],
     ['--text-size']: '18px',
     ['--text-weight']: '400',
     ['--heading-weight']: '700',

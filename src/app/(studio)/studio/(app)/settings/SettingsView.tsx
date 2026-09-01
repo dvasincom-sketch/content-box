@@ -12,6 +12,7 @@ import { TemplatesPanel } from './TemplatesPanel'
 import { ImageUploadField } from './ImageUploadField'
 import { BgDecorPicker } from './BgDecorPicker'
 import { AsyaWidgetToggle } from './AsyaWidgetToggle'
+import { FontPicker } from './FontPicker'
 import { ThemeLibrary } from './ThemeLibrary'
 import { GoalsPanel, type Goal } from './GoalsPanel'
 import { DonatePresetsPanel, type DonatePreset } from './DonatePresetsPanel'
@@ -72,6 +73,8 @@ export function SettingsView({
   tariff,
   aiBilling,
   asyaWidgetEnabled,
+  fontHeading,
+  fontBody,
 }: {
   logoUrl: string | null
   appIconUrl: string | null
@@ -92,6 +95,8 @@ export function SettingsView({
   tariff: TariffPanelData | null
   aiBilling: AiBilling
   asyaWidgetEnabled: boolean
+  fontHeading: string | null
+  fontBody: string | null
 }) {
   const canTab = (id: SettingsTab): boolean => {
     if (isOwner) return true
@@ -169,6 +174,7 @@ export function SettingsView({
               </div>
             </section>
             )}
+            {canAppearance && <FontPicker initialHeading={fontHeading} initialBody={fontBody} />}
             {canAppearance && <BgDecorPicker initial={bgDecor} />}
             {canAppearance && <AsyaWidgetToggle initial={asyaWidgetEnabled} />}
             {canAppearance && (

@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { X, ImagePlus, Loader2, Check, Trash2, GripVertical, FolderOpen, FileText } from 'lucide-react'
+import Link from 'next/link'
+import { X, ImagePlus, Loader2, Check, Trash2, GripVertical, FolderOpen, FileText, Video as VideoIcon, Headphones, ArrowUpRight } from 'lucide-react'
 import { TiptapEditor } from '../posts/new/TiptapEditor'
 import { slugify } from '@/lib/slugify'
 import { StudioSelect } from '../_ui/StudioSelect'
@@ -40,6 +41,7 @@ export function CategoryEditPanel({
   onSaved: () => void
 }) {
   const [title, setTitle] = useState(cat.title)
+  const [slug, setSlug] = useState(cat.slug || '')
   const [descHtml, setDescHtml] = useState(cat.descriptionHtml || '')
   const [coverId, setCoverId] = useState<number | null>(cat.coverId)
   const [coverUrl, setCoverUrl] = useState<string | null>(cat.coverUrl)
@@ -58,6 +60,8 @@ export function CategoryEditPanel({
   const [content, setContent] = useState<ContentItem[]>([])
   const [contentLoaded, setContentLoaded] = useState(false)
   const [contentLoading, setContentLoading] = useState(false)
+  // Видео/аудио, привязанные к разделу (только для показа + перехода).
+  const [catVideos, setCatVideos] = useState<{ id: number; title: string; slug: string; provider: string; episode: number | null }[]>([])
   const dragIndex = useRef<number | null>(null)
   const [dragOver, setDragOver] = useState<number | null>(null)
 
@@ -77,6 +81,7 @@ export function CategoryEditPanel({
       .then((j) => {
         if (stop) return
         setContent(Array.isArray(j.items) ? (j.items as ContentItem[]) : [])
+        setCatVideos(Array.isArray(j.videos) ? j.videos : [])
         setContentLoaded(true)
       })
       .catch(() => {
@@ -234,6 +239,7 @@ export function CategoryEditPanel({
         body: JSON.stringify({
           id: cat.id,
           title: title.trim(),
+          slug: slug.trim() || undefined,
           description: descHtml,
           coverId: coverId ?? null,
           posterLayout,
@@ -280,7 +286,31 @@ export function CategoryEditPanel({
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
             />
-            {slugPreview && <div className="catedit__slug">/{slugPreview}</div>}
+          </div>
+
+          <div className="studio-field">
+            <span className="studio-field__label">Адрес (slug)</span>
+            <input
+              className="studio-input"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder={slugPreview || 'напр. american-hustle-life'}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+              <span className="catedit__slug">/{slugify(slug) || slugPreview || '…'}</span>
+              {slugify(title) && slugify(slug) !== slugify(title) && (
+                <button
+                  type="button"
+                  onClick={() => setSlug(slugify(title))}
+                  style={{ background: 'none', border: 'none', color: 'var(--brand-primary, #e86a33)', fontSize: 12, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                >
+                  из названия
+                </button>
+              )}
+            </div>
+            <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+              Меняет ссылку раздела. Старый адрес перестанет работать — используйте латиницу и дефисы.
+            </div>
           </div>
 
           <div className="studio-field">
@@ -454,6 +484,30 @@ export function CategoryEditPanel({
                   ))}
                 </ul>
               )}
+            </div>
+          )}
+
+          {catVideos.length > 0 && (
+            <div className="studio-field">
+              <span className="studio-field__label">Видео в разделе ({catVideos.length})</span>
+              <ul style={{ listStyle: 'none', margin: '4px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {catVideos.map((v) => (
+                  <li key={v.id}>
+                    <Link
+                      href={`/studio/videos/${v.id}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--st-border, rgba(0,0,0,.1))', color: 'var(--st-text)', textDecoration: 'none', fontSize: 14 }}
+                    >
+                      {v.provider === 'audio' ? <Headphones size={15} style={{ flex: 'none', color: 'var(--st-text-muted)' }} /> : <VideoIcon size={15} style={{ flex: 'none', color: 'var(--st-text-muted)' }} />}
+                      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.title}</span>
+                      {v.episode != null && <span style={{ fontSize: 12, color: 'var(--st-text-muted)' }}>Серия {v.episode}</span>}
+                      <ArrowUpRight size={14} style={{ flex: 'none', color: 'var(--st-text-muted)' }} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                Видео и аудио, привязанные к этому разделу. Клик — открыть на редактирование.
+              </div>
             </div>
           )}
 

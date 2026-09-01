@@ -74,6 +74,8 @@ export default async function SettingsPage() {
   const appliedTemplate = (settings?.appliedTemplate as string | null) ?? null
   const bgDecor = ((settings as { bgDecor?: string } | null)?.bgDecor as string | null) ?? null
   const asyaWidgetEnabled = (settings as { asyaWidgetEnabled?: boolean } | null)?.asyaWidgetEnabled !== false
+  const fontHeading = ((settings as { fontHeading?: string } | null)?.fontHeading as string | null) ?? null
+  const fontBody = ((settings as { fontBody?: string } | null)?.fontBody as string | null) ?? null
   const donatePresets = Array.isArray((settings as { donatePresets?: unknown } | null)?.donatePresets)
     ? ((settings as { donatePresets: { amount?: unknown; label?: unknown }[] }).donatePresets).map((p) => ({ amount: Number(p.amount) || 0, label: String(p.label ?? '') }))
     : []
@@ -199,6 +201,8 @@ export default async function SettingsPage() {
       tariff={tariff}
       aiBilling={aiBilling}
       asyaWidgetEnabled={asyaWidgetEnabled}
+      fontHeading={fontHeading}
+      fontBody={fontBody}
     />
   )
 }

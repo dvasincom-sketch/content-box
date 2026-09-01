@@ -104,8 +104,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   // Активная палитра: своя тема перекрывает цвета пресета (шрифты/декор — от пресета).
   const themeColors = resolveThemeColors(settings, activeCustomTheme as { theme?: unknown } | null)
   // Фоновый декор: выбор автора (bgDecor) приоритетнее дефолта пресета (preset.decor).
+  // Явное «Нет» (none) полностью выключает декор — не откатываемся на декор пресета.
   const decorSlug = (settings as { bgDecor?: string } | null)?.bgDecor
-  const decor = getBgDecor(decorSlug && decorSlug !== 'none' ? decorSlug : preset.decor)
+  const decor = decorSlug === 'none' ? null : getBgDecor(decorSlug || preset.decor)
   const themeColor = themeColors.light.bg
   const legalName = tenant?.name ?? ''
   const year = new Date().getFullYear()

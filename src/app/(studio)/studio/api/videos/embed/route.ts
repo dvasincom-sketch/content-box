@@ -52,6 +52,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if (minTierId != null && !(await belongsToTenant(payload, 'subscription-tiers', minTierId, tenantId))) {
     return apiError('Уровень подписки не найден')
   }
+  // Своя обложка (media). Проверяем принадлежность тенанту.
+  const coverId = numOrNull(data.coverId)
+  if (coverId != null && !(await belongsToTenant(payload, 'media', coverId, tenantId))) {
+    return apiError('Обложка не найдена')
+  }
 
   try {
     const doc = await payload.create({
@@ -65,6 +70,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         embedAspect: parsed.aspect,
         minTier: minTierId,
         isPreview: Boolean(data.isPreview),
+        ...(coverId != null ? { cover: coverId } : {}),
         category: categoryId,
         season: numOrNull(data.season),
         episode: numOrNull(data.episode),

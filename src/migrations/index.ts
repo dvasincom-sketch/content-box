@@ -120,6 +120,7 @@ import * as migration_20260825_150000_add_boost_settings from './20260825_150000
 import * as migration_20260825_160000_add_gift_codes from './20260825_160000_add_gift_codes';
 import * as migration_20260828_120000_add_pending_tier from './20260828_120000_add_pending_tier';
 import * as migration_20260901_120000_add_asya_widget_enabled from './20260901_120000_add_asya_widget_enabled';
+import * as migration_20260901_130000_add_font_overrides from './20260901_130000_add_font_overrides';
 
 export const migrations = [
   {
@@ -731,5 +732,10 @@ export const migrations = [
     up: migration_20260901_120000_add_asya_widget_enabled.up,
     down: migration_20260901_120000_add_asya_widget_enabled.down,
     name: '20260901_120000_add_asya_widget_enabled',
+  },
+  {
+    up: migration_20260901_130000_add_font_overrides.up,
+    down: migration_20260901_130000_add_font_overrides.down,
+    name: '20260901_130000_add_font_overrides',
   },
 ];
