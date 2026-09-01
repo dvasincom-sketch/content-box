@@ -93,8 +93,9 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
 
 const PERK_TYPES = ['included', 'star', 'warning', 'info']
 
-/** Санитайзинг плюшек: валидный тип, непустой текст, максимум 20 штук. */
-export function normalizePerks(raw: any[]): { type: string; text: string }[] {
+/** Санитайзинг плюшек: валидный тип, непустой текст, максимум 20 штук.
+ * Без export: route.ts не должен экспортировать посторонние члены (Next 16 type-check). */
+function normalizePerks(raw: any[]): { type: string; text: string }[] {
   return raw
     .filter((p) => p && typeof p.text === 'string' && p.text.trim())
     .slice(0, 20)

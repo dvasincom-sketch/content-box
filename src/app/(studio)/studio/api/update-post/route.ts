@@ -1,6 +1,7 @@
 import { withAuthor, readJson, apiError, apiOk, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { htmlToLexical } from '@/lib/lexical'
 import { errorMessage } from '@/lib/errorMessage'
+import { snapshotOf } from '@/lib/postSnapshot'
 import type { Payload, CollectionSlug } from 'payload'
 
 /**
@@ -159,14 +160,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
  * null → null (очистить); число → проверить тенант, вернуть число или null;
  * прочее → null.
  */
-// Поля, попадающие в снимок предыдущей версии (страховка от случайного сохранения).
-export const SNAP_FIELDS = ['title', 'description', 'profile', 'template', 'cover', 'category', 'extraCategories', 'minTier', 'relatedVideos', 'gallery', 'tags', 'isNews', 'isNew', 'eventDate', 'publishedAt'] as const
-
-export function snapshotOf(doc: any): Record<string, unknown> {
-  const s: Record<string, unknown> = { savedAt: new Date().toISOString() }
-  for (const key of SNAP_FIELDS) if (doc[key] !== undefined) s[key] = doc[key]
-  return s
-}
+// SNAP_FIELDS/snapshotOf вынесены в @/lib/postSnapshot (route.ts не должен
+// экспортировать ничего, кроме хендлеров/конфига — иначе падает type-check).
 
 async function resolveRel(
   payload: Payload,

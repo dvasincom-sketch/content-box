@@ -1,6 +1,6 @@
 import { withAuthor, readJson, apiError, apiOk, canMutateDoc } from '@/app/(studio)/studio/api/_lib'
 import { errorMessage } from '@/lib/errorMessage'
-import { snapshotOf } from '@/app/(studio)/studio/api/update-post/route'
+import { snapshotOf } from '@/lib/postSnapshot'
 
 /**
  * Откат публикации на предыдущую сохранённую версию (снимок в поле prevVersion).

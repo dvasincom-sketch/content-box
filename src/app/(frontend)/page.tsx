@@ -25,6 +25,7 @@ import { normalizeHomeSections, type HomeSectionType, type HomeSectionConfig, ty
 import { resolveWhyUs } from '@/lib/whyUs'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { planChange, type SubState } from '@/lib/subscriptionChange'
+import { type PerkType } from '@/components/studio/PerkIcon'
 import type { Metadata } from 'next'
 import { Fragment, type ReactNode } from 'react'
 import './styles.css'
@@ -156,7 +157,7 @@ async function getAuthorSpotlight(payload: Payload, tenant: any, settings: any) 
     description: typeof t.description === 'string' && t.description.trim() ? t.description.trim() : null,
     perks: Array.isArray(t.perks)
       ? (t.perks as any[])
-          .map((pk) => ({ type: (pk?.type || 'included') as string, text: String(pk?.text || '') }))
+          .map((pk) => ({ type: (pk?.type || 'included') as PerkType, text: String(pk?.text || '') }))
           .filter((p) => p.text.trim().length > 0)
       : [],
     plan: planChange({ id: t.id, priceRub: Number(t.priceRub ?? 0) }, subState, now),
