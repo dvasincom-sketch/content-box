@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, Check, FileText, ArrowUpRight, Trash2, Link as LinkIcon, Info, Captions, List, BarChart3, Sparkles } from 'lucide-react'
+import { ArrowLeft, Loader2, Check, FileText, ArrowUpRight, Trash2, Link as LinkIcon, Info, Captions, List, BarChart3, Sparkles, ImagePlus } from 'lucide-react'
 import { StudioSelect } from '../../_ui/StudioSelect'
 import { TagInput } from '../../_ui/TagInput'
 import {
@@ -49,6 +49,11 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
   const [categoryId, setCategoryId] = useState<string>(video.categoryId || '')
   const [tags, setTags] = useState<string[]>(video.tags || [])
   const [embedUrl, setEmbedUrl] = useState('')
+  // Своя обложка (media). Для self — перекрывает автопостер, для embed — превью площадки.
+  const [coverId, setCoverId] = useState<number | null>(video.coverId ?? null)
+  const [coverUrl, setCoverUrl] = useState<string | null>(video.coverUrl ?? null)
+  const [coverBusy, setCoverBusy] = useState(false)
+  const coverInput = useRef<HTMLInputElement>(null)
   const [categories, setCategories] = useState<{ id: number; title: string }[]>([])
   const [saving, setSaving] = useState(false)
   const [savedOk, setSavedOk] = useState(false)
@@ -69,6 +74,25 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
     return () => { stop = true }
   }, [])
 
+  async function uploadCover(file: File) {
+    setCoverBusy(true); setError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('videoId', String(video.id))
+      const res = await fetch('/studio/api/videos/cover', { method: 'POST', credentials: 'include', body: fd })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(j.error || 'Не удалось загрузить обложку'); return }
+      // Роут сразу привязал обложку к видео (videoId), состояние обновляем локально.
+      setCoverId(j.id ?? null)
+      setCoverUrl(j.url ?? null)
+    } catch {
+      setError('Ошибка загрузки обложки')
+    } finally {
+      setCoverBusy(false)
+    }
+  }
+
   async function save() {
     setError(null); setSavedOk(false)
     if (!title.trim()) { setError('Название не может быть пустым'); return }
@@ -86,6 +110,7 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
           videoId: video.id,
           title: title.trim(),
           minTierId: minTierId || null,
+          coverId: coverId ?? null,
           season: season.trim() === '' ? null : Number(season),
           episode: episode.trim() === '' ? null : Number(episode),
           categoryId: categoryId || null,
@@ -167,6 +192,42 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
             <div className="studio-field">
               <span className="studio-field__label">Название</span>
               <input className="studio-input" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus />
+            </div>
+
+            <div className="studio-field">
+              <span className="studio-field__label">Обложка</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                {coverUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={coverUrl} alt="" style={{ width: 128, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--st-border, rgba(0,0,0,.1))' }} />
+                ) : (
+                  <div style={{ width: 128, height: 72, borderRadius: 8, border: '1px dashed var(--st-border, rgba(0,0,0,.2))', display: 'grid', placeItems: 'center', color: 'var(--st-text-muted)' }}>
+                    <ImagePlus size={20} />
+                  </div>
+                )}
+                <button type="button" className="studio-btn studio-btn--ghost" onClick={() => coverInput.current?.click()} disabled={coverBusy}>
+                  {coverBusy ? <Loader2 size={16} className="spin" /> : <ImagePlus size={16} />} {coverId ? 'Заменить обложку' : 'Загрузить обложку'}
+                </button>
+                {coverId && (
+                  <button type="button" className="studio-btn studio-btn--ghost" onClick={() => { setCoverId(null); setCoverUrl(null) }} disabled={coverBusy} style={{ color: 'var(--st-danger, #c0392b)' }}>
+                    Убрать
+                  </button>
+                )}
+              </div>
+              <input
+                ref={coverInput}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCover(f); e.target.value = '' }}
+              />
+              <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                {isSelf
+                  ? 'Своя обложка перекрывает автоматический кадр из видео. Нажмите «Сохранить», чтобы применить «Убрать».'
+                  : isEmbed
+                    ? 'Своя обложка вместо превью с площадки. Нажмите «Сохранить», чтобы применить «Убрать».'
+                    : 'Нажмите «Сохранить», чтобы применить изменение обложки.'}
+              </div>
             </div>
 
             {isEmbed && (

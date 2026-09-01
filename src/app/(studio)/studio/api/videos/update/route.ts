@@ -64,6 +64,19 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   // Бесплатное превью: открыто всем, перебивает уровень (для вступительных глав).
   if ('isPreview' in data) patch.isPreview = Boolean(data.isPreview)
 
+  // Своя обложка (media). null/'' → снять обложку. Проверяем принадлежность тенанту.
+  if ('coverId' in data) {
+    if (data.coverId == null || data.coverId === '') {
+      patch.cover = null
+    } else {
+      const cov: any = await payload
+        .findByID({ collection: 'media', id: data.coverId, depth: 0, overrideAccess: true })
+        .catch(() => null)
+      const covTenant = cov && (typeof cov.tenant === 'object' ? cov.tenant.id : cov.tenant)
+      patch.cover = cov && Number(covTenant) === Number(tenantId) ? Number(data.coverId) : null
+    }
+  }
+
   // Категория (раздел / видео-плейлист). Проверяем принадлежность тенанту.
   if ('categoryId' in data) {
     if (data.categoryId == null || data.categoryId === '') {

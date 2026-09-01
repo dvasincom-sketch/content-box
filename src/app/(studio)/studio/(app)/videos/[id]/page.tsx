@@ -6,6 +6,7 @@ import { requireAuthor, contributorOwnerFilter } from '@/lib/currentAuthor'
 import { loadEntitlements, canUse } from '@/lib/studioEntitlements'
 import { StudioUpsell } from '../../_ui/StudioUpsell'
 import { VideoEditor } from './VideoEditor'
+import { videoThumbUrl } from '@/lib/videoThumb'
 
 /**
  * Страница редактирования одного видео (/studio/videos/<id>) — заменяет
@@ -59,6 +60,8 @@ export default async function VideoEditorPage({ params }: { params: Promise<{ id
     embedProvider: (v.embedProvider as string) || null,
     embedSrc: (v.embedSrc as string) || null,
     minTierId: v.minTier ? String(typeof v.minTier === 'object' ? v.minTier.id : v.minTier) : '',
+    coverId: v.cover ? Number(typeof v.cover === 'object' ? v.cover.id : v.cover) : null,
+    coverUrl: videoThumbUrl(v),
     season: v.season ?? null,
     episode: v.episode ?? null,
     categoryId: v.category ? String(typeof v.category === 'object' ? v.category.id : v.category) : '',
