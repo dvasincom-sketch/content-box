@@ -155,7 +155,9 @@ async function getAuthorSpotlight(payload: Payload, tenant: any, settings: any) 
     badge: typeof t.badge === 'string' && t.badge.trim() ? t.badge.trim() : null,
     description: typeof t.description === 'string' && t.description.trim() ? t.description.trim() : null,
     perks: Array.isArray(t.perks)
-      ? (t.perks as any[]).map((pk) => pk?.text).filter((x: unknown): x is string => typeof x === 'string' && x.trim().length > 0)
+      ? (t.perks as any[])
+          .map((pk) => ({ type: (pk?.type || 'included') as string, text: String(pk?.text || '') }))
+          .filter((p) => p.text.trim().length > 0)
       : [],
     plan: planChange({ id: t.id, priceRub: Number(t.priceRub ?? 0) }, subState, now),
   }))

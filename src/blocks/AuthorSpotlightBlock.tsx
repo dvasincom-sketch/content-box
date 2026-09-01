@@ -2,12 +2,13 @@ import React from 'react'
 import AppLink from '@/components/AppLink'
 import { Play, Camera, Send, Zap, Users } from 'lucide-react'
 import { SubscribeButton } from '@/app/(frontend)/subscribe/SubscribeButton'
-import { TierPerksModal } from '@/components/TierPerksModal'
+import { PerkIcon, type PerkType } from '@/components/studio/PerkIcon'
 import type { SubChangePlan } from '@/lib/subscriptionChange'
 
 export type SpotlightStat = { value: string; label: string }
 export type SpotlightSocial = { platform: string; url: string }
-export type SpotlightTier = { id?: number | string; name: string; priceRub: number; perks: string[]; badge?: string | null; description?: string | null; plan?: SubChangePlan }
+export type SpotlightPerk = { type: PerkType; text: string }
+export type SpotlightTier = { id?: number | string; name: string; priceRub: number; perks: SpotlightPerk[]; badge?: string | null; description?: string | null; plan?: SubChangePlan }
 
 export type AuthorSpotlightBlockProps = {
   name: string
@@ -110,7 +111,27 @@ export function AuthorSpotlightBlock({ name, bio, logoUrl, stats, socials, tiers
                   <div className="spot__tier-name">{t.name}</div>
                   <div className="spot__tier-price">{price(t.priceRub)}</div>
                   {t.description && <p className="spot__desc">{t.description}</p>}
-                  <TierPerksModal name={t.name} perks={t.perks} price={t.priceRub} />
+                  {t.perks.length > 0 && (
+                    <ul className="spot__perks">
+                      {t.perks.map((perk, pi) => (
+                        <li key={pi} className="spot__perk">
+                          <span
+                            className="spot__perk-icon"
+                            style={{
+                              color:
+                                perk.type === 'excluded' ? 'var(--brand-muted)'
+                                  : perk.type === 'warning' ? 'var(--warn)'
+                                    : perk.type === 'star' ? 'var(--brand-accent)'
+                                      : 'var(--brand-primary)',
+                            }}
+                          >
+                            <PerkIcon type={perk.type} size={16} />
+                          </span>
+                          <span className="spot__perk-text" style={perk.type === 'excluded' ? { color: 'var(--brand-muted)' } : undefined}>{perk.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {t.id != null ? (
                     <SubscribeButton
                       tierId={t.id}

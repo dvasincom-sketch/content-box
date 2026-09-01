@@ -3242,6 +3242,11 @@ select.dn-input {
 .spot__tier > .spot__btn { margin-top: auto; }
 .spot__desc { font-size: 14px; color: var(--brand-muted); line-height: 1.5; margin: 0 0 16px; }
 .spot__more { margin: 0 0 18px; }
+/* Список преимуществ на карточке тарифа главной (как на /subscribe). */
+.spot__perks { list-style: none; margin: 0 0 18px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.spot__perk { display: flex; align-items: flex-start; gap: 9px; font-size: 14px; line-height: 1.4; color: var(--brand-text); }
+.spot__perk-icon { flex: none; display: inline-flex; margin-top: 1px; }
+.spot__perk-text { min-width: 0; }
 .spot__more-sum { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--brand-primary); user-select: none; }
 .spot__more-sum::-webkit-details-marker { display: none; }
 .spot__more-sum svg { transition: transform .18s ease; }
