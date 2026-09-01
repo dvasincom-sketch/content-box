@@ -217,8 +217,9 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         season: v.season ?? null,
         episode: v.episode ?? null,
         durationSec: v.durationSec ?? null,
-        // Своё видео (self) без уровня — платное (замок), бесплатно только «превью».
-        isFree: Boolean(v.isPreview) || (v.provider !== 'self' && !v.minTier),
+        // Бесплатно ровно как в checkVideoAccess: «превью» ИЛИ внешняя вставка
+        // (embed) без уровня. Своё видео и аудио без уровня — платные (замок).
+        isFree: Boolean(v.isPreview) || (v.provider === 'embed' && !v.minTier),
         minTierName:
           v.minTier && typeof v.minTier === 'object' ? v.minTier.name || v.minTier.slug || null : null,
       }

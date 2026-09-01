@@ -61,6 +61,8 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const patch: any = { title, minTier }
   if ('season' in data) patch.season = numOrNull(data.season)
   if ('episode' in data) patch.episode = numOrNull(data.episode)
+  // Бесплатное превью: открыто всем, перебивает уровень (для вступительных глав).
+  if ('isPreview' in data) patch.isPreview = Boolean(data.isPreview)
 
   // Категория (раздел / видео-плейлист). Проверяем принадлежность тенанту.
   if ('categoryId' in data) {

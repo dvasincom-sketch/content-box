@@ -15,6 +15,7 @@ export type EditableVideo = {
   id: number | string
   title: string
   minTierId: string
+  isPreview?: boolean
   season: number | null
   episode: number | null
   categoryId: string

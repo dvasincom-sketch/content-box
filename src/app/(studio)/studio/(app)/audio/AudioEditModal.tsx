@@ -27,6 +27,7 @@ export function AudioEditModal({
 }) {
   const [title, setTitle] = useState(video.title)
   const [minTierId, setMinTierId] = useState<string>(video.minTierId || '')
+  const [isPreview, setIsPreview] = useState<boolean>(Boolean(video.isPreview))
   const [season, setSeason] = useState<string>(video.season != null ? String(video.season) : '')
   const [episode, setEpisode] = useState<string>(video.episode != null ? String(video.episode) : '')
   const [categoryId, setCategoryId] = useState<string>(video.categoryId || '')
@@ -58,7 +59,7 @@ export function AudioEditModal({
   async function save() {
     setError(null)
     if (!title.trim()) { setError('Название не может быть пустым'); return }
-    if (!minTierId) { setError('Выберите уровень доступа'); return }
+    if (!minTierId && !isPreview) { setError('Выберите уровень доступа или отметьте «бесплатное превью»'); return }
     setSaving(true)
     try {
       const res = await fetch('/studio/api/videos/update', {
@@ -69,6 +70,7 @@ export function AudioEditModal({
           videoId: video.id,
           title: title.trim(),
           minTierId: minTierId || null,
+          isPreview,
           season: season.trim() === '' ? null : Number(season),
           episode: episode.trim() === '' ? null : Number(episode),
           categoryId: categoryId || null,
@@ -129,9 +131,14 @@ export function AudioEditModal({
                 ariaLabel="Уровень доступа"
               />
               <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-                Аудио доступно только по подписке.
+                Аудио доступно только по подписке — если не отмечено «бесплатное превью».
               </div>
             </div>
+
+            <label className="studio-field" style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', flexDirection: 'row' }}>
+              <input type="checkbox" checked={isPreview} onChange={(e) => setIsPreview(e.target.checked)} style={{ marginTop: 2 }} />
+              <span style={{ fontSize: 14 }}>Бесплатное превью — открыто всем, перебивает уровень (для вступительных глав)</span>
+            </label>
 
             <div className="studio-field">
               <span className="studio-field__label">Категория (раздел)</span>

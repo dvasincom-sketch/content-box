@@ -258,7 +258,8 @@ export function AudioManager({
                   ) : a.minTierName ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Lock size={12} /> {a.minTierName}</span>
                   ) : (
-                    <span>Бесплатно</span>
+                    // Аудио без уровня и без «превью» — платное (нужна подписка), а не бесплатное.
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Lock size={12} /> По подписке</span>
                   )}
                   {a.addedAt && <span>{new Date(a.addedAt).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' })}</span>}
                 </div>
@@ -275,6 +276,7 @@ export function AudioManager({
                     id: a.id,
                     title: a.title,
                     minTierId: a.minTierId,
+                    isPreview: a.isPreview,
                     season: a.season,
                     episode: a.episode,
                     categoryId: a.categoryId,
