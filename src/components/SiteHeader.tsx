@@ -101,8 +101,8 @@ export function SiteHeader({
           </nav>
 
           <div className="flex items-center gap-3">
-            {/* Поиск — доступен на любой странице (десктоп и мобайл) */}
-            <span className="c-tooltip-wrap">
+            {/* Поиск — иконка только на десктопе; на мобиле уходит в меню-«бутерброд» */}
+            <span className="c-tooltip-wrap hidden lg:inline-flex">
               <Link
                 href="/search"
                 aria-label="Поиск"
@@ -113,8 +113,8 @@ export function SiteHeader({
               <span className="c-tooltip c-tooltip--below" role="tooltip">Поиск</span>
             </span>
 
-            {/* Установить как приложение — кнопка появляется только если установимо */}
-            <InstallPWA />
+            {/* Установить как приложение — иконка только на десктопе (на мобиле — в меню) */}
+            <span className="hidden lg:inline-flex"><InstallPWA /></span>
 
             {/* Авторизация (десктоп) — аватар с выпадающим меню */}
             {subscriber ? (
@@ -190,7 +190,8 @@ export function SiteHeader({
               <Star size={15} />
               {supportLabel}
             </Link>
-            <ThemeToggle />
+            {/* Переключатель темы — иконка только на десктопе (на мобиле — в меню) */}
+            <span className="hidden lg:inline-flex"><ThemeToggle /></span>
             <button
               type="button"
               aria-label="Меню"
@@ -214,6 +215,10 @@ export function SiteHeader({
             >
               <Search size={18} /> Поиск
             </Link>
+
+            {/* Тема и установка приложения — вынесены сюда с мобильного топ-бара */}
+            <ThemeToggle variant="row" />
+            <InstallPWA variant="row" />
 
             <MobileMenu nodes={menu} onNavigate={() => setOpen(false)} />
             {items.map((item, i) => (

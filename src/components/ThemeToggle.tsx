@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { Sun, Moon } from 'lucide-react'
 
-export function ThemeToggle() {
+export function ThemeToggle({ variant = 'icon' }: { variant?: 'icon' | 'row' }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
   const [mounted, setMounted] = useState(false)
 
@@ -24,6 +24,22 @@ export function ThemeToggle() {
   }
 
   const label = theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'
+
+  // Строка для мобильного меню-«бутерброда»: иконка + подпись, во всю ширину.
+  if (variant === 'row') {
+    return (
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={label}
+        className="c-navlink py-2 px-2 rounded-lg text-base font-medium inline-flex items-center gap-2"
+        style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', color: 'var(--brand-text)' }}
+      >
+        {mounted && theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} {label}
+      </button>
+    )
+  }
+
   return (
     <span className="c-tooltip-wrap">
       <button

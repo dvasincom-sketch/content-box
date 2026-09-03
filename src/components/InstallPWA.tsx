@@ -36,7 +36,7 @@ function detectIOS(): boolean {
   return iOSDevice || iPadOS
 }
 
-export function InstallPWA() {
+export function InstallPWA({ variant = 'icon' }: { variant?: 'icon' | 'row' }) {
   const [deferred, setDeferred] = useState<BIPEvent | null>(null)
   const [ios, setIos] = useState(false)
   const [installed, setInstalled] = useState(false)
@@ -85,7 +85,18 @@ export function InstallPWA() {
 
   const borderSoft = 'color-mix(in srgb, var(--brand-text) 12%, transparent)'
 
-  return (
+  // Триггер: строка меню (мобайл) или иконка-кнопка (десктоп).
+  const trigger = variant === 'row' ? (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Сохранить на рабочий стол"
+      className="c-navlink py-2 px-2 rounded-lg text-base font-medium inline-flex items-center gap-2"
+      style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', color: 'var(--brand-text)' }}
+    >
+      <Download size={18} /> Сохранить на рабочий стол
+    </button>
+  ) : (
     <span className="c-tooltip-wrap">
       <button
         type="button"
@@ -98,6 +109,12 @@ export function InstallPWA() {
       <span className="c-tooltip c-tooltip--below" role="tooltip">
         Установить приложение
       </span>
+    </span>
+  )
+
+  return (
+    <>
+      {trigger}
 
       {hint && typeof document !== 'undefined' && createPortal(
         <>
@@ -169,6 +186,6 @@ export function InstallPWA() {
         </>,
         document.body,
       )}
-    </span>
+    </>
   )
 }
