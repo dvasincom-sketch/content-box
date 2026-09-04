@@ -48,9 +48,14 @@ export const POST = withAuthor(async ({ req, payload, tenantId }) => {
     const buffer = Buffer.from(arrayBuffer)
 
     const ing = await shrinkForWeb(buffer, blob.type)
+    // Имя в хранилище ВСЕГДА уникальное (короткий суффикс), даже если у файла то
+    // же исходное имя, что у ранее загруженного. Иначе storageName давал бы тот
+    // же ключ R2 → коллизия: показывалась старая картинка вместо новой.
+    const rawName = typeof (blob as any).name === 'string' ? (blob as any).name : ''
+    const baseNoExt = rawName.replace(/\.[^.]*$/, '') // убираем расширение, чтобы суффикс не срезался
     const storeName = seoBase
       ? storageName(tenantId, `${seoBase}-oblozhka-${randomUUID().slice(0, 5)}`, ing.ext, 'cover')
-      : storageName(tenantId, (blob as any).name, ing.ext, 'cover')
+      : storageName(tenantId, `${baseNoExt || 'cover'}-${randomUUID().slice(0, 5)}`, ing.ext, 'cover')
 
     const doc = await payload.create({
       collection: 'media',

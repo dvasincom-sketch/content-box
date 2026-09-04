@@ -18,6 +18,7 @@ export type EditableCat = {
   pageMode?: boolean
   videoSeries: boolean
   eventTemplate: boolean
+  hideDate?: boolean
 }
 
 /** Ответ роута загрузки обложки /studio/api/categories/cover. */
@@ -49,6 +50,7 @@ export function CategoryEditPanel({
   const [pageMode, setPageMode] = useState<boolean>(cat.pageMode ?? false)
   const [videoSeries, setVideoSeries] = useState<boolean>(cat.videoSeries ?? false)
   const [eventTemplate, setEventTemplate] = useState<boolean>(cat.eventTemplate ?? false)
+  const [hideDate, setHideDate] = useState<boolean>(cat.hideDate ?? false)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -246,6 +248,7 @@ export function CategoryEditPanel({
           pageMode,
           videoSeries,
           eventTemplate,
+          hideDate,
           parentId: parentSel === '__root__' ? null : Number(parentSel),
           // Порядок отправляем только когда он релевантен типу и уже загружен —
           // иначе быстрый «Сохранить» до загрузки затёр бы его пустым массивом.
@@ -393,6 +396,14 @@ export function CategoryEditPanel({
               <span className="studio-field__label" style={{ margin: 0 }}>Раздел-события</span>
             </label>
             <div className="catedit__hint">Публикации получают «Дату события»; список сортируется по ней (новые сверху), а на обложке и в публикации показывается оранжевая плашка с датой.</div>
+          </div>
+
+          <div className="studio-field">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={hideDate} onChange={(e) => setHideDate(e.target.checked)} />
+              <span className="studio-field__label" style={{ margin: 0 }}>Не показывать дату</span>
+            </label>
+            <div className="catedit__hint">Скрывает дату публикации на странице и в карточках этого раздела (в т.ч. плашку «N дней назад»). Для вечнозелёного контента — профилей, фильмов, справочных материалов, где дата не важна.</div>
           </div>
 
           <div className="studio-field">

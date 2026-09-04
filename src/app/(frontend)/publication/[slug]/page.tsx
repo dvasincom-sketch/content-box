@@ -456,7 +456,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
                   {category.title}
                 </Link>
               )}
-              {dateStr && <span className="pubmeta-date">{dateStr}</span>}
+              {dateStr && !(category as { hideDate?: boolean } | null)?.hideDate && <span className="pubmeta-date">{dateStr}</span>}
             </div>
             {viewer && <BookmarkButton targetType="publication" targetId={pub.id} initialSaved={bookmarked} />}
           </div>
@@ -584,6 +584,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
                   reactionCount: s?.reactions ?? 0,
                   hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
                   hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
+                  hideDate: Boolean(p.category && typeof p.category === 'object' ? p.category.hideDate : false),
                 }
               })}
             />

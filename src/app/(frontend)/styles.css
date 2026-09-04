@@ -2503,14 +2503,29 @@ svg {
    Видео-плейлист (сезоны/эпизоды) — категория с флагом videoSeries.
    Слева плеер, справа список серий с табами сезонов. На узких экранах — стопкой.
    ============================================================================ */
+/* Обёртка задаёт контекст container query: сетка ниже реагирует на СВОЮ ширину,
+   а не на ширину окна. Так плейлист корректен и на всю ширину раздела, и в
+   узкой колонке публикации (max-w-3xl). */
+.vseries-wrap {
+  container-type: inline-size;
+  container-name: vseries;
+}
 .vseries {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 24px;
   align-items: start;
 }
-@media (max-width: 900px) {
+/* Узкий контейнер (напр. колонка публикации) — одна колонка, без сжатия плеера
+   и без горизонтальной прокрутки. */
+@container vseries (max-width: 900px) {
   .vseries { grid-template-columns: 1fr; }
+}
+/* Фолбэк для браузеров без container queries — по ширине окна, как раньше. */
+@supports not (container-type: inline-size) {
+  @media (max-width: 900px) {
+    .vseries { grid-template-columns: 1fr; }
+  }
 }
 
 .vseries__main { min-width: 0; }

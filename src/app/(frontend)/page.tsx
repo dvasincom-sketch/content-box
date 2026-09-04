@@ -210,6 +210,7 @@ function mapPubCard(p: any, stats?: { comments: number; reactions: number }) {
     reactionCount: stats?.reactions ?? 0,
     hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
     hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
+    hideDate: Boolean(p.category && typeof p.category === 'object' ? p.category.hideDate : false),
   }
 }
 

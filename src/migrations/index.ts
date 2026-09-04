@@ -121,6 +121,7 @@ import * as migration_20260825_160000_add_gift_codes from './20260825_160000_add
 import * as migration_20260828_120000_add_pending_tier from './20260828_120000_add_pending_tier';
 import * as migration_20260901_120000_add_asya_widget_enabled from './20260901_120000_add_asya_widget_enabled';
 import * as migration_20260901_130000_add_font_overrides from './20260901_130000_add_font_overrides';
+import * as migration_20260904_140000_add_category_hide_date from './20260904_140000_add_category_hide_date';
 
 export const migrations = [
   {
@@ -737,5 +738,10 @@ export const migrations = [
     up: migration_20260901_130000_add_font_overrides.up,
     down: migration_20260901_130000_add_font_overrides.down,
     name: '20260901_130000_add_font_overrides',
+  },
+  {
+    up: migration_20260904_140000_add_category_hide_date.up,
+    down: migration_20260904_140000_add_category_hide_date.down,
+    name: '20260904_140000_add_category_hide_date',
   },
 ];

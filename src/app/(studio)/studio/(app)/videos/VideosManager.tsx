@@ -14,6 +14,7 @@ import {
 import { VideoPreviewModal } from './VideoPreviewModal'
 import { VkPlaylistImportModal } from './VkPlaylistImportPanel'
 import { StudioSelect } from '../_ui/StudioSelect'
+import { formatDuration } from '@/lib/formatDuration'
 
 type Tier = { id: number | string; name: string }
 type FolderItem = { id: number | string; title: string; parentId: number | string | null }
@@ -90,12 +91,7 @@ function segBtn(active: boolean): React.CSSProperties {
   }
 }
 
-function fmtDur(sec: number | null): string {
-  if (!sec) return ''
-  const m = Math.floor(sec / 60)
-  const s = Math.round(sec % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
-}
+const fmtDur = formatDuration
 
 /** Полный размер self-видео (сумма рендишенов + постер/спрайт/gif) из assetBytes. */
 function fmtBytes(n: number | null | undefined): string {

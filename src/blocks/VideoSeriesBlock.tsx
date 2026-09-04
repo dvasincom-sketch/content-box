@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react'
 import { Play, Lock, Clock } from 'lucide-react'
 import { VideoPlayer } from '@/app/(frontend)/video/[slug]/VideoPlayer'
+import { formatDuration } from '@/lib/formatDuration'
 
 /**
  * Видео-плейлист (сезоны/эпизоды) — YouTube-подобная раскладка для категории с
@@ -28,12 +29,7 @@ export type SeriesEpisode = {
 
 type Season = { key: string; label: string; order: number; episodes: SeriesEpisode[] }
 
-function fmtDur(sec: number | null): string {
-  if (!sec) return ''
-  const m = Math.floor(sec / 60)
-  const s = Math.round(sec % 60)
-  return `${m}:${String(s).padStart(2, '0')}`
-}
+const fmtDur = formatDuration
 
 function groupSeasons(episodes: SeriesEpisode[]): Season[] {
   const map = new Map<string, Season>()
@@ -105,6 +101,11 @@ export function VideoSeriesBlock({
   const goPrev = () => { if (hasPrev) selectEpisode(flat[curIdx - 1], true) }
 
   return (
+    // Обёртка-контейнер: раскладка .vseries переключается по ШИРИНЕ КОНТЕЙНЕРА
+    // (container query), а не по ширине окна. Иначе в узкой колонке публикации
+    // (max-w-3xl) двухколоночная сетка не помещалась: плеер сжимался и появлялась
+    // горизонтальная прокрутка. На широкой странице раздела остаётся 2 колонки.
+    <div className="vseries-wrap">
     <div className="vseries">
       <div className="vseries__main">
         {/* key заставляет плеер перемонтироваться и заново запросить токен */}
@@ -214,6 +215,7 @@ export function VideoSeriesBlock({
           })}
         </ol>
       </aside>
+    </div>
     </div>
   )
 }

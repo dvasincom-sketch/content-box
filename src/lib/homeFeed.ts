@@ -94,6 +94,8 @@ function toCard(p: Publication, stats?: { comments: number; reactions: number })
     reactionCount: stats?.reactions ?? 0,
     hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
     hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
+    // Раздел с флагом «не показывать дату» → скрываем плашку «N дней назад».
+    hideDate: Boolean((p as any).category && typeof (p as any).category === 'object' ? (p as any).category.hideDate : false),
   }
 }
 

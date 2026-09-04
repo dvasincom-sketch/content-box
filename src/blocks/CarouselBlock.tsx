@@ -47,7 +47,7 @@ export function CarouselBlock({ heading = 'Подборка', items }: CarouselB
 
       <div className="home-carousel">
         {items.map((p) => {
-          const badge = relativeDayLabel(p.publishedAt)
+          const badge = p.hideDate ? null : relativeDayLabel(p.publishedAt)
           const url = coverUrl(p.cover) || p.posterFallback || null
           return (
             <article

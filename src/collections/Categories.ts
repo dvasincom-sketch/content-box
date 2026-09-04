@@ -117,6 +117,16 @@ export const Categories: CollectionConfig = {
       },
     },
     {
+      name: 'hideDate',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Не показывать дату у публикаций раздела',
+      admin: {
+        description:
+          'Скрывает дату публикации на странице публикации и в карточках этого раздела (в т.ч. плашку «N дней назад»). Полезно для вечнозелёного контента — профилей, фильмов, справочных материалов, где дата не имеет значения.',
+      },
+    },
+    {
       name: 'pageMode',
       type: 'checkbox',
       defaultValue: false,

@@ -332,6 +332,8 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       reactionCount: stats?.reactions ?? 0,
       hasVideo: Array.isArray(p.relatedVideos) && p.relatedVideos.length > 0,
       hasGallery: Array.isArray(p.gallery) && p.gallery.length > 0,
+      // Дату скрываем, если раздел так настроен (для вечнозелёного контента).
+      hideDate: Boolean((category as any).hideDate),
     }
   }
   const gridItems: CategoryContentItem[] = visibleRefs

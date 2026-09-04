@@ -20,6 +20,8 @@ export type PublicationCard = {
   reactionCount?: number
   hasVideo?: boolean
   hasGallery?: boolean
+  /** Раздел публикации помечен «не показывать дату» → скрываем плашку «N дней назад». */
+  hideDate?: boolean
 }
 
 export type LatestPublicationsBlockProps = {
@@ -46,7 +48,7 @@ function fmtEventDate(iso?: string | null): string | null {
  * бейджи, дата события, счётчики).
  */
 export function PublicationCardView({ p }: { p: PublicationCard }) {
-  const badge = relativeDayLabel(p.publishedAt)
+  const badge = p.hideDate ? null : relativeDayLabel(p.publishedAt)
   const evLabel = fmtEventDate(p.eventDate)
   return (
     <article key={p.id} className="c-card c-card--interactive c-spotlight overflow-hidden flex flex-col">

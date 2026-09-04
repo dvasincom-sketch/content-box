@@ -2,13 +2,9 @@ import React from 'react'
 import { Play, Lock } from 'lucide-react'
 import { HoverPreviewImage } from '@/components/HoverPreviewImage'
 import type { SeriesEpisode } from './VideoSeriesBlock'
+import { formatDuration } from '@/lib/formatDuration'
 
-function fmtDur(sec: number | null): string | null {
-  if (!sec || sec <= 0) return null
-  const m = Math.floor(sec / 60)
-  const s = sec % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-}
+const fmtDur = (sec: number | null): string | null => formatDuration(sec) || null
 
 /**
  * Одиночные видео раздела — горизонтальные карточки 16:9 (обычная видео-лента).

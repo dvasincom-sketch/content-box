@@ -48,6 +48,7 @@ export default async function CategoriesPage() {
       pageMode: Boolean(c.pageMode),
       videoSeries: Boolean(c.videoSeries),
       eventTemplate: Boolean(c.eventTemplate),
+      hideDate: Boolean(c.hideDate),
     }
   })
 
