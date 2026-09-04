@@ -200,7 +200,12 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   if (!isPosterContainer) {
     const vidsRes = await payload.find({
       collection: 'videos',
-      where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: category.id } }, { or: [{ embedStatus: { not_equals: 'unavailable' } }, { embedStatus: { exists: false } }] }] },
+      // Показываем ВСЕ видео раздела, включая помеченные embedStatus='unavailable'.
+      // Автопроверка доступности (VK API) даёт ложные срабатывания — рабочие
+      // embed-видео пропадали из плейлиста. Плеер сам покажет заглушку, если
+      // источник реально недоступен (как на странице публикации). Флаг остаётся
+      // информативным для автора в студии, но публичную выдачу больше не режет.
+      where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: category.id } }] },
       sort: 'episode',
       depth: 1,
       limit: 500,
