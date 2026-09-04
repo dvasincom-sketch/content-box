@@ -43,7 +43,15 @@ export function HoverPreviewImage({
           aria-hidden
           onLoad={() => setLoaded(true)}
           className="absolute inset-0 w-full h-full object-cover transition-opacity duration-200"
-          style={{ opacity: hovered && loaded ? 1 : 0 }}
+          // Инлайн-размеры обязательны: глобальное правило `img { height: auto }`
+          // (без CSS-слоя) перебивает утилиту `.h-full` (слой utilities), а для
+          // <img> как замещаемого элемента height:auto = ЕГО СОБСТВЕННАЯ высота
+          // по intrinsic-пропорции, а не растяжение по top/bottom. Из-за этого gif
+          // получал высоту 16:9 и не совпадал с боксом обложки (снизу проступал
+          // постер). Инлайн-стиль сильнее глобального правила и растягивает gif на
+          // весь бокс; object-cover обрезает лишнее. Постер (next/image fill) уже
+          // задаёт размеры инлайном, поэтому у него этой проблемы не было.
+          style={{ opacity: hovered && loaded ? 1 : 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
       )}
     </span>
