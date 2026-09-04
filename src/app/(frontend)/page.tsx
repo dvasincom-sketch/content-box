@@ -90,17 +90,20 @@ async function getHeroSlides(payload: Payload, tenantId: number): Promise<HeroSl
   // Черновик (publishedAt = null) в слайдер попадать не должен — и тем более
   // не должен стоять первым, а именно это давал NULLS FIRST при '-publishedAt'.
   const published = publishedWhere()
+  // В слайдер — только авторские (редакционные) публикации. Материалы участников
+  // (UGC: поле author заполнено) идут в ленту, но не в карусель новинок.
+  const editorialOnly = { author: { exists: false } }
 
   const feat = await payload.find({
     collection: 'publications',
-    where: { and: [{ tenant: { equals: tenantId } }, { featured: { equals: true } }, published] },
+    where: { and: [{ tenant: { equals: tenantId } }, { featured: { equals: true } }, editorialOnly, published] },
     sort: '-publishedAt', depth: 1, limit: N, overrideAccess: true,
   })
   ;(feat.docs as any[]).forEach(push)
   if (out.length < N) {
     const latest = await payload.find({
       collection: 'publications',
-      where: { and: [{ tenant: { equals: tenantId } }, published] },
+      where: { and: [{ tenant: { equals: tenantId } }, editorialOnly, published] },
       sort: '-publishedAt', depth: 1, limit: N, overrideAccess: true,
     })
     ;(latest.docs as any[]).forEach(push)
