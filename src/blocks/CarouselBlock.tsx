@@ -55,7 +55,7 @@ export function CarouselBlock({ heading = 'Подборка', items }: CarouselB
               className="home-carousel__card c-card c-card--interactive c-spotlight overflow-hidden flex flex-col"
             >
               {url && (
-                <div className="relative h-40">
+                <div className="relative aspect-video">
                   <HoverPreviewImage
                     poster={url}
                     gif={p.previewGif ?? null}

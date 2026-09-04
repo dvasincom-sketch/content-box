@@ -2731,8 +2731,18 @@ svg {
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   padding-bottom: 8px;
+  /* Трейлинг-гаттер: при долистывании до конца последняя карточка не липнет
+     к краю контейнера (и не заезжает под плавающую кнопку обратной связи). */
+  padding-inline-end: 16px;
+  scroll-padding-inline-end: 16px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
+  /* Мягкий правый край: «подглядывающая» следующая карточка плавно затухает,
+     а не обрезается резко — читается как намеренный скролл-подгляд, а не как
+     баг вёрстки. Фейд привязан к правому краю вьюпорта карусели (не к контенту),
+     поэтому при доскролле затухает лишь узкая кромка последней карточки. */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+          mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
 }
 .home-carousel__card {
   flex: 0 0 280px;
