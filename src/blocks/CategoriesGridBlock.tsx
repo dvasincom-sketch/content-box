@@ -72,9 +72,13 @@ export function CategoriesGridBlock({ heading = 'Категории', items }: C
                 className="c-tile c-spotlight aspect-[16/6] sm:aspect-[4/3] p-5"
               >
                 <div
-                  className="absolute inset-0"
                   aria-hidden
-                  style={{ background: tileGradient(String(c.id ?? c.title)) }}
+                  // Позиционирование инлайном: класс Tailwind `.absolute` (слой
+                  // utilities) в этом проекте перебивается глобальным CSS без
+                  // слоя, из-за чего div получал position:relative, схлопывался в
+                  // ноль высоты и градиент был не виден (плашка казалась пустой).
+                  // Инлайн-стиль сильнее любого правила таблицы стилей.
+                  style={{ position: 'absolute', inset: 0, background: tileGradient(String(c.id ?? c.title)) }}
                 />
                 <div className="c-tile__scrim" />
                 <h3 className="relative font-semibold text-white text-lg leading-tight">
