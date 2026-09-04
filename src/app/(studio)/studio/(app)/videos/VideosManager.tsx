@@ -15,6 +15,7 @@ import { VideoPreviewModal } from './VideoPreviewModal'
 import { VkPlaylistImportModal } from './VkPlaylistImportPanel'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { formatDuration } from '@/lib/formatDuration'
+import { useUploadGuard } from './useUploadGuard'
 
 type Tier = { id: number | string; name: string }
 type FolderItem = { id: number | string; title: string; parentId: number | string | null }
@@ -1559,6 +1560,9 @@ function UploadFileForm({
   const [episode, setEpisode] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  // Пока идёт загрузка файла — предупреждаем об уходе со страницы/закрытии вкладки,
+  // иначе загрузка молча прерывается и заполненные поля теряются.
+  useUploadGuard(uploading)
   const [pct, setPct] = useState(0)
   const [uploaded, setUploaded] = useState(0)
   const [total, setTotal] = useState(0)
@@ -1985,6 +1989,8 @@ function SelfUploadForm({
   const [episode, setEpisode] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  // Предупреждение об уходе со страницы во время загрузки (см. UploadFileForm).
+  useUploadGuard(uploading)
   const [pct, setPct] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<'file' | 'url'>('file')
