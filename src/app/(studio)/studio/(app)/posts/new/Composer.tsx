@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useMemo } from 'react'
+import React, { useState, useRef, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ImagePlus, ImageOff, X, Loader2, Trash2, Newspaper, Sparkles, Video, Music, Plus, ExternalLink, RotateCcw } from 'lucide-react'
@@ -13,6 +13,7 @@ import { VideoAttachPicker, type VideoOption } from './VideoAttachPicker'
 import { GalleryComposer, type GalleryItem } from './GalleryComposer'
 import { VideoCreateModal, AudioUploadButton, type CreatedMedia } from './MediaCreate'
 import { StudioSelect } from '../../_ui/StudioSelect'
+import { draftKeyFor, readLocalDraft, clearLocalDraft, useLocalDraftAutosave } from './useLocalDraft'
 import { TagInput } from '../../_ui/TagInput'
 import { StudioDateField } from './StudioDateField'
 
@@ -98,6 +99,11 @@ export function Composer({
 
   const [title, setTitle] = useState(initial?.title || '')
   const [body, setBody] = useState(initial?.body || '')
+  // initialHtml для Tiptap: по умолчанию из initial; при восстановлении черновика
+  // подменяется восстановленным HTML, а editorSeed форсит ремоунт редактора
+  // (Tiptap читает initialHtml только при монтировании).
+  const [bodyInitial, setBodyInitial] = useState(initial?.body || '')
+  const [editorSeed, setEditorSeed] = useState(0)
   const [template, setTemplate] = useState<string>(initial?.template || 'article')
   const [profile, setProfile] = useState<ProfileData | null>(initial?.profile ?? null)
   const [categoryId, setCategoryId] = useState<string>(initial?.categoryId || '')
@@ -163,6 +169,67 @@ export function Composer({
   const [restoring, setRestoring] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  // ── Локальный авточерновик (Уровень 1): страховка от потери работы ───────────
+  // Полный снимок состояния редактора пишется в localStorage раз в ~15 сек и при
+  // уходе со страницы. Ничего не публикуется и не уходит на сервер.
+  const draftKey = draftKeyFor(initial?.id)
+  const snapshot = useMemo(() => ({
+    title, body, template, profile, categoryId, extraCategoryIds, minTierId,
+    isNews, isNew, coverId, coverUrl, videoIds, audioIds, gallery, tags, eventDate,
+  }), [title, body, template, profile, categoryId, extraCategoryIds, minTierId, isNews, isNew, coverId, coverUrl, videoIds, audioIds, gallery, tags, eventDate])
+
+  // Восстановление: один раз при монтировании сверяем черновик из localStorage с
+  // загруженными данными. Есть расхождение → предлагаем вернуть несохранённое.
+  const [recovery, setRecovery] = useState<{ savedAt: string; data: any } | null>(null)
+  const [recoveryChecked, setRecoveryChecked] = useState(false)
+  useEffect(() => {
+    const base = JSON.stringify(snapshot) // на монтировании snapshot == загруженные данные
+    const d = readLocalDraft(draftKey)
+    if (d && JSON.stringify(d.data) !== base) setRecovery({ savedAt: d.savedAt, data: d.data })
+    setRecoveryChecked(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Автосохранение включаем только ПОСЛЕ решения по восстановлению — иначе
+  // интервал перезапишет черновик текущим (базовым) состоянием и потеряет данные.
+  const { savedAt: draftSavedAt } = useLocalDraftAutosave({
+    key: draftKey,
+    data: snapshot,
+    enabled: recoveryChecked && !recovery,
+  })
+
+  function applyRecovery() {
+    const d = recovery?.data
+    if (!d) return
+    if ('title' in d) setTitle(d.title || '')
+    if ('template' in d) setTemplate(d.template || 'article')
+    if ('profile' in d) setProfile(d.profile ?? null)
+    if ('categoryId' in d) setCategoryId(d.categoryId || '')
+    if ('extraCategoryIds' in d) setExtraCategoryIds(Array.isArray(d.extraCategoryIds) ? d.extraCategoryIds : [])
+    if ('minTierId' in d) setMinTierId(d.minTierId || '')
+    if ('isNews' in d) setIsNews(Boolean(d.isNews))
+    if ('isNew' in d) setIsNew(Boolean(d.isNew))
+    if ('coverId' in d) setCoverId(d.coverId ?? null)
+    if ('coverUrl' in d) setCoverUrl(d.coverUrl ?? null)
+    if ('videoIds' in d) setVideoIds(Array.isArray(d.videoIds) ? d.videoIds : [])
+    if ('audioIds' in d) setAudioIds(Array.isArray(d.audioIds) ? d.audioIds : [])
+    if ('gallery' in d) setGallery(Array.isArray(d.gallery) ? d.gallery : [])
+    if ('tags' in d) setTags(Array.isArray(d.tags) ? d.tags : [])
+    if ('eventDate' in d) setEventDate(d.eventDate || '')
+    // Rich-text редактор неуправляемый — пересоздаём его с восстановленным HTML.
+    if ('body' in d) { setBody(d.body || ''); setBodyInitial(d.body || '') }
+    setEditorSeed((s) => s + 1)
+    setRecovery(null)
+  }
+  function dismissRecovery() {
+    clearLocalDraft(draftKey)
+    setRecovery(null)
+  }
+
+  const draftSavedLabel = draftSavedAt
+    ? new Date(draftSavedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    : null
 
   // В edit slug фиксирован (может быть в ссылках); в create — превью из заголовка.
   const slugText = isEdit ? initial!.slug : slugify(title)
@@ -274,6 +341,8 @@ export function Composer({
         setSaving(false)
         return
       }
+      // Успешно сохранили на сервере — локальная страховка больше не нужна.
+      clearLocalDraft(draftKey)
       router.push('/studio/posts')
       router.refresh()
     } catch {
@@ -301,6 +370,7 @@ export function Composer({
         setDeleting(false)
         return
       }
+      clearLocalDraft(draftKey)
       router.push('/studio/posts')
       router.refresh()
     } catch {
@@ -348,6 +418,15 @@ export function Composer({
           К публикациям
         </Link>
         <div className="composer__actions">
+          {draftSavedLabel && (
+            <span
+              className="composer__autosave"
+              title="Черновик автоматически сохраняется в этом браузере, чтобы не потерять работу при закрытии вкладки"
+              style={{ fontSize: 12, color: 'var(--st-text-muted, #8a8a99)', alignSelf: 'center', whiteSpace: 'nowrap', marginRight: 4 }}
+            >
+              Черновик сохранён {draftSavedLabel}
+            </span>
+          )}
           <StudioSelect
             value={template}
             onChange={setTemplate}
@@ -435,6 +514,31 @@ export function Composer({
       </div>
 
       {error && <div className="studio-login__error composer__error">{error}</div>}
+
+      {recovery && (
+        <div
+          className="composer__recovery"
+          role="alert"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+            margin: '0 0 16px', padding: '12px 16px', borderRadius: 12,
+            border: '1px solid color-mix(in srgb, var(--brand-primary, #e86a33) 45%, transparent)',
+            background: 'color-mix(in srgb, var(--brand-primary, #e86a33) 10%, var(--st-surface, #fff))',
+          }}
+        >
+          <span style={{ flex: 1, minWidth: 220, fontSize: 14, lineHeight: 1.4 }}>
+            Найдены несохранённые изменения от{' '}
+            <b>{new Date(recovery.savedAt).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</b>{' '}
+            (сохранены в этом браузере автоматически). Восстановить их?
+          </span>
+          <button type="button" className="studio-btn studio-btn--primary studio-btn--sm" onClick={applyRecovery}>
+            <RotateCcw size={14} /> Восстановить
+          </button>
+          <button type="button" className="studio-btn studio-btn--ghost studio-btn--sm" onClick={dismissRecovery}>
+            Отклонить
+          </button>
+        </div>
+      )}
 
       <div className="composer__grid">
         <div className="composer__main">
@@ -535,7 +639,8 @@ export function Composer({
             <ProfileEditor value={profile} onChange={setProfile} cats={catOptions} media={profileMedia} onApplySuggest={(sg) => { if (sg.title && !title.trim()) setTitle(sg.title); if (sg.tags && sg.tags.length) setTags((prev) => Array.from(new Set([...prev, ...sg.tags!]))) }} />
           ) : (
             <TiptapEditor
-              initialHtml={initial?.body || ''}
+              key={editorSeed}
+              initialHtml={bodyInitial}
               onChange={setBody}
               placeholder="Текст публикации. Выделите текст и примените форматирование."
             />
