@@ -91,9 +91,15 @@ export const POST = withSubscriber(async ({ req, subscriber, payload, tenantId }
       })
       await payload.sendEmail({ to: email, subject: mail.subject, html: mail.html })
       mailSent = true
+      console.info('[account/email] verify sent', { to: email, tenantId })
+    } else {
+      console.warn('[account/email] verify NOT sent: tenant/domain missing', { tenantId, hasTenant: !!tenant, domain })
     }
-  } catch {
-    // почта не критична
+  } catch (e) {
+    // Почта не критична для сохранения адреса, но ошибку логируем — иначе
+    // «письмо не дошло» невозможно диагностировать (адаптер бросает при
+    // ошибке RuSender/невалидном отправителе/отсутствии токена).
+    console.error('[account/email] verify send FAILED', { to: email, tenantId, error: (e as Error)?.message })
   }
 
   return apiOk({ email, emailVerified: false, mailSent })

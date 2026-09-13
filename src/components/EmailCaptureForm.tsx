@@ -23,6 +23,7 @@ export function EmailCaptureForm({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sentTo, setSentTo] = useState<string | null>(null)
+  const [mailSent, setMailSent] = useState(true)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -42,6 +43,7 @@ export function EmailCaptureForm({
         return
       }
       const savedEmail = (j.email as string) || email.trim().toLowerCase()
+      setMailSent(j.mailSent !== false)
       setSentTo(savedEmail)
       setBusy(false)
       onSent?.(savedEmail)
@@ -54,7 +56,11 @@ export function EmailCaptureForm({
   if (sentTo) {
     return (
       <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--brand-text)' }}>
-        Письмо со ссылкой подтверждения отправлено на <b>{sentTo}</b>. Откройте его и подтвердите адрес.
+        {mailSent ? (
+          <>Письмо со ссылкой подтверждения отправлено на <b>{sentTo}</b>. Откройте его и подтвердите адрес. Если письма нет — проверьте папку «Спам».</>
+        ) : (
+          <>Адрес <b>{sentTo}</b> сохранён, но отправить письмо сейчас не удалось (почтовый сервис временно недоступен). Нажмите «Изменить адрес» и попробуйте ещё раз чуть позже.</>
+        )}
         <button
           type="button"
           onClick={() => setSentTo(null)}
