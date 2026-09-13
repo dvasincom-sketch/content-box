@@ -19,7 +19,16 @@ export function signTrusted(tenantId: string, phone: string, subscriberId: strin
   return `${Buffer.from(payload).toString('base64url')}.${sig}`
 }
 
-export function verifyTrusted(token: string | undefined, tenantId: string, phone: string): string | null {
+/**
+ * Разобрать и проверить куки доверенного устройства БЕЗ знания телефона:
+ * сверяем подпись, тенант и срок, а телефон и id подписчика достаём из тела.
+ * Нужно, чтобы на /login предложить «войти под запомненным аккаунтом» —
+ * телефон при этом берём как раз из куки, пользователю его вводить не нужно.
+ */
+export function readTrusted(
+  token: string | undefined,
+  tenantId: string,
+): { phone: string; subscriberId: string } | null {
   if (!token) return null
   const [body, sig] = token.split('.')
   if (!body || !sig) return null
@@ -34,7 +43,14 @@ export function verifyTrusted(token: string | undefined, tenantId: string, phone
   const b = Buffer.from(expected)
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null
   const [tId, ph, subId, expStr] = payload.split('.')
-  if (tId !== tenantId || ph !== phone) return null
+  if (tId !== tenantId) return null
   if (!expStr || Date.now() > Number(expStr)) return null
-  return subId || null
+  if (!ph || !subId) return null
+  return { phone: ph, subscriberId: subId }
+}
+
+export function verifyTrusted(token: string | undefined, tenantId: string, phone: string): string | null {
+  const r = readTrusted(token, tenantId)
+  if (!r || r.phone !== phone) return null
+  return r.subscriberId
 }

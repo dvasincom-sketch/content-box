@@ -37,7 +37,7 @@ function maskPhoneInput(raw: string, prev: string): string {
 type Mode = 'phone' | 'email'
 type PhoneStep = 'phone' | 'code' | 'email'
 
-export function LoginForm() {
+export function LoginForm({ remembered = null }: { remembered?: string | null }) {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>('phone')
 
@@ -48,6 +48,8 @@ export function LoginForm() {
   const [code, setCode] = useState('')
   const [step, setStep] = useState<PhoneStep>('phone')
   const [remember, setRemember] = useState(true)
+  // Показать обычную форму ввода телефона вместо карточки «запомненного» аккаунта.
+  const [useOtherNumber, setUseOtherNumber] = useState(false)
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -98,6 +100,36 @@ export function LoginForm() {
 
   function onPhoneChange(e: ChangeEvent<HTMLInputElement>) {
     setPhone(maskPhoneInput(e.target.value, phone))
+  }
+
+  // Вход по доверенному устройству одним кликом (кука cb_td), без ввода
+  // телефона и без SMS. Телефон сервер достаёт из подписанной куки сам.
+  async function continueTrusted() {
+    setError(null)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/phone/continue', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        // Кука протухла/аккаунт исчез — откатываемся к обычному вводу номера.
+        setUseOtherNumber(true)
+        setError('Не удалось войти автоматически. Введите номер телефона.')
+        setLoading(false)
+        return
+      }
+      if (data?.needsEmail) {
+        setStep('email')
+        setLoading(false)
+        return
+      }
+      done()
+    } catch {
+      setError('Сетевая ошибка. Попробуйте ещё раз.')
+      setLoading(false)
+    }
   }
 
   async function requestCode(e: FormEvent) {
@@ -176,7 +208,29 @@ export function LoginForm() {
         </div>
 
         {mode === 'phone' ? (
-          step === 'phone' ? (
+          step === 'phone' && remembered && !useOtherNumber ? (
+            <div className="auth__form">
+              <p className="auth__hint" style={{ marginTop: 0 }}>
+                Этот браузер помнит ваш аккаунт. Войдите без SMS.
+              </p>
+              <button type="button" disabled={loading} className="auth__btn" onClick={continueTrusted}>
+                {loading ? 'Входим…' : `Продолжить как ${remembered}`}
+              </button>
+              {error && <p className="auth__error">{error}</p>}
+              <div className="auth__resend">
+                <button
+                  type="button"
+                  className="auth__link-btn"
+                  onClick={() => {
+                    setUseOtherNumber(true)
+                    setError(null)
+                  }}
+                >
+                  Войти под другим номером
+                </button>
+              </div>
+            </div>
+          ) : step === 'phone' ? (
             <form className="auth__form" onSubmit={requestCode}>
               <div className="auth__field">
                 <label className="auth__label" htmlFor="auth-phone">Телефон</label>
