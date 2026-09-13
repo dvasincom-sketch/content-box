@@ -7,6 +7,7 @@ import { smsEnabled, sendSms } from '@/lib/smsru'
 import { issueCode } from '@/lib/otpStore'
 import { verifyTrusted, TRUSTED_COOKIE } from '@/lib/trustedDevice'
 import { buildSubscriberSessionCookie } from '@/lib/subscriberSession'
+import { logSmsSend } from '@/lib/smsLog'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -58,6 +59,8 @@ export async function POST(req: NextRequest) {
   }
 
   const sent = await sendSms(phone, `Код для входа: ${issued.code}`)
+  // Журнал отправок для учёта расходов (не критично для входа).
+  await logSmsSend(payload, { tenantId, phone, kind: 'subscriber_login', ok: sent.ok })
   if (!sent.ok) return NextResponse.json({ error: 'Не удалось отправить SMS' }, { status: 502 })
 
   return NextResponse.json({ ok: true, codeSent: true })

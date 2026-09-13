@@ -93,6 +93,7 @@ export interface Config {
     'digest-issues': DigestIssue;
     'custom-themes': CustomTheme;
     'subscription-payments': SubscriptionPayment;
+    'boost-settings': BoostSetting;
     'studio-activity': StudioActivity;
     'subscription-events': SubscriptionEvent;
     'subscriber-activity': SubscriberActivity;
@@ -135,6 +136,7 @@ export interface Config {
     'digest-issues': DigestIssuesSelect<false> | DigestIssuesSelect<true>;
     'custom-themes': CustomThemesSelect<false> | CustomThemesSelect<true>;
     'subscription-payments': SubscriptionPaymentsSelect<false> | SubscriptionPaymentsSelect<true>;
+    'boost-settings': BoostSettingsSelect<false> | BoostSettingsSelect<true>;
     'studio-activity': StudioActivitySelect<false> | StudioActivitySelect<true>;
     'subscription-events': SubscriptionEventsSelect<false> | SubscriptionEventsSelect<true>;
     'subscriber-activity': SubscriberActivitySelect<false> | SubscriberActivitySelect<true>;
@@ -338,6 +340,10 @@ export interface SiteSetting {
    * Аванс тенанта на оплату токенов ИИ (пополняется через оплату / вручную суперадмином). Из него списывается стоимость. Виден только staff; изменяется только суперадмином.
    */
   aiDepositRub?: number | null;
+  /**
+   * Аванс тенанта на ускоренную обработку видео (аренда мощного сервера Timeweb). Из него списывается фактическая стоимость аренды. Виден staff; пополняется суперадмином.
+   */
+  boostDepositRub?: number | null;
   logo?: (number | null) | Media;
   /**
    * Квадратная иконка для PWA, favicon и apple-touch. Лучше 512×512+.
@@ -396,6 +402,18 @@ export interface SiteSetting {
         | 'bubbles'
       )
     | null;
+  /**
+   * Сквозная кнопка «Спросить Асю» в правом нижнем углу сайта. Выключается в Студии, если ассистент отвечает некорректно.
+   */
+  asyaWidgetEnabled?: boolean | null;
+  /**
+   * Ключ шрифта (inter/montserrat/manrope/golos/ptsans/unbounded/roboto/ptserif). Пусто = как в выбранной теме. Правится в Студии.
+   */
+  fontHeading?: string | null;
+  /**
+   * Ключ шрифта. Пусто = как в выбранной теме. Правится в Студии.
+   */
+  fontBody?: string | null;
   /**
    * Числа в блоке «Об авторе» на главной. Значение — строка (можно «800+», «100 тыс+»). Пусто = реальные данные.
    */
@@ -551,7 +569,21 @@ export interface SiteSetting {
   };
   socials?:
     | {
-        platform: 'boosty' | 'vk' | 'telegram' | 'youtube' | 'instagram';
+        platform:
+          | 'boosty'
+          | 'vk'
+          | 'telegram'
+          | 'youtube'
+          | 'instagram'
+          | 'tiktok'
+          | 'x'
+          | 'facebook'
+          | 'ok'
+          | 'dzen'
+          | 'rutube'
+          | 'twitch'
+          | 'discord'
+          | 'whatsapp';
         url: string;
         /**
          * Короткое описание под названием (напр. «Анонсы и новые видео»). Пусто — подпись по умолчанию для площадки.
@@ -709,6 +741,14 @@ export interface Category {
    * Публикации этого раздела получают «Дату события» (напр. дата лайв-трансляции). Список сортируется по дате события (новые сверху), а на обложке и в публикации показывается оранжевая плашка с датой.
    */
   eventTemplate?: boolean | null;
+  /**
+   * По умолчанию содержимое раздела показывается новыми сверху (по дате). Включите, чтобы расставить публикации и подразделы вручную перетаскиванием (ниже появится список «Порядок содержимого»). Пока выключено — порядок всегда по дате, что бы ни было сохранено.
+   */
+  manualOrder?: boolean | null;
+  /**
+   * Скрывает дату публикации на странице публикации и в карточках этого раздела (в т.ч. плашку «N дней назад»). Полезно для вечнозелёного контента — профилей, фильмов, справочных материалов, где дата не имеет значения.
+   */
+  hideDate?: boolean | null;
   /**
    * Раздел рендерится как ОДНА публикация, привязанная к нему основной категорией (например, профиль участника), без списка вложенных публикаций. Берётся последняя опубликованная публикация этой категории.
    */
@@ -927,6 +967,10 @@ export interface Subscriber {
    * Дата окончания текущей оплаченной подписки. Меняет только суперадмин.
    */
   subscriptionUntil?: string | null;
+  /**
+   * Понижение уровня, запланированное на следующее продление. Применяется автосписанием, затем очищается. Пусто = смены не запланировано.
+   */
+  pendingTier?: (number | null) | SubscriptionTier;
   /**
    * Включается при оплате с сохранением карты; выключается при отмене подписки.
    */
@@ -1696,6 +1740,50 @@ export interface SubscriptionPayment {
   createdAt: string;
 }
 /**
+ * Конфиг ускоренного транскода (аренда сервера Timeweb). Одна запись на платформу.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "boost-settings".
+ */
+export interface BoostSetting {
+  id: number;
+  enabled?: boolean | null;
+  /**
+   * Напр. 6847 (16 vCPU, ru-1). Из GET /presets/servers.
+   */
+  presetId?: string | null;
+  /**
+   * image_id снапшота Timeweb с готовым воркером.
+   */
+  imageId?: string | null;
+  /**
+   * Фолбэк: чистая ОС + cloud-init. Обычно пусто, если задан образ.
+   */
+  osId?: number | null;
+  /**
+   * Напр. ru-1 (там же, где S3/БД).
+   */
+  location?: string | null;
+  /**
+   * Пусто = авто (ядра / «ядер на воркер»).
+   */
+  replicas?: number | null;
+  cpusPerWorker?: number | null;
+  /**
+   * Наценка платформы поверх реальной аренды. Клиенту не показывается.
+   */
+  marginPct?: number | null;
+  /**
+   * Watchdog: принудительно гасит сервер по истечении.
+   */
+  maxLifetimeMin?: number | null;
+  idleMinutes?: number | null;
+  throughputPerHour?: number | null;
+  whisperEnabled?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Журнал действий участников студии.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2041,6 +2129,10 @@ export interface PayloadLockedDocument {
         value: number | SubscriptionPayment;
       } | null)
     | ({
+        relationTo: 'boost-settings';
+        value: number | BoostSetting;
+      } | null)
+    | ({
         relationTo: 'studio-activity';
         value: number | StudioActivity;
       } | null)
@@ -2201,6 +2293,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   tenant?: T;
   aiComposeKey?: T;
   aiDepositRub?: T;
+  boostDepositRub?: T;
   logo?: T;
   appIcon?: T;
   themePreset?: T;
@@ -2216,6 +2309,9 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   yookassaTaxSystem?: T;
   yookassaVatCode?: T;
   bgDecor?: T;
+  asyaWidgetEnabled?: T;
+  fontHeading?: T;
+  fontBody?: T;
   authorStats?:
     | T
     | {
@@ -2334,6 +2430,8 @@ export interface CategoriesSelect<T extends boolean = true> {
   videoSeries?: T;
   posterLayout?: T;
   eventTemplate?: T;
+  manualOrder?: T;
+  hideDate?: T;
   pageMode?: T;
   seo?:
     | T
@@ -2554,6 +2652,7 @@ export interface SubscribersSelect<T extends boolean = true> {
   level?: T;
   activeTier?: T;
   subscriptionUntil?: T;
+  pendingTier?: T;
   autoRenew?: T;
   yookassaPaymentMethodId?: T;
   cardLabel?: T;
@@ -2907,6 +3006,26 @@ export interface SubscriptionPaymentsSelect<T extends boolean = true> {
   status?: T;
   yookassaPaymentId?: T;
   isRecurring?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "boost-settings_select".
+ */
+export interface BoostSettingsSelect<T extends boolean = true> {
+  enabled?: T;
+  presetId?: T;
+  imageId?: T;
+  osId?: T;
+  location?: T;
+  replicas?: T;
+  cpusPerWorker?: T;
+  marginPct?: T;
+  maxLifetimeMin?: T;
+  idleMinutes?: T;
+  throughputPerHour?: T;
+  whisperEnabled?: T;
   updatedAt?: T;
   createdAt?: T;
 }

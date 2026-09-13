@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet, BarChart3, Music, Video as VideoIcon } from 'lucide-react'
+import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet, BarChart3, Music, Video as VideoIcon, HandCoins } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor } from '@/lib/currentAuthor'
@@ -9,6 +9,7 @@ import { capabilitiesOf } from '@/access'
 import { hasCap, SETTINGS_MANAGE_KEYS, CONTENT_ENTITIES } from '@/lib/permissions'
 import { getMediaStats, formatBytes } from '@/lib/mediaStats'
 import { getCommerceStats, formatRub } from '@/lib/commerceStats'
+import { getDonationStats } from '@/lib/donationStats'
 import { umamiApiEnabled } from '@/lib/umami'
 import { getUmamiDashKpis } from '@/lib/umamiStats'
 import { DashChart } from './DashChart'
@@ -127,6 +128,8 @@ export default async function StudioDashboard() {
   // Медиа-статистика (файлы + фактический объём на диске) отдельным SQL-агрегатом.
   const media = await getMediaStats(payload, tenantId)
   const commerce = await getCommerceStats(payload, tenantId)
+  // Донаты — финансовое, показываем только владельцу.
+  const donations = isOwner ? await getDonationStats(payload, tenantId).catch(() => null) : null
 
   // Чеклист запуска проекта (для владельца). Пока не всё сделано — показываем.
   const [tiersCount, ssRes] = await Promise.all([
@@ -219,6 +222,28 @@ export default async function StudioDashboard() {
             <div className="dash__stat-label">Категорий</div>
           </div>
         </div>
+      )}
+
+      {/* Донаты (поддержка проекта) — только владельцу */}
+      {donations && (
+        <section className="dash__section">
+          <div className="dash__section-head">
+            <h2><HandCoins size={16} /> Донаты</h2>
+            <Link href="/studio/donations" className="dash__section-link">
+              Все донаты <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="dash__stats dash__stats--2">
+            <div className="dash__stat">
+              <div className="dash__stat-value">{formatRub(donations.sum30d)}</div>
+              <div className="dash__stat-label">За 30 дней · {donations.count30d} шт.</div>
+            </div>
+            <div className="dash__stat">
+              <div className="dash__stat-value">{formatRub(donations.total)}</div>
+              <div className="dash__stat-label">Всего · {donations.count} шт.</div>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Вторичные показатели контента (ниже первого экрана) */}

@@ -123,6 +123,7 @@ import * as migration_20260901_120000_add_asya_widget_enabled from './20260901_1
 import * as migration_20260901_130000_add_font_overrides from './20260901_130000_add_font_overrides';
 import * as migration_20260904_140000_add_category_hide_date from './20260904_140000_add_category_hide_date';
 import * as migration_20260913_120000_add_category_manual_order from './20260913_120000_add_category_manual_order';
+import * as migration_20260913_140000_add_sms_log from './20260913_140000_add_sms_log';
 
 export const migrations = [
   {
@@ -749,5 +750,10 @@ export const migrations = [
     up: migration_20260913_120000_add_category_manual_order.up,
     down: migration_20260913_120000_add_category_manual_order.down,
     name: '20260913_120000_add_category_manual_order',
+  },
+  {
+    up: migration_20260913_140000_add_sms_log.up,
+    down: migration_20260913_140000_add_sms_log.down,
+    name: '20260913_140000_add_sms_log',
   },
 ];

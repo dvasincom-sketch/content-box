@@ -3,10 +3,10 @@
 import React from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock, Repeat, Moon, Sun, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock, Repeat, Moon, Sun, BarChart3, HandCoins, Wallet } from 'lucide-react'
 import { hasCap, SETTINGS_MANAGE_KEYS, type CapMatrix } from '@/lib/permissions'
 
-type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media'; need?: [keyof CapMatrix, string]; settings?: boolean; ownerOnly?: boolean }
+type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media'; need?: [keyof CapMatrix, string]; settings?: boolean; ownerOnly?: boolean; superadminOnly?: boolean }
 
 // Меню сгруппировано: «Медиа» объединяет видео и аудио (позже — галерея).
 type NavGroup = { label?: string; items: NavItem[] }
@@ -18,6 +18,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/studio/categories', label: 'Категории', icon: <FolderTree size={18} />, need: ['taxonomy', 'manage'] },
       { href: '/studio/moderation', label: 'Модерация', icon: <ShieldCheck size={18} />, need: ['commentsModeration', 'moderate'] },
       { href: '/studio/analytics', label: 'Аналитика', icon: <BarChart3 size={18} />, ownerOnly: true },
+      { href: '/studio/donations', label: 'Донаты', icon: <HandCoins size={18} />, ownerOnly: true },
+      { href: '/studio/finance', label: 'Финансы', icon: <Wallet size={18} />, superadminOnly: true },
       { href: '/studio/settings', label: 'Настройки', icon: <Settings size={18} />, settings: true },
     ],
   },
@@ -106,6 +108,7 @@ export function StudioNav({ authorEmail, brandName, nav, isOwner = true, isSuper
               </div>
             )}
             {group.items.filter((item) => {
+              if (item.superadminOnly) return isSuperadmin
               if (item.ownerOnly) return isOwner
               if (item.settings) return canSettings
               if (item.need) return isOwner || hasCap(abilities, item.need[0], item.need[1])

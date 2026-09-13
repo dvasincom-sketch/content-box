@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { normalizePhone } from '@/lib/phone'
 import { issueCode } from '@/lib/otpStore'
 import { smsEnabled, sendSms } from '@/lib/smsru'
+import { logSmsSend } from '@/lib/smsLog'
 import { rateLimit, clientIp, tooManyRequests } from '@/lib/rateLimit'
 
 export const runtime = 'nodejs'
@@ -41,6 +42,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg, retryAfterSec: issued.retryAfterSec }, { status: 429 })
   }
   const sent = await sendSms(phone, `Код для входа в Content Box: ${issued.code}`)
+  // Журнал отправок для учёта расходов (не критично для входа).
+  await logSmsSend(payload, { tenantId: null, phone, kind: 'studio_login', ok: sent.ok })
   if (!sent.ok) return NextResponse.json({ error: 'Не удалось отправить SMS. Попробуйте позже.' }, { status: 502 })
 
   return NextResponse.json({ ok: true, codeSent: true })
