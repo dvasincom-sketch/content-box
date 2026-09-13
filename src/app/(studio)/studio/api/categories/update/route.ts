@@ -67,6 +67,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   if ('eventTemplate' in data) patch.eventTemplate = Boolean(data.eventTemplate)
   if ('pageMode' in data) patch.pageMode = Boolean(data.pageMode)
   if ('hideDate' in data) patch.hideDate = Boolean(data.hideDate)
+  if ('manualOrder' in data) patch.manualOrder = Boolean(data.manualOrder)
 
   // Ручной порядок смешанного содержимого (подкатегории + публикации).
   // Сохраняем только валидные ссылки {k:'c'|'p', id:number} без дублей.

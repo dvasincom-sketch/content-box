@@ -19,6 +19,7 @@ export type EditableCat = {
   videoSeries: boolean
   eventTemplate: boolean
   hideDate?: boolean
+  manualOrder?: boolean
 }
 
 /** Ответ роута загрузки обложки /studio/api/categories/cover. */
@@ -51,6 +52,7 @@ export function CategoryEditPanel({
   const [videoSeries, setVideoSeries] = useState<boolean>(cat.videoSeries ?? false)
   const [eventTemplate, setEventTemplate] = useState<boolean>(cat.eventTemplate ?? false)
   const [hideDate, setHideDate] = useState<boolean>(cat.hideDate ?? false)
+  const [manualOrder, setManualOrder] = useState<boolean>(cat.manualOrder ?? false)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -68,8 +70,10 @@ export function CategoryEditPanel({
   const [dragOver, setDragOver] = useState<number | null>(null)
 
   // Ручная сортировка доступна для типов со списком (обычный, контейнер афиш,
-  // события). У плейлиста порядок задаётся сезоном/эпизодом, у «страницы» списка нет.
-  const showOrder = !videoSeries && !pageMode
+  // события) И только когда включён тумблер «Ручной порядок». По умолчанию
+  // содержимое сортируется по дате (новые сверху), список DnD скрыт.
+  // У плейлиста порядок задаётся сезоном/эпизодом, у «страницы» списка нет.
+  const showOrder = !videoSeries && !pageMode && manualOrder
 
   const slugPreview = slugify(title)
 
@@ -249,6 +253,7 @@ export function CategoryEditPanel({
           videoSeries,
           eventTemplate,
           hideDate,
+          manualOrder,
           parentId: parentSel === '__root__' ? null : Number(parentSel),
           // Порядок отправляем только когда он релевантен типу и уже загружен —
           // иначе быстрый «Сохранить» до загрузки затёр бы его пустым массивом.
@@ -435,6 +440,18 @@ export function CategoryEditPanel({
               style={{ display: 'none' }}
             />
           </div>
+
+          {!videoSeries && !pageMode && (
+            <div className="studio-field">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <input type="checkbox" checked={manualOrder} onChange={(e) => setManualOrder(e.target.checked)} />
+                <span className="studio-field__label" style={{ margin: 0 }}>Ручной порядок содержимого</span>
+              </label>
+              <div className="catedit__hint">
+                Выключено (по умолчанию) — содержимое раздела показывается новыми сверху (по дате). Включите, чтобы расставить публикации и подразделы вручную перетаскиванием — ниже появится список «Порядок содержимого».
+              </div>
+            </div>
+          )}
 
           {showOrder && (
             <div className="studio-field">

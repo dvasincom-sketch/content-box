@@ -19,6 +19,7 @@ type Cat = {
   videoSeries: boolean
   eventTemplate: boolean
   hideDate?: boolean
+  manualOrder?: boolean
 }
 type TreeNode = Cat & { children: TreeNode[] }
 
@@ -138,6 +139,7 @@ export function CategoriesManager({ initialCategories }: { initialCategories: Ca
       videoSeries: node.videoSeries,
       eventTemplate: node.eventTemplate,
       hideDate: node.hideDate,
+      manualOrder: node.manualOrder,
     })
   }
 

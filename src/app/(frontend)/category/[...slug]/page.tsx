@@ -290,7 +290,11 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   // События с активным фильтром/сортировкой по дате — это явный выбор зрителя,
   // ручной порядок в этом случае уступает дате (иначе фильтр «не работает»).
   const eventDateOverride = isEvent && (evSort === 'old' || !!evFrom || !!evTo)
-  const useManual = applyManualOrder && !eventDateOverride
+  // Ручной порядок применяем ТОЛЬКО если раздел явно на него переключён
+  // (manualOrder). По умолчанию — сортировка по дате (новые сверху), сохранённый
+  // contentOrder игнорируется. Это чинит «случайный» порядок в разделах, где
+  // ручной порядок был заморожен непреднамеренно при сохранении раздела.
+  const useManual = applyManualOrder && !eventDateOverride && Boolean((category as any).manualOrder)
 
   const catById = new Map<number, any>(children.map((c) => [Number(c.id), c]))
   const pubById = new Map<number, any>(pubsAll.map((p) => [Number(p.id), p]))
