@@ -7,6 +7,7 @@ import { tenantIdByHost } from '@/lib/tenantByHost'
 import { verifyCode } from '@/lib/otpStore'
 import { buildSubscriberSessionCookie } from '@/lib/subscriberSession'
 import { signTrusted, TRUSTED_COOKIE, TRUSTED_MAX_AGE_SEC } from '@/lib/trustedDevice'
+import { isSyntheticEmail } from '@/lib/authEmail'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -61,7 +62,10 @@ export async function POST(req: NextRequest) {
         phoneVerified: true,
         displayName: formatPhone(phone),
         tenant: tenantId,
-        emailVerified: true,
+        // Синтетический email — технический логин, реального адреса ещё нет.
+        // emailVerified оставляем false, чтобы UI навязчиво просил указать почту
+        // (для рассылок и важных уведомлений) и дайджест не слал «в никуда».
+        emailVerified: false,
       } as never,
       overrideAccess: true,
     })
@@ -70,7 +74,10 @@ export async function POST(req: NextRequest) {
   }
 
   const cookie = await buildSubscriberSessionCookie(payload, sub.id)
-  const res = NextResponse.json({ ok: true })
+  // Нужен ли ещё реальный подтверждённый email (для промпта на фронте сразу
+  // после входа): синтетический адрес или неподтверждённый.
+  const needsEmail = isSyntheticEmail((sub as { email?: string }).email) || !(sub as { emailVerified?: boolean }).emailVerified
+  const res = NextResponse.json({ ok: true, needsEmail })
   res.headers.append('Set-Cookie', cookie)
   if (remember) {
     const td = signTrusted(tenantId, phone, String(sub.id))

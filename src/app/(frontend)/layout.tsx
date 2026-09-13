@@ -21,6 +21,8 @@ import { footerFromTree } from '@/lib/footerFromTree'
 import { brandVars } from '@/lib/brand'
 import { SiteHeader } from '@/components/SiteHeader'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { EmailPrompt } from '@/components/EmailPrompt'
+import { isSyntheticEmail, displayEmail } from '@/lib/authEmail'
 import { avatarColor } from '@/lib/publicationEngagement'
 import { SiteFooter } from '@/components/SiteFooter'
 import { SpotlightController } from '@/components/SpotlightController'
@@ -193,6 +195,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
                   }
                 : null
             }
+          />
+        )}
+        {ctx && subscriber && (isSyntheticEmail((subscriber as any).email) || !(subscriber as any).emailVerified) && (
+          <EmailPrompt
+            email={displayEmail((subscriber as any).email)}
+            verified={Boolean((subscriber as any).emailVerified)}
           />
         )}
         <main>{children}</main>

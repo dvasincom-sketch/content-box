@@ -3,8 +3,10 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { suggestHandle } from '@/lib/handle'
+import { displayEmail } from '@/lib/authEmail'
 import { SettingsForm } from '../AccountProfileView'
 import { HistorySettings } from './HistorySettings'
+import { EmailSettings } from './EmailSettings'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +21,10 @@ export default async function AccountSettingsPage() {
 
   return (
     <>
+      <EmailSettings
+        email={displayEmail(full?.email)}
+        verified={Boolean(full?.emailVerified)}
+      />
       <SettingsForm
         displayName={full?.displayName || ''}
         avatarUrl={avatarUrl}

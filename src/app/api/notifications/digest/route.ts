@@ -5,6 +5,7 @@ import { publishedWhere } from '@/lib/published'
 import { emailBrandForTenant, digestEmail, type DigestItem } from '@/emails'
 import { listmonkSendEnabled, sendDigestCampaign } from '@/lib/listmonkSend'
 import { instrumentDigestHtml } from '@/lib/digestTracking'
+import { isSyntheticEmail } from '@/lib/authEmail'
 
 /**
  * Планировщик дайджеста. Дёргается по расписанию (внешний cron) с секретом
@@ -191,7 +192,7 @@ export async function POST(req: NextRequest) {
       let sentViaListmonk = false
       if (!dryRun && listmonkSendEnabled() && items.length > 0) {
         const optIn = (subsRes.docs as any[])
-          .filter((sx) => sx.email)
+          .filter((sx) => sx.email && !isSyntheticEmail(sx.email))
           .map((sx) => ({ email: String(sx.email), name: String(sx.name || sx.displayName || '') }))
         const mail = digestEmail({ brand, siteUrl, items, unsubscribeUrl: '{{ UnsubscribeURL }}' })
         sentViaListmonk = await sendDigestCampaign({
@@ -236,7 +237,9 @@ export async function POST(req: NextRequest) {
       }
 
       for (const sub of (sentViaListmonk ? [] : (subsRes.docs as any[]))) {
-        if (!sub.email) continue
+        // Синтетические адреса телефонных подписчиков (@phone.contentbox.local)
+        // не существуют — на них не шлём (иначе письма уходят «в никуда»).
+        if (!sub.email || isSyntheticEmail(sub.email)) continue
         // Персональные позиции: общие публикации + новые главы книг, за которыми
         // следит этот читатель.
         let chItems: DigestItem[] = []

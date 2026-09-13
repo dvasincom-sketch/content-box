@@ -3,6 +3,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { EmailCaptureForm } from '@/components/EmailCaptureForm'
 
 /**
  * Вход подписчика (/login). Два способа:
@@ -34,7 +35,7 @@ function maskPhoneInput(raw: string, prev: string): string {
 }
 
 type Mode = 'phone' | 'email'
-type PhoneStep = 'phone' | 'code'
+type PhoneStep = 'phone' | 'code' | 'email'
 
 export function LoginForm() {
   const router = useRouter()
@@ -143,6 +144,13 @@ export function LoginForm() {
         setLoading(false)
         return
       }
+      // Нет реального подтверждённого email (телефонная регистрация) — сначала
+      // просим указать почту, потом пускаем дальше. Шаг пропускаемый.
+      if (data?.needsEmail) {
+        setStep('email')
+        setLoading(false)
+        return
+      }
       done()
     } catch {
       setError('Сетевая ошибка. Попробуйте ещё раз.')
@@ -191,7 +199,7 @@ export function LoginForm() {
               </button>
               <p className="auth__hint">Пришлём SMS с кодом — вход без пароля. Если аккаунта ещё нет, создадим автоматически.</p>
             </form>
-          ) : (
+          ) : step === 'code' ? (
             <form className="auth__form" onSubmit={submitCode}>
               <div className="auth__field">
                 <label className="auth__label" htmlFor="auth-code">Код из SMS</label>
@@ -230,6 +238,21 @@ export function LoginForm() {
                 </button>
               </div>
             </form>
+          ) : (
+            <div className="auth__form">
+              <div className="auth__field">
+                <label className="auth__label">Укажите email</label>
+                <p className="auth__hint" style={{ marginTop: 0 }}>
+                  Нужен для еженедельной рассылки и важных уведомлений о профиле. Пришлём письмо со ссылкой для подтверждения.
+                </p>
+              </div>
+              <EmailCaptureForm submitLabel="Сохранить и подтвердить" />
+              <div className="auth__resend">
+                <button type="button" className="auth__link-btn" onClick={done}>
+                  Продолжить →
+                </button>
+              </div>
+            </div>
           )
         ) : (
           <form className="auth__form" onSubmit={handleEmail}>
