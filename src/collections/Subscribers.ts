@@ -116,6 +116,12 @@ export const Subscribers: CollectionConfig = {
     // куку тут же «разлогинивает». Без sid проверка идёт по подписи, старые куки
     // остаются валидны.
     useSessions: false,
+    // Срок жизни сессии подписчика: 30 дней. БЕЗ этого действовал дефолт Payload
+    // (7200 c = 2 часа) — зрителей «выкидывало» через пару часов. Значение задаёт
+    // и exp JWT, и Max-Age куки (persistent), и срок пассворлесс-сессии по SMS
+    // (buildSubscriberSessionCookie читает tokenExpiration). Обновляется на каждом
+    // входе — один вход = 30 дней на этом устройстве.
+    tokenExpiration: 60 * 60 * 24 * 30,
     // Брендированное письмо сброса пароля в бренде тенанта, ссылка на его сайт.
     forgotPassword: {
       generateEmailSubject: (args) => subscriberResetSubject(args),
