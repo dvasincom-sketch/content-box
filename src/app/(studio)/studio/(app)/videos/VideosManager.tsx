@@ -151,11 +151,19 @@ function flattenFolders(
 
 export function VideosManager({
   initialVideos,
+  totalCount,
+  brokenTotal,
+  processingTotal,
   tiers,
   categories: initialCategories,
   canCreate = true,
 }: {
   initialVideos: Vid[]
+  /** Итоги по ВСЕЙ библиотеке (сервер), чтобы счётчики не расходились с бейджем
+   *  меню: список грузит только 500 новейших + подмешанные проблемные. */
+  totalCount?: number
+  brokenTotal?: number
+  processingTotal?: number
   tiers: Tier[]
   categories: FolderItem[]
   canCreate?: boolean
@@ -249,6 +257,12 @@ export function VideosManager({
   // processing (оранжевый — идёт обработка/загрузка).
   const brokenCount = useMemo(() => videos.filter((v) => videoState(v) === 'broken').length, [videos])
   const processingCount = useMemo(() => videos.filter((v) => videoState(v) === 'processing').length, [videos])
+  // Для показа берём серверные итоги по всей библиотеке (если переданы), иначе
+  // клиентский подсчёт по загруженным. Так «Всего» и «Проблемные» совпадают с
+  // бейджем в меню и не зависят от предела загрузки списка.
+  const totalN = totalCount ?? videos.length
+  const brokenN = brokenTotal ?? brokenCount
+  const processingN = processingTotal ?? processingCount
 
   const filteredVideos = useMemo(() => {
     let out = videos
@@ -284,7 +298,7 @@ export function VideosManager({
   useEffect(() => { setPage(1) }, [filter, providerFilter, problemFilter, sortDir, per, query])
 
   const sectionFilterLabel = useMemo(() => {
-    if (filter === FILTER_ALL) return `Все видео (${videos.length})`
+    if (filter === FILTER_ALL) return `Все видео (${totalN})`
     if (filter === FILTER_NONE) return `Без раздела (${noSectionCount})`
     if (filter === FILTER_UNAVAILABLE) return `Недоступные (${unavailableCount})`
     const c = flatCategories.find((x) => String(x.id) === filter)
@@ -367,7 +381,7 @@ export function VideosManager({
       <div className="studio-page-head">
         <div>
           <h1>Видео</h1>
-          <div className="studio-page-head__sub">Всего: {videos.length}</div>
+          <div className="studio-page-head__sub">Всего: {totalN}</div>
         </div>
         {canCreate && (
         <div style={{ display: 'flex', gap: 8 }}>
@@ -420,7 +434,7 @@ export function VideosManager({
               </>
             }
             items={[
-              { value: FILTER_ALL, label: `Все видео (${videos.length})`, depth: 0, active: filter === FILTER_ALL },
+              { value: FILTER_ALL, label: `Все видео (${totalN})`, depth: 0, active: filter === FILTER_ALL },
               { value: FILTER_NONE, label: `Без раздела (${noSectionCount})`, depth: 0, active: filter === FILTER_NONE },
               ...(unavailableCount > 0
                 ? [{ value: FILTER_UNAVAILABLE, label: `⚠ Недоступные (${unavailableCount})`, depth: 0, active: filter === FILTER_UNAVAILABLE }]
@@ -447,11 +461,11 @@ export function VideosManager({
               style={{ padding: '7px 10px 7px 30px', borderRadius: 8, border: '1px solid var(--st-border)', background: 'var(--st-surface)', color: 'var(--st-text)', fontSize: 13, width: 210 }}
             />
           </div>
-          {(brokenCount > 0 || processingCount > 0) && (
+          {(brokenN > 0 || processingN > 0) && (
             <button
               type="button"
               onClick={() => setProblemFilter((v) => !v)}
-              title={`Требуют внимания — недоступны/ошибка: ${brokenCount}, в обработке: ${processingCount}. Клик — показать только их.`}
+              title={`Требуют внимания — недоступны/ошибка: ${brokenN}, в обработке: ${processingN}. Клик — показать только их.`}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 500,
                 border: `1px solid ${problemFilter ? 'transparent' : 'var(--st-border)'}`,
@@ -461,8 +475,8 @@ export function VideosManager({
             >
               <AlertTriangle size={14} />
               Проблемные
-              {brokenCount > 0 && <span style={{ ...COUNT_PILL, background: '#dc2626' }}>{brokenCount}</span>}
-              {processingCount > 0 && <span style={{ ...COUNT_PILL, background: '#f59e0b' }}>{processingCount}</span>}
+              {brokenN > 0 && <span style={{ ...COUNT_PILL, background: '#dc2626' }}>{brokenN}</span>}
+              {processingN > 0 && <span style={{ ...COUNT_PILL, background: '#f59e0b' }}>{processingN}</span>}
             </button>
           )}
           <div style={SEG_WRAP}>

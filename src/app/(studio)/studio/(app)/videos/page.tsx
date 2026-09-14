@@ -21,14 +21,58 @@ export default async function VideosPage() {
   const ent = await loadEntitlements(payload, author!.tenantId)
   if (!canUse(ent, 'media')) return <StudioUpsell cap="media" />
 
-  const res = await payload.find({
-    collection: 'videos',
-    where: { and: [{ tenant: { equals: author!.tenantId } }, { provider: { not_equals: 'audio' } }, ...(ownFilter ? [ownFilter] : [])] },
-    sort: '-createdAt',
-    limit: 500,
-    depth: 1,
-    overrideAccess: true,
-  })
+  // Общие фрагменты where. «Проблемные» — та же логика, что у бейджа в меню и у
+  // videoState в списке: broken = недоступный embed ИЛИ своё видео с ошибкой;
+  // processing = своё видео в загрузке/обработке.
+  const tenantWhere = { tenant: { equals: author!.tenantId } }
+  const notAudio = { provider: { not_equals: 'audio' } }
+  const ownArr = ownFilter ? [ownFilter] : []
+  const brokenWhere = {
+    or: [
+      { embedStatus: { equals: 'unavailable' } },
+      { and: [{ provider: { equals: 'self' } }, { assetStatus: { equals: 'error' } }] },
+    ],
+  }
+  const processingWhere = {
+    and: [{ provider: { equals: 'self' } }, { assetStatus: { in: ['uploading', 'processing'] } }],
+  }
+
+  // Список грузим постранично-урезанно (500 новейших), НО счётчики считаем по
+  // ВСЕЙ библиотеке (count), чтобы «Всего» и «Проблемные» не расходились с
+  // бейджем в меню. Плюс отдельно тянем ВСЕ проблемные видео и подмешиваем в
+  // список — тогда фильтр «Проблемные» показывает их полностью, а не только те,
+  // что попали в 500 новейших.
+  const [res, problemRes, totalCountRes, brokenCountRes, processingCountRes] = await Promise.all([
+    payload.find({
+      collection: 'videos',
+      where: { and: [tenantWhere, notAudio, ...ownArr] },
+      sort: '-createdAt',
+      limit: 500,
+      depth: 1,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'videos',
+      where: { and: [tenantWhere, notAudio, ...ownArr, { or: [brokenWhere, processingWhere] }] },
+      sort: '-createdAt',
+      limit: 2000,
+      depth: 1,
+      overrideAccess: true,
+    }),
+    payload.count({ collection: 'videos', where: { and: [tenantWhere, notAudio, ...ownArr] }, overrideAccess: true }),
+    payload.count({ collection: 'videos', where: { and: [tenantWhere, notAudio, ...ownArr, brokenWhere] }, overrideAccess: true }),
+    payload.count({ collection: 'videos', where: { and: [tenantWhere, notAudio, ...ownArr, processingWhere] }, overrideAccess: true }),
+  ])
+  const totalCount = totalCountRes.totalDocs || 0
+  const brokenTotal = brokenCountRes.totalDocs || 0
+  const processingTotal = processingCountRes.totalDocs || 0
+
+  // Мердж: 500 новейших + все проблемные (без дублей).
+  const seenIds = new Set((res.docs as any[]).map((d) => String(d.id)))
+  const allDocs = [
+    ...(res.docs as any[]),
+    ...(problemRes.docs as any[]).filter((d) => !seenIds.has(String(d.id))),
+  ]
 
   // Один запрос: все публикации тенанта с их relatedVideos. Строим карту
   // videoId → [{ id, title }] публикаций, где это видео прикреплено. Так не
@@ -51,7 +95,7 @@ export default async function VideosPage() {
     }
   }
 
-  const videos = (res.docs as any[]).map((v) => ({
+  const videos = allDocs.map((v) => ({
     id: v.id,
     title: v.title || 'Без названия',
     videoRef: v.videoRef || null,
@@ -131,5 +175,15 @@ export default async function VideosPage() {
     }
   })
 
-  return <VideosManager initialVideos={videos} tiers={tiers} categories={categories} canCreate={can(author!.user as any, 'videos', 'create')} />
+  return (
+    <VideosManager
+      initialVideos={videos}
+      totalCount={totalCount}
+      brokenTotal={brokenTotal}
+      processingTotal={processingTotal}
+      tiers={tiers}
+      categories={categories}
+      canCreate={can(author!.user as any, 'videos', 'create')}
+    />
+  )
 }
