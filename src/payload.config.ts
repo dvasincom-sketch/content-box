@@ -254,7 +254,14 @@ export default buildConfig({
       // залипнуть на дохлом соединении.
       keepAlive: true,
       keepAliveInitialDelayMillis: 10_000,
-      max: 20,
+      // Пул на процесс. У управляемого Postgres (Timeweb) небольшой лимит
+      // подключений, а во время выкатки одновременно живут СТАРЫЙ и НОВЫЙ
+      // контейнеры + фоновые задачи + миграция. При max:20 это упиралось в
+      // лимит: новый контейнер не мог подключиться на старте («remaining
+      // connection slots are reserved for SUPERUSER»), деплой залипал на
+      // health-check, а `payload migrate` падал. 10 оставляет запас на два
+      // контейнера сразу и на миграцию.
+      max: 10,
       idleTimeoutMillis: 10_000,
       connectionTimeoutMillis: 10_000,
       maxUses: 7_500,

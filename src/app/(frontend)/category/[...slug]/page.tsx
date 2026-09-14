@@ -1,7 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { videoThumbUrl, videoGifUrl } from '@/lib/videoThumb'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
@@ -129,9 +129,18 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   // Тип раздела «Страница»: рендерим одну привязанную публикацию как страницу
   // (например, профиль участника), без списка вложенных публикаций.
   if ((category as any).pageMode) {
+    // Привязанная публикация: по ОСНОВНОЙ или по ДОПОЛНИТЕЛЬНОЙ категории —
+    // чтобы «привязка» работала и через мультипикер доп. категорий, а не только
+    // через смену основной категории.
     const bound = await payload.find({
       collection: 'publications',
-      where: { and: [{ tenant: { equals: tenant.id } }, { category: { equals: category.id } }, publishedWhere()] },
+      where: {
+        and: [
+          { tenant: { equals: tenant.id } },
+          { or: [{ category: { equals: category.id } }, { extraCategories: { in: [category.id] } }] },
+          publishedWhere(),
+        ],
+      },
       sort: '-publishedAt', depth: 2, limit: 1, overrideAccess: true,
     })
     const bpub: any = (bound.docs as any[])[0]
@@ -181,12 +190,19 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         </main>
       )
     }
+
+    // Привязанная публикация обычного шаблона (не «Профиль»): её рендер на
+    // странице публикации монолитный и переиспользовать его здесь нельзя, поэтому
+    // раздел-«страница» ведёт на саму публикацию. Так работает и «страница»-фильм
+    // (article), а не только профиль участника.
+    if (bpub && bpub.slug) redirect(`/publication/${bpub.slug}`)
+
     return (
       <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-8">
           <Breadcrumbs crumbs={bcrumbs as any} lastIsCurrent className="mb-6" />
           <h1 className="text-3xl lg:text-5xl font-extrabold" style={{ color: 'var(--brand-text)' }}>{category.title}</h1>
-          <p style={{ color: 'var(--brand-muted)', marginTop: 16 }}>Для раздела-«страницы» пока нет привязанной публикации. Создайте публикацию с основной категорией «{category.title}».</p>
+          <p style={{ color: 'var(--brand-muted)', marginTop: 16 }}>Для раздела-«страницы» пока нет привязанной публикации. Привяжите к разделу «{category.title}» публикацию — укажите его как основную или дополнительную категорию публикации.</p>
         </div>
       </main>
     )
