@@ -32,10 +32,13 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     if (photo === null || photo === undefined || photo === '') {
       return apiError('У каждого участника должно быть фото')
     }
-    const category =
-      m?.category === null || m?.category === undefined || m?.category === ''
-        ? null
-        : m.category
+    // id категории — ЧИСЛО (связь categories в Postgres по числовому id).
+    // Строка «123» не проходит валидацию relationship → «поле недействительно».
+    let category: number | null = null
+    if (m?.category !== null && m?.category !== undefined && m?.category !== '') {
+      const cn = Number(m.category)
+      category = Number.isFinite(cn) ? cn : null
+    }
     members.push({
       photo,
       name: typeof m?.name === 'string' ? m.name : '',

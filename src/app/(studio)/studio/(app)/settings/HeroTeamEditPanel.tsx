@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Loader2, Check, Plus, Trash2, GripVertical, ImagePlus } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
@@ -24,7 +24,7 @@ type Member = {
   categoryId: number | string | null
 }
 
-type Category = { id: number | string; title: string }
+type Category = { id: number | string; title: string; parentId?: number | string | null }
 
 const AVATAR_SIZES = [
   { value: '48', label: 'Мелкие (48px)' },
@@ -183,10 +183,31 @@ export function HeroTeamEditPanel({
     }
   }
 
-  const categoryOptions = [
-    { value: NO_CATEGORY, label: '— без ссылки —' },
-    ...categories.map((c) => ({ value: String(c.id), label: c.title })),
-  ]
+  // Древовидный порядок с отступами (StudioSelect рисует depth как paddingLeft):
+  // корни → дети → внуки, внутри уровня по алфавиту. Так вложенные категории
+  // видно как дерево, а не сплошным плоским списком.
+  const categoryOptions = useMemo(() => {
+    const ids = new Set(categories.map((c) => String(c.id)))
+    const byParent = new Map<string, Category[]>()
+    for (const c of categories) {
+      const pid =
+        c.parentId != null && ids.has(String(c.parentId)) ? String(c.parentId) : '__root__'
+      if (!byParent.has(pid)) byParent.set(pid, [])
+      byParent.get(pid)!.push(c)
+    }
+    for (const arr of byParent.values()) arr.sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+    const out: { value: string; label: string; depth?: number }[] = [
+      { value: NO_CATEGORY, label: '— без ссылки —' },
+    ]
+    const walk = (pid: string, depth: number) => {
+      for (const c of byParent.get(pid) || []) {
+        out.push({ value: String(c.id), label: c.title, depth })
+        walk(String(c.id), depth + 1)
+      }
+    }
+    walk('__root__', 0)
+    return out
+  }, [categories])
 
   const panel = (
     <div className="studio-portal">
