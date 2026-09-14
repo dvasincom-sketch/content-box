@@ -2745,13 +2745,17 @@ svg {
   gap: 1.25rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding-bottom: 8px;
+  padding-bottom: 14px;
   /* Трейлинг-гаттер: при долистывании до конца последняя карточка не липнет
      к краю контейнера (и не заезжает под плавающую кнопку обратной связи). */
   padding-inline-end: 16px;
   scroll-padding-inline-end: 16px;
   -webkit-overflow-scrolling: touch;
+  /* Скроллбар в стиле сайта: тонкий, брендовый, приглушённый (ярче на ховер),
+     а не дефолтный серый. В Chromium/WebKit стандартные scrollbar-* гасятся
+     ниже (@supports) и ползунок рисуется псевдоэлементами. */
   scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brand-primary) 38%, transparent) transparent;
   /* Мягкий правый край: «подглядывающая» следующая карточка плавно затухает,
      а не обрезается резко — читается как намеренный скролл-подгляд, а не как
      баг вёрстки. Фейд привязан к правому краю вьюпорта карусели (не к контенту),
@@ -2766,6 +2770,36 @@ svg {
 }
 @media (max-width: 640px) {
   .home-carousel__card { flex: 0 0 78%; max-width: 78%; }
+}
+
+/* Chromium/WebKit: аккуратный брендовый скроллбар вместо дефолтного серого.
+   Chrome игнорирует ::-webkit-scrollbar при заданных стандартных scrollbar-*,
+   поэтому возвращаем им auto и рисуем сами. Ползунок с прозрачной «рамкой» и
+   background-clip — визуально отступает от краёв трека (выглядит тоньше и
+   опрятнее). Трек с горизонтальными полями не липнет к самым краям. */
+@supports selector(::-webkit-scrollbar) {
+  .home-carousel {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+  .home-carousel::-webkit-scrollbar {
+    height: 10px;
+  }
+  .home-carousel::-webkit-scrollbar-track {
+    background: transparent;
+    margin-inline: 2px 18px;
+  }
+  .home-carousel::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--brand-primary) 34%, transparent);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 999px;
+    transition: background 150ms ease;
+  }
+  .home-carousel:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--brand-primary) 60%, transparent);
+    background-clip: padding-box;
+  }
 }
 
 /* ============================================================================
