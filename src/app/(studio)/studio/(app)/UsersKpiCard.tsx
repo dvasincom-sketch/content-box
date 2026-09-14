@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Users, X, Loader2, Crown, ChevronLeft, ChevronRight,
-  LogIn, UserPlus, Eye, MessageSquare, Heart, Bookmark, Star, Ban,
+  LogIn, UserPlus, Eye, MessageSquare, Heart, Bookmark, Star, Ban, Search, ShieldCheck,
 } from 'lucide-react'
 
 type U = {
@@ -79,6 +79,8 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<U[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [blocking, setBlocking] = useState(false)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -119,14 +121,65 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
     }
   }
 
-  function closeAll() { setOpen(false); setSelected(null) }
+  // Блокировка/разблокировка: обновляем и список, и открытую карточку.
+  async function toggleBlock(u: U) {
+    const next = !u.isBlocked
+    setBlocking(true)
+    try {
+      const res = await fetch('/studio/api/subscriber-block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ subscriber: u.id, blocked: next }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setUsers((us) => (us ? us.map((x) => (x.id === u.id ? { ...x, isBlocked: next } : x)) : us))
+        setSelected((s) => (s && s.id === u.id ? { ...s, isBlocked: next } : s))
+      } else {
+        setEvError(j.error || 'Не удалось изменить статус')
+      }
+    } catch {
+      setEvError('Ошибка соединения')
+    } finally {
+      setBlocking(false)
+    }
+  }
+
+  function closeAll() { setOpen(false); setSelected(null); setQuery('') }
+
+  // Поиск по имени/email.
+  const q = query.trim().toLowerCase()
+  const filtered = users
+    ? users.filter(
+        (u) =>
+          !q ||
+          (u.displayName || '').toLowerCase().includes(q) ||
+          (u.email || '').toLowerCase().includes(q),
+      )
+    : null
 
   const list = (
     !users || users.length === 0 ? (
       <div className="uk-empty">Пользователей пока нет.</div>
     ) : (
-      <div className="uk-list">
-        {users.map((u) => (
+      <>
+        <div className="uk-search">
+          <Search size={15} className="uk-search__icon" aria-hidden />
+          <input
+            className="uk-search__input"
+            type="search"
+            placeholder="Поиск по имени или email…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Поиск участников"
+          />
+        </div>
+        {filtered && filtered.length === 0 ? (
+          <div className="uk-empty">Никого не найдено.</div>
+        ) : (
+        <div className="uk-list">
+          {(filtered || []).map((u) => (
           <button key={u.id} type="button" className="uk-row uk-row--btn" onClick={() => openUser(u)}>
             <span className="uk-ava">{(u.displayName || u.email || '?').slice(0, 1).toUpperCase()}</span>
             <div className="uk-row__main">
@@ -144,8 +197,10 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
             </div>
             <ChevronRight size={16} className="uk-row__chev" />
           </button>
-        ))}
-      </div>
+          ))}
+        </div>
+        )}
+      </>
     )
   )
 
@@ -211,7 +266,30 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
           <button className="catmgr__icon-btn" onClick={closeAll} aria-label="Закрыть"><X size={18} /></button>
         </div>
         <div className="uk-drawer__body">
-          {selected ? timeline : (
+          {selected ? (
+            <>
+              <div className={`uk-blockbar${selected.isBlocked ? ' is-blocked' : ''}`}>
+                <span className="uk-blockbar__status">
+                  {selected.isBlocked ? (
+                    <><Ban size={14} /> Пользователь заблокирован</>
+                  ) : (
+                    <><ShieldCheck size={14} /> Активен</>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  className={`studio-btn${selected.isBlocked ? '' : ' studio-btn--danger'}`}
+                  onClick={() => toggleBlock(selected)}
+                  disabled={blocking}
+                >
+                  {blocking ? <Loader2 size={14} className="spin" /> : <Ban size={14} />}
+                  {selected.isBlocked ? 'Разблокировать' : 'Заблокировать'}
+                </button>
+              </div>
+              {evError && <div className="settings__err" style={{ marginBottom: 8 }}>{evError}</div>}
+              {timeline}
+            </>
+          ) : (
             loading ? <div className="uk-empty"><Loader2 size={18} className="spin" /> Загрузка…</div>
             : error ? <div className="settings__err">{error}</div>
             : list

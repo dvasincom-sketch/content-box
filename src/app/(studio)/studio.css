@@ -5500,6 +5500,31 @@ a.session-expired__btn {
 .uk-drawer__body { flex: 1; overflow-y: auto; padding: var(--st-space-4) var(--st-space-5); }
 .uk-empty { color: var(--st-text-muted); display: flex; align-items: center; gap: .5rem; justify-content: center; padding: 2rem 0; }
 .uk-list { display: flex; flex-direction: column; gap: var(--st-space-2); }
+/* Поиск по участникам в drawer'е «Пользователи». */
+.uk-search { position: relative; margin-bottom: var(--st-space-3); }
+.uk-search__icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--st-text-muted); pointer-events: none; }
+.uk-search__input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  border: 1px solid var(--st-border);
+  border-radius: var(--st-radius-sm);
+  background: var(--st-surface);
+  color: var(--st-text);
+  font: inherit;
+}
+.uk-search__input:focus { outline: none; border-color: color-mix(in srgb, var(--st-accent) 45%, transparent); }
+/* Панель статуса/блокировки над таймлайном пользователя. */
+.uk-blockbar {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--st-space-3);
+  padding: 10px 12px; margin-bottom: var(--st-space-4);
+  border: 1px solid var(--st-border); border-radius: var(--st-radius-sm);
+  background: color-mix(in srgb, var(--st-surface) 55%, transparent);
+}
+.uk-blockbar.is-blocked {
+  border-color: color-mix(in srgb, var(--st-danger) 45%, transparent);
+  background: color-mix(in srgb, var(--st-danger) 10%, transparent);
+}
+.uk-blockbar__status { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--st-text); }
 .uk-row { display: flex; align-items: center; gap: var(--st-space-3); padding: var(--st-space-3); border: 1px solid var(--st-border); border-radius: var(--st-radius-sm); background: color-mix(in srgb, var(--st-surface) 55%, transparent); }
 .uk-ava { width: 36px; height: 36px; flex-shrink: 0; border-radius: 999px; display: grid; place-items: center; font-weight: 700; color: var(--st-text-muted); background: color-mix(in srgb, var(--st-text) 12%, transparent); }
 .uk-row__main { flex: 1; min-width: 0; }
