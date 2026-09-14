@@ -13,7 +13,7 @@ import { randomBytes } from 'crypto'
  *
  * Своё видео обязано быть платным — minTierId требуется (см. правило доступа).
  *
- * Body: { key, title, minTierId, categoryId?, season?, episode?, tags?, durationSec? }
+ * Body: { key, title, minTierId, categoryId?, episode?, tags?, durationSec? }
  * Ответ: { ok, id, playbackId }
  */
 export const runtime = 'nodejs'
@@ -61,7 +61,6 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         originalKey: key,
         minTier: minTierId,
         category: numOrNull(data.categoryId),
-        season: numOrNull(data.season),
         episode: numOrNull(data.episode),
         durationSec: numOrNull(data.durationSec),
         ...(Array.isArray(data.tags) && (data.tags as unknown[]).length

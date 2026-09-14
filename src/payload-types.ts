@@ -1178,11 +1178,7 @@ export interface Video {
     | null;
   durationSec?: number | null;
   /**
-   * Номер сезона в видео-плейлисте. Пусто = вне сезона.
-   */
-  season?: number | null;
-  /**
-   * Порядок серии внутри сезона/плейлиста (по возрастанию).
+   * Порядок серии в видео-плейлисте (по возрастанию). Разные сезоны — отдельными категориями.
    */
   episode?: number | null;
   publishedAt?: string | null;
@@ -2715,7 +2711,6 @@ export interface VideosSelect<T extends boolean = true> {
   chapters?: T;
   summary?: T;
   durationSec?: T;
-  season?: T;
   episode?: T;
   publishedAt?: T;
   externalRef?: T;

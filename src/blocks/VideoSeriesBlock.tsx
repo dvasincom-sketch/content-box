@@ -6,12 +6,15 @@ import { VideoPlayer } from '@/app/(frontend)/video/[slug]/VideoPlayer'
 import { formatDuration } from '@/lib/formatDuration'
 
 /**
- * Видео-плейлист (сезоны/эпизоды) — YouTube-подобная раскладка для категории с
- * флагом videoSeries. Слева плеер выбранного эпизода, справа список серий с
- * табами сезонов. Плеер — тот же VideoPlayer, что и на странице видео: он сам
+ * Видео-плейлист (эпизоды) — YouTube-подобная раскладка для категории с флагом
+ * videoSeries. Слева плеер выбранного эпизода, справа список серий по порядку
+ * поля «Эпизод». Плеер — тот же VideoPlayer, что и на странице видео: он сам
  * проверяет доступ по подписке (через /api/video-token) и показывает ошибку,
  * если у зрителя нет нужного уровня. Здесь мы лишь помечаем платные серии
  * «замком» для наглядности.
+ *
+ * Сезоны как отдельная сущность убраны намеренно: разные сезоны заводятся
+ * отдельными категориями (подразделами), а не полем у каждого видео.
  */
 
 export type SeriesEpisode = {
@@ -20,42 +23,22 @@ export type SeriesEpisode = {
   slug: string
   coverUrl: string | null
   previewGif?: string | null
-  season: number | null
   episode: number | null
   durationSec: number | null
   isFree: boolean
   minTierName: string | null
 }
 
-type Season = { key: string; label: string; order: number; episodes: SeriesEpisode[] }
-
 const fmtDur = formatDuration
 
-function groupSeasons(episodes: SeriesEpisode[]): Season[] {
-  const map = new Map<string, Season>()
-  for (const ep of episodes) {
-    const key = ep.season == null ? 'none' : `s${ep.season}`
-    if (!map.has(key)) {
-      map.set(key, {
-        key,
-        label: ep.season == null ? 'Серии' : `Сезон ${ep.season}`,
-        order: ep.season == null ? Number.POSITIVE_INFINITY : ep.season,
-        episodes: [],
-      })
-    }
-    map.get(key)!.episodes.push(ep)
-  }
-  const seasons = Array.from(map.values())
-  seasons.sort((a, b) => a.order - b.order)
-  for (const s of seasons) {
-    s.episodes.sort((a, b) => {
-      const ea = a.episode == null ? Number.POSITIVE_INFINITY : a.episode
-      const eb = b.episode == null ? Number.POSITIVE_INFINITY : b.episode
-      if (ea !== eb) return ea - eb
-      return a.title.localeCompare(b.title, 'ru')
-    })
-  }
-  return seasons
+/** Порядок серий: по номеру эпизода, затем по названию. */
+function sortEpisodes(episodes: SeriesEpisode[]): SeriesEpisode[] {
+  return [...episodes].sort((a, b) => {
+    const ea = a.episode == null ? Number.POSITIVE_INFINITY : a.episode
+    const eb = b.episode == null ? Number.POSITIVE_INFINITY : b.episode
+    if (ea !== eb) return ea - eb
+    return a.title.localeCompare(b.title, 'ru')
+  })
 }
 
 export function VideoSeriesBlock({
@@ -66,9 +49,8 @@ export function VideoSeriesBlock({
   /** Обложка категории — фолбэк-превью для серий без своей обложки. */
   seriesCoverUrl?: string | null
 }) {
-  const seasons = useMemo(() => groupSeasons(episodes), [episodes])
+  const ordered = useMemo(() => sortEpisodes(episodes), [episodes])
 
-  const [seasonKey, setSeasonKey] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [autoplay, setAutoplay] = useState(false)
 
@@ -78,27 +60,19 @@ export function VideoSeriesBlock({
     )
   }
 
-  const activeSeason = seasons.find((s) => s.key === seasonKey) ?? seasons[0]
-  const selected =
-    episodes.find((e) => String(e.id) === selectedId) ?? activeSeason.episodes[0]
+  const selected = ordered.find((e) => String(e.id) === selectedId) ?? ordered[0]
 
-  // Плоский порядок всех серий (сезоны по порядку, внутри — по эпизодам) —
-  // для сквозного перехода и кнопок «предыдущая/следующая», в т.ч. между сезонами.
-  const flat = seasons.flatMap((s) => s.episodes)
-  const curIdx = flat.findIndex((e) => String(e.id) === String(selected.id))
+  // Сквозной порядок для кнопок «предыдущая/следующая».
+  const curIdx = ordered.findIndex((e) => String(e.id) === String(selected.id))
   const hasPrev = curIdx > 0
-  const hasNext = curIdx >= 0 && curIdx < flat.length - 1
+  const hasNext = curIdx >= 0 && curIdx < ordered.length - 1
 
-  // Выбрать серию: подсвечиваем её сезон (таб/список переключаются сами).
   const selectEpisode = (ep: SeriesEpisode, auto: boolean) => {
     setSelectedId(String(ep.id))
-    setSeasonKey(ep.season == null ? 'none' : `s${ep.season}`)
     setAutoplay(auto)
   }
-
-  const selectSeason = (s: Season) => selectEpisode(s.episodes[0], false)
-  const goNext = () => { if (hasNext) selectEpisode(flat[curIdx + 1], true) }
-  const goPrev = () => { if (hasPrev) selectEpisode(flat[curIdx - 1], true) }
+  const goNext = () => { if (hasNext) selectEpisode(ordered[curIdx + 1], true) }
+  const goPrev = () => { if (hasPrev) selectEpisode(ordered[curIdx - 1], true) }
 
   return (
     // Обёртка-контейнер: раскладка .vseries переключается по ШИРИНЕ КОНТЕЙНЕРА
@@ -122,9 +96,6 @@ export function VideoSeriesBlock({
 
         <h2 className="vseries__now-title">{selected.title}</h2>
         <div className="vseries__now-meta">
-          {selected.season != null && (
-            <span>Сезон {selected.season}</span>
-          )}
           {selected.episode != null && (
             <span>Серия {selected.episode}</span>
           )}
@@ -142,25 +113,8 @@ export function VideoSeriesBlock({
       </div>
 
       <aside className="vseries__side">
-        {seasons.length > 1 && (
-          <div className="vseries__seasons" role="tablist">
-            {seasons.map((s) => (
-              <button
-                key={s.key}
-                type="button"
-                role="tab"
-                aria-selected={s.key === activeSeason.key}
-                className={`vseries__season-tab${s.key === activeSeason.key ? ' is-on' : ''}`}
-                onClick={() => selectSeason(s)}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        )}
-
         <ol className="vseries__episodes">
-          {activeSeason.episodes.map((ep, i) => {
+          {ordered.map((ep) => {
             const isActive = String(ep.id) === String(selected.id)
             const thumb = ep.coverUrl || seriesCoverUrl
             const usingFallback = !ep.coverUrl

@@ -59,7 +59,6 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     return Number.isFinite(n) ? n : null
   }
   const patch: any = { title, minTier }
-  if ('season' in data) patch.season = numOrNull(data.season)
   if ('episode' in data) patch.episode = numOrNull(data.episode)
   // Бесплатное превью: открыто всем, перебивает уровень (для вступительных глав).
   if ('isPreview' in data) patch.isPreview = Boolean(data.isPreview)
@@ -123,7 +122,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       data: patch as any,
       overrideAccess: true,
     })
-    return apiOk({ title, minTierId: minTier, season: patch.season, episode: patch.episode })
+    return apiOk({ title, minTierId: minTier, episode: patch.episode })
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось обновить видео'))
   }

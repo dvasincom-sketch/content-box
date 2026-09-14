@@ -50,7 +50,6 @@ export default async function AudioPage() {
     minTierId: v.minTier ? String(typeof v.minTier === 'object' ? v.minTier.id : v.minTier) : '',
     isPreview: Boolean(v.isPreview),
     addedAt: v.publishedAt || v.createdAt || null,
-    season: v.season ?? null,
     episode: v.episode ?? null,
     categoryId: v.category ? String(typeof v.category === 'object' ? v.category.id : v.category) : '',
     tags: Array.isArray(v.tags)

@@ -16,7 +16,7 @@ import { randomBytes } from 'crypto'
  * Своё видео обязательно платное — minTierId требуется.
  *
  * Body:
- *   { urls: string[], minTierId, categoryId?, season?, episode?, tags? }  — пачка
+ *   { urls: string[], minTierId, categoryId?, episode?, tags? }  — пачка
  *   { url, title?, minTierId, ... }                                        — одиночная (совместимость)
  * Ответ: { created: [{id, title, url}], errors: [{url, error}], count, id }
  */
@@ -61,7 +61,6 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const explicitTitle = urls.length === 1 ? String(data.title || '').trim() : ''
 
   // Общие метаданные — применяются ко всем видео из списка.
-  const season = numOrNull(data.season)
   const episodeBase = numOrNull(data.episode)
   const categoryId = numOrNull(data.categoryId)
   const tagRows = Array.isArray(data.tags)
@@ -100,7 +99,6 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
           playbackId,
           minTier: minTierId,
           category: categoryId,
-          season,
           episode: episodeBase != null ? episodeBase + i : null,
           ...(tagRows.length ? { tags: tagRows } : {}),
           tenant: tenantId,

@@ -28,7 +28,6 @@ export function AudioEditModal({
   const [title, setTitle] = useState(video.title)
   const [minTierId, setMinTierId] = useState<string>(video.minTierId || '')
   const [isPreview, setIsPreview] = useState<boolean>(Boolean(video.isPreview))
-  const [season, setSeason] = useState<string>(video.season != null ? String(video.season) : '')
   const [episode, setEpisode] = useState<string>(video.episode != null ? String(video.episode) : '')
   const [categoryId, setCategoryId] = useState<string>(video.categoryId || '')
   const [tags, setTags] = useState<string[]>(video.tags || [])
@@ -71,7 +70,6 @@ export function AudioEditModal({
           title: title.trim(),
           minTierId: minTierId || null,
           isPreview,
-          season: season.trim() === '' ? null : Number(season),
           episode: episode.trim() === '' ? null : Number(episode),
           categoryId: categoryId || null,
           tags,
@@ -154,11 +152,8 @@ export function AudioEditModal({
             </div>
 
             <div className="studio-field">
-              <span className="studio-field__label">Сезон и эпизод (необязательно)</span>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input className="studio-input" type="number" min={0} placeholder="Сезон" value={season} onChange={(e) => setSeason(e.target.value)} />
-                <input className="studio-input" type="number" min={0} placeholder="Эпизод" value={episode} onChange={(e) => setEpisode(e.target.value)} />
-              </div>
+              <span className="studio-field__label">Эпизод (необязательно)</span>
+              <input className="studio-input" type="number" min={0} placeholder="Эпизод" value={episode} onChange={(e) => setEpisode(e.target.value)} />
             </div>
 
             <div className="studio-field">

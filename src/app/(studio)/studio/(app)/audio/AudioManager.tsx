@@ -18,7 +18,6 @@ type AudioItem = {
   minTierId: string
   isPreview: boolean
   addedAt: string | null
-  season: number | null
   episode: number | null
   categoryId: string
   tags: string[]
@@ -277,7 +276,6 @@ export function AudioManager({
                     title: a.title,
                     minTierId: a.minTierId,
                     isPreview: a.isPreview,
-                    season: a.season,
                     episode: a.episode,
                     categoryId: a.categoryId,
                     tags: a.tags,

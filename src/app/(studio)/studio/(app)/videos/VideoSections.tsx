@@ -18,7 +18,6 @@ export type EditableVideo = {
   isPreview?: boolean
   coverId?: number | null
   coverUrl?: string | null
-  season: number | null
   episode: number | null
   categoryId: string
   tags: string[]

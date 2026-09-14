@@ -41,7 +41,6 @@ type Vid = {
   coverUrl: string | null
   previewGif?: string | null
   addedAt: string | null
-  season: number | null
   episode: number | null
   categoryId: string
   tags: string[]
@@ -93,21 +92,6 @@ function segBtn(active: boolean): React.CSSProperties {
 }
 
 const fmtDur = formatDuration
-
-/** Плашка-подсказка о рассинхроне сезонов в разделе. */
-const seasonWarnStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 10,
-  alignItems: 'flex-start',
-  padding: '10px 14px',
-  marginBottom: 10,
-  borderRadius: 10,
-  background: 'color-mix(in srgb, #e0821a 12%, transparent)',
-  border: '1px solid color-mix(in srgb, #e0821a 40%, transparent)',
-  color: 'var(--st-text)',
-  fontSize: 13.5,
-  lineHeight: 1.5,
-}
 
 /** Полный размер self-видео (сумма рендишенов + постер/спрайт/gif) из assetBytes. */
 function fmtBytes(n: number | null | undefined): string {
@@ -265,38 +249,6 @@ export function VideosManager({
   // processing (оранжевый — идёт обработка/загрузка).
   const brokenCount = useMemo(() => videos.filter((v) => videoState(v) === 'broken').length, [videos])
   const processingCount = useMemo(() => videos.filter((v) => videoState(v) === 'processing').length, [videos])
-
-  // Рассинхрон сезонов: разделы, где у ЧАСТИ видео сезон заполнен, а у части —
-  // нет. В видео-плейлисте это порождает лишнюю вкладку «Сезон N» рядом с
-  // «Серии» (видео без сезона попадают в «Серии», с сезоном — в «Сезон N»).
-  // Само поведение плеера корректно — это подсказка привести данные к одному
-  // виду: либо проставить сезон всем, либо очистить у всех.
-  const seasonMismatch = useMemo(() => {
-    const agg = new Map<string, { withSeason: number; without: number }>()
-    for (const v of videos) {
-      if (!v.categoryId) continue
-      const k = String(v.categoryId)
-      const a = agg.get(k) || { withSeason: 0, without: 0 }
-      if (v.season == null) a.without += 1
-      else a.withSeason += 1
-      agg.set(k, a)
-    }
-    const mixed: { id: string; path: string; withSeason: number; without: number }[] = []
-    for (const [id, a] of agg) {
-      if (a.withSeason > 0 && a.without > 0) {
-        mixed.push({ id, path: catPathById.get(id) || 'Раздел', withSeason: a.withSeason, without: a.without })
-      }
-    }
-    mixed.sort((x, y) => x.path.localeCompare(y.path, 'ru'))
-    return mixed
-  }, [videos, catPathById])
-  // Для текущего фильтра-раздела — запись рассинхрона именно этого раздела.
-  const currentMismatch = useMemo(
-    () => (filter !== FILTER_ALL && filter !== FILTER_NONE && filter !== FILTER_UNAVAILABLE
-      ? seasonMismatch.find((m) => m.id === filter) || null
-      : null),
-    [seasonMismatch, filter],
-  )
 
   const filteredVideos = useMemo(() => {
     let out = videos
@@ -539,38 +491,6 @@ export function VideosManager({
         </div>
       ) : (
         <>
-        {/* Подсказка о рассинхроне сезонов в разделе (см. seasonMismatch). */}
-        {currentMismatch ? (
-          <div style={seasonWarnStyle}>
-            <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1, color: '#e0821a' }} />
-            <div>
-              В этом разделе у части видео заполнен «Сезон», а у части — нет
-              {' '}({currentMismatch.withSeason} с сезоном, {currentMismatch.without} без).
-              Из-за этого в плейлисте появляется отдельная вкладка «Сезон». Чтобы всё было в одном списке —
-              очистите «Сезон» у всех видео раздела (или, наоборот, проставьте всем). Поле «Сезон» — в карандаше видео.
-            </div>
-          </div>
-        ) : filter === FILTER_ALL && seasonMismatch.length > 0 ? (
-          <div style={seasonWarnStyle}>
-            <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1, color: '#e0821a' }} />
-            <div>
-              В некоторых разделах у части видео заполнен «Сезон», а у части — нет — в плейлисте появится лишняя вкладка «Сезон». Проверьте:
-              <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 6, marginLeft: 4 }}>
-                {seasonMismatch.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => setFilter(m.id)}
-                    style={{ background: 'none', border: '1px solid color-mix(in srgb, #e0821a 55%, transparent)', color: 'inherit', borderRadius: 999, padding: '1px 10px', cursor: 'pointer', fontSize: 13 }}
-                    title="Показать видео этого раздела"
-                  >
-                    {m.path}
-                  </button>
-                ))}
-              </span>
-            </div>
-          </div>
-        ) : null}
         {selected.size > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', marginBottom: 10, borderRadius: 10, background: 'var(--st-surface)', border: '1px solid var(--st-border)' }}>
             <span style={{ fontSize: 14 }}>Выбрано: <b>{selected.size}</b></span>
@@ -974,14 +894,13 @@ function VideoRow({
    ============================================================================ */
 type MetaCat = { id: number | string; title: string; depth: number }
 
-/** Общий блок метаданных при добавлении видео: категория (дерево) + сезон +
- *  серия + теги. Прикрепление к публикации остаётся в редакторе видео. */
+/** Общий блок метаданных при добавлении видео: категория (дерево) + серия +
+ *  теги. Прикрепление к публикации остаётся в редакторе видео. */
 function VideoMetaFields({
-  categories, categoryId, setCategoryId, season, setSeason, episode, setEpisode, tags, setTags,
+  categories, categoryId, setCategoryId, episode, setEpisode, tags, setTags,
 }: {
   categories: MetaCat[]
   categoryId: string; setCategoryId: (v: string) => void
-  season: string; setSeason: (v: string) => void
   episode: string; setEpisode: (v: string) => void
   tags: string[]; setTags: (v: string[]) => void
 }) {
@@ -994,16 +913,10 @@ function VideoMetaFields({
         <StudioSelect value={categoryId} onChange={setCategoryId} ariaLabel="Категория"
           options={[{ value: '', label: '\u2014 без категории \u2014' }, ...categories.map((c) => ({ value: String(c.id), label: c.title, depth: c.depth }))]} />
       </label>
-      <div style={{ display: 'flex', gap: 12 }}>
-        <label className="studio-field" style={{ flex: 1 }}>
-          <span className="studio-field__label">Сезон</span>
-          <input className="studio-input" type="number" min={0} value={season} onChange={(e) => setSeason(e.target.value)} />
-        </label>
-        <label className="studio-field" style={{ flex: 1 }}>
-          <span className="studio-field__label">Серия / эпизод</span>
-          <input className="studio-input" type="number" min={0} value={episode} onChange={(e) => setEpisode(e.target.value)} />
-        </label>
-      </div>
+      <label className="studio-field">
+        <span className="studio-field__label">Серия / эпизод</span>
+        <input className="studio-input" type="number" min={0} value={episode} onChange={(e) => setEpisode(e.target.value)} />
+      </label>
       <div className="studio-field">
         <span className="studio-field__label">Теги</span>
         {tags.length > 0 && (
@@ -1635,7 +1548,6 @@ function UploadFileForm({
   // уровень; «бесплатного» варианта в списке нет.
   const [minTierId, setMinTierId] = useState<string>(() => (tiers[0] ? String(tiers[0].id) : ''))
   const [categoryId, setCategoryId] = useState('')
-  const [season, setSeason] = useState('')
   const [episode, setEpisode] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
@@ -1671,7 +1583,6 @@ function UploadFileForm({
     // Своё видео не бывает бесплатным превью — сервер это форсит, шлём false.
     fd.append('isPreview', String(false))
     if (categoryId) fd.append('categoryId', categoryId)
-    if (season.trim()) fd.append('season', season.trim())
     if (episode.trim()) fd.append('episode', episode.trim())
     if (tags.length) fd.append('tags', tags.join(','))
 
@@ -1763,8 +1674,7 @@ function UploadFileForm({
                 minTierId: minTierId || null,
                 isPreview: false,
                 categoryId: categoryId || null,
-                season: season.trim() || null,
-                episode: episode.trim() || null,
+                      episode: episode.trim() || null,
                 tags,
               }),
             })
@@ -1877,7 +1787,6 @@ function UploadFileForm({
         <VideoMetaFields
           categories={categories}
           categoryId={categoryId} setCategoryId={setCategoryId}
-          season={season} setSeason={setSeason}
           episode={episode} setEpisode={setEpisode}
           tags={tags} setTags={setTags}
         />
@@ -1930,7 +1839,6 @@ function UrlFields({
   // Своё видео обязано быть платным — по умолчанию самый дешёвый уровень.
   const [minTierId, setMinTierId] = useState<string>(() => (tiers[0] ? String(tiers[0].id) : ''))
   const [categoryId, setCategoryId] = useState('')
-  const [season, setSeason] = useState('')
   const [episode, setEpisode] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
@@ -1957,7 +1865,6 @@ function UrlFields({
           minTierId: minTierId || null,
           isPreview: false,
           categoryId: categoryId || null,
-          season: season.trim() || null,
           episode: episode.trim() || null,
           tags,
         }),
@@ -2015,7 +1922,6 @@ function UrlFields({
       <VideoMetaFields
         categories={categories}
         categoryId={categoryId} setCategoryId={setCategoryId}
-        season={season} setSeason={setSeason}
         episode={episode} setEpisode={setEpisode}
         tags={tags} setTags={setTags}
       />
@@ -2064,7 +1970,6 @@ function SelfUploadForm({
   const [title, setTitle] = useState('')
   const [minTierId, setMinTierId] = useState<string>(() => (tiers[0] ? String(tiers[0].id) : ''))
   const [categoryId, setCategoryId] = useState('')
-  const [season, setSeason] = useState('')
   const [episode, setEpisode] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
@@ -2107,7 +2012,6 @@ function SelfUploadForm({
           title: urls.length === 1 ? title.trim() : undefined,
           minTierId,
           categoryId: categoryId || null,
-          season: season.trim() || null,
           episode: episode.trim() || null,
           tags,
         }),
@@ -2158,7 +2062,6 @@ function SelfUploadForm({
           title: title.trim(),
           minTierId,
           categoryId: categoryId || null,
-          season: season.trim() || null,
           episode: episode.trim() || null,
           tags,
         }),
@@ -2275,7 +2178,6 @@ function SelfUploadForm({
       <VideoMetaFields
         categories={categories}
         categoryId={categoryId} setCategoryId={setCategoryId}
-        season={season} setSeason={setSeason}
         episode={episode} setEpisode={setEpisode}
         tags={tags} setTags={setTags}
       />
@@ -2322,7 +2224,6 @@ function EmbedFields({
   const [title, setTitle] = useState('')
   const [url, setUrl] = useState('')
   const [categoryId, setCategoryId] = useState('')
-  const [season, setSeason] = useState('')
   const [episode, setEpisode] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
@@ -2369,7 +2270,6 @@ function EmbedFields({
           isPreview: true,
           coverId: coverId ?? null,
           categoryId: categoryId || null,
-          season: season.trim() || null,
           episode: episode.trim() || null,
           tags,
         }),
@@ -2454,7 +2354,6 @@ function EmbedFields({
       <VideoMetaFields
         categories={categories}
         categoryId={categoryId} setCategoryId={setCategoryId}
-        season={season} setSeason={setSeason}
         episode={episode} setEpisode={setEpisode}
         tags={tags} setTags={setTags}
       />

@@ -124,6 +124,7 @@ import * as migration_20260901_130000_add_font_overrides from './20260901_130000
 import * as migration_20260904_140000_add_category_hide_date from './20260904_140000_add_category_hide_date';
 import * as migration_20260913_120000_add_category_manual_order from './20260913_120000_add_category_manual_order';
 import * as migration_20260913_140000_add_sms_log from './20260913_140000_add_sms_log';
+import * as migration_20260914_120000_drop_video_season from './20260914_120000_drop_video_season';
 
 export const migrations = [
   {
@@ -755,5 +756,10 @@ export const migrations = [
     up: migration_20260913_140000_add_sms_log.up,
     down: migration_20260913_140000_add_sms_log.down,
     name: '20260913_140000_add_sms_log',
+  },
+  {
+    up: migration_20260914_120000_drop_video_season.up,
+    down: migration_20260914_120000_drop_video_season.down,
+    name: '20260914_120000_drop_video_season',
   },
 ];

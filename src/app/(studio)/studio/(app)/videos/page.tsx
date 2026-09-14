@@ -80,7 +80,6 @@ export default async function VideosPage() {
     coverUrl: videoThumbUrl(v),
     previewGif: videoGifUrl(v),
     addedAt: v.publishedAt || v.createdAt || null,
-    season: v.season ?? null,
     episode: v.episode ?? null,
     categoryId: v.category ? String(typeof v.category === 'object' ? v.category.id : v.category) : '',
     tags: Array.isArray(v.tags)

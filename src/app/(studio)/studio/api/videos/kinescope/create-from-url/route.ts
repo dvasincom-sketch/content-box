@@ -58,7 +58,6 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         minTier: numOrNull(data.minTierId),
         isPreview: Boolean(data.isPreview),
         category: numOrNull(data.categoryId),
-        season: numOrNull(data.season),
         episode: numOrNull(data.episode),
         ...(Array.isArray(data.tags) && (data.tags as any[]).length
           ? { tags: (data.tags as unknown[]).filter((t): t is string => typeof t === 'string' && t.trim().length > 0).map((t) => ({ label: t.trim() })) }

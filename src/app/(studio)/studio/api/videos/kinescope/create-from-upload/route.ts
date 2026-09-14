@@ -79,7 +79,6 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         minTier: numOrNull(form.get('minTierId')),
         isPreview: form.get('isPreview') === 'true',
         category: numOrNull(form.get('categoryId')),
-        season: numOrNull(form.get('season')),
         episode: numOrNull(form.get('episode')),
         ...(String(form.get('tags') || '').trim()
           ? { tags: String(form.get('tags')).split(',').map((s2) => s2.trim()).filter(Boolean).map((t) => ({ label: t })) }

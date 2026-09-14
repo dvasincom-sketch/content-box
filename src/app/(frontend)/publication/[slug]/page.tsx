@@ -230,7 +230,6 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     slug: v.slug || '',
     coverUrl: videoThumbUrl(v),
     previewGif: videoGifUrl(v),
-    season: v.season ?? null,
     episode: v.episode ?? i + 1,
     durationSec: v.durationSec ?? null,
     // Бесплатно ровно как в checkVideoAccess: «превью» ИЛИ внешняя вставка (embed)

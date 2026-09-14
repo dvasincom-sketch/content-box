@@ -62,7 +62,6 @@ export default async function VideoEditorPage({ params }: { params: Promise<{ id
     minTierId: v.minTier ? String(typeof v.minTier === 'object' ? v.minTier.id : v.minTier) : '',
     coverId: v.cover ? Number(typeof v.cover === 'object' ? v.cover.id : v.cover) : null,
     coverUrl: videoThumbUrl(v),
-    season: v.season ?? null,
     episode: v.episode ?? null,
     categoryId: v.category ? String(typeof v.category === 'object' ? v.category.id : v.category) : '',
     tags: Array.isArray(v.tags)

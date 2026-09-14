@@ -44,7 +44,6 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
   // — Основные поля («Обзор») —
   const [title, setTitle] = useState(video.title)
   const [minTierId, setMinTierId] = useState<string>(video.minTierId || '')
-  const [season, setSeason] = useState<string>(video.season != null ? String(video.season) : '')
   const [episode, setEpisode] = useState<string>(video.episode != null ? String(video.episode) : '')
   const [categoryId, setCategoryId] = useState<string>(video.categoryId || '')
   const [tags, setTags] = useState<string[]>(video.tags || [])
@@ -111,7 +110,6 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
           title: title.trim(),
           minTierId: minTierId || null,
           coverId: coverId ?? null,
-          season: season.trim() === '' ? null : Number(season),
           episode: episode.trim() === '' ? null : Number(episode),
           categoryId: categoryId || null,
           tags,
@@ -294,9 +292,8 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
             </div>
 
             <div className="studio-field">
-              <span className="studio-field__label">Сезон и эпизод (для видео-плейлиста)</span>
+              <span className="studio-field__label">Эпизод (для видео-плейлиста)</span>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input className="studio-input" type="number" min={0} placeholder="Сезон" value={season} onChange={(e) => setSeason(e.target.value)} />
                 <input className="studio-input" type="number" min={0} placeholder="Эпизод" value={episode} onChange={(e) => setEpisode(e.target.value)} />
               </div>
             </div>

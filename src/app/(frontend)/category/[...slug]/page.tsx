@@ -219,7 +219,6 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         slug: v.slug || '',
         coverUrl,
         previewGif: videoGifUrl(v),
-        season: v.season ?? null,
         episode: v.episode ?? null,
         durationSec: v.durationSec ?? null,
         // Бесплатно ровно как в checkVideoAccess: «превью» ИЛИ внешняя вставка
