@@ -88,8 +88,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, provider: 'self', status: access.video.assetStatus || 'processing' })
     }
     const token = signPlaybackToken(playbackId, 2 * 60 * 60)
+    // Постер плеера: СВОЯ обложка (cover) перекрывает авто-кадр — так же, как на
+    // карточке (videoThumbUrl) и как обещает подсказка в студии. Медиа-бакет
+    // публичный, поэтому cover отдаём прямым url без подписи; авто-постер
+    // (posterKey) — фолбэк, он в приватном бакете и требует presign.
     let poster: string | null = null
-    if (access.video.posterKey) {
+    const cover =
+      access.video.cover && typeof access.video.cover === 'object' ? (access.video.cover as any) : null
+    const coverUrl = cover?.sizes?.large?.url || cover?.sizes?.card?.url || cover?.url || null
+    if (coverUrl) {
+      poster = String(coverUrl)
+    } else if (access.video.posterKey) {
       poster = await presignGet(String(access.video.posterKey), 2 * 60 * 60).catch(() => null)
     }
     // Сториборд (scrub-preview): VTT-таблица кадров, подписанная тем же токеном.
