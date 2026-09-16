@@ -39,7 +39,11 @@ type PhoneStep = 'phone' | 'code' | 'email'
 
 export function LoginForm({ remembered = null }: { remembered?: string | null }) {
   const router = useRouter()
-  const [mode, setMode] = useState<Mode>('phone')
+  // Email — основной способ входа (SMS сейчас доходят не всем операторам, см.
+  // предупреждение ниже). Исключение: если браузер помнит телефонный аккаунт
+  // (remembered), открываем вкладку «По телефону», чтобы показать вход одним
+  // кликом без SMS.
+  const [mode, setMode] = useState<Mode>(remembered ? 'phone' : 'email')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -199,11 +203,11 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
         </div>
 
         <div className="auth__tabs" role="tablist">
-          <button type="button" role="tab" aria-selected={mode === 'phone'} className={`auth__tab${mode === 'phone' ? ' is-active' : ''}`} onClick={() => switchMode('phone')}>
-            По телефону
-          </button>
           <button type="button" role="tab" aria-selected={mode === 'email'} className={`auth__tab${mode === 'email' ? ' is-active' : ''}`} onClick={() => switchMode('email')}>
             По email
+          </button>
+          <button type="button" role="tab" aria-selected={mode === 'phone'} className={`auth__tab${mode === 'phone' ? ' is-active' : ''}`} onClick={() => switchMode('phone')}>
+            По телефону
           </button>
         </div>
 
@@ -247,6 +251,19 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
                   required
                 />
               </div>
+              <p
+                className="auth__hint"
+                style={{
+                  marginTop: 0,
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  background: 'color-mix(in srgb, #e0821a 12%, transparent)',
+                  border: '1px solid color-mix(in srgb, #e0821a 35%, transparent)',
+                  color: 'var(--brand-text)',
+                }}
+              >
+                ⚠️ Сейчас SMS приходят только абонентам <b>Tele2</b>. Если у вас другой оператор (МТС, МегаФон, Билайн и др.), код может не дойти — войдите или зарегистрируйтесь <b>по email</b>.
+              </p>
               {error && <p className="auth__error">{error}</p>}
               <button type="submit" disabled={loading} className="auth__btn">
                 {loading ? 'Отправляем…' : 'Получить код'}
@@ -278,6 +295,9 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
               <button type="submit" disabled={loading} className="auth__btn">
                 {loading ? 'Проверяем…' : 'Войти'}
               </button>
+              <p className="auth__hint" style={{ marginTop: 0 }}>
+                Код не пришёл? Сейчас SMS доходят только абонентам <b>Tele2</b>. С другим оператором войдите <b>по email</b>.
+              </p>
               <div className="auth__resend">
                 <button
                   type="button"
