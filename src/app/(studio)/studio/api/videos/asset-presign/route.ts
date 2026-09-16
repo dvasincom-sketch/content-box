@@ -10,7 +10,7 @@ import { presignPut, publicUrl } from '@/lib/s3'
  */
 export const runtime = 'nodejs'
 
-const MAX_BYTES = 5 * 1024 * 1024 * 1024 // 5 ГБ
+const MAX_BYTES = 10 * 1024 * 1024 * 1024 // 10 ГБ
 const ALLOWED = [
   'video/mp4',
   'video/quicktime',
@@ -39,7 +39,7 @@ export const POST = withAuthor(async ({ req, tenantId, author }) => {
     return apiError('Поддерживаются видеофайлы (MP4, MOV, MKV, WebM и др.)')
   }
   if (!(size > 0)) return apiError('Пустой файл')
-  if (size > MAX_BYTES) return apiError('Файл больше 5 ГБ')
+  if (size > MAX_BYTES) return apiError('Файл больше 10 ГБ')
 
   const rand = Math.random().toString(36).slice(2, 10)
   const key = `originals/${tenantId}/${Date.now()}-${rand}.${ext(String(data.filename || ''))}`
