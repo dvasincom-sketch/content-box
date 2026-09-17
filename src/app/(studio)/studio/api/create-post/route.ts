@@ -101,11 +101,10 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
       overrideAccess: true,
     })
 
-    // Профиль, привязанный к разделу, превращает раздел в «Страницу» (pageMode):
-    // раздел показывает этот профиль как свою страницу.
-    if (data.template === 'profile' && categoryId) {
-      try { await payload.update({ collection: 'categories', id: categoryId, data: { pageMode: true } as any, overrideAccess: true }) } catch { /* не критично */ }
-    }
+    // Тип раздела («Обычный» / «Страница») — только явная настройка автора
+    // (галочка «Страница» в категории). Сохранение публикации его НЕ меняет:
+    // раньше профиль принудительно переводил раздел в pageMode, из-за чего
+    // обычные разделы-списки неожиданно превращались в «страницу».
     return apiOk({ id: doc.id, slug })
   } catch (e: unknown) {
     return apiError(errorMessage(e, 'Не удалось сохранить публикацию'), 500)
