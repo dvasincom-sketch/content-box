@@ -12,15 +12,10 @@ import { Play, Pause, Maximize, Minimize, Volume2, VolumeX, Loader2, Captions, L
  * приходит подписанный URL VTT (prop `sprite`). Парсим cue-таблицу (интервал →
  * storyboard.jpg#xywh) и при наведении на дорожку показываем нужный тайл.
  *
- * watermarkText — динамический водяной знак (email зрителя) поверх видео.
+ * Водяной знак с email зрителя убран по просьбе владельца (не понравилось
+ * отображение логина поверх видео). Проп watermarkText оставлен для совместимости
+ * с вызывающим кодом, но больше не отображается.
  */
-const WM_POSITIONS: React.CSSProperties[] = [
-  { top: 12, left: 12 },
-  { top: 12, right: 12 },
-  { bottom: 64, right: 12 },
-  { bottom: 64, left: 12 },
-]
-
 type Cue = { start: number; end: number; img: string; x: number; y: number; w: number; h: number }
 
 function parseTs(s: string): number {
@@ -69,7 +64,6 @@ function fmtTime(t: number): string {
 export function SelfHostedPlayer({
   master,
   poster,
-  watermarkText,
   sprite,
   subtitles,
   videoId,
@@ -381,14 +375,6 @@ export function SelfHostedPlayer({
   const playedPct = duration > 0 ? (current / duration) * 100 : 0
   const bufferedPct = duration > 0 ? Math.min(100, (buffered / duration) * 100) : 0
 
-  // Watermark медленно меняет позицию (антипиратство).
-  const [wmPos, setWmPos] = useState(0)
-  useEffect(() => {
-    if (!watermarkText) return
-    const id = setInterval(() => setWmPos((p) => (p + 1) % WM_POSITIONS.length), 7000)
-    return () => clearInterval(id)
-  }, [watermarkText])
-
   return (
     <div
       ref={containerRef}
@@ -403,7 +389,10 @@ export function SelfHostedPlayer({
         poster={poster || undefined}
         playsInline
         controlsList="nodownload"
-        onClick={togglePlay}
+        // Клик/тап по видео ТОЛЬКО показывает панель управления и НЕ ставит на
+        // паузу (на мобильных панель иначе трудно вызвать). Пауза — кнопкой на
+        // панели или пробелом.
+        onClick={poke}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', background: '#000' }}
       >
         {tracks.map((t, i) => (
@@ -432,20 +421,6 @@ export function SelfHostedPlayer({
           <Loader2 size={30} className="animate-spin" />
         </div>
       )}
-
-      {/* Watermark */}
-      {watermarkText ? (
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute', padding: '2px 8px', fontSize: 11, color: 'rgba(255,255,255,.5)',
-            background: 'rgba(0,0,0,.22)', borderRadius: 6, pointerEvents: 'none', userSelect: 'none',
-            transition: 'top .8s ease, left .8s ease, right .8s ease, bottom .8s ease', ...WM_POSITIONS[wmPos],
-          }}
-        >
-          {watermarkText}
-        </div>
-      ) : null}
 
       {/* Панель контролов */}
       <div
@@ -496,8 +471,10 @@ export function SelfHostedPlayer({
           </div>
         </div>
 
-        {/* Кнопки */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: '#fff' }}>
+        {/* Кнопки. flexWrap — чтобы на узком экране правые кнопки (PiP, полный
+            экран) переносились на вторую строку, а не уезжали за край и не
+            пропадали. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, rowGap: 10, flexWrap: 'wrap', color: '#fff' }}>
           <button type="button" aria-label={playing ? 'Пауза' : 'Смотреть'} onClick={togglePlay} style={btnStyle}>
             {playing ? <Pause size={20} fill="#fff" /> : <Play size={20} fill="#fff" />}
           </button>
