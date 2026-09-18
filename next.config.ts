@@ -11,10 +11,19 @@ const dirname = path.dirname(__filename)
 const mediaPublicUrl = process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL
 const mediaHost = mediaPublicUrl ? new URL(mediaPublicUrl).hostname : undefined
 
+// Идентификатор сборки: вычисляется на `next build` и запекается в бандл
+// (NEXT_PUBLIC_BUILD_ID) — и на клиент, и в серверный /api/version. У каждого
+// деплоя он свой, поэтому установленное PWA видит, что вышла новая версия, и
+// предлагает обновиться. Явный BUILD_ID из окружения имеет приоритет.
+const BUILD_ID = process.env.BUILD_ID || String(Date.now())
+
 const nextConfig: NextConfig = {
   // fast-geoip читает свои .dat из node_modules в рантайме — не бандлим его,
   // иначе рушится путь к данным. База едет в образ (полный node_modules).
   serverExternalPackages: ['fast-geoip'],
+  env: {
+    NEXT_PUBLIC_BUILD_ID: BUILD_ID,
+  },
   images: {
     localPatterns: [
       {
