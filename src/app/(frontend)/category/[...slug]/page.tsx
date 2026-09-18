@@ -181,11 +181,18 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         const fp = await payload.find({ collection: 'publications', where: { and: [{ tenant: { equals: tenant.id } }, { id: { in: pubIds } }, publishedWhere()] }, depth: 1, limit: 100, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))
         for (const p of fp.docs as any[]) { const c = p.cover && typeof p.cover === 'object' ? p.cover : null; pubById[String(p.id)] = { href: `/publication/${p.slug}`, title: String(p.title || ''), posterUrl: c?.sizes?.poster?.url || c?.sizes?.card?.url || c?.url || null } }
       }
+      // Видео по блокам «Видео» (у каждого блока свой набор block.ids).
+      const vidIds = Array.from(new Set(pblocks.filter((b) => b?.type === 'videos' && Array.isArray(b?.ids)).flatMap((b) => (b.ids as any[]).map((x) => String(x)))))
+      const videoById: Record<string, any> = {}
+      if (vidIds.length) {
+        const fv = await payload.find({ collection: 'videos', where: { and: [{ tenant: { equals: tenant.id } }, { id: { in: vidIds } }] }, depth: 1, limit: 200, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))
+        for (const v of fv.docs as any[]) { videoById[String(v.id)] = { id: v.id, slug: String(v.slug || ''), title: String(v.title || 'Видео'), coverUrl: videoThumbUrl(v) } }
+      }
       return (
         <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
           <div className="max-w-6xl mx-auto px-4 py-8">
             <Breadcrumbs crumbs={bcrumbs as any} lastIsCurrent className="mb-6" />
-            <ProfileView data={bpub.profile} title={bpub.title} portraitUrl={portraitUrl} gallery={pfGallery as any} videos={pfVideos as any} members={members} categoryRows={categoryRows} pubById={pubById} />
+            <ProfileView data={bpub.profile} title={bpub.title} portraitUrl={portraitUrl} gallery={pfGallery as any} videos={pfVideos as any} members={members} categoryRows={categoryRows} pubById={pubById} videoById={videoById} />
           </div>
         </main>
       )

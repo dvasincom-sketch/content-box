@@ -21,7 +21,7 @@ export type PBlock =
   | { id: string; type: 'awards'; title?: string; full?: boolean; enabled?: boolean; items: PBAward[] }
   | { id: string; type: 'factsList'; title?: string; full?: boolean; enabled?: boolean; items: string[] }
   | { id: string; type: 'gallery'; title?: string; full?: boolean; enabled?: boolean; images?: PBGalleryImg[] }
-  | { id: string; type: 'videos'; title?: string; full?: boolean; enabled?: boolean }
+  | { id: string; type: 'videos'; title?: string; full?: boolean; enabled?: boolean; ids?: (number | string)[] }
   | { id: string; type: 'columns'; title?: string; full?: boolean; enabled?: boolean; cols: PBColumn[] }
   | { id: string; type: 'callout'; title?: string; full?: boolean; enabled?: boolean; variant?: 'quote' | 'note'; text: string; author?: string }
   | { id: string; type: 'categoryRow'; title?: string; full?: boolean; enabled?: boolean; categoryId?: number | string }
@@ -84,7 +84,7 @@ export function blankBlock(type: PBlockType, id: string): PBlock {
     case 'awards': return { id, type, items: [] }
     case 'factsList': return { id, type, items: [] }
     case 'gallery': return { id, type }
-    case 'videos': return { id, type }
+    case 'videos': return { id, type, ids: [] }
     case 'columns': return { id, type, cols: [{ body: '' }, { body: '' }] }
     case 'callout': return { id, type, variant: 'quote', text: '' }
     case 'categoryRow': return { id, type }

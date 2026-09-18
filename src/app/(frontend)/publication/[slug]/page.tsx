@@ -377,10 +377,17 @@ export default async function PublicationPage({ params }: { params: Promise<Para
       const fp = await payload.find({ collection: 'publications', where: { and: [{ tenant: { equals: tenant.id } }, { id: { in: pubIds } }, publishedWhere()] }, depth: 1, limit: 100, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))
       for (const p of fp.docs as any[]) { const c = p.cover && typeof p.cover === 'object' ? p.cover : null; pubById[String(p.id)] = { href: `/publication/${p.slug}`, title: String(p.title || ''), posterUrl: c?.sizes?.poster?.url || c?.sizes?.card?.url || c?.url || null } }
     }
+    // Видео по блокам «Видео» (у каждого блока свой набор block.ids).
+    const vidIds = Array.from(new Set(pblocks.filter((b) => b?.type === 'videos' && Array.isArray(b?.ids)).flatMap((b) => (b.ids as any[]).map((x) => String(x)))))
+    const videoById: Record<string, any> = {}
+    if (vidIds.length) {
+      const fv = await payload.find({ collection: 'videos', where: { and: [{ tenant: { equals: tenant.id } }, { id: { in: vidIds } }] }, depth: 1, limit: 200, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))
+      for (const v of fv.docs as any[]) { videoById[String(v.id)] = { id: v.id, slug: String(v.slug || ''), title: String(v.title || 'Видео'), coverUrl: videoThumbUrl(v) } }
+    }
     return (
       <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-8">
-          <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} members={members} categoryRows={categoryRows} pubById={pubById} />
+          <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} members={members} categoryRows={categoryRows} pubById={pubById} videoById={videoById} />
           {/* Реакции + комментарии и на страницах-профилях (в читабельной ширине,
               как у обычных публикаций). Гость видит тизер с приглашением. */}
           <div className="max-w-3xl mx-auto" style={{ marginTop: 40 }}>

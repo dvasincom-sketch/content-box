@@ -479,8 +479,11 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
     case 'videos':
       return media ? (
         <div className="pe__rows">
-          <VideoAttachPicker videos={media.videoCandidates} value={media.videoIds} onChange={media.setVideoIds} categoryTree={media.videoModalCats} searchPlaceholder="Поиск видео по названию…" emptyLabel="Нет загруженных видео" icon={Video} leadingButton={media.canCreateMedia ? <button type="button" className="gcomp__add" onClick={media.openVideoModal}><Plus size={16} /> Добавить видео</button> : undefined} />
-          <div className="pe__note">Ролики появятся на странице в этом месте, в указанном порядке.</div>
+          {/* Набор видео хранится В БЛОКЕ (block.ids) — у каждого видео-блока
+              свой список. Раньше все блоки делили общий media.videoIds, из-за
+              чего второй блок дублировал видео первого. */}
+          <VideoAttachPicker videos={media.videoCandidates} value={block.ids ?? []} onChange={(ids) => patch({ ids } as Partial<PBlock>)} categoryTree={media.videoModalCats} searchPlaceholder="Поиск видео по названию…" emptyLabel="Нет загруженных видео" icon={Video} leadingButton={media.canCreateMedia ? <button type="button" className="gcomp__add" onClick={media.openVideoModal}><Plus size={16} /> Добавить видео</button> : undefined} />
+          <div className="pe__note">Ролики появятся на странице в этом месте, в указанном порядке. У каждого блока — свой набор.</div>
         </div>
       ) : <div className="pe__note">Добавление видео доступно в редакторе публикации.</div>
     case 'columns': {

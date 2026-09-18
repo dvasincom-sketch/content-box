@@ -210,7 +210,7 @@ const initialsOf = (name: string): string => {
 }
 
 export function ProfileView({
-  data, title, portraitUrl, gallery, videos, members, categoryRows, pubById,
+  data, title, portraitUrl, gallery, videos, members, categoryRows, pubById, videoById,
 }: {
   data: ProfileData
   title: string
@@ -220,13 +220,15 @@ export function ProfileView({
   members?: Member[]
   categoryRows?: Record<string, CategoryRow>
   pubById?: Record<string, { href: string; title: string; posterUrl?: string | null }>
+  /** Видео по id — для блоков «Видео» с собственным набором (block.ids). */
+  videoById?: Record<string, VideoItem>
 }) {
   const gal = gallery ?? []
   const vids = videos ?? []
   const blocks = toBlocks(data).filter((b) => {
     if ((b as { enabled?: boolean }).enabled === false) return false
     if (b.type === 'gallery') return (b.images?.length || gal.length) > 0
-    if (b.type === 'videos') return vids.length > 0
+    if (b.type === 'videos') return b.ids?.length ? b.ids.some((id) => videoById?.[String(id)]) : vids.length > 0
     if (b.type === 'text') return Boolean(b.body?.trim())
     if (b.type === 'columns') return b.cols?.some((c) => (c.body || '').trim() || (c.title || '').trim())
     if (b.type === 'callout') return Boolean(b.text?.trim())
@@ -455,10 +457,16 @@ export function ProfileView({
       if (!items.length) return null
       return (<section className={`pf__sec${fullCls}`} key={b.id}>{head}<PublicGallery items={items} /></section>)
     }
-    if (b.type === 'videos') return (
-      <section className={`pf__sec${fullCls}`} key={b.id}>{head}
-        <div className="pf__grid pf__grid--f">{vids.map((v, i) => (<VideoTile key={i} id={v.id} title={v.title} coverUrl={v.coverUrl} />))}</div>
-      </section>)
+    if (b.type === 'videos') {
+      // Собственный набор блока (block.ids) → из videoById; иначе (легаси-блоки
+      // без ids) — общий список relatedVideos.
+      const list = b.ids?.length ? (b.ids.map((id) => videoById?.[String(id)]).filter(Boolean) as VideoItem[]) : vids
+      if (!list.length) return null
+      return (
+        <section className={`pf__sec${fullCls}`} key={b.id}>{head}
+          <div className="pf__grid pf__grid--f">{list.map((v, i) => (<VideoTile key={i} id={v.id} title={v.title} coverUrl={v.coverUrl} />))}</div>
+        </section>)
+    }
     if (b.type === 'columns') { const n = Math.min(3, Math.max(1, b.cols?.length || 1)); return (
       <section className={`pf__sec${fullCls}`} key={b.id}>{head}
         <div className="pf__cols" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
