@@ -381,6 +381,20 @@ export default async function PublicationPage({ params }: { params: Promise<Para
       <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-8">
           <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} members={members} categoryRows={categoryRows} pubById={pubById} />
+          {/* Реакции + комментарии и на страницах-профилях (в читабельной ширине,
+              как у обычных публикаций). Гость видит тизер с приглашением. */}
+          <div className="max-w-3xl mx-auto" style={{ marginTop: 40 }}>
+            <PublicationEngagement
+              isAuthed={engagement.isAuthed}
+              canModerate={engagement.canModerate}
+              publicationId={pub.id}
+              publicationSlug={slug}
+              currentUser={engagement.currentUser}
+              reactions={engagement.reactions}
+              comments={engagement.comments}
+              commentCount={engagement.commentCount}
+            />
+          </div>
         </div>
       </main>
     )
