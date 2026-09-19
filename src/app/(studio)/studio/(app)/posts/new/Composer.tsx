@@ -144,14 +144,31 @@ export function Composer({
     initRelated.filter((id) => (videos.find((v) => String(v.id) === String(id))?.provider ?? null) === 'audio'),
   )
   const [videoModalOpen, setVideoModalOpen] = useState(false)
+  // Куда прикрепить только что созданное видео. Видео-блоки профиля хранят свой
+  // список в block.ids, поэтому «Добавить видео» из блока кладёт сюда коллбэк
+  // активного блока. null → обычная статья (общий список videoIds).
+  const pendingVideoAddRef = useRef<((id: number | string) => void) | null>(null)
+  function openVideoModal(onAdd?: (id: number | string) => void) {
+    pendingVideoAddRef.current = onAdd ?? null
+    setVideoModalOpen(true)
+  }
 
   function onVideoCreated(v: CreatedMedia) {
     // Новое видео из композера — это загрузка в своё хранилище (провайдер по
     // умолчанию 'self'), оно сразу уходит в обработку. Помечаем как processing,
     // чтобы в списке прикреплённых тут же был бейдж «обрабатывается» — автору не
-    // нужно уходить в раздел «Видео», чтобы это увидеть.
+    // нужно уходить в раздел «Видео», чтобы это увидеть. Всегда добавляем в
+    // библиотеку, чтобы созданное сразу было в «Недавно загруженных».
     setAllMedia((prev) => [{ id: v.id, title: v.title, addedAt: null, provider: 'self', assetStatus: 'processing' }, ...prev])
-    setVideoIds((prev) => (prev.some((x) => String(x) === String(v.id)) ? prev : [...prev, v.id]))
+    const add = pendingVideoAddRef.current
+    if (add) {
+      // Создано из видео-блока профиля — прикрепляем именно к этому блоку.
+      add(v.id)
+      pendingVideoAddRef.current = null
+    } else {
+      // Обычная статья — общий список видео публикации.
+      setVideoIds((prev) => (prev.some((x) => String(x) === String(v.id)) ? prev : [...prev, v.id]))
+    }
     setVideoModalOpen(false)
   }
   function onAudioCreated(v: CreatedMedia) {
@@ -160,7 +177,7 @@ export function Composer({
   }
 
   const [gallery, setGallery] = useState<GalleryItem[]>(initial?.gallery ?? [])
-  const profileMedia = { gallery, setGallery, galleryFolders, videoCandidates, videoIds, setVideoIds, videoModalCats, canCreateMedia, openVideoModal: () => setVideoModalOpen(true), publicationId: initial?.id }
+  const profileMedia = { gallery, setGallery, galleryFolders, videoCandidates, videoIds, setVideoIds, videoModalCats, canCreateMedia, openVideoModal, publicationId: initial?.id }
   const [tags, setTags] = useState<string[]>(initial?.tags ?? [])
   const [eventDate, setEventDate] = useState<string>(initial?.eventDate ? String(initial.eventDate).slice(0, 10) : '')
 
@@ -673,7 +690,7 @@ export function Composer({
                 emptyLabel="Нет загруженных видео"
                 icon={Video}
                 leadingButton={canCreateMedia ? (
-                  <button type="button" className="gcomp__add" onClick={() => setVideoModalOpen(true)}>
+                  <button type="button" className="gcomp__add" onClick={() => openVideoModal()}>
                     <Plus size={16} /> Добавить видео
                   </button>
                 ) : undefined}
@@ -808,7 +825,7 @@ export function Composer({
           tiers={tiers}
           categories={videoModalCats}
           onCreated={onVideoCreated}
-          onClose={() => setVideoModalOpen(false)}
+          onClose={() => { pendingVideoAddRef.current = null; setVideoModalOpen(false) }}
         />
       )}
     </div>

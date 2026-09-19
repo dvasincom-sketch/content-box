@@ -17,7 +17,9 @@ export type PEMedia = {
   setVideoIds: (v: (number | string)[]) => void
   videoModalCats: any
   canCreateMedia?: boolean
-  openVideoModal: () => void
+  /** Открыть модалку загрузки видео. onAdd (если передан) вызовется с id
+   *  созданного видео — так видео-блок прикрепляет ролик именно к себе. */
+  openVideoModal: (onAdd?: (id: number | string) => void) => void
   /** id публикации-источника (есть только при редактировании сохранённой). */
   publicationId?: number | string
 }
@@ -482,7 +484,7 @@ function BlockBody({ block, patch, cats, media }: { block: PBlock; patch: (p: Pa
           {/* Набор видео хранится В БЛОКЕ (block.ids) — у каждого видео-блока
               свой список. Раньше все блоки делили общий media.videoIds, из-за
               чего второй блок дублировал видео первого. */}
-          <VideoAttachPicker videos={media.videoCandidates} value={block.ids ?? []} onChange={(ids) => patch({ ids } as Partial<PBlock>)} categoryTree={media.videoModalCats} searchPlaceholder="Поиск видео по названию…" emptyLabel="Нет загруженных видео" icon={Video} leadingButton={media.canCreateMedia ? <button type="button" className="gcomp__add" onClick={media.openVideoModal}><Plus size={16} /> Добавить видео</button> : undefined} />
+          <VideoAttachPicker videos={media.videoCandidates} value={block.ids ?? []} onChange={(ids) => patch({ ids } as Partial<PBlock>)} categoryTree={media.videoModalCats} searchPlaceholder="Поиск видео по названию…" emptyLabel="Нет загруженных видео" icon={Video} leadingButton={media.canCreateMedia ? <button type="button" className="gcomp__add" onClick={() => media.openVideoModal((id) => { const cur = block.ids ?? []; if (!cur.some((x) => String(x) === String(id))) patch({ ids: [...cur, id] } as Partial<PBlock>) })}><Plus size={16} /> Добавить видео</button> : undefined} />
           <div className="pe__note">Ролики появятся на странице в этом месте, в указанном порядке. У каждого блока — свой набор.</div>
         </div>
       ) : <div className="pe__note">Добавление видео доступно в редакторе публикации.</div>
