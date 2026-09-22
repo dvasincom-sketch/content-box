@@ -2007,6 +2007,76 @@ function SelfUploadForm({
     })
   }
 
+  // PUT одной части multipart. Прогресс — по загруженным байтам этой части.
+  function putPartWithProgress(url: string, blob: Blob, onLoaded: (loaded: number) => void): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('PUT', url)
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onLoaded(e.loaded) }
+      xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Загрузка части не удалась (HTTP ${xhr.status})`)))
+      xhr.onerror = () => reject(new Error('Ошибка сети при загрузке'))
+      xhr.send(blob)
+    })
+  }
+
+  // Multipart-загрузка большого файла: инициируем, подписываем части, льём их
+  // напрямую в S3 (по очереди, с ретраями), затем завершаем на сервере.
+  // Возвращает ключ объекта в S3 (для create-from-storage).
+  async function uploadMultipart(f: File, contentType: string): Promise<string> {
+    const PART_SIZE = 100 * 1024 * 1024 // 100 МБ на часть (для 10 ГБ — ~100 частей)
+    const mp = async (body: unknown) => {
+      const res = await fetch('/studio/api/videos/asset-multipart', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify(body),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'Ошибка загрузки')
+      return json
+    }
+
+    const created = await mp({ phase: 'create', filename: f.name, contentType, size: f.size })
+    const key = String(created.key)
+    const uploadId = String(created.uploadId)
+
+    const partCount = Math.max(1, Math.ceil(f.size / PART_SIZE))
+    const partNumbers = Array.from({ length: partCount }, (_, i) => i + 1)
+    const signed = await mp({ phase: 'sign', key, uploadId, partNumbers })
+    const urlByPart = new Map<number, string>(
+      (signed.urls as { partNumber: number; url: string }[]).map((u) => [Number(u.partNumber), String(u.url)]),
+    )
+
+    try {
+      let uploadedBase = 0
+      for (const pn of partNumbers) {
+        const start = (pn - 1) * PART_SIZE
+        const blob = f.slice(start, Math.min(start + PART_SIZE, f.size))
+        const url = urlByPart.get(pn)
+        if (!url) throw new Error('Не удалось подготовить загрузку')
+        let attempt = 0
+        for (;;) {
+          try {
+            await putPartWithProgress(url, blob, (loaded) => {
+              setPct(Math.round(((uploadedBase + loaded) / f.size) * 100))
+            })
+            break
+          } catch (e) {
+            attempt++
+            if (attempt >= 3) throw e
+            await new Promise((r) => setTimeout(r, 1500 * attempt))
+          }
+        }
+        uploadedBase += blob.size
+        setPct(Math.round((uploadedBase / f.size) * 100))
+      }
+      await mp({ phase: 'complete', key, uploadId })
+      return key
+    } catch (e) {
+      // Не оставляем недособранную загрузку в бакете.
+      await mp({ phase: 'abort', key, uploadId }).catch(() => {})
+      throw e
+    }
+  }
+
   async function importUrl() {
     setError(null)
     // Можно вставить несколько ссылок — по одной в строке (или через запятую).
@@ -2053,26 +2123,34 @@ function SelfUploadForm({
     if (!title.trim()) return setError('Укажите название')
     if (!minTierId) return setError('Выберите уровень доступа — своё видео доступно только по подписке')
     const contentType = file.type || 'video/mp4'
+    // S3 не принимает объект больше 5 ГиБ одной частью. Большие файлы (концерты)
+    // грузим multipart'ом, файлы поменьше — прежним одиночным presigned PUT.
+    const MULTIPART_THRESHOLD = 4 * 1024 * 1024 * 1024 // 4 ГиБ
     setUploading(true)
     setPct(0)
     try {
-      const presRes = await fetch('/studio/api/videos/asset-presign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ filename: file.name, contentType, size: file.size }),
-      })
-      const pres = await presRes.json()
-      if (!presRes.ok) { setError(pres.error || 'Не удалось начать загрузку'); setUploading(false); return }
-
-      await putWithProgress(pres.uploadUrl, file, contentType)
+      let key: string
+      if (file.size > MULTIPART_THRESHOLD) {
+        key = await uploadMultipart(file, contentType)
+      } else {
+        const presRes = await fetch('/studio/api/videos/asset-presign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ filename: file.name, contentType, size: file.size }),
+        })
+        const pres = await presRes.json()
+        if (!presRes.ok) { setError(pres.error || 'Не удалось начать загрузку'); setUploading(false); return }
+        await putWithProgress(pres.uploadUrl, file, contentType)
+        key = pres.key
+      }
 
       const createRes = await fetch('/studio/api/videos/create-from-storage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          key: pres.key,
+          key,
           title: title.trim(),
           minTierId,
           categoryId: categoryId || null,

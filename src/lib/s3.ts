@@ -1,5 +1,5 @@
-import { S3Client, HeadObjectCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3'
-import type { ListObjectsV2CommandOutput } from '@aws-sdk/client-s3'
+import { S3Client, HeadObjectCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, AbortMultipartUploadCommand, ListPartsCommand } from '@aws-sdk/client-s3'
+import type { ListObjectsV2CommandOutput, ListPartsCommandOutput } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 /**
@@ -38,6 +38,67 @@ export function publicUrl(key: string): string {
  */
 export async function presignPut(key: string, contentType: string, expiresIn = 600): Promise<string> {
   return getSignedUrl(s3(), new PutObjectCommand({ Bucket: S3_BUCKET, Key: key, ContentType: contentType }), { expiresIn })
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Multipart-загрузка больших оригиналов (концерты 6–10 ГБ). Один presigned PUT
+ * не годится: S3 не принимает объект больше 5 ГиБ одной частью, и на плохой
+ * сети большой файл рвётся целиком. Поэтому: инициируем multipart, выдаём
+ * presigned URL на каждую часть, браузер льёт части напрямую в S3, а завершаем
+ * на сервере — собираем ETag'и частей через ListParts (браузеру НЕ нужно читать
+ * заголовок ETag ответа S3, что снимает требование CORS ExposeHeaders: ETag).
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Инициировать multipart-загрузку. Возвращает UploadId. */
+export async function createMultipart(key: string, contentType: string): Promise<string> {
+  const r = await s3().send(new CreateMultipartUploadCommand({ Bucket: S3_BUCKET, Key: key, ContentType: contentType }))
+  if (!r.UploadId) throw new Error('S3 не вернул UploadId')
+  return r.UploadId
+}
+
+/** Presigned PUT для одной части (PartNumber от 1). ContentType не подписываем,
+ *  чтобы браузер мог слать часть без совпадения заголовков. */
+export async function presignUploadPart(key: string, uploadId: string, partNumber: number, expiresIn = 6 * 3600): Promise<string> {
+  return getSignedUrl(
+    s3(),
+    new UploadPartCommand({ Bucket: S3_BUCKET, Key: key, UploadId: uploadId, PartNumber: partNumber }),
+    { expiresIn },
+  )
+}
+
+/** Завершить multipart: собираем список частей на сервере (ListParts) и
+ *  вызываем CompleteMultipartUpload. Так браузеру не нужно читать ETag'и. */
+export async function completeMultipartFromListing(key: string, uploadId: string): Promise<void> {
+  const parts: { ETag: string; PartNumber: number }[] = []
+  let marker: string | undefined = undefined
+  do {
+    const r: ListPartsCommandOutput = await s3().send(
+      new ListPartsCommand({ Bucket: S3_BUCKET, Key: key, UploadId: uploadId, PartNumberMarker: marker }),
+    )
+    for (const p of r.Parts || []) {
+      if (p.ETag && p.PartNumber != null) parts.push({ ETag: p.ETag, PartNumber: p.PartNumber })
+    }
+    marker = r.IsTruncated ? r.NextPartNumberMarker : undefined
+  } while (marker)
+  if (parts.length === 0) throw new Error('Ни одна часть не загрузилась')
+  parts.sort((a, b) => a.PartNumber - b.PartNumber)
+  await s3().send(
+    new CompleteMultipartUploadCommand({
+      Bucket: S3_BUCKET,
+      Key: key,
+      UploadId: uploadId,
+      MultipartUpload: { Parts: parts },
+    }),
+  )
+}
+
+/** Отменить multipart (best-effort) — чтобы не копить недособранные загрузки. */
+export async function abortMultipart(key: string, uploadId: string): Promise<void> {
+  try {
+    await s3().send(new AbortMultipartUploadCommand({ Bucket: S3_BUCKET, Key: key, UploadId: uploadId }))
+  } catch {
+    /* best-effort */
+  }
 }
 
 /**
