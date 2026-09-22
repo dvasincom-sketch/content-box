@@ -401,6 +401,8 @@ export default async function PublicationPage({ params }: { params: Promise<Para
               comments={engagement.comments}
               commentCount={engagement.commentCount}
             />
+            {/* Навигация предыдущая/следующая — та же логика, что и у статей. */}
+            <PostNavBlock prev={navPrev} next={navNext} />
           </div>
         </div>
       </main>
