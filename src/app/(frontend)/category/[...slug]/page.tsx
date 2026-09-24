@@ -20,6 +20,8 @@ import { publishedWhere } from '@/lib/published'
 import { CategoryContentGrid, type CategoryContentItem } from '@/blocks/CategoryContentGrid'
 import type { PublicationCard } from '@/blocks/LatestPublicationsBlock'
 import { mergeContentOrder } from '@/lib/categoryContentOrder'
+import { PostNavBlock } from '@/blocks/PostNavBlock'
+import { siblingCategoryNeighbors } from '@/lib/pubNav'
 import { EventFilter } from './EventFilter'
 import '../../styles.css'
 import type { Payload } from 'payload'
@@ -188,11 +190,17 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         const fv = await payload.find({ collection: 'videos', where: { and: [{ tenant: { equals: tenant.id } }, { id: { in: vidIds } }] }, depth: 1, limit: 200, overrideAccess: true }).catch(() => ({ docs: [] as any[] }))
         for (const v of fv.docs as any[]) { videoById[String(v.id)] = { id: v.id, slug: String(v.slug || ''), title: String(v.title || 'Видео'), coverUrl: videoThumbUrl(v) } }
       }
+      // Навигация «предыдущий/следующий» среди сестёр — участников того же
+      // раздела (например, внутри «Участники»), в порядке этого раздела.
+      const memberNav = await siblingCategoryNeighbors(payload, tenant.id, category, slug)
       return (
         <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
           <div className="max-w-6xl mx-auto px-4 py-8">
             <Breadcrumbs crumbs={bcrumbs as any} lastIsCurrent className="mb-6" />
             <ProfileView data={bpub.profile} title={bpub.title} portraitUrl={portraitUrl} gallery={pfGallery as any} videos={pfVideos as any} members={members} categoryRows={categoryRows} pubById={pubById} videoById={videoById} />
+            <div className="max-w-3xl mx-auto">
+              <PostNavBlock prev={memberNav.prev} next={memberNav.next} />
+            </div>
           </div>
         </main>
       )

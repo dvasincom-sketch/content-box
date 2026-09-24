@@ -23,6 +23,7 @@ import { ProfileView } from './ProfileView'
 import { videoThumbUrl, videoGifUrl } from '@/lib/videoThumb'
 import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
 import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
+import { publicationNeighbors } from '@/lib/pubNav'
 import { CrossLinkCard, breadcrumbLabelPath } from '@/components/CrossLinkCard'
 import { TagChips } from '@/components/TagChips'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
@@ -267,28 +268,11 @@ export default async function PublicationPage({ params }: { params: Promise<Para
         .filter((x: any): x is PublicGalleryItem => x != null)
     : []
 
-  // Навигация между публикациями (внизу поста). Соседи по publishedAt; на краю
-  // ленты — случайный пост (подпись «Читайте также»). Только посты с датой.
-  let navPrev: PostNavItem | null = null
-  let navNext: PostNavItem | null = null
-  if (pub.publishedAt) {
-    const [prevDoc, nextDoc] = await Promise.all([
-      findNeighbor(payload, tenant.id, pub.publishedAt, 'prev'),
-      findNeighbor(payload, tenant.id, pub.publishedAt, 'next'),
-    ])
-    navPrev = prevDoc ? toNavItem(prevDoc, 'prev') : null
-    navNext = nextDoc ? toNavItem(nextDoc, 'next') : null
-
-    // Край ленты: недостающую сторону заполняем случайным постом.
-    if (!prevDoc) {
-      const rnd = await findRandom(payload, tenant.id, pub.id)
-      if (rnd) navPrev = toNavItem(rnd, 'related')
-    }
-    if (!nextDoc) {
-      const rnd = await findRandom(payload, tenant.id, pub.id)
-      if (rnd) navNext = toNavItem(rnd, 'related')
-    }
-  }
+  // Навигация «предыдущая/следующая» — внутри той же (самой конкретной)
+  // категории публикации и в том же порядке, в каком раздел показывает список
+  // (ручной порядок, если включён; иначе по дате). Не зависит от даты и не
+  // тащит соседей из чужих разделов. Для песни это соседи по альбому.
+  const { prev: navPrev, next: navNext } = await publicationNeighbors(payload, tenant.id, pub)
 
   // Данные реакций и комментариев — серверная выборка (Comments/Reactions),
   // текущий подписчик и агрегация внутри хелпера. Пусто-устойчиво.
