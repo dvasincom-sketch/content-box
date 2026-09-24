@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Users, X, Loader2, Crown, ChevronLeft, ChevronRight,
-  LogIn, UserPlus, Eye, MessageSquare, Heart, Bookmark, Star, Ban, Search, ShieldCheck,
+  LogIn, UserPlus, Eye, MessageSquare, Heart, Bookmark, Star, Ban, Search, ShieldCheck, Trash2,
 } from 'lucide-react'
 
 type U = {
@@ -81,6 +81,10 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [blocking, setBlocking] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState<number | string | null>(null)
+  const [demoBusy, setDemoBusy] = useState(false)
+  const [confirmDemo, setConfirmDemo] = useState(false)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
@@ -108,6 +112,7 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
 
   async function openUser(u: U) {
     setSelected(u)
+    setConfirmDelete(null)
     setEvents(null); setEvError(null); setEvLoading(true)
     try {
       const res = await fetch(`/studio/api/subscriber-activity?subscriber=${encodeURIComponent(String(u.id))}`, { credentials: 'include' })
@@ -146,7 +151,59 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
     }
   }
 
-  function closeAll() { setOpen(false); setSelected(null); setQuery('') }
+  // Удаление одного подписчика (полное, не блокировка).
+  async function deleteUser(u: U) {
+    setDeleting(true)
+    try {
+      const res = await fetch('/studio/api/subscriber-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ subscriber: u.id }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setUsers((us) => (us ? us.filter((x) => x.id !== u.id) : us))
+        setConfirmDelete(null)
+        setSelected(null)
+      } else {
+        setEvError(j.error || 'Не удалось удалить')
+      }
+    } catch {
+      setEvError('Ошибка соединения')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // Массовое удаление демо-аккаунтов (адреса на *.local).
+  async function deleteDemo() {
+    setDemoBusy(true); setError(null)
+    try {
+      const res = await fetch('/studio/api/subscriber-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ demo: true }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setUsers((us) => (us ? us.filter((x) => !(x.email || '').toLowerCase().endsWith('.local')) : us))
+        setConfirmDemo(false)
+      } else {
+        setError(j.error || 'Не удалось удалить')
+      }
+    } catch {
+      setError('Ошибка соединения')
+    } finally {
+      setDemoBusy(false)
+    }
+  }
+
+  function closeAll() { setOpen(false); setSelected(null); setQuery(''); setConfirmDemo(false); setConfirmDelete(null) }
+
+  // Демо-аккаунты (домен *.local) — для кнопки массовой очистки.
+  const demoCount = users ? users.filter((u) => (u.email || '').toLowerCase().endsWith('.local')).length : 0
 
   // Поиск по имени/email.
   const q = query.trim().toLowerCase()
@@ -164,6 +221,27 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
       <div className="uk-empty">Пользователей пока нет.</div>
     ) : (
       <>
+        {demoCount > 0 && (
+          <div style={{ marginBottom: 10, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+            {!confirmDemo ? (
+              <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setConfirmDemo(true)}>
+                <Trash2 size={14} /> Удалить демо-аккаунты ({demoCount})
+              </button>
+            ) : (
+              <>
+                <span style={{ fontSize: 13, color: 'var(--st-text-muted)' }}>
+                  Удалить {demoCount} демо-аккаунт(ов) (адреса на .local)? Навсегда.
+                </span>
+                <button type="button" className="studio-btn studio-btn--danger" onClick={deleteDemo} disabled={demoBusy}>
+                  {demoBusy ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />} Удалить
+                </button>
+                <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setConfirmDemo(false)} disabled={demoBusy}>
+                  Отмена
+                </button>
+              </>
+            )}
+          </div>
+        )}
         <div className="uk-search">
           <Search size={15} className="uk-search__icon" aria-hidden />
           <input
@@ -285,6 +363,23 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
                   {blocking ? <Loader2 size={14} className="spin" /> : <Ban size={14} />}
                   {selected.isBlocked ? 'Разблокировать' : 'Заблокировать'}
                 </button>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, margin: '0 0 12px' }}>
+                {confirmDelete === selected.id ? (
+                  <>
+                    <span style={{ fontSize: 13, color: 'var(--st-text-muted)' }}>Удалить пользователя навсегда?</span>
+                    <button type="button" className="studio-btn studio-btn--danger" onClick={() => deleteUser(selected)} disabled={deleting}>
+                      {deleting ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />} Удалить
+                    </button>
+                    <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setConfirmDelete(null)} disabled={deleting}>
+                      Отмена
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setConfirmDelete(selected.id)}>
+                    <Trash2 size={14} /> Удалить пользователя
+                  </button>
+                )}
               </div>
               {evError && <div className="settings__err" style={{ marginBottom: 8 }}>{evError}</div>}
               {timeline}
