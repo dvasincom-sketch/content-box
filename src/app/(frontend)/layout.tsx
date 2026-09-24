@@ -38,6 +38,7 @@ import { AskAsya } from '@/components/AskAsya'
 import { asyaEnabled } from '@/lib/asya'
 import { UmamiTracker } from '@/components/UmamiTracker'
 import { YandexTags } from '@/components/YandexTags'
+import { ScrollTopButton } from '@/components/ScrollTopButton'
 import BrokenImageFallback from '@/components/BrokenImageFallback'
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
@@ -233,6 +234,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         {ctx && asyaEnabled() && (ctx.settings as any)?.asyaWidgetEnabled !== false && (
           <AskAsya subscribeHref="/subscribe" loginHref="/login" />
         )}
+        {/* Кнопка «наверх» для длинных страниц — появляется при прокрутке. */}
+        <ScrollTopButton />
       </body>
     </html>
   )
