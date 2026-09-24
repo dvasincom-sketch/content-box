@@ -37,6 +37,7 @@ import { BugReportWidget } from '@/components/BugReportWidget'
 import { AskAsya } from '@/components/AskAsya'
 import { asyaEnabled } from '@/lib/asya'
 import { UmamiTracker } from '@/components/UmamiTracker'
+import { YandexTags } from '@/components/YandexTags'
 import BrokenImageFallback from '@/components/BrokenImageFallback'
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
@@ -145,6 +146,11 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         {/* Веб-аналитика Umami: подключается только если задан UMAMI_SCRIPT_URL и
             у тенанта заполнен umamiWebsiteId. Иначе ничего не рендерит. */}
         <UmamiTracker websiteId={tenant?.umamiWebsiteId} />
+        {/* Яндекс.Метрика + верификация Вебмастера — только на публичных
+            страницах btsrussia.ru (COCO JAMBO), другие тенанты не трогаем. */}
+        {(tenant?.domain || '').toLowerCase().replace(/^www\./, '') === 'btsrussia.ru' && (
+          <YandexTags counterId={112999430} verification="f7254e9e127e4ef9" />
+        )}
       </head>
       <body
         className={`preset-${preset.id}`}
