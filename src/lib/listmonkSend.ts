@@ -9,10 +9,20 @@
  * подпискам на книги в этом пути не применяется — это плата за трекинг).
  * Отписка — штатная Listmonk через тег {{ UnsubscribeURL }} в теле.
  */
-const BASE = (process.env.LISTMONK_API_URL || '').replace(/\/$/, '')
-const USER = (process.env.LISTMONK_API_USER || '').trim()
-const TOKEN = (process.env.LISTMONK_API_TOKEN || '').trim()
-const FROM_EMAIL = (process.env.LISTMONK_FROM_EMAIL || 'noreply@contentbox.site').trim()
+const BASE = (process.env.LISTMONK_API_URL || 'http://listmonk:9000').replace(/\/$/, '')
+// Креды API. Если отдельные LISTMONK_API_* не заданы — используем учётку
+// суперадмина Listmonk (LISTMONK_ADMIN_USER/PASSWORD), которая уже есть в
+// окружении: не плодим дублирующие переменные. Работает, если сборка Listmonk
+// принимает Basic-auth админа на /api. Свежие версии могут требовать отдельный
+// API-токен — тогда достаточно задать только LISTMONK_API_TOKEN (логин
+// подхватится из админского).
+const USER = (process.env.LISTMONK_API_USER || process.env.LISTMONK_ADMIN_USER || '').trim()
+const TOKEN = (process.env.LISTMONK_API_TOKEN || process.env.LISTMONK_ADMIN_PASSWORD || '').trim()
+const FROM_EMAIL = (
+  process.env.LISTMONK_FROM_EMAIL ||
+  process.env.EMAIL_FROM_ADDRESS ||
+  'noreply@contentbox.site'
+).trim()
 
 export function listmonkSendEnabled(): boolean {
   return Boolean(BASE && USER && TOKEN)
