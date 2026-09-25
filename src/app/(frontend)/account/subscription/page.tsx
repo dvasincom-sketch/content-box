@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
@@ -69,6 +70,13 @@ export default async function SubscriptionPage() {
         subscriptionSince={full.subscriptionSince || null}
         payments={payments}
       />
+      {/* Получателю подарка — куда ввести промокод из письма. */}
+      <p style={{ marginTop: 18, fontSize: 14, color: 'var(--brand-muted)' }}>
+        Получили подарочный код?{' '}
+        <Link href="/gift/redeem" className="c-navlink" style={{ color: 'var(--brand-primary)' }}>
+          Активировать подарок
+        </Link>
+      </p>
     </>
   )
 }
