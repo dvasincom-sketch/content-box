@@ -24,6 +24,7 @@ import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { normalizeHomeSections, type HomeSectionType, type HomeSectionConfig, type HomeSectionSource } from '@/lib/homeSections'
 import { resolveWhyUs } from '@/lib/whyUs'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { StreamHeroBanner } from '@/components/StreamHeroBanner'
 import { planChange, type SubState } from '@/lib/subscriptionChange'
 import { type PerkType } from '@/components/studio/PerkIcon'
 import type { Metadata } from 'next'
@@ -293,6 +294,34 @@ export default async function HomePage() {
 
   const heroSlides = needsFeatured ? await getHeroSlides(payload, tenant.id as number) : []
 
+  // Активная/ближайшая трансляция для баннера в Hero-зоне (endsAt ещё впереди).
+  // Пока одна активная — берём ближайшую по времени начала. Промо для всех;
+  // пейволл применяется на самой странице трансляции.
+  const streamRes = await payload
+    .find({
+      collection: 'streams' as any,
+      where: { and: [{ tenant: { equals: tenant.id } }, { endsAt: { greater_than: new Date().toISOString() } }] },
+      sort: 'scheduledAt',
+      limit: 1,
+      depth: 1,
+      overrideAccess: true,
+    })
+    .catch(() => ({ docs: [] as any[] }))
+  const sDoc: any = (streamRes.docs as any[])[0] || null
+  const streamBanner = sDoc
+    ? {
+        title: String(sDoc.title || 'Трансляция'),
+        slug: String(sDoc.slug || ''),
+        scheduledAt: sDoc.scheduledAt || null,
+        endsAt: sDoc.endsAt || null,
+        coverUrl:
+          (sDoc.cover && typeof sDoc.cover === 'object'
+            ? sDoc.cover.sizes?.large?.url || sDoc.cover.url
+            : null) || null,
+        tierName: sDoc.minTier && typeof sDoc.minTier === 'object' ? sDoc.minTier.name || sDoc.minTier.slug || null : null,
+      }
+    : null
+
   // Ручные категории (для секции categories) — их id исключаем из «Популярных разделов».
   const manualCategoryIds = ((settings?.homeCategories ?? []) as any[])
     .map((c) => (c && typeof c === 'object' ? c.id : c))
@@ -442,7 +471,14 @@ export default async function HomePage() {
 
   return (
     <main className="page-canvas page-canvas--home" style={{ ...brandVars(settings), minHeight: '100vh' }}>
-      <div className={`max-w-6xl mx-auto px-4 ${flushTop ? 'pb-8' : 'py-8'}`}>{nodes}</div>
+      <div className={`max-w-6xl mx-auto px-4 ${flushTop ? 'pb-8' : 'py-8'}`}>
+        {streamBanner && streamBanner.slug && (
+          <div className={flushTop ? 'pt-6' : undefined}>
+            <StreamHeroBanner {...streamBanner} />
+          </div>
+        )}
+        {nodes}
+      </div>
     </main>
   )
 }

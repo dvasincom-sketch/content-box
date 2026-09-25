@@ -312,29 +312,30 @@ function StreamForm({
           <input ref={fileInput} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onCover(f); if (fileInput.current) fileInput.current.value = '' }} />
         </div>)}
 
-      {field('Ссылка просмотра (Castr)', <input className="studio-input" placeholder="https://player.castr.com/..." value={form.playbackUrl} onChange={(e) => onPatch({ playbackUrl: e.target.value })} />, 'Ссылка/embed от Castr — по ней зрители смотрят эфир у нас.')}
+      <label className="studio-field studio-field--check">
+        <input type="checkbox" checked={form.chatEnabled} onChange={(e) => onPatch({ chatEnabled: e.target.checked })} />
+        <span style={{ color: 'var(--st-text)' }}>Чат включён</span>
+      </label>
+
+      {field('Ссылка просмотра (Embed URL от Castr)', <input className="studio-input" placeholder="https://player.castr.com/..." value={form.playbackUrl} onChange={(e) => onPatch({ playbackUrl: e.target.value })} />, 'Возьмите в Castr → раздел «Playback Setup» → Embed URL (или ссылку из iframe). Это НЕ ключ трансляции — по ней зрители смотрят эфир у нас.')}
 
       <div style={{ borderTop: '1px solid var(--st-border, rgba(0,0,0,.1))', paddingTop: 12 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--st-text-muted)', marginBottom: 4 }}>Данные для OBS (из Castr)</div>
         <div style={{ fontSize: 12, color: 'var(--st-text-muted)', marginBottom: 10 }}>
-          Вставьте сюда сервер и ключ, которые Castr показывает для OBS. Хранятся у нас, чтобы было удобно копировать. Виден только вам.
+          Сервер (RTMP) и ключ из раздела «Stream Source Setup» в Castr — их вы вводите в OBS (Настройки → Трансляция). Здесь храним для удобства, видно только вам.
         </div>
         {field('Сервер (RTMP)', <input className="studio-input" placeholder="rtmp://live.castr.io/static" value={form.ingestServer} onChange={(e) => onPatch({ ingestServer: e.target.value })} />)}
         {field('Ключ трансляции', <input className="studio-input" value={form.ingestKey} onChange={(e) => onPatch({ ingestKey: e.target.value })} />)}
       </div>
 
-      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-        <label className="studio-field studio-field--check">
-          <input type="checkbox" checked={form.chatEnabled} onChange={(e) => onPatch({ chatEnabled: e.target.checked })} />
-          <span style={{ color: 'var(--st-text)' }}>Чат включён</span>
-        </label>
+      <div style={{ borderTop: '1px solid var(--st-border, rgba(0,0,0,.1))', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--st-text-muted)' }}>Запись</div>
         <label className="studio-field studio-field--check">
           <input type="checkbox" checked={form.saveRecording} onChange={(e) => onPatch({ saveRecording: e.target.checked })} />
           <span style={{ color: 'var(--st-text)' }}>Сохранить запись</span>
         </label>
+        {field('Ссылка на запись (Castr VOD)', <input className="studio-input" value={form.recordingUrl} onChange={(e) => onPatch({ recordingUrl: e.target.value })} />, 'Заполните после эфира, если сохраняли запись — покажем повтор.')}
       </div>
-
-      {field('Ссылка на запись (Castr VOD)', <input className="studio-input" value={form.recordingUrl} onChange={(e) => onPatch({ recordingUrl: e.target.value })} />, 'Заполните после эфира, если сохраняли запись — покажем повтор.')}
 
       {error && <div className="studio-login__error">{error}</div>}
 
