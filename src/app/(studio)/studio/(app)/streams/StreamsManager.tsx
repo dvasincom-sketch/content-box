@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { Loader2, Plus, Radio, Copy, Check, Trash2, Upload, X, ExternalLink } from 'lucide-react'
+import { Loader2, Plus, Radio, Copy, Check, Trash2, Upload, X, ExternalLink, MessageSquare, Pin, PinOff, EyeOff, Eye, Ban } from 'lucide-react'
 
 type Tier = { id: string; name: string }
 
@@ -17,6 +17,7 @@ type Item = {
   minTierId: string
   minTierName: string | null
   chatEnabled: boolean
+  moderatorEmails: string[]
   saveRecording: boolean
   playbackUrl: string
   ingestServer: string
@@ -34,6 +35,7 @@ type Form = {
   coverUrl: string | null
   minTierId: string
   chatEnabled: boolean
+  moderatorEmails: string // по одному email в строке
   saveRecording: boolean
   playbackUrl: string
   ingestServer: string
@@ -70,7 +72,7 @@ const fmt = (iso: string | null) =>
 
 const emptyForm: Form = {
   id: null, title: '', description: '', scheduledAt: '', endsAt: '', coverId: '', coverUrl: null,
-  minTierId: '', chatEnabled: true, saveRecording: false, playbackUrl: '',
+  minTierId: '', chatEnabled: true, moderatorEmails: '', saveRecording: false, playbackUrl: '',
   ingestServer: '', ingestKey: '', recordingUrl: '',
 }
 
@@ -101,6 +103,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
   const [formError, setFormError] = useState<string | null>(null)
   const [coverBusy, setCoverBusy] = useState(false)
   const [confirmDel, setConfirmDel] = useState<number | string | null>(null)
+  const [chatFor, setChatFor] = useState<Item | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   async function refresh() {
@@ -116,13 +119,16 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
 
   function openNew() {
     setFormError(null)
-    setForm({ ...emptyForm, minTierId: tiers[0]?.id || '' })
+    // Переносим модераторов из самой свежей трансляции — «справочник» под рукой.
+    const lastMods = items && items.length ? items[0].moderatorEmails : []
+    setForm({ ...emptyForm, minTierId: tiers[0]?.id || '', moderatorEmails: (lastMods || []).join('\n') })
   }
   function openEdit(it: Item) {
     setFormError(null)
     setForm({
       id: it.id, title: it.title, description: it.description, scheduledAt: isoToLocal(it.scheduledAt), endsAt: isoToLocal(it.endsAt),
       coverId: it.coverId, coverUrl: it.coverUrl, minTierId: it.minTierId, chatEnabled: it.chatEnabled,
+      moderatorEmails: (it.moderatorEmails || []).join('\n'),
       saveRecording: it.saveRecording, playbackUrl: it.playbackUrl, ingestServer: it.ingestServer,
       ingestKey: it.ingestKey, recordingUrl: it.recordingUrl,
     })
@@ -153,6 +159,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
       playbackUrl: form.playbackUrl,
       coverId: form.coverId || null,
       chatEnabled: form.chatEnabled,
+      moderatorEmails: form.moderatorEmails,
       saveRecording: form.saveRecording,
       ingestServer: form.ingestServer,
       ingestKey: form.ingestKey,
@@ -251,6 +258,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 'none' }}>
                   <button type="button" className="studio-btn studio-btn--ghost" onClick={() => openEdit(it)}>Редактировать</button>
+                  <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setChatFor(it)}><MessageSquare size={14} /> Чат</button>
                   {confirmDel === it.id ? (
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button type="button" className="studio-btn studio-btn--danger" disabled={busy} onClick={() => remove(it.id)}>{busy ? <Loader2 size={14} className="spin" /> : 'Удалить'}</button>
@@ -265,6 +273,8 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
           })}
         </div>
       )}
+
+      {chatFor && <ChatLogModal stream={chatFor} onClose={() => setChatFor(null)} />}
     </div>
   )
 }
@@ -324,6 +334,10 @@ function StreamForm({
         <span style={{ color: 'var(--st-text)' }}>Чат включён</span>
       </label>
 
+      {form.chatEnabled && field('Модераторы чата (по одному email в строке)',
+        <textarea className="studio-input" rows={3} style={{ resize: 'vertical' }} placeholder="user@example.com" value={form.moderatorEmails} onChange={(e) => onPatch({ moderatorEmails: e.target.value })} />,
+        'Подписчики с этими email смогут закреплять, скрывать сообщения и банить в чате этой трансляции. При создании новой трансляции список подставляется из прошлой — как справочник.')}
+
       {field('Ссылка просмотра (Embed URL от Castr)', <input className="studio-input" placeholder="https://player.castr.com/..." value={form.playbackUrl} onChange={(e) => onPatch({ playbackUrl: e.target.value })} />, 'Возьмите в Castr → раздел «Playback Setup» → Embed URL (или ссылку из iframe). Это НЕ ключ трансляции — по ней зрители смотрят эфир у нас.')}
 
       <div style={{ borderTop: '1px solid var(--st-border, rgba(0,0,0,.1))', paddingTop: 12 }}>
@@ -351,6 +365,103 @@ function StreamForm({
           {busy ? <Loader2 size={16} className="spin" /> : null} Сохранить
         </button>
         <button type="button" className="studio-btn studio-btn--ghost" disabled={busy} onClick={onCancel}>Отмена</button>
+      </div>
+    </div>
+  )
+}
+
+type LogMsg = { id: number; name: string; text: string; at: string; hidden: boolean; pinned: boolean; sub: number | null }
+
+/** Модалка: сохранённый чат трансляции + модерация задним числом. */
+function ChatLogModal({ stream, onClose }: { stream: Item; onClose: () => void }) {
+  const [msgs, setMsgs] = useState<LogMsg[] | null>(null)
+  const [banned, setBanned] = useState<number[]>([])
+  const [total, setTotal] = useState(0)
+  const [err, setErr] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  async function load() {
+    setLoading(true); setErr(null)
+    try {
+      const res = await fetch(`/studio/api/streams/messages?stream=${encodeURIComponent(String(stream.id))}`, { credentials: 'include' })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) { setErr(j.error || 'Не удалось загрузить'); setMsgs([]) }
+      else { setMsgs(j.items || []); setBanned(j.bannedIds || []); setTotal(j.total ?? (j.items?.length ?? 0)) }
+    } catch { setErr('Ошибка соединения'); setMsgs([]) } finally { setLoading(false) }
+  }
+  useEffect(() => { load() /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [stream.id])
+
+  async function act(url: string, body: any, after: () => void) {
+    try {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) })
+      if (res.ok) after()
+    } catch {}
+  }
+  const toggleHide = (m: LogMsg) =>
+    act('/api/stream/chat/hide', { id: m.id, hidden: !m.hidden }, () =>
+      setMsgs((p) => (p ? p.map((x) => (x.id === m.id ? { ...x, hidden: !m.hidden } : x)) : p)),
+    )
+  const pin = (m: LogMsg) =>
+    act('/api/stream/chat/pin', { id: m.id, pinned: !m.pinned }, () =>
+      setMsgs((p) =>
+        p ? p.map((x) => (x.id === m.id ? { ...x, pinned: !m.pinned } : m.pinned ? x : { ...x, pinned: false })) : p,
+      ),
+    )
+  const toggleBan = (m: LogMsg) => {
+    if (m.sub == null) return
+    const willBan = !banned.includes(m.sub)
+    act('/api/stream/chat/ban', { subscriber: m.sub, banned: willBan, stream: stream.id }, () => {
+      setBanned((p) => (willBan ? Array.from(new Set([...p, m.sub as number])) : p.filter((x) => x !== m.sub)))
+      if (willBan) setMsgs((prev) => (prev ? prev.map((x) => (x.sub === m.sub ? { ...x, hidden: true } : x)) : prev))
+    })
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'grid', placeItems: 'center', zIndex: 1000, padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} className="studio-card" style={{ width: '100%', maxWidth: 680, maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: 0, borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--st-border, rgba(0,0,0,.1))' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, color: 'var(--st-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Чат: {stream.title}</div>
+            <div style={{ fontSize: 12, color: 'var(--st-text-muted)' }}>Сохранённых сообщений: {total}</div>
+          </div>
+          <button type="button" className="catmgr__icon-btn" onClick={onClose} aria-label="Закрыть"><X size={18} /></button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 18px' }}>
+          {loading ? (
+            <div className="uk-empty"><Loader2 size={18} className="spin" /> Загрузка…</div>
+          ) : err ? (
+            <div className="settings__err">{err}</div>
+          ) : !msgs || msgs.length === 0 ? (
+            <div className="uk-empty">Сообщений пока нет.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {msgs.map((m) => {
+                const isBanned = m.sub != null && banned.includes(m.sub)
+                return (
+                  <div key={m.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '6px 0', borderBottom: '1px solid var(--st-border, rgba(0,0,0,.06))', opacity: m.hidden ? 0.55 : 1 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, lineHeight: 1.4 }}>
+                        <span style={{ fontWeight: 700, color: 'var(--st-text)' }}>{m.name}</span>
+                        <span style={{ color: 'var(--st-text)' }}>: {m.text}</span>
+                      </div>
+                      <div style={{ fontSize: 11.5, color: 'var(--st-text-muted)', marginTop: 2 }}>
+                        {new Date(m.at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {m.pinned ? ' · закреплено' : ''}{m.hidden ? ' · скрыто' : ''}{isBanned ? ' · в бане' : ''}
+                      </div>
+                    </div>
+                    <div style={{ display: 'inline-flex', gap: 4, flex: 'none' }}>
+                      <button type="button" className="studio-btn studio-btn--ghost" style={{ padding: '4px 8px' }} title={m.pinned ? 'Открепить' : 'Закрепить'} onClick={() => pin(m)}>{m.pinned ? <PinOff size={14} /> : <Pin size={14} />}</button>
+                      <button type="button" className="studio-btn studio-btn--ghost" style={{ padding: '4px 8px' }} title={m.hidden ? 'Показать' : 'Скрыть'} onClick={() => toggleHide(m)}>{m.hidden ? <Eye size={14} /> : <EyeOff size={14} />}</button>
+                      {m.sub != null && (
+                        <button type="button" className="studio-btn studio-btn--ghost" style={{ padding: '4px 8px', color: isBanned ? '#dc2626' : undefined }} title={isBanned ? 'Разбанить в чате' : 'Забанить в чате'} onClick={() => toggleBan(m)}><Ban size={14} /></button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

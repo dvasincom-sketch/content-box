@@ -129,6 +129,7 @@ import * as migration_20260925_120000_add_streams from './20260925_120000_add_st
 import * as migration_20260925_150000_add_stream_messages from './20260925_150000_add_stream_messages';
 import * as migration_20260925_170000_chat_pin_ban from './20260925_170000_chat_pin_ban';
 import * as migration_20260925_180000_stream_description from './20260925_180000_stream_description';
+import * as migration_20260925_190000_stream_moderators from './20260925_190000_stream_moderators';
 
 export const migrations = [
   {
@@ -785,5 +786,10 @@ export const migrations = [
     up: migration_20260925_180000_stream_description.up,
     down: migration_20260925_180000_stream_description.down,
     name: '20260925_180000_stream_description',
+  },
+  {
+    up: migration_20260925_190000_stream_moderators.up,
+    down: migration_20260925_190000_stream_moderators.down,
+    name: '20260925_190000_stream_moderators',
   },
 ];

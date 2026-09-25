@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
 import { resolvePayContext } from '@/lib/payContext'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
+import { moderatorFor } from '../_mod'
 
 /**
- * Забанить/разбанить подписчика в чате трансляций (владелец). Ставит
- * subscribers.chatBanned. При бане (если передан stream) прячет его сообщения
- * в этой трансляции. Доступ к контенту НЕ трогаем — только чат.
- * Body: { subscriber, banned?=true, stream? }.
+ * Забанить/разбанить подписчика в чате трансляций (владелец или модератор
+ * трансляции). Ставит subscribers.chatBanned. При бане (если передан stream)
+ * прячет его сообщения в этой трансляции. Доступ к контенту НЕ трогаем — только
+ * чат. Body: { subscriber, banned?=true, stream? }.
  */
 export const runtime = 'nodejs'
 
@@ -15,18 +15,19 @@ export async function POST(req: Request): Promise<Response> {
   if (!pc) return NextResponse.json({ error: 'Тенант не определён' }, { status: 400 })
   const { payload, tenantId } = pc
 
-  const author = await getCurrentAuthor().catch(() => null)
-  const owner =
-    author &&
-    Number(author.tenantId) === Number(tenantId) &&
-    (author.user as { tenantRole?: string | null })?.tenantRole !== 'contributor'
-  if (!owner) return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 })
-
   let body: any = {}
   try { body = await req.json() } catch {}
   const subId = body.subscriber
   if (subId == null || subId === '') return NextResponse.json({ error: 'Не указан пользователь' }, { status: 400 })
   const banned = body.banned !== false
+
+  // Авторизация: владелец студии, либо модератор указанной трансляции.
+  const stream: any =
+    body.stream != null && body.stream !== ''
+      ? await payload.findByID({ collection: 'streams' as any, id: body.stream, depth: 0, overrideAccess: true }).catch(() => null)
+      : null
+  const { canModerate } = await moderatorFor(tenantId, stream)
+  if (!canModerate) return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 })
 
   const sub: any = await payload
     .findByID({ collection: 'subscribers', id: subId, depth: 0, overrideAccess: true })

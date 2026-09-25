@@ -14,6 +14,7 @@ export type StreamInput = {
   playbackUrl: string
   coverId: number | null
   chatEnabled: boolean
+  moderatorEmails: string[]
   saveRecording: boolean
   ingestServer: string | null
   ingestKey: string | null
@@ -25,6 +26,12 @@ const bool = (v: unknown) => v === true || v === '1' || v === 'true'
 const orNull = (v: unknown) => {
   const s = str(v)
   return s ? s : null
+}
+
+/** Список email из массива ИЛИ строки (переносы/запятые/;) → нормализованный. */
+const emailList = (v: unknown): string[] => {
+  const arr = Array.isArray(v) ? v : typeof v === 'string' ? v.split(/[\n,;]+/) : []
+  return Array.from(new Set(arr.map((x) => String(x ?? '').trim().toLowerCase()).filter(Boolean)))
 }
 
 /** Проверяет вход и принадлежность связей тенанту. */
@@ -73,6 +80,7 @@ export async function validateStreamInput(
       playbackUrl,
       coverId,
       chatEnabled: data.chatEnabled == null ? true : bool(data.chatEnabled),
+      moderatorEmails: emailList(data.moderatorEmails),
       saveRecording: bool(data.saveRecording),
       ingestServer: orNull(data.ingestServer),
       ingestKey: orNull(data.ingestKey),
@@ -92,6 +100,7 @@ export function toPayloadData(v: StreamInput) {
     playbackUrl: v.playbackUrl,
     cover: v.coverId,
     chatEnabled: v.chatEnabled,
+    moderatorEmails: v.moderatorEmails,
     saveRecording: v.saveRecording,
     ingestServer: v.ingestServer,
     ingestKey: v.ingestKey,
@@ -115,6 +124,9 @@ export function mapStream(d: any) {
     minTierId: d.minTier ? String(typeof d.minTier === 'object' ? d.minTier.id : d.minTier) : '',
     minTierName: tier ? tier.name || tier.slug || null : null,
     chatEnabled: d.chatEnabled !== false,
+    moderatorEmails: Array.isArray(d.moderatorEmails)
+      ? (d.moderatorEmails as unknown[]).map((x) => String(x ?? '').trim().toLowerCase()).filter(Boolean)
+      : [],
     saveRecording: Boolean(d.saveRecording),
     playbackUrl: d.playbackUrl || '',
     ingestServer: d.ingestServer || '',

@@ -85,6 +85,15 @@ export const Streams: CollectionConfig = {
     },
     { name: 'chatEnabled', type: 'checkbox', defaultValue: true, label: 'Чат включён' },
     {
+      name: 'moderatorEmails',
+      type: 'json',
+      label: 'Модераторы чата (email)',
+      admin: {
+        description:
+          'Email подписчиков-модераторов (массив). Они могут закреплять, скрывать сообщения и банить в чате этой трансляции.',
+      },
+    },
+    {
       name: 'saveRecording',
       type: 'checkbox',
       defaultValue: false,

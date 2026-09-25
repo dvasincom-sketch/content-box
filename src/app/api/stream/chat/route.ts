@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { resolvePayContext } from '@/lib/payContext'
-import { getCurrentAuthor } from '@/lib/currentAuthor'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
+import { moderatorFor } from './_mod'
 
 /**
  * Чат трансляции (поллинг). Тенант — по хосту (на /api нет x-tenant-id).
@@ -22,15 +22,6 @@ async function loadStream(payload: any, tenantId: string, streamId: unknown) {
   return s && String(st) === String(tenantId) ? s : null
 }
 
-async function isOwner(tenantId: string): Promise<boolean> {
-  const author = await getCurrentAuthor().catch(() => null)
-  return Boolean(
-    author &&
-      Number(author.tenantId) === Number(tenantId) &&
-      (author.user as { tenantRole?: string | null })?.tenantRole !== 'contributor',
-  )
-}
-
 export async function GET(req: Request): Promise<Response> {
   const pc = await resolvePayContext(req)
   if (!pc) return NextResponse.json({ error: 'Тенант не определён' }, { status: 400 })
@@ -46,14 +37,15 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   const access = await checkPublicationAccess(stream)
-  const owner = await isOwner(tenantId)
-  if (!access.allowed && !owner) {
+  const mod = await moderatorFor(tenantId, stream)
+  const canMod = mod.canModerate
+  if (!access.allowed && !canMod) {
     return NextResponse.json({ messages: [], canPost: false, canModerate: false, needAccess: true })
   }
 
   const and: any[] = [{ tenant: { equals: tenantId } }, { stream: { equals: stream.id } }]
   if (after > 0) and.push({ id: { greater_than: after } })
-  if (!owner) and.push({ hidden: { not_equals: true } })
+  if (!canMod) and.push({ hidden: { not_equals: true } })
 
   const res = await payload.find({
     collection: 'stream-messages' as any,
@@ -72,7 +64,7 @@ export async function GET(req: Request): Promise<Response> {
     hidden: !!m.hidden,
     pinned: !!m.pinned,
     mine: mySubId ? String(m.subscriber) === mySubId : false,
-    ...(owner ? { sub: m.subscriber ? Number(m.subscriber) : null } : {}),
+    ...(canMod ? { sub: m.subscriber ? Number(m.subscriber) : null } : {}),
   }))
 
   // Закреплённое сообщение — всегда, независимо от `after` (оно может быть старым).
@@ -87,9 +79,9 @@ export async function GET(req: Request): Promise<Response> {
   const pm: any = (pinRes.docs as any[])[0] || null
   const pinned = pm ? { id: pm.id, name: pm.name || 'Зритель', text: pm.text } : null
 
-  // Для владельца — кто из авторов видимых сообщений забанен в чате.
+  // Для модератора — кто из авторов видимых сообщений забанен в чате.
   let bannedSubscriberIds: number[] = []
-  if (owner) {
+  if (canMod) {
     const subIds = Array.from(
       new Set((res.docs as any[]).map((m) => (m.subscriber ? Number(m.subscriber) : null)).filter((x): x is number => x != null)),
     )
@@ -109,7 +101,7 @@ export async function GET(req: Request): Promise<Response> {
 
   const sub = (access as any).subscriber
   const canPost = access.allowed && !sub?.isBlocked && !sub?.chatBanned
-  return NextResponse.json({ messages, pinned, canPost, canModerate: owner, bannedSubscriberIds })
+  return NextResponse.json({ messages, pinned, canPost, canModerate: canMod, bannedSubscriberIds })
 }
 
 export async function POST(req: Request): Promise<Response> {
