@@ -135,6 +135,14 @@ export default async function SubscribePage({ searchParams }: { searchParams: Pr
               <span className="gift-cta__hint">Можно оформить подписку себе или подарить её другу</span>
             </div>
 
+            {/* Получателю подарка — куда ввести промокод из письма. */}
+            <p className="text-center text-sm mb-10" style={{ color: 'var(--brand-muted)' }}>
+              Получили подарочный код?{' '}
+              <Link href="/gift/redeem" className="c-navlink" style={{ color: 'var(--brand-primary)' }}>
+                Активировать подарок
+              </Link>
+            </p>
+
             {tiers.length === 0 ? (
               <div
                 className="text-center py-16 rounded-2xl"

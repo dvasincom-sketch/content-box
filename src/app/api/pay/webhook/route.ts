@@ -77,7 +77,14 @@ export async function POST(req: Request): Promise<Response> {
       await sqlRows(payload, `UPDATE gift_codes SET status='active', updated_at=now() WHERE id=$1`, [gift.id]).catch(() => {})
       // Письмо получателю с кодом и ссылкой активации (best-effort).
       try {
-        const host = (settings as any)?.customDomain || (settings as any)?.domain || ''
+        // Домен берём из ТЕНАНТА (в site-settings его нет) — иначе ссылка на
+        // активацию не соберётся и письмо уходит без неё.
+        const t: any = await payload
+          .findByID({ collection: 'tenants', id: tenantId, depth: 0, overrideAccess: true })
+          .catch(() => null)
+        const host = String(t?.domain || (t?.subdomain ? `${t.subdomain}.contentbox.site` : '') || '')
+          .replace(/^https?:\/\//, '')
+          .replace(/\/+$/, '')
         const base = host ? `https://${host}` : ''
         const redeemUrl = `${base}/gift/redeem?code=${encodeURIComponent(gift.code)}`
         const from = gift.buyer_name ? ` от «${gift.buyer_name}»` : ''
