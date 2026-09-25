@@ -7,6 +7,7 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { StreamLive } from './StreamLive'
+import { StreamChat } from './StreamChat'
 import type { Metadata } from 'next'
 import '../../styles.css'
 
@@ -53,19 +54,36 @@ export default async function StreamPage({ params }: { params: Promise<Params> }
 
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
+      <style>{`
+        .stream-grid { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+        .stream-chat-cell { height: 340px; }
+        @media (min-width: 900px) {
+          .stream-grid.has-chat { grid-template-columns: minmax(0, 1fr) 340px; }
+          .stream-chat-cell { height: 420px; }
+        }
+      `}</style>
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--brand-text)', margin: '0 0 6px' }}>{stream.title}</h1>
         {when && <div style={{ color: 'var(--brand-muted)', fontSize: 14, marginBottom: 16 }}>{when}</div>}
 
         {access.allowed ? (
-          <StreamLive
-            title={stream.title}
-            scheduledAt={stream.scheduledAt || null}
-            endsAt={stream.endsAt || null}
-            playbackUrl={stream.playbackUrl || ''}
-            recordingUrl={stream.recordingUrl || ''}
-            coverUrl={coverUrl}
-          />
+          <div className={`stream-grid${stream.chatEnabled !== false ? ' has-chat' : ''}`}>
+            <div>
+              <StreamLive
+                title={stream.title}
+                scheduledAt={stream.scheduledAt || null}
+                endsAt={stream.endsAt || null}
+                playbackUrl={stream.playbackUrl || ''}
+                recordingUrl={stream.recordingUrl || ''}
+                coverUrl={coverUrl}
+              />
+            </div>
+            {stream.chatEnabled !== false && (
+              <div className="stream-chat-cell">
+                <StreamChat streamId={String(stream.id)} />
+              </div>
+            )}
+          </div>
         ) : (
           <StreamLock reason={access.reason} requiredTierName={access.requiredTierName} coverUrl={coverUrl} slug={slug} />
         )}

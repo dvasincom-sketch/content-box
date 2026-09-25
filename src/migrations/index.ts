@@ -126,6 +126,7 @@ import * as migration_20260913_120000_add_category_manual_order from './20260913
 import * as migration_20260913_140000_add_sms_log from './20260913_140000_add_sms_log';
 import * as migration_20260914_120000_drop_video_season from './20260914_120000_drop_video_season';
 import * as migration_20260925_120000_add_streams from './20260925_120000_add_streams';
+import * as migration_20260925_150000_add_stream_messages from './20260925_150000_add_stream_messages';
 
 export const migrations = [
   {
@@ -767,5 +768,10 @@ export const migrations = [
     up: migration_20260925_120000_add_streams.up,
     down: migration_20260925_120000_add_streams.down,
     name: '20260925_120000_add_streams',
+  },
+  {
+    up: migration_20260925_150000_add_stream_messages.up,
+    down: migration_20260925_150000_add_stream_messages.down,
+    name: '20260925_150000_add_stream_messages',
   },
 ];

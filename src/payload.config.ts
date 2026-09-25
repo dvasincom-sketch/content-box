@@ -25,6 +25,7 @@ import { SubscriptionTiers } from './collections/SubscriptionTiers'
 import { Subscribers } from './collections/Subscribers'
 import { Videos } from './collections/Videos'
 import { Streams } from './collections/Streams'
+import { StreamMessages } from './collections/StreamMessages'
 import { VideoFolders } from './collections/VideoFolders'
 import { GalleryImages } from './collections/GalleryImages'
 import { GalleryFolders } from './collections/GalleryFolders'
@@ -163,6 +164,7 @@ export default buildConfig({
     Subscribers,
     Videos,
     Streams,
+    StreamMessages,
     VideoFolders,
     GalleryImages,
     GalleryFolders,
@@ -343,6 +345,7 @@ export default buildConfig({
         subscribers: { useTenantAccess: false },
         videos: { useTenantAccess: false },
         streams: { useTenantAccess: false },
+        'stream-messages': { useTenantAccess: false },
         'video-folders': { useTenantAccess: false },
         'gallery-images': { useTenantAccess: false },
         'gallery-folders': { useTenantAccess: false },
