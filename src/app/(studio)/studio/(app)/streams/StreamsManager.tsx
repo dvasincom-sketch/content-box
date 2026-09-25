@@ -210,7 +210,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
           {items.map((it) => {
             const st = statusOf(it)
             return (
-              <div key={it.id} className="c-card" style={{ padding: 14, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+              <div key={it.id} className="studio-card" style={{ padding: 14, borderRadius: 14, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                 <div style={{ width: 96, height: 54, borderRadius: 8, overflow: 'hidden', flex: 'none', background: 'color-mix(in srgb, var(--st-text) 8%, transparent)' }}>
                   {it.coverUrl && <img src={it.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                 </div>
@@ -281,7 +281,7 @@ function StreamForm({
     </label>
   )
   return (
-    <div className="c-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 720 }}>
+    <div className="studio-card" style={{ padding: 20, borderRadius: 16, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 640, width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: 18, color: 'var(--st-text)', margin: 0 }}>{form.id ? 'Редактирование трансляции' : 'Новая трансляция'}</h2>
         <button type="button" className="catmgr__icon-btn" onClick={onCancel} aria-label="Закрыть"><X size={18} /></button>
@@ -289,7 +289,7 @@ function StreamForm({
 
       {field('Название', <input className="studio-input" value={form.title} onChange={(e) => onPatch({ title: e.target.value })} />)}
 
-      <div className="vid__form-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, alignItems: 'start' }}>
         {field('Начало', <input type="datetime-local" className="studio-input" value={form.scheduledAt} onChange={(e) => onPatch({ scheduledAt: e.target.value })} />)}
         {field('Окончание', <input type="datetime-local" className="studio-input" value={form.endsAt} onChange={(e) => onPatch({ endsAt: e.target.value })} />, 'После этого времени эфир считается завершённым.')}
       </div>
@@ -323,12 +323,14 @@ function StreamForm({
         {field('Ключ трансляции', <input className="studio-input" value={form.ingestKey} onChange={(e) => onPatch({ ingestKey: e.target.value })} />)}
       </div>
 
-      <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--st-text)' }}>
-          <input type="checkbox" checked={form.chatEnabled} onChange={(e) => onPatch({ chatEnabled: e.target.checked })} /> Чат включён
+      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+        <label className="studio-field studio-field--check">
+          <input type="checkbox" checked={form.chatEnabled} onChange={(e) => onPatch({ chatEnabled: e.target.checked })} />
+          <span style={{ color: 'var(--st-text)' }}>Чат включён</span>
         </label>
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--st-text)' }}>
-          <input type="checkbox" checked={form.saveRecording} onChange={(e) => onPatch({ saveRecording: e.target.checked })} /> Сохранить запись
+        <label className="studio-field studio-field--check">
+          <input type="checkbox" checked={form.saveRecording} onChange={(e) => onPatch({ saveRecording: e.target.checked })} />
+          <span style={{ color: 'var(--st-text)' }}>Сохранить запись</span>
         </label>
       </div>
 
