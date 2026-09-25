@@ -51,6 +51,12 @@ export const Streams: CollectionConfig = {
     { name: 'title', type: 'text', required: true, label: 'Название' },
     { name: 'slug', type: 'text', required: true, index: true, label: 'Slug' },
     {
+      name: 'description',
+      type: 'textarea',
+      label: 'Описание / анонс',
+      admin: { description: 'Короткий текст о трансляции — покажем на странице эфира.' },
+    },
+    {
       name: 'scheduledAt',
       type: 'date',
       required: true,

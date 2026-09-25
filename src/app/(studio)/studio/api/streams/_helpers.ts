@@ -7,6 +7,7 @@ import type { Payload } from 'payload'
 
 export type StreamInput = {
   title: string
+  description: string | null
   scheduledAt: string
   endsAt: string
   minTier: number
@@ -65,6 +66,7 @@ export async function validateStreamInput(
   return {
     data: {
       title,
+      description: orNull(data.description),
       scheduledAt: new Date(scheduledAt).toISOString(),
       endsAt: new Date(endsAt).toISOString(),
       minTier: Number(data.minTierId),
@@ -83,6 +85,7 @@ export async function validateStreamInput(
 export function toPayloadData(v: StreamInput) {
   return {
     title: v.title,
+    description: v.description,
     scheduledAt: v.scheduledAt,
     endsAt: v.endsAt,
     minTier: v.minTier,
@@ -103,6 +106,7 @@ export function mapStream(d: any) {
   return {
     id: d.id,
     title: d.title || 'Без названия',
+    description: d.description || '',
     slug: d.slug || '',
     scheduledAt: d.scheduledAt || null,
     endsAt: d.endsAt || null,

@@ -32,7 +32,8 @@ async function loadStream(slug: string) {
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params
   const data = await loadStream(slug)
-  return { title: data?.stream?.title || 'Трансляция' }
+  const desc = data?.stream?.description ? String(data.stream.description).slice(0, 300) : undefined
+  return { title: data?.stream?.title || 'Трансляция', description: desc }
 }
 
 export default async function StreamPage({ params }: { params: Promise<Params> }) {
@@ -64,7 +65,10 @@ export default async function StreamPage({ params }: { params: Promise<Params> }
       `}</style>
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--brand-text)', margin: '0 0 6px' }}>{stream.title}</h1>
-        {when && <div style={{ color: 'var(--brand-muted)', fontSize: 14, marginBottom: 16 }}>{when}</div>}
+        {when && <div style={{ color: 'var(--brand-muted)', fontSize: 14, marginBottom: stream.description ? 10 : 16 }}>{when}</div>}
+        {stream.description && (
+          <p style={{ color: 'var(--brand-text)', fontSize: 15, lineHeight: 1.55, margin: '0 0 16px', whiteSpace: 'pre-wrap' }}>{stream.description}</p>
+        )}
 
         {access.allowed ? (
           <div className={`stream-grid${stream.chatEnabled !== false ? ' has-chat' : ''}`}>

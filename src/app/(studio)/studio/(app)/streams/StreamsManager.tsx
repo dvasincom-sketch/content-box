@@ -8,6 +8,7 @@ type Tier = { id: string; name: string }
 type Item = {
   id: number | string
   title: string
+  description: string
   slug: string
   scheduledAt: string | null
   endsAt: string | null
@@ -26,6 +27,7 @@ type Item = {
 type Form = {
   id: number | string | null
   title: string
+  description: string
   scheduledAt: string // datetime-local
   endsAt: string // datetime-local
   coverId: string
@@ -67,7 +69,7 @@ const fmt = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
 
 const emptyForm: Form = {
-  id: null, title: '', scheduledAt: '', endsAt: '', coverId: '', coverUrl: null,
+  id: null, title: '', description: '', scheduledAt: '', endsAt: '', coverId: '', coverUrl: null,
   minTierId: '', chatEnabled: true, saveRecording: false, playbackUrl: '',
   ingestServer: '', ingestKey: '', recordingUrl: '',
 }
@@ -119,7 +121,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
   function openEdit(it: Item) {
     setFormError(null)
     setForm({
-      id: it.id, title: it.title, scheduledAt: isoToLocal(it.scheduledAt), endsAt: isoToLocal(it.endsAt),
+      id: it.id, title: it.title, description: it.description, scheduledAt: isoToLocal(it.scheduledAt), endsAt: isoToLocal(it.endsAt),
       coverId: it.coverId, coverUrl: it.coverUrl, minTierId: it.minTierId, chatEnabled: it.chatEnabled,
       saveRecording: it.saveRecording, playbackUrl: it.playbackUrl, ingestServer: it.ingestServer,
       ingestKey: it.ingestKey, recordingUrl: it.recordingUrl,
@@ -144,6 +146,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
     const payload = {
       id: form.id ?? undefined,
       title: form.title,
+      description: form.description,
       scheduledAt: localToIso(form.scheduledAt),
       endsAt: localToIso(form.endsAt),
       minTierId: form.minTierId,
@@ -288,6 +291,10 @@ function StreamForm({
       </div>
 
       {field('Название', <input className="studio-input" value={form.title} onChange={(e) => onPatch({ title: e.target.value })} />)}
+
+      {field('Описание / анонс',
+        <textarea className="studio-input" rows={3} style={{ resize: 'vertical' }} value={form.description} onChange={(e) => onPatch({ description: e.target.value })} />,
+        'Короткий текст о трансляции — покажем на странице эфира.')}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, alignItems: 'start' }}>
         {field('Начало', <input type="datetime-local" className="studio-input" value={form.scheduledAt} onChange={(e) => onPatch({ scheduledAt: e.target.value })} />)}
