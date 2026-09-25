@@ -3,7 +3,7 @@
 import React from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock, Repeat, Moon, Sun, BarChart3, HandCoins, Wallet } from 'lucide-react'
+import { LayoutDashboard, FileText, BookOpen, FolderTree, Video, Headphones, FileDown, Images, Settings, LogOut, ShieldCheck, Lock, Repeat, Moon, Sun, BarChart3, HandCoins, Wallet, Radio } from 'lucide-react'
 import { hasCap, SETTINGS_MANAGE_KEYS, type CapMatrix } from '@/lib/permissions'
 
 type NavItem = { href: string; label: string; icon: React.ReactNode; exact?: boolean; cap?: 'books' | 'media'; need?: [keyof CapMatrix, string]; settings?: boolean; ownerOnly?: boolean; superadminOnly?: boolean }
@@ -28,6 +28,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: '/studio/books', label: 'Книги', icon: <BookOpen size={18} />, cap: 'books' },
       { href: '/studio/videos', label: 'Видео', icon: <Video size={18} /> , cap: 'media' },
+      { href: '/studio/streams', label: 'Трансляции', icon: <Radio size={18} /> , ownerOnly: true },
       { href: '/studio/audio', label: 'Аудио', icon: <Headphones size={18} /> , cap: 'media' },
       { href: '/studio/downloads', label: 'Файлы', icon: <FileDown size={18} /> , cap: 'media' },
       { href: '/studio/gallery', label: 'Галерея', icon: <Images size={18} /> , cap: 'media' },
