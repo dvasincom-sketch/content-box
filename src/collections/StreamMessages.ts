@@ -32,6 +32,7 @@ export const StreamMessages: CollectionConfig = {
     { name: 'name', type: 'text', label: 'Имя (снимок)' },
     { name: 'text', type: 'text', required: true, label: 'Текст' },
     { name: 'hidden', type: 'checkbox', defaultValue: false, label: 'Скрыто' },
+    { name: 'pinned', type: 'checkbox', defaultValue: false, label: 'Закреплено' },
     // `tenant` инжектит multi-tenant плагин.
   ],
   timestamps: true,

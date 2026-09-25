@@ -70,10 +70,46 @@ export async function GET(req: Request): Promise<Response> {
     text: m.text,
     at: m.createdAt,
     hidden: !!m.hidden,
+    pinned: !!m.pinned,
     mine: mySubId ? String(m.subscriber) === mySubId : false,
+    ...(owner ? { sub: m.subscriber ? Number(m.subscriber) : null } : {}),
   }))
-  const blocked = access.allowed && (access as any).subscriber?.isBlocked
-  return NextResponse.json({ messages, canPost: access.allowed && !blocked, canModerate: owner })
+
+  // Закреплённое сообщение — всегда, независимо от `after` (оно может быть старым).
+  const pinRes = await payload.find({
+    collection: 'stream-messages' as any,
+    where: { and: [{ tenant: { equals: tenantId } }, { stream: { equals: stream.id } }, { pinned: { equals: true } }] },
+    sort: '-createdAt',
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const pm: any = (pinRes.docs as any[])[0] || null
+  const pinned = pm ? { id: pm.id, name: pm.name || 'Зритель', text: pm.text } : null
+
+  // Для владельца — кто из авторов видимых сообщений забанен в чате.
+  let bannedSubscriberIds: number[] = []
+  if (owner) {
+    const subIds = Array.from(
+      new Set((res.docs as any[]).map((m) => (m.subscriber ? Number(m.subscriber) : null)).filter((x): x is number => x != null)),
+    )
+    if (subIds.length) {
+      const b = await payload
+        .find({
+          collection: 'subscribers',
+          where: { and: [{ tenant: { equals: tenantId } }, { id: { in: subIds } }, { chatBanned: { equals: true } }] },
+          limit: 500,
+          depth: 0,
+          overrideAccess: true,
+        })
+        .catch(() => ({ docs: [] as any[] }))
+      bannedSubscriberIds = (b.docs as any[]).map((s) => Number(s.id))
+    }
+  }
+
+  const sub = (access as any).subscriber
+  const canPost = access.allowed && !sub?.isBlocked && !sub?.chatBanned
+  return NextResponse.json({ messages, pinned, canPost, canModerate: owner, bannedSubscriberIds })
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -100,6 +136,7 @@ export async function POST(req: Request): Promise<Response> {
   const sub = (access as any).subscriber
   if (!sub) return NextResponse.json({ error: 'Войдите, чтобы писать в чат', needAccess: true }, { status: 401 })
   if (sub.isBlocked) return NextResponse.json({ error: 'Вы не можете писать в чат' }, { status: 403 })
+  if (sub.chatBanned) return NextResponse.json({ error: 'Вы заблокированы в чате' }, { status: 403 })
 
   // Рейт-лимит: последнее сообщение этого подписчика не ближе 1.5с.
   const recent = await payload.find({

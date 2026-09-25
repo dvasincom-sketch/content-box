@@ -282,6 +282,13 @@ export const Subscribers: CollectionConfig = {
       label: 'Заблокирован',
     },
     {
+      name: 'chatBanned',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Заблокирован в чате трансляций',
+      admin: { description: 'Не может писать в чат трансляций (доступ к контенту сохраняется).' },
+    },
+    {
       name: 'lastSeenAt',
       type: 'date',
       label: 'Последний вход',
