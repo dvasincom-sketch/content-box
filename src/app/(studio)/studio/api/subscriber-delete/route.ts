@@ -7,20 +7,21 @@ import { errorMessage } from '@/lib/errorMessage'
  *
  * Body:
  *   { subscriber: id }  — удалить одного (проверяем принадлежность тенанту);
- *   { demo: true }      — массово удалить демо-аккаунты (синтетический домен
- *                         *.local, напр. seed-army-01@cocojambo.local).
+ *   { demo: true }      — массово удалить ДЕМО-аккаунты (сид seed-army-*@….local).
  *
- * Демо-аккаунты безопасны для удаления (фейковый домен, нет реальной активности).
- * Настоящего активного зрителя лучше блокировать, а не удалять — но выбор за
- * владельцем; если у записи есть связанные данные и БД не даёт удалить, вернём
- * понятную ошибку, ничего не сломав.
+ * ВАЖНО: телефонные аккаунты тоже имеют синтетический email на .local
+ * (<phone>@phone.contentbox.local) — это РЕАЛЬНЫЕ пользователи, вошедшие по
+ * звонку/номеру. Их из «демо» исключаем (иначе они удаляются и создаются заново
+ * при следующем входе). Демо = .local И без номера телефона.
  */
 export const runtime = 'nodejs'
 
-/** Демо-адрес: синтетический домен верхнего уровня .local (не бывает в реальной
- *  почте) — им завели seed-army-*@cocojambo.local и подобные. */
+/** Демо-адрес: синтетический .local, НО не телефонный (@phone.*). */
 function isDemoEmail(email: string): boolean {
-  return String(email || '').trim().toLowerCase().endsWith('.local')
+  const e = String(email || '').trim().toLowerCase()
+  if (!e.endsWith('.local')) return false
+  if (e.includes('@phone.')) return false // телефонные аккаунты — не демо
+  return true
 }
 
 export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
@@ -28,17 +29,21 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   const data = await readJson(req)
   if (data === undefined) return apiError('Некорректный запрос')
 
-  // ── Массовое удаление демо-аккаунтов (*.local) ────────────────────────────
+  // ── Массовое удаление демо-аккаунтов ──────────────────────────────────────
   if (data.demo === true) {
     const res = await payload.find({
       collection: 'subscribers',
       // like — подстрочный поиск; точную проверку суффикса делаем в JS ниже.
       where: { and: [{ tenant: { equals: tenantId } }, { email: { like: '.local' } }] },
-      limit: 1000,
+      limit: 2000,
       depth: 0,
       overrideAccess: true,
     })
-    const demos = (res.docs as { id: number | string; email: string }[]).filter((u) => isDemoEmail(u.email))
+    // Демо = .local, не @phone.* И без номера телефона (двойная защита реальных
+    // телефонных пользователей).
+    const demos = (res.docs as { id: number | string; email: string; phone?: string | null }[]).filter(
+      (u) => isDemoEmail(u.email) && !(u.phone && String(u.phone).trim()),
+    )
     let deleted = 0
     const failed: string[] = []
     for (const u of demos) {

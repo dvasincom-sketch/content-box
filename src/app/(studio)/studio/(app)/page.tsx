@@ -12,6 +12,7 @@ import { getCommerceStats, formatRub } from '@/lib/commerceStats'
 import { getDonationStats } from '@/lib/donationStats'
 import { umamiApiEnabled } from '@/lib/umami'
 import { getUmamiDashKpis } from '@/lib/umamiStats'
+import { metrikaEnabled, getMetrikaVisitors } from '@/lib/yandexMetrika'
 import { DashChart } from './DashChart'
 import { UsersKpiCard } from './UsersKpiCard'
 import { LaunchChecklist } from './LaunchChecklist'
@@ -162,6 +163,19 @@ export default async function StudioDashboard() {
     umamiKpis && umamiKpis.visitors > 0 && commerce
       ? Math.round(((commerce.registered7d || 0) / umamiKpis.visitors) * 1000) / 10
       : null
+
+  // Трафик из Яндекс.Метрики (Stat API) — уникальные посетители за 30 дней и
+  // сколько из них ещё НЕ зарегистрировались (посетители − регистрации за период).
+  let metrika: { visitors: number; regs: number; notReg: number; conv: number } | null = null
+  if (isOwner && metrikaEnabled()) {
+    const visitors = await getMetrikaVisitors(30)
+    if (visitors != null && commerce) {
+      const regs30 = commerce.series.slice(-30).reduce((a, d) => a + (d.regs || 0), 0)
+      const notReg = Math.max(0, visitors - regs30)
+      const conv = visitors > 0 ? Math.round((regs30 / visitors) * 1000) / 10 : 0
+      metrika = { visitors, regs: regs30, notReg, conv }
+    }
+  }
 
   const email = author!.user.email
 
@@ -327,6 +341,37 @@ export default async function StudioDashboard() {
                   </span>
                 ) : null}
               </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Трафик из Яндекс.Метрики: сколько уникальных посетителей ещё не зарегистрировались */}
+      {metrika && (
+        <section className="dash__section">
+          <div className="dash__section-head">
+            <h2>
+              <BarChart3 size={16} /> Трафик{' '}
+              <span style={{ color: 'var(--st-text-muted)', fontWeight: 400, fontSize: 'var(--st-text-xs)' }}>Яндекс.Метрика · за 30 дней</span>
+            </h2>
+          </div>
+          <div className="dash__stats">
+            <div className="dash__stat">
+              <div className="dash__stat-value">{metrika.visitors.toLocaleString('ru-RU')}</div>
+              <div className="dash__stat-label">Уникальных посетителей</div>
+            </div>
+            <div className="dash__stat">
+              <div className="dash__stat-value">{metrika.notReg.toLocaleString('ru-RU')}</div>
+              <div className="dash__stat-label">
+                Ещё не зарегистрировались
+                <span style={{ display: 'block', fontSize: 'var(--st-text-xs)', opacity: 0.8 }}>
+                  {metrika.visitors.toLocaleString('ru-RU')} посетителей − {metrika.regs} регистраций
+                </span>
+              </div>
+            </div>
+            <div className="dash__stat">
+              <div className="dash__stat-value">{metrika.conv}%</div>
+              <div className="dash__stat-label">Конверсия в регистрацию</div>
             </div>
           </div>
         </section>

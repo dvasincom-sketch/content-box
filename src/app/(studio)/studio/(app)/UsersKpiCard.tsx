@@ -7,6 +7,12 @@ import {
   LogIn, UserPlus, Eye, MessageSquare, Heart, Bookmark, Star, Ban, Search, ShieldCheck, Trash2,
 } from 'lucide-react'
 
+/** Демо-аккаунт: синтетический .local, но НЕ телефонный (@phone.* — реальные). */
+function isDemoEmail(email: string | null | undefined): boolean {
+  const e = String(email || '').toLowerCase()
+  return e.endsWith('.local') && !e.includes('@phone.')
+}
+
 type U = {
   id: number | string
   email: string
@@ -188,7 +194,7 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
       })
       const j = await res.json().catch(() => ({}))
       if (res.ok) {
-        setUsers((us) => (us ? us.filter((x) => !(x.email || '').toLowerCase().endsWith('.local')) : us))
+        setUsers((us) => (us ? us.filter((x) => !isDemoEmail(x.email)) : us))
         setConfirmDemo(false)
       } else {
         setError(j.error || 'Не удалось удалить')
@@ -202,8 +208,8 @@ export function UsersKpiCard({ registered, registered7d }: { registered: number;
 
   function closeAll() { setOpen(false); setSelected(null); setQuery(''); setConfirmDemo(false); setConfirmDelete(null) }
 
-  // Демо-аккаунты (домен *.local) — для кнопки массовой очистки.
-  const demoCount = users ? users.filter((u) => (u.email || '').toLowerCase().endsWith('.local')).length : 0
+  // Демо-аккаунты (сид на .local, без телефонных) — для кнопки массовой очистки.
+  const demoCount = users ? users.filter((u) => isDemoEmail(u.email)).length : 0
 
   // Поиск по имени/email.
   const q = query.trim().toLowerCase()
