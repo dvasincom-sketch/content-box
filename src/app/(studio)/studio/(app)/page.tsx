@@ -156,6 +156,13 @@ export default async function StudioDashboard() {
     if (wid) umamiKpis = await getUmamiDashKpis(wid, 7)
   }
 
+  // Конверсия «уникальный посетитель → регистрация» за 7 дней:
+  // новые регистрации (registered7d) / уникальные посетители (Umami, 7 дней).
+  const regFromVisitors =
+    umamiKpis && umamiKpis.visitors > 0 && commerce
+      ? Math.round(((commerce.registered7d || 0) / umamiKpis.visitors) * 1000) / 10
+      : null
+
   const email = author!.user.email
 
   return (
@@ -301,14 +308,25 @@ export default async function StudioDashboard() {
               Аналитика <ArrowRight size={14} />
             </Link>
           </div>
-          <div className="dash__stats dash__stats--2">
+          <div className="dash__stats">
             <div className="dash__stat">
               <div className="dash__stat-value">{umamiKpis.visitors.toLocaleString('ru-RU')}</div>
-              <div className="dash__stat-label">Посетителей</div>
+              <div className="dash__stat-label">Уникальных посетителей</div>
             </div>
             <div className="dash__stat">
               <div className="dash__stat-value">{umamiKpis.pageviews.toLocaleString('ru-RU')}</div>
               <div className="dash__stat-label">Просмотров</div>
+            </div>
+            <div className="dash__stat">
+              <div className="dash__stat-value">{regFromVisitors != null ? `${regFromVisitors}%` : '—'}</div>
+              <div className="dash__stat-label">
+                Конверсия в регистрацию
+                {commerce ? (
+                  <span style={{ display: 'block', fontSize: 'var(--st-text-xs)', opacity: 0.8 }}>
+                    {commerce.registered7d} рег. из {umamiKpis.visitors.toLocaleString('ru-RU')} посетителей
+                  </span>
+                ) : null}
+              </div>
             </div>
           </div>
         </section>
