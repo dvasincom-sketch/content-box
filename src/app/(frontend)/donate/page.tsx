@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
+import { maskIfPhone } from '@/lib/phone'
 import type { Metadata } from 'next'
 import { DonateView, type DnGoal, type DnSupporter } from './DonateView'
 import '../styles.css'
@@ -76,7 +77,7 @@ export default async function DonatePage() {
     const goalObj = p.goal && typeof p.goal === 'object' ? p.goal : null
     return {
       id: p.id,
-      name: p.isAnonymous ? 'Аноним' : (p.displayName || 'Аноним'),
+      name: p.isAnonymous ? 'Аноним' : (maskIfPhone(p.displayName || '') || 'Аноним'),
       amountRub: Number(p.amountRub) || 0,
       message: p.message || '',
       dateLabel: p.createdAt ? dateFmt.format(new Date(p.createdAt)) : '',

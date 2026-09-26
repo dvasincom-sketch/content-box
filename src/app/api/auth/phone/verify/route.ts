@@ -60,7 +60,9 @@ export async function POST(req: NextRequest) {
         password: randomBytes(24).toString('base64url'),
         phone,
         phoneVerified: true,
-        displayName: formatPhone(phone),
+        // Псевдоним НЕ приравниваем к телефону: публично номер маскируется
+        // (+7 (***) ***-45-56), а displayName — опциональный псевдоним, который
+        // пользователь задаёт сам в настройках профиля.
         tenant: tenantId,
         // Синтетический email — технический логин, реального адреса ещё нет.
         // emailVerified оставляем false, чтобы UI навязчиво просил указать почту

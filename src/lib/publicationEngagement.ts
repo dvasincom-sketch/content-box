@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { canModerate } from '@/lib/capabilities'
+import { publicSubscriberName } from '@/lib/phone'
 import type { Reaction } from '@/payload-types'
 import type {
   PublicationReaction,
@@ -49,7 +50,8 @@ export function avatarColor(id: string | number): string {
 type SubscriberLite = { id: string | number; displayName?: string | null } | null
 
 function subName(sub: any): string {
-  return (sub?.displayName as string) || 'Аноним'
+  // Публичное имя: псевдоним или замаскированный телефон (номер не светим).
+  return publicSubscriberName(sub, 'Аноним')
 }
 
 function relID(val: any): string | number | null {

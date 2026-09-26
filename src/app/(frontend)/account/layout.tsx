@@ -5,6 +5,7 @@ import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
+import { publicSubscriberName } from '@/lib/phone'
 import { AccountSidebar } from './AccountSidebar'
 
 /** Кабинет участника: боковое меню + контент (Профиль / Публикации / Настройки). */
@@ -37,7 +38,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="acct">
           <AccountSidebar
-            name={full?.displayName || full?.email || 'Профиль'}
+            name={publicSubscriberName(full, 'Профиль')}
             email={full?.email || ''}
             avatarUrl={avatarUrl}
             showLibrary={showLibrary}

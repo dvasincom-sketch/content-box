@@ -7,6 +7,7 @@ import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { brandVars } from '@/lib/brand'
 import { publishedWhere } from '@/lib/published'
 import { levelName } from '@/lib/reputation'
+import { publicSubscriberName } from '@/lib/phone'
 import { FollowButton } from '@/components/social/FollowButton'
 import type { Metadata } from 'next'
 import '../styles.css'
@@ -99,7 +100,7 @@ export default async function CommunityPage() {
         author: {
           id: Number(a.id),
           handle: a.handle || null,
-          name: a.displayName || (a.handle ? `@${a.handle}` : 'Участник'),
+          name: publicSubscriberName(a, a.handle ? `@${a.handle}` : 'Участник'),
           level: Number(a.level) || 0,
           avatarUrl: a.avatar && typeof a.avatar === 'object' ? a.avatar.url : null,
           isPrivate: Boolean(a.profilePrivate) || Boolean(a.isBlocked),

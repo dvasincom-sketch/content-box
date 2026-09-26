@@ -9,6 +9,7 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import { ChevronLeft, ChevronRight, List, Lock } from 'lucide-react'
 import { ViewTracker } from '@/components/social/ViewTracker'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
+import { publicSubscriberName } from '@/lib/phone'
 import { ChapterComments, type CommentNode } from './ChapterComments'
 import '../../../styles.css'
 
@@ -68,7 +69,7 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
     const all = cRes.docs as any[]
     commentTotal = all.length
     const meId = viewer?.id != null ? String(viewer.id) : null
-    const nameOf = (a: any) => { const o = a && typeof a === 'object' ? a : null; return o ? (o.displayName || o.handle || 'Читатель') : 'Читатель' }
+    const nameOf = (a: any) => { const o = a && typeof a === 'object' ? a : null; return o ? publicSubscriberName(o, 'Читатель') : 'Читатель' }
     const fmt = (iso: any) => { try { return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) } catch { return '' } }
     const ownOf = (a: any) => meId != null && String(typeof a === 'object' ? a?.id : a) === meId
     const repliesByParent = new Map<string, any[]>()

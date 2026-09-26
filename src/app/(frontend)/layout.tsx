@@ -24,6 +24,7 @@ import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { EmailPrompt } from '@/components/EmailPrompt'
 import { isSyntheticEmail, displayEmail } from '@/lib/authEmail'
 import { avatarColor } from '@/lib/publicationEngagement'
+import { publicSubscriberName } from '@/lib/phone'
 import { SiteFooter } from '@/components/SiteFooter'
 import { SpotlightController } from '@/components/SpotlightController'
 import { getPayload } from 'payload'
@@ -189,8 +190,10 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             subscriber={
               subscriber
                 ? {
-                    email: subscriber.email,
-                    displayName: subscriber.displayName,
+                    // Синтетический email (телефон@…) не показываем даже себе.
+                    email: displayEmail(subscriber.email) || '',
+                    // Псевдоним или замаскированный телефон (номер не светим).
+                    displayName: publicSubscriberName(subscriber as any, displayEmail(subscriber.email) || 'Профиль'),
                     avatarUrl: subscriberAvatarUrl,
                     color: avatarColor((subscriber as any).id),
                     // Активная подписка → окантовка аватара (флейр подписчика).

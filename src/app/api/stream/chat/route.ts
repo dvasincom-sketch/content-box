@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { resolvePayContext } from '@/lib/payContext'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { moderatorFor } from './_mod'
+import { maskIfPhone, looksLikePhone, formatPhone } from '@/lib/phone'
 
 /**
  * Чат трансляции (поллинг). Тенант — по хосту (на /api нет x-tenant-id).
@@ -58,7 +59,7 @@ export async function GET(req: Request): Promise<Response> {
   const mySubId = access.allowed && (access as any).subscriber ? String((access as any).subscriber.id) : null
   const messages = (res.docs as any[]).map((m) => ({
     id: m.id,
-    name: m.name || 'Зритель',
+    name: maskIfPhone(m.name || 'Зритель'),
     text: m.text,
     at: m.createdAt,
     hidden: !!m.hidden,
@@ -77,7 +78,7 @@ export async function GET(req: Request): Promise<Response> {
     overrideAccess: true,
   })
   const pm: any = (pinRes.docs as any[])[0] || null
-  const pinned = pm ? { id: pm.id, name: pm.name || 'Зритель', text: pm.text } : null
+  const pinned = pm ? { id: pm.id, name: maskIfPhone(pm.name || 'Зритель'), text: pm.text } : null
 
   // Для модератора — кто из авторов видимых сообщений забанен в чате.
   let bannedSubscriberIds: number[] = []
@@ -144,14 +145,19 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ error: 'Слишком часто, подождите секунду' }, { status: 429 })
   }
 
-  const name = String(sub.displayName || (sub.email ? String(sub.email).split('@')[0] : '') || 'Зритель').slice(0, 60)
+  // Снимок имени: псевдоним (если задан и не телефон) → иначе форматированный
+  // телефон (в БД, для владельца) → иначе часть email. Публично всё равно
+  // маскируется (maskIfPhone) при выдаче.
+  const alias = sub.displayName && !looksLikePhone(String(sub.displayName)) ? String(sub.displayName) : ''
+  const emailUser = sub.email && !/@phone\.|\.local$/i.test(String(sub.email)) ? String(sub.email).split('@')[0] : ''
+  const name = String(alias || (sub.phone ? formatPhone(String(sub.phone)) : '') || emailUser || 'Зритель').slice(0, 60)
   try {
     const doc = (await payload.create({
       collection: 'stream-messages' as any,
       data: { tenant: tenantId, stream: stream.id, subscriber: sub.id, name, text } as any,
       overrideAccess: true,
     })) as any
-    return NextResponse.json({ ok: true, message: { id: doc.id, name, text, at: doc.createdAt, mine: true, hidden: false } })
+    return NextResponse.json({ ok: true, message: { id: doc.id, name: maskIfPhone(name), text, at: doc.createdAt, mine: true, hidden: false } })
   } catch {
     return NextResponse.json({ error: 'Не удалось отправить' }, { status: 500 })
   }

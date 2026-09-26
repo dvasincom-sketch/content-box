@@ -12,6 +12,7 @@ import { buildMetadata } from '@/lib/seo'
 import { levelName } from '@/lib/reputation'
 import { earnedBadges } from '@/lib/badges'
 import { avatarColor } from '@/lib/publicationEngagement'
+import { publicSubscriberName } from '@/lib/phone'
 import { MessageCircle, MessagesSquare, PenLine, Heart, Users, Shield, Medal, Crown, Bug, Target, Star } from 'lucide-react'
 import { FollowButton } from '@/components/social/FollowButton'
 
@@ -52,7 +53,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!tenant || !profile || profile.isBlocked || profile.profilePrivate) {
     return { robots: { index: false, follow: false } }
   }
-  const name = profile.displayName || `@${profile.handle}`
+  const name = publicSubscriberName(profile, profile.handle ? `@${profile.handle}` : 'Участник')
   const avatar = profile.avatar && typeof profile.avatar === 'object' ? profile.avatar.url : undefined
   const base = buildMetadata({
     defaults: settings?.seoDefaults,
@@ -130,7 +131,7 @@ export default async function ProfilePage({ params }: Params) {
   const authored = (authoredRes.docs as any[]).filter((p) => p.slug).map((p) => ({ id: p.id, title: p.title, slug: p.slug }))
 
   const avatarUrl = profile.avatar && typeof profile.avatar === 'object' ? profile.avatar.url : null
-  const name = profile.displayName || `@${profile.handle}`
+  const name = publicSubscriberName(profile, profile.handle ? `@${profile.handle}` : 'Участник')
   const initial = (name.trim()[0] || '?').toUpperCase()
   const avaColor = avatarColor(profile.id)
   const isPaid = Boolean(profile.activeTier)

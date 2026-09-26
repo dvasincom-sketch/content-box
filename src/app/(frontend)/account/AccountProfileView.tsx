@@ -56,7 +56,7 @@ export function SettingsForm({
   async function save() {
     setError(null)
     setSaved(false)
-    if (!displayName.trim()) { setError('Укажите публичное имя'); return }
+    // Псевдоним необязателен: если пусто — публично показывается замаскированный телефон.
     setSaving(true)
     try {
       const res = await fetch('/account/api/profile', {
@@ -105,8 +105,11 @@ export function SettingsForm({
         </div>
 
         <label style={{ display: 'block' }}>
-          <span style={field}>Публичное имя</span>
+          <span style={field}>Псевдоним</span>
           <input className="c-input" value={displayName} maxLength={60} onChange={(e) => setDisplayName(e.target.value)} placeholder="Как вас видят другие" style={{ width: '100%' }} />
+          <span style={{ display: 'block', marginTop: 6, fontSize: 12.5, color: 'var(--brand-muted)' }}>
+            Необязательно. Если не заполнить, публично телефон скрыт и показывается как +7 (***) ***-45-56.
+          </span>
         </label>
 
         <label style={{ display: 'block' }}>
