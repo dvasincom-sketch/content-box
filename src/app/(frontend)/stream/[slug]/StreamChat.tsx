@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Send, EyeOff, Eye, Loader2, Pin, PinOff, Ban, Shield, Star, X } from 'lucide-react'
+import { StreamDonate } from './StreamDonate'
 
 type Msg = { id: number; name: string; text: string; at: string; hidden: boolean; mine: boolean; pinned?: boolean; sub?: number | null; mod?: boolean; paid?: boolean }
 type Pinned = { id: number; name: string; text: string; mod?: boolean; paid?: boolean }
@@ -29,7 +30,7 @@ function RoleBadge({ mod, paid }: { mod?: boolean; paid?: boolean }) {
  * для модерации). Пишут — подписчики с доступом, не заблокированные.
  * Владелец: скрыть сообщение, закрепить (один пин сверху), забанить автора.
  */
-export function StreamChat({ streamId }: { streamId: string }) {
+export function StreamChat({ streamId, donatePresets }: { streamId: string; donatePresets?: { amount: number; label?: string }[] }) {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [pinned, setPinned] = useState<Pinned | null>(null)
   const [bannedIds, setBannedIds] = useState<number[]>([])
@@ -181,8 +182,9 @@ export function StreamChat({ streamId }: { streamId: string }) {
         .smsg:hover .smsg__reply, .smsg:focus-within .smsg__reply { opacity: 1; }
         @media (hover: none) { .smsg__reply { opacity: 1; } }
       `}</style>
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--brand-border, rgba(0,0,0,.12))', fontWeight: 700, color: 'var(--brand-text)', fontSize: 14 }}>
-        Чат трансляции
+      <div style={{ padding: '8px 12px 8px 14px', borderBottom: '1px solid var(--brand-border, rgba(0,0,0,.12))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ fontWeight: 700, color: 'var(--brand-text)', fontSize: 14 }}>Чат трансляции</span>
+        <StreamDonate presets={donatePresets} compact />
       </div>
 
       {pinned && (

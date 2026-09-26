@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Heart, X, Loader2 } from 'lucide-react'
 
 type Preset = { amount: number; label?: string }
@@ -19,14 +20,25 @@ const rub = (n: number) => `${n.toLocaleString('ru-RU')} ₽`
  * Без перехода на отдельную страницу: сумма → /api/pay/donate → редирект на
  * оплату ЮKassa. Высокая конверсия — минимум полей.
  */
-export function StreamDonate({ presets }: { presets?: Preset[] }) {
+export function StreamDonate({ presets, compact }: { presets?: Preset[]; compact?: boolean }) {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
   return (
     <>
-      <button type="button" className="c-btn c-btn--primary" onClick={() => setOpen(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap' }}>
-        <Heart size={16} fill="currentColor" /> Поддержать
+      <button
+        type="button"
+        className="c-btn c-btn--primary"
+        onClick={() => setOpen(true)}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', padding: compact ? '6px 10px' : undefined, fontSize: compact ? 13 : undefined }}
+      >
+        <Heart size={compact ? 14 : 16} fill="currentColor" /> Поддержать
       </button>
-      {open && <DonateModal presets={presets && presets.length ? presets : DEFAULT_PRESETS} onClose={() => setOpen(false)} />}
+      {open && mounted &&
+        createPortal(
+          <DonateModal presets={presets && presets.length ? presets : DEFAULT_PRESETS} onClose={() => setOpen(false)} />,
+          document.body,
+        )}
     </>
   )
 }

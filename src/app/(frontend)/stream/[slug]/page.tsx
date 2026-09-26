@@ -8,7 +8,6 @@ import { brandVars } from '@/lib/brand'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { StreamLive } from './StreamLive'
 import { StreamChat } from './StreamChat'
-import { StreamDonate } from './StreamDonate'
 import type { Metadata } from 'next'
 import '../../styles.css'
 
@@ -62,16 +61,16 @@ export default async function StreamPage({ params }: { params: Promise<Params> }
         .stream-grid { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
         .stream-chat-cell { height: 360px; }
         @media (min-width: 1000px) {
-          /* Видео шире, чат уже; высота чата тянется под высоту видео (align stretch). */
+          /* Видео шире; чат ровно по высоте видео. Внутренний блок абсолютный —
+             не влияет на высоту строки, поэтому строку задаёт видео, а чат
+             тянется под неё и скроллится внутри. */
           .stream-grid.has-chat { grid-template-columns: minmax(0, 1fr) 360px; align-items: stretch; }
-          .stream-chat-cell { height: auto; min-height: 420px; }
+          .stream-chat-cell { height: auto; position: relative; min-height: 0; }
+          .stream-chat-cell > * { position: absolute; inset: 0; }
         }
       `}</style>
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--brand-text)', margin: 0, flex: 1, minWidth: 0 }}>{stream.title}</h1>
-          <StreamDonate presets={donatePresets} />
-        </div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--brand-text)', margin: '0 0 6px' }}>{stream.title}</h1>
         {when && <div style={{ color: 'var(--brand-muted)', fontSize: 14, marginBottom: stream.description ? 10 : 16 }}>{when}</div>}
         {stream.description && (
           <p style={{ color: 'var(--brand-text)', fontSize: 15, lineHeight: 1.55, margin: '0 0 16px', whiteSpace: 'pre-wrap' }}>{stream.description}</p>
@@ -91,7 +90,7 @@ export default async function StreamPage({ params }: { params: Promise<Params> }
             </div>
             {stream.chatEnabled !== false && (
               <div className="stream-chat-cell">
-                <StreamChat streamId={String(stream.id)} />
+                <StreamChat streamId={String(stream.id)} donatePresets={donatePresets} />
               </div>
             )}
           </div>
