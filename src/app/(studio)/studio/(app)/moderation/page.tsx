@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { redirect } from 'next/navigation'
 import { requireAuthor } from '@/lib/currentAuthor'
 import { can } from '@/access'
+import { publicSubscriberName } from '@/lib/phone'
 import { ModerationView } from './ModerationView'
 
 /** Модерация UGC: очередь присланных участниками публикаций (Фаза 4). */
@@ -14,8 +15,8 @@ export default async function ModerationPage() {
   if (!can(author!.user as any, 'commentsModeration', 'moderate')) redirect('/studio')
   const payload = await getPayload({ config: await config })
 
-  // Очередь на модерацию + история уже обработанных — двумя запросами.
-  const [res, histRes] = await Promise.all([
+  // Очередь на модерацию + история + комментарии — параллельными запросами.
+  const [res, histRes, commentsRes] = await Promise.all([
     payload.find({
       collection: 'submissions',
       where: { and: [{ tenant: { equals: author!.tenantId } }, { status: { equals: 'pending' } }] },
@@ -30,6 +31,14 @@ export default async function ModerationPage() {
       sort: '-updatedAt',
       limit: 100,
       depth: 1, // author, reviewedBy, publication
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'comments',
+      where: { tenant: { equals: author!.tenantId } },
+      sort: '-createdAt',
+      limit: 150,
+      depth: 1, // author, publication, chapter
       overrideAccess: true,
     }),
   ])
@@ -68,5 +77,24 @@ export default async function ModerationPage() {
     }
   })
 
-  return <ModerationView items={items} history={history} />
+  const comments = (commentsRes.docs as any[]).map((c) => {
+    const a = c.author && typeof c.author === 'object' ? c.author : null
+    const pub = c.publication && typeof c.publication === 'object' ? c.publication : null
+    const ch = c.chapter && typeof c.chapter === 'object' ? c.chapter : null
+    return {
+      id: c.id as number,
+      text: (c.text || '') as string,
+      status: (c.status === 'hidden' ? 'hidden' : 'published') as 'hidden' | 'published',
+      isReply: Boolean(c.parent),
+      createdAt: (c.createdAt || null) as string | null,
+      authorId: (a ? Number(a.id) : null) as number | null,
+      authorName: publicSubscriberName(a, 'Участник'),
+      authorPaid: Boolean(a && a.activeTier),
+      authorBanned: Boolean(a && a.commentsBanned),
+      targetTitle: (pub ? pub.title || 'Публикация' : ch ? `Глава: ${ch.title || ''}`.trim() : null) as string | null,
+      targetHref: (pub && pub.slug ? `/publication/${pub.slug}` : null) as string | null,
+    }
+  })
+
+  return <ModerationView items={items} history={history} comments={comments} />
 }

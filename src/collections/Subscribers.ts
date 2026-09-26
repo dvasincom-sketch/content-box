@@ -289,6 +289,13 @@ export const Subscribers: CollectionConfig = {
       admin: { description: 'Не может писать в чат трансляций (доступ к контенту сохраняется).' },
     },
     {
+      name: 'commentsBanned',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Заблокирован в комментариях',
+      admin: { description: 'Не может оставлять комментарии (доступ к контенту сохраняется).' },
+    },
+    {
       name: 'lastSeenAt',
       type: 'date',
       label: 'Последний вход',

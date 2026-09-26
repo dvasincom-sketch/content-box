@@ -48,6 +48,7 @@ export async function submitChapterComment(input: {
   if (!tenant?.id) return { ok: false, error: 'Тенант не определён.' }
   if (!subscriber?.id) return { ok: false, error: 'Войдите, чтобы комментировать.' }
   if (subscriber.isBlocked) return { ok: false, error: 'Действие недоступно.' }
+  if ((subscriber as any).commentsBanned) return { ok: false, error: 'Вы не можете оставлять комментарии.' }
 
   const chId = toNum(input.chapterId)
   if (!chId) return { ok: false, error: 'Некорректная глава.' }

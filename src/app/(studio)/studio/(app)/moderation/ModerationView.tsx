@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Check, X } from 'lucide-react'
+import { Loader2, Check, X, EyeOff, Eye, Trash2, Ban, ExternalLink } from 'lucide-react'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 
 type Item = {
@@ -26,6 +26,20 @@ type HistoryItem = {
   publicationSlug: string | null
 }
 
+type CommentItem = {
+  id: number
+  text: string
+  status: 'published' | 'hidden'
+  isReply: boolean
+  createdAt: string | null
+  authorId: number | null
+  authorName: string
+  authorPaid: boolean
+  authorBanned: boolean
+  targetTitle: string | null
+  targetHref: string | null
+}
+
 /** Дата модерации (МСК, чтобы не ловить рассинхрон серверной таймзоны). */
 function fmtDateTime(iso: string | null): string {
   if (!iso) return '—'
@@ -47,11 +61,55 @@ const SECTION_LABEL: Record<'feed' | 'community', string> = {
 }
 
 /** Очередь модерации: одобрить (выбор раздела; общая лента только платным) / отклонить. */
-export function ModerationView({ items: initial, history = [] }: { items: Item[]; history?: HistoryItem[] }) {
+export function ModerationView({
+  items: initial,
+  history = [],
+  comments: initialComments = [],
+}: {
+  items: Item[]
+  history?: HistoryItem[]
+  comments?: CommentItem[]
+}) {
   const router = useRouter()
+  const [tab, setTab] = useState<'submissions' | 'comments'>(initialComments.length && !initial.length ? 'comments' : 'submissions')
   const [items, setItems] = useState(initial)
+  const [comments, setComments] = useState(initialComments)
   const [busyId, setBusyId] = useState<number | null>(null)
+  const [cBusyId, setCBusyId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  async function cAction(url: string, body: any): Promise<boolean> {
+    try {
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(j.error || 'Не удалось'); return false }
+      return true
+    } catch { setError('Ошибка соединения'); return false }
+  }
+
+  async function toggleHideComment(c: CommentItem) {
+    setError(null); setCBusyId(c.id)
+    const ok = await cAction('/studio/api/comments/hide', { id: c.id, hidden: c.status !== 'hidden' })
+    if (ok) setComments((xs) => xs.map((x) => (x.id === c.id ? { ...x, status: x.status === 'hidden' ? 'published' : 'hidden' } : x)))
+    setCBusyId(null)
+  }
+
+  async function deleteComment(c: CommentItem) {
+    if (!window.confirm('Удалить комментарий безвозвратно? Ответы на него тоже удалятся.')) return
+    setError(null); setCBusyId(c.id)
+    const ok = await cAction('/studio/api/comments/delete', { id: c.id })
+    if (ok) setComments((xs) => xs.filter((x) => x.id !== c.id))
+    setCBusyId(null)
+  }
+
+  async function toggleBanAuthor(c: CommentItem) {
+    if (c.authorId == null) return
+    setError(null); setCBusyId(c.id)
+    const banned = !c.authorBanned
+    const ok = await cAction('/studio/api/comments/ban', { subscriber: c.authorId, banned })
+    if (ok) setComments((xs) => xs.map((x) => (x.authorId === c.authorId ? { ...x, authorBanned: banned } : x)))
+    setCBusyId(null)
+  }
 
   async function approve(item: Item, section: 'feed' | 'community') {
     setError(null)
@@ -105,12 +163,23 @@ export function ModerationView({ items: initial, history = [] }: { items: Item[]
       <div className="studio-page-head">
         <div>
           <h1>Модерация</h1>
-          <div className="studio-page-head__sub">Публикации от участников на проверке</div>
+          <div className="studio-page-head__sub">Заявки участников и комментарии зрителей</div>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+        <button type="button" className={`studio-btn ${tab === 'submissions' ? 'studio-btn--primary' : 'studio-btn--ghost'}`} onClick={() => setTab('submissions')}>
+          Публикации{items.length ? ` · ${items.length}` : ''}
+        </button>
+        <button type="button" className={`studio-btn ${tab === 'comments' ? 'studio-btn--primary' : 'studio-btn--ghost'}`} onClick={() => setTab('comments')}>
+          Комментарии{comments.length ? ` · ${comments.length}` : ''}
+        </button>
       </div>
 
       {error && <div className="settings__err" style={{ marginBottom: 16 }}>{error}</div>}
 
+      {tab === 'submissions' && (
+      <>
       {items.length === 0 ? (
         <p className="settings__hint">Очередь пуста — новых заявок нет.</p>
       ) : (
@@ -196,6 +265,55 @@ export function ModerationView({ items: initial, history = [] }: { items: Item[]
             </div>
           ))}
         </div>
+      )}
+      </>
+      )}
+
+      {tab === 'comments' && (
+        comments.length === 0 ? (
+          <p className="settings__hint">Комментариев пока нет.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {comments.map((c) => (
+              <div key={c.id} className="settings__block" style={{ padding: 14, opacity: c.status === 'hidden' ? 0.6 : 1 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontWeight: 700, color: 'var(--st-text)' }}>{c.authorName}</span>
+                  {c.authorPaid && <span style={{ fontSize: 12, color: 'var(--st-text-muted)' }}>· подписчик</span>}
+                  {c.isReply && <span style={{ fontSize: 12, color: 'var(--st-text-muted)' }}>· ответ</span>}
+                  {c.status === 'hidden' && <span style={{ fontSize: 12, color: '#b45309' }}>· скрыт</span>}
+                  {c.authorBanned && <span style={{ fontSize: 12, color: '#dc2626' }}>· заблокирован в комментариях</span>}
+                  <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--st-text-muted)' }}>{fmtDateTime(c.createdAt)}</span>
+                </div>
+                <div style={{ color: 'var(--st-text)', fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap', marginBottom: 8 }}>{c.text}</div>
+                {c.targetTitle && (
+                  <div style={{ fontSize: 12.5, color: 'var(--st-text-muted)', marginBottom: 10 }}>
+                    К:{' '}
+                    {c.targetHref ? (
+                      <a href={c.targetHref} target="_blank" rel="noreferrer" className="studio-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        {c.targetTitle} <ExternalLink size={12} />
+                      </a>
+                    ) : (
+                      c.targetTitle
+                    )}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button className="studio-btn studio-btn--ghost" disabled={cBusyId === c.id} onClick={() => toggleHideComment(c)}>
+                    {c.status === 'hidden' ? <><Eye size={15} /> Показать</> : <><EyeOff size={15} /> Скрыть</>}
+                  </button>
+                  <button className="studio-btn studio-btn--danger" disabled={cBusyId === c.id} onClick={() => deleteComment(c)}>
+                    {cBusyId === c.id ? <Loader2 size={15} className="spin" /> : <Trash2 size={15} />} Удалить
+                  </button>
+                  {c.authorId != null && (
+                    <button className="studio-btn studio-btn--ghost" disabled={cBusyId === c.id} onClick={() => toggleBanAuthor(c)} style={c.authorBanned ? undefined : { color: '#dc2626' }}>
+                      <Ban size={15} /> {c.authorBanned ? 'Разблокировать автора' : 'Заблокировать автора'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       )}
     </>
   )

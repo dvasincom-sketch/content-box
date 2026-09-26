@@ -133,6 +133,7 @@ import * as migration_20260925_190000_stream_moderators from './20260925_190000_
 import * as migration_20260926_100000_mask_phone_display_names from './20260926_100000_mask_phone_display_names';
 import * as migration_20260926_110000_stream_is_open from './20260926_110000_stream_is_open';
 import * as migration_20260926_120000_stream_moderator_ids from './20260926_120000_stream_moderator_ids';
+import * as migration_20260926_130000_subscriber_comments_banned from './20260926_130000_subscriber_comments_banned';
 
 export const migrations = [
   {
@@ -809,5 +810,10 @@ export const migrations = [
     up: migration_20260926_120000_stream_moderator_ids.up,
     down: migration_20260926_120000_stream_moderator_ids.down,
     name: '20260926_120000_stream_moderator_ids',
+  },
+  {
+    up: migration_20260926_130000_subscriber_comments_banned.up,
+    down: migration_20260926_130000_subscriber_comments_banned.down,
+    name: '20260926_130000_subscriber_comments_banned',
   },
 ];
