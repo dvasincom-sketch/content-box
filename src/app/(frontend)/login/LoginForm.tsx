@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useState, useEffect, useRef, type ChangeEvent, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { EmailCaptureForm } from '@/components/EmailCaptureForm'
@@ -35,7 +35,7 @@ function maskPhoneInput(raw: string, prev: string): string {
 }
 
 type Mode = 'phone' | 'email'
-type PhoneStep = 'phone' | 'code' | 'email'
+type PhoneStep = 'phone' | 'await' | 'email'
 
 export function LoginForm({ remembered = null }: { remembered?: string | null }) {
   const router = useRouter()
@@ -48,11 +48,15 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
   const [password, setPassword] = useState('')
 
   const [phone, setPhone] = useState('')
-  const [code, setCode] = useState('')
+  const [callPhone, setCallPhone] = useState('')
+  const [callPhonePretty, setCallPhonePretty] = useState('')
   const [step, setStep] = useState<PhoneStep>('phone')
   const [remember, setRemember] = useState(true)
   // Показать обычную форму ввода телефона вместо карточки «запомненного» аккаунта.
   const [useOtherNumber, setUseOtherNumber] = useState(false)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const stopPoll = () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null } }
+  useEffect(() => () => stopPoll(), [])
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -147,7 +151,7 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(data?.error || 'Не удалось отправить код.')
+        setError(data?.error || 'Не удалось создать заявку.')
         setLoading(false)
         return
       }
@@ -155,42 +159,46 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
         done()
         return
       }
-      setStep('code')
+      // Показываем номер для звонка и начинаем опрашивать статус.
+      setCallPhone(data?.callPhone || '')
+      setCallPhonePretty(data?.callPhonePretty || data?.callPhone || '')
+      setStep('await')
       setLoading(false)
+      startPolling()
     } catch {
       setError('Сетевая ошибка. Попробуйте ещё раз.')
       setLoading(false)
     }
   }
 
-  async function submitCode(e: FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-    try {
-      const res = await fetch('/api/auth/phone/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, code, remember }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(data?.error || 'Неверный код.')
-        setLoading(false)
-        return
+  // Периодический опрос: позвонил ли пользователь. sms.ru опознаёт его по номеру.
+  function startPolling() {
+    stopPoll()
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch('/api/auth/phone/callcheck', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ phone }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (data?.loggedIn) {
+          stopPoll()
+          if (data?.needsEmail) { setStep('email'); return }
+          done()
+          return
+        }
+        if (data?.expired || res.status === 410) {
+          stopPoll()
+          setStep('phone')
+          setError('Время истекло. Закажите номер и позвоните ещё раз.')
+        }
+        // pending — просто ждём следующего тика.
+      } catch {
+        /* сеть моргнула — попробуем на следующем тике */
       }
-      // Нет реального подтверждённого email (телефонная регистрация) — сначала
-      // просим указать почту, потом пускаем дальше. Шаг пропускаемый.
-      if (data?.needsEmail) {
-        setStep('email')
-        setLoading(false)
-        return
-      }
-      done()
-    } catch {
-      setError('Сетевая ошибка. Попробуйте ещё раз.')
-      setLoading(false)
-    }
+    }, 3000)
   }
 
   return (
@@ -252,52 +260,42 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
               </div>
               {error && <p className="auth__error">{error}</p>}
               <button type="submit" disabled={loading} className="auth__btn">
-                {loading ? 'Заказываем звонок…' : 'Получить звонок'}
+                {loading ? 'Готовим номер…' : 'Войти по звонку'}
               </button>
-              <p className="auth__hint">Вам поступит звонок — отвечать не нужно. Код — это <b>последние 4 цифры</b> номера, с которого позвонят. Вход без пароля; если аккаунта ещё нет, создадим автоматически.</p>
+              <p className="auth__hint">Мы покажем номер — позвоните на него <b>с этого телефона</b>. Отвечать/дозваниваться не нужно, звонок бесплатный, система узнает вас по номеру. Вход без пароля; если аккаунта нет, создадим автоматически.</p>
             </form>
-          ) : step === 'code' ? (
-            <form className="auth__form" onSubmit={submitCode}>
-              <div className="auth__field">
-                <label className="auth__label" htmlFor="auth-code">Последние 4 цифры номера звонка</label>
-                <input
-                  id="auth-code"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  className="auth__input"
-                  placeholder="____"
-                  required
-                  autoFocus
-                />
-              </div>
-              <label className="auth__remember">
-                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-                Запомнить это устройство на 30 дней
-              </label>
-              {error && <p className="auth__error">{error}</p>}
-              <button type="submit" disabled={loading} className="auth__btn">
-                {loading ? 'Проверяем…' : 'Войти'}
-              </button>
+          ) : step === 'await' ? (
+            <div className="auth__form">
               <p className="auth__hint" style={{ marginTop: 0 }}>
-                Звонок не поступил? Проверьте номер и закажите звонок ещё раз или войдите <b>по email</b>.
+                Позвоните с номера <b>{phone}</b> на:
               </p>
+              <a
+                href={`tel:${callPhone}`}
+                className="auth__btn"
+                style={{ display: 'block', textAlign: 'center', fontSize: 20, letterSpacing: '.5px', textDecoration: 'none' }}
+              >
+                {callPhonePretty || callPhone}
+              </a>
+              <p className="auth__hint" style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                <span className="auth__spinner" aria-hidden style={{ width: 14, height: 14, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} />
+                Ждём ваш звонок… Дозваниваться не нужно — как только наберёте, войдём автоматически.
+              </p>
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+              {error && <p className="auth__error">{error}</p>}
               <div className="auth__resend">
                 <button
                   type="button"
                   className="auth__link-btn"
                   onClick={() => {
+                    stopPoll()
                     setStep('phone')
-                    setCode('')
                     setError(null)
                   }}
                 >
                   ← Изменить номер
                 </button>
               </div>
-            </form>
+            </div>
           ) : (
             <div className="auth__form">
               <div className="auth__field">

@@ -68,6 +68,26 @@ export function clearCode(tenantId: string, phone: string): void {
   store.delete(key(tenantId, phone))
 }
 
+/* ── callcheck: авторизация звонком ОТ клиента ──────────────────────────────
+   Между запросом номера (callcheck/add) и опросом статуса нужно помнить
+   check_id по паре (tenant, phone). TTL — как у кода. */
+const CHECK_TTL_MS = 10 * 60 * 1000
+type CheckEntry = { checkId: string; expiresAt: number }
+const checkStore = new Map<string, CheckEntry>()
+
+export function setCheckId(tenantId: string, phone: string, checkId: string): void {
+  checkStore.set(key(tenantId, phone), { checkId, expiresAt: Date.now() + CHECK_TTL_MS })
+}
+export function getCheckId(tenantId: string, phone: string): string | null {
+  const e = checkStore.get(key(tenantId, phone))
+  if (!e) return null
+  if (Date.now() > e.expiresAt) { checkStore.delete(key(tenantId, phone)); return null }
+  return e.checkId
+}
+export function clearCheckId(tenantId: string, phone: string): void {
+  checkStore.delete(key(tenantId, phone))
+}
+
 export function issueCode(tenantId: string, phone: string, salt: string): IssueResult {
   const k = key(tenantId, phone)
   const now = Date.now()

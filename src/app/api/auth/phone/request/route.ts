@@ -3,8 +3,8 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { normalizePhone } from '@/lib/phone'
 import { tenantIdByHost } from '@/lib/tenantByHost'
-import { callEnabled, callCode } from '@/lib/smsru'
-import { reserveCode, setCode, clearCode } from '@/lib/otpStore'
+import { callEnabled, callcheckAdd } from '@/lib/smsru'
+import { reserveCode, setCheckId, clearCode, clearCheckId } from '@/lib/otpStore'
 import { verifyTrusted, TRUSTED_COOKIE } from '@/lib/trustedDevice'
 import { buildSubscriberSessionCookie } from '@/lib/subscriberSession'
 import { logSmsSend } from '@/lib/smsLog'
@@ -13,8 +13,9 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 /**
- * Шаг 1 входа по телефону. Резолвит тенанта по хосту, при доверенном
- * устройстве логинит сразу (без SMS), иначе шлёт 6-значный код.
+ * Шаг 1 входа по телефону. Резолвит тенанта по хосту, при доверенном устройстве
+ * логинит сразу. Иначе — авторизация ЗВОНКОМ ОТ КЛИЕНТА: выдаём номер, на который
+ * пользователь звонит сам; статус потом опрашивается на /api/auth/phone/callcheck.
  */
 export async function POST(req: NextRequest) {
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
@@ -50,23 +51,24 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (!callEnabled()) return NextResponse.json({ error: 'Подтверждение по звонку временно недоступно' }, { status: 503 })
+  if (!callEnabled()) return NextResponse.json({ error: 'Авторизация по звонку временно недоступна' }, { status: 503 })
 
   const reserved = reserveCode(tenantId, phone)
   if (!reserved.ok) {
-    const msg = reserved.reason === 'cooldown' ? 'Звонок уже поступает, повторите позже.' : 'Слишком много попыток, попробуйте позже.'
+    const msg = reserved.reason === 'cooldown' ? 'Заявка уже создана, повторите позже.' : 'Слишком много попыток, попробуйте позже.'
     return NextResponse.json({ error: msg, retryAfterSec: reserved.retryAfterSec }, { status: 429 })
   }
 
-  // Заказываем звонок: код = последние цифры входящего номера (sms.ru отдаёт его).
-  const call = await callCode(phone)
-  if (!call.ok || !call.code) {
+  // Выдаём номер, на который клиент звонит сам. sms.ru опознаёт его по АОН.
+  const add = await callcheckAdd(phone)
+  if (!add.ok || !add.checkId || !add.callPhone) {
     clearCode(tenantId, phone)
+    clearCheckId(tenantId, phone)
     await logSmsSend(payload, { tenantId, phone, kind: 'subscriber_login', ok: false })
-    return NextResponse.json({ error: 'Не удалось позвонить. Попробуйте позже.' }, { status: 502 })
+    return NextResponse.json({ error: 'Сервис авторизации по звонку недоступен. Попробуйте позже.' }, { status: 502 })
   }
-  setCode(tenantId, phone, payload.secret, call.code)
+  setCheckId(tenantId, phone, add.checkId)
   await logSmsSend(payload, { tenantId, phone, kind: 'subscriber_login', ok: true })
 
-  return NextResponse.json({ ok: true, codeSent: true, method: 'call' })
+  return NextResponse.json({ ok: true, awaitCall: true, callPhone: add.callPhone, callPhonePretty: add.callPhonePretty })
 }

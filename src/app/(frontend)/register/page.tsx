@@ -1,19 +1,19 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatPhoneInput } from '@/lib/phone'
 
 /**
  * Регистрация подписчика (/register). Два способа:
- *  • «По телефону» — подтверждение по ЗВОНКУ (без пароля). Тот же поток, что и
- *    вход: /api/auth/phone/request → verify. Если номер уже зарегистрирован —
- *    просто входим (система помнит ранее авторизовавшихся).
+ *  • «По телефону» — авторизация ЗВОНКОМ ОТ КЛИЕНТА (без пароля): выдаём номер,
+ *    пользователь звонит сам, система узнаёт его по АОН. Если номер уже
+ *    зарегистрирован — просто входим (помним ранее авторизовавшихся).
  *  • «По email» — /api/register-subscriber + автологин.
  */
 type Mode = 'phone' | 'email'
-type PhoneStep = 'phone' | 'code'
+type PhoneStep = 'phone' | 'await'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -26,11 +26,16 @@ export default function RegisterPage() {
 
   // phone
   const [phone, setPhone] = useState('')
-  const [code, setCode] = useState('')
+  const [callPhone, setCallPhone] = useState('')
+  const [callPhonePretty, setCallPhonePretty] = useState('')
   const [step, setStep] = useState<PhoneStep>('phone')
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const stopPoll = () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null } }
+  useEffect(() => () => stopPoll(), [])
 
   function done() {
     router.push('/')
@@ -66,24 +71,30 @@ export default function RegisterPage() {
         body: JSON.stringify({ phone }),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data?.error || 'Не удалось заказать звонок.'); setLoading(false); return }
+      if (!res.ok) { setError(data?.error || 'Не удалось создать заявку.'); setLoading(false); return }
       if (data?.loggedIn) { done(); return }
-      setStep('code'); setLoading(false)
+      setCallPhone(data?.callPhone || '')
+      setCallPhonePretty(data?.callPhonePretty || data?.callPhone || '')
+      setStep('await'); setLoading(false)
+      startPolling()
     } catch { setError('Сетевая ошибка. Попробуйте ещё раз.'); setLoading(false) }
   }
 
-  async function submitCode(e: FormEvent) {
-    e.preventDefault()
-    setError(null); setLoading(true)
-    try {
-      const res = await fetch('/api/auth/phone/verify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, code, remember: true }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setError(data?.error || 'Неверный код.'); setLoading(false); return }
-      done()
-    } catch { setError('Сетевая ошибка. Попробуйте ещё раз.'); setLoading(false) }
+  function startPolling() {
+    stopPoll()
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch('/api/auth/phone/callcheck', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ phone }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (data?.loggedIn) { stopPoll(); done(); return }
+        if (data?.expired || res.status === 410) {
+          stopPoll(); setStep('phone'); setError('Время истекло. Получите номер и позвоните ещё раз.')
+        }
+      } catch { /* сеть моргнула — повторим на следующем тике */ }
+    }, 3000)
   }
 
   const tabBtn = (m: Mode, label: string) => (
@@ -125,33 +136,28 @@ export default function RegisterPage() {
             </label>
             {error && <p className="c-field__error" style={{ marginTop: 4, marginBottom: 8 }}>{error}</p>}
             <button type="submit" disabled={loading} className="c-btn c-btn--primary c-btn--block" style={{ marginTop: 4 }}>
-              {loading ? 'Заказываем звонок…' : 'Получить звонок'}
+              {loading ? 'Готовим номер…' : 'Войти по звонку'}
             </button>
             <p style={{ marginTop: 12, fontSize: 13, color: 'var(--brand-muted)' }}>
-              Вам поступит звонок — отвечать не нужно. Код — <b>последние 4 цифры</b> номера, с которого позвонят. Если аккаунт уже есть, просто войдёте.
+              Мы покажем номер — позвоните на него <b>с этого телефона</b>. Отвечать/дозваниваться не нужно, звонок бесплатный, система узнает вас по номеру. Если аккаунт уже есть, просто войдёте.
             </p>
           </form>
         ) : (
-          <form onSubmit={submitCode}>
-            <label style={{ display: 'block', marginBottom: 12, fontSize: 14, fontWeight: 500 }}>
-              Последние 4 цифры номера звонка
-              <input
-                type="text" inputMode="numeric" autoComplete="one-time-code" value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                className="c-input" style={{ marginTop: 6 }} placeholder="____" required autoFocus
-              />
-            </label>
+          <div>
+            <p style={{ margin: '0 0 8px', fontSize: 14 }}>Позвоните с номера <b>{phone}</b> на:</p>
+            <a href={`tel:${callPhone}`} className="c-btn c-btn--primary c-btn--block" style={{ fontSize: 20, letterSpacing: '.5px', textDecoration: 'none', textAlign: 'center' }}>
+              {callPhonePretty || callPhone}
+            </a>
+            <p style={{ marginTop: 12, fontSize: 13, color: 'var(--brand-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span aria-hidden style={{ width: 14, height: 14, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin .8s linear infinite' }} />
+              Ждём ваш звонок… Как только наберёте — войдём автоматически.
+            </p>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
             {error && <p className="c-field__error" style={{ marginTop: 4, marginBottom: 8 }}>{error}</p>}
-            <button type="submit" disabled={loading} className="c-btn c-btn--primary c-btn--block">
-              {loading ? 'Проверяем…' : 'Подтвердить'}
-            </button>
-            <button
-              type="button" className="c-btn c-btn--block" style={{ marginTop: 8, background: 'transparent' }}
-              onClick={() => { setStep('phone'); setCode(''); setError(null) }}
-            >
+            <button type="button" className="c-btn c-btn--block" style={{ marginTop: 8, background: 'transparent' }} onClick={() => { stopPoll(); setStep('phone'); setError(null) }}>
               ← Изменить номер
             </button>
-          </form>
+          </div>
         )
       ) : (
         <>
