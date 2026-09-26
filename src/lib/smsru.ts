@@ -13,6 +13,43 @@ export function smsEnabled(): boolean {
   return SMSRU_API_ID.length > 0
 }
 
+/** Доступно ли подтверждение по звонку (тот же ключ sms.ru). */
+export function callEnabled(): boolean {
+  return SMSRU_API_ID.length > 0
+}
+
+type SmsRuCallResp = {
+  status: 'OK' | 'ERROR'
+  status_code?: number
+  status_text?: string
+  code?: string | number
+  call_id?: string
+  cost?: number
+  balance?: number
+}
+
+/**
+ * Подтверждение по ЗВОНКУ (sms.ru «code/call»): провайдер звонит на номер,
+ * последние 4 цифры входящего номера — это и есть код. sms.ru возвращает его
+ * в ответе; мы храним и сверяем с тем, что ввёл пользователь. SMS не шлём.
+ * GET https://sms.ru/code/call?phone=<7XXXXXXXXXX>&ip=-1&api_id=…&json=1
+ */
+export async function callCode(phone: string): Promise<{ ok: boolean; code?: string; error?: string }> {
+  if (!SMSRU_API_ID) return { ok: false, error: 'Подтверждение по звонку не настроено' }
+  const params = new URLSearchParams({ api_id: SMSRU_API_ID, phone, ip: '-1', json: '1' })
+  try {
+    const res = await fetch(`https://sms.ru/code/call?${params.toString()}`, { method: 'GET', cache: 'no-store' })
+    if (!res.ok) return { ok: false, error: `sms.ru HTTP ${res.status}` }
+    const data = (await res.json()) as SmsRuCallResp
+    if (data.status !== 'OK' || data.code == null || String(data.code).length === 0) {
+      return { ok: false, error: data.status_text || `sms.ru ${data.status_code ?? ''}`.trim() }
+    }
+    return { ok: true, code: String(data.code) }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'network' }
+  }
+}
+
 type SmsRuSendResp = {
   status: 'OK' | 'ERROR'
   status_code: number

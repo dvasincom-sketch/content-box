@@ -39,11 +39,10 @@ type PhoneStep = 'phone' | 'code' | 'email'
 
 export function LoginForm({ remembered = null }: { remembered?: string | null }) {
   const router = useRouter()
-  // Email — основной способ входа (SMS сейчас доходят не всем операторам, см.
-  // предупреждение ниже). Исключение: если браузер помнит телефонный аккаунт
-  // (remembered), открываем вкладку «По телефону», чтобы показать вход одним
-  // кликом без SMS.
-  const [mode, setMode] = useState<Mode>(remembered ? 'phone' : 'email')
+  // Телефон — основной способ (подтверждение по звонку, без пароля). Email —
+  // альтернатива. Если браузер помнит телефонный аккаунт (remembered), тоже
+  // открываем «По телефону» — вход одним кликом без звонка.
+  const [mode, setMode] = useState<Mode>('phone')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -215,7 +214,7 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
           step === 'phone' && remembered && !useOtherNumber ? (
             <div className="auth__form">
               <p className="auth__hint" style={{ marginTop: 0 }}>
-                Этот браузер помнит ваш аккаунт. Войдите без SMS.
+                Этот браузер помнит ваш аккаунт. Войдите без звонка.
               </p>
               <button type="button" disabled={loading} className="auth__btn" onClick={continueTrusted}>
                 {loading ? 'Входим…' : `Продолжить как ${remembered}`}
@@ -251,38 +250,25 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
                   required
                 />
               </div>
-              <p
-                className="auth__hint"
-                style={{
-                  marginTop: 0,
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  background: 'color-mix(in srgb, #e0821a 12%, transparent)',
-                  border: '1px solid color-mix(in srgb, #e0821a 35%, transparent)',
-                  color: 'var(--brand-text)',
-                }}
-              >
-                ⚠️ Сейчас SMS приходят только абонентам <b>Tele2</b>. Если у вас другой оператор (МТС, МегаФон, Билайн и др.), код может не дойти — войдите или зарегистрируйтесь <b>по email</b>.
-              </p>
               {error && <p className="auth__error">{error}</p>}
               <button type="submit" disabled={loading} className="auth__btn">
-                {loading ? 'Отправляем…' : 'Получить код'}
+                {loading ? 'Заказываем звонок…' : 'Получить звонок'}
               </button>
-              <p className="auth__hint">Пришлём SMS с кодом — вход без пароля. Если аккаунта ещё нет, создадим автоматически.</p>
+              <p className="auth__hint">Вам поступит звонок — отвечать не нужно. Код — это <b>последние 4 цифры</b> номера, с которого позвонят. Вход без пароля; если аккаунта ещё нет, создадим автоматически.</p>
             </form>
           ) : step === 'code' ? (
             <form className="auth__form" onSubmit={submitCode}>
               <div className="auth__field">
-                <label className="auth__label" htmlFor="auth-code">Код из SMS</label>
+                <label className="auth__label" htmlFor="auth-code">Последние 4 цифры номера звонка</label>
                 <input
                   id="auth-code"
                   type="text"
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   className="auth__input"
-                  placeholder="______"
+                  placeholder="____"
                   required
                   autoFocus
                 />
@@ -296,7 +282,7 @@ export function LoginForm({ remembered = null }: { remembered?: string | null })
                 {loading ? 'Проверяем…' : 'Войти'}
               </button>
               <p className="auth__hint" style={{ marginTop: 0 }}>
-                Код не пришёл? Сейчас SMS доходят только абонентам <b>Tele2</b>. С другим оператором войдите <b>по email</b>.
+                Звонок не поступил? Проверьте номер и закажите звонок ещё раз или войдите <b>по email</b>.
               </p>
               <div className="auth__resend">
                 <button

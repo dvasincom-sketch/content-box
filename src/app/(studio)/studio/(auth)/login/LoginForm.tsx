@@ -67,7 +67,7 @@ export function LoginForm() {
 
   async function verifyCode() {
     setError(null)
-    if (code.replace(/\D/g, '').length < 4) { setError('Введите код из SMS'); return }
+    if (code.replace(/\D/g, '').length < 4) { setError('Введите 4 цифры из звонка'); return }
     setLoading(true)
     try {
       const res = await fetch('/studio/api/auth/phone/verify', {
@@ -113,7 +113,7 @@ export function LoginForm() {
             </label>
             {error && <div className="studio-login__error">{error}</div>}
             <button className="studio-btn studio-btn--primary studio-login__submit" onClick={sendCode} disabled={loading}>
-              {loading ? 'Отправляем…' : 'Получить код'}
+              {loading ? 'Заказываем звонок…' : 'Получить звонок'}
             </button>
             {notRegistered && (
               <p style={{ marginTop: 10, fontSize: 13, textAlign: 'center' }}>
@@ -124,17 +124,17 @@ export function LoginForm() {
         ) : (
           <>
             <label className="studio-field">
-              <span className="studio-field__label">Код из SMS</span>
+              <span className="studio-field__label">Последние 4 цифры номера звонка</span>
               <input
                 className="studio-input"
                 type="text"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
                 onKeyDown={(e) => onKeyDown(e, verifyCode)}
-                placeholder="______"
-                maxLength={6}
+                placeholder="____"
+                maxLength={4}
                 disabled={loading}
                 autoFocus
               />

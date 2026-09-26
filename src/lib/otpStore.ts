@@ -29,6 +29,45 @@ export type IssueResult =
   | { ok: true; code: string }
   | { ok: false; reason: 'cooldown' | 'flood'; retryAfterSec: number }
 
+export type ReserveResult = { ok: true } | { ok: false; reason: 'cooldown' | 'flood'; retryAfterSec: number }
+
+/**
+ * Резервирование слота под код БЕЗ генерации — для подтверждения по звонку,
+ * где код (последние цифры номера) присылает провайдер. Проверяет анти-флуд и
+ * кулдаун, ставит запись-заглушку (пустой hash) и отмечает отправку, чтобы
+ * повторный запрос упёрся в кулдаун. Код проставляется затем через `setCode`.
+ */
+export function reserveCode(tenantId: string, phone: string): ReserveResult {
+  const k = key(tenantId, phone)
+  const now = Date.now()
+  const existing = store.get(k)
+  if (existing && now - existing.sentAt < RESEND_COOLDOWN_MS) {
+    return { ok: false, reason: 'cooldown', retryAfterSec: Math.ceil((RESEND_COOLDOWN_MS - (now - existing.sentAt)) / 1000) }
+  }
+  const hist = (history.get(k) || []).filter((t) => now - t < WINDOW_MS)
+  if (hist.length >= MAX_PER_WINDOW) {
+    return { ok: false, reason: 'flood', retryAfterSec: Math.ceil((WINDOW_MS - (now - hist[0])) / 1000) }
+  }
+  store.set(k, { hash: '', expiresAt: now + TTL_MS, attempts: 0, sentAt: now })
+  hist.push(now)
+  history.set(k, hist)
+  return { ok: true }
+}
+
+/** Проставить код в зарезервированный слот (после успешного звонка провайдера). */
+export function setCode(tenantId: string, phone: string, salt: string, code: string): void {
+  const k = key(tenantId, phone)
+  const now = Date.now()
+  const e = store.get(k)
+  const sentAt = e ? e.sentAt : now
+  store.set(k, { hash: hashCode(code, salt), expiresAt: now + TTL_MS, attempts: 0, sentAt })
+}
+
+/** Снять резерв (если звонок не удался) — чтобы кулдаун не блокировал повтор. */
+export function clearCode(tenantId: string, phone: string): void {
+  store.delete(key(tenantId, phone))
+}
+
 export function issueCode(tenantId: string, phone: string, salt: string): IssueResult {
   const k = key(tenantId, phone)
   const now = Date.now()
