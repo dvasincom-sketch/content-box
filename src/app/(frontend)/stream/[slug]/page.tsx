@@ -8,6 +8,7 @@ import { brandVars } from '@/lib/brand'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { StreamLive } from './StreamLive'
 import { StreamChat } from './StreamChat'
+import { StreamDonate } from './StreamDonate'
 import type { Metadata } from 'next'
 import '../../styles.css'
 
@@ -53,18 +54,24 @@ export default async function StreamPage({ params }: { params: Promise<Params> }
     ? new Date(stream.scheduledAt).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
     : null
 
+  const donatePresets = Array.isArray(settings?.donatePresets) ? settings.donatePresets : undefined
+
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <style>{`
         .stream-grid { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
-        .stream-chat-cell { height: 340px; }
-        @media (min-width: 900px) {
-          .stream-grid.has-chat { grid-template-columns: minmax(0, 1fr) 340px; }
-          .stream-chat-cell { height: 420px; }
+        .stream-chat-cell { height: 360px; }
+        @media (min-width: 1000px) {
+          /* Видео шире, чат уже; высота чата тянется под высоту видео (align stretch). */
+          .stream-grid.has-chat { grid-template-columns: minmax(0, 1fr) 360px; align-items: stretch; }
+          .stream-chat-cell { height: auto; min-height: 420px; }
         }
       `}</style>
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--brand-text)', margin: '0 0 6px' }}>{stream.title}</h1>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--brand-text)', margin: 0, flex: 1, minWidth: 0 }}>{stream.title}</h1>
+          <StreamDonate presets={donatePresets} />
+        </div>
         {when && <div style={{ color: 'var(--brand-muted)', fontSize: 14, marginBottom: stream.description ? 10 : 16 }}>{when}</div>}
         {stream.description && (
           <p style={{ color: 'var(--brand-text)', fontSize: 15, lineHeight: 1.55, margin: '0 0 16px', whiteSpace: 'pre-wrap' }}>{stream.description}</p>

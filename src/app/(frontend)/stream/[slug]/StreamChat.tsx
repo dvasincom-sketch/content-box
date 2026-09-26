@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Send, EyeOff, Eye, Loader2, Pin, PinOff, Ban, Shield, Star } from 'lucide-react'
+import { Send, EyeOff, Eye, Loader2, Pin, PinOff, Ban, Shield, Star, X } from 'lucide-react'
 
 type Msg = { id: number; name: string; text: string; at: string; hidden: boolean; mine: boolean; pinned?: boolean; sub?: number | null; mod?: boolean; paid?: boolean }
 type Pinned = { id: number; name: string; text: string; mod?: boolean; paid?: boolean }
@@ -39,11 +39,18 @@ export function StreamChat({ streamId }: { streamId: string }) {
   const [disabled, setDisabled] = useState(false)
   const [closed, setClosed] = useState(false)
   const [input, setInput] = useState('')
+  const [replyTo, setReplyTo] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const lastId = useRef(0)
   const listRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const atBottom = useRef(true)
+
+  function startReply(name: string) {
+    setReplyTo(name)
+    inputRef.current?.focus()
+  }
 
   async function poll() {
     try {
@@ -93,8 +100,10 @@ export function StreamChat({ streamId }: { streamId: string }) {
 
   async function send(e: React.FormEvent) {
     e.preventDefault()
-    const text = input.trim()
-    if (!text || sending) return
+    const typed = input.trim()
+    if (!typed || sending) return
+    // Ответ: подставляем упоминание в начало сообщения.
+    const text = (replyTo ? `${replyTo}, ` : '') + typed
     setSending(true); setError(null)
     try {
       const res = await fetch('/api/stream/chat', {
@@ -104,6 +113,7 @@ export function StreamChat({ streamId }: { streamId: string }) {
       const j = await res.json().catch(() => ({}))
       if (!res.ok) { setError(j.error || 'Не удалось отправить'); setSending(false); return }
       setInput('')
+      setReplyTo(null)
       atBottom.current = true
       if (j.message) {
         lastId.current = Math.max(lastId.current, j.message.id)
@@ -166,8 +176,13 @@ export function StreamChat({ streamId }: { streamId: string }) {
         background: 'color-mix(in srgb, var(--brand-surface, #fff) 60%, transparent)',
       }}
     >
+      <style>{`
+        .smsg__reply { opacity: 0; transition: opacity .12s; cursor: pointer; color: var(--brand-primary, #ea580c); font-size: 12px; font-weight: 600; margin-left: 6px; white-space: nowrap; }
+        .smsg:hover .smsg__reply, .smsg:focus-within .smsg__reply { opacity: 1; }
+        @media (hover: none) { .smsg__reply { opacity: 1; } }
+      `}</style>
       <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--brand-border, rgba(0,0,0,.12))', fontWeight: 700, color: 'var(--brand-text)', fontSize: 14 }}>
-        Чат
+        Чат трансляции
       </div>
 
       {pinned && (
@@ -195,6 +210,7 @@ export function StreamChat({ streamId }: { streamId: string }) {
             return (
               <div
                 key={m.id}
+                className="smsg"
                 style={{
                   fontSize: 14,
                   lineHeight: 1.4,
@@ -208,6 +224,9 @@ export function StreamChat({ streamId }: { streamId: string }) {
                 <span style={{ color: 'var(--brand-text)' }}>: {m.text}</span>
                 {m.hidden && <span style={{ color: 'var(--brand-muted)', fontSize: 12 }}> · скрыто</span>}
                 {isBanned && <span style={{ color: '#dc2626', fontSize: 12 }}> · в бане</span>}
+                {canPost && !m.hidden && (
+                  <span className="smsg__reply" role="button" tabIndex={0} onClick={() => startReply(m.name)} onKeyDown={(e) => { if (e.key === 'Enter') startReply(m.name) }}>ответить</span>
+                )}
                 {canModerate && (
                   <span style={{ marginLeft: 6, display: 'inline-flex', gap: 4, verticalAlign: 'middle' }}>
                     <button type="button" onClick={() => pinMsg(m)} title="Закрепить" style={modBtn}><Pin size={13} /></button>
@@ -233,18 +252,27 @@ export function StreamChat({ streamId }: { streamId: string }) {
             Чат доступен по подписке. <Link href="/subscribe" style={{ color: 'var(--brand-primary, #ea580c)' }}>Оформить</Link>
           </div>
         ) : canPost ? (
-          <form onSubmit={send} style={{ display: 'flex', gap: 8 }}>
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              maxLength={500}
-              placeholder="Сообщение…"
-              style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: '1px solid var(--brand-border, rgba(0,0,0,.12))', background: 'var(--brand-bg, #fff)', color: 'var(--brand-text)', fontSize: 14 }}
-            />
-            <button type="submit" disabled={sending || !input.trim()} className="c-btn c-btn--primary" style={{ padding: '9px 12px' }} aria-label="Отправить">
-              {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-            </button>
-          </form>
+          <div>
+            {replyTo && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, fontSize: 12.5, color: 'var(--brand-muted)' }}>
+                <span>Ответ <b style={{ color: 'var(--brand-text)' }}>{replyTo}</b></span>
+                <button type="button" onClick={() => setReplyTo(null)} title="Отменить" style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--brand-muted)', display: 'inline-flex', padding: 0 }}><X size={13} /></button>
+              </div>
+            )}
+            <form onSubmit={send} style={{ display: 'flex', gap: 8 }}>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                maxLength={500}
+                placeholder={replyTo ? `Ответить ${replyTo}…` : 'Сообщение…'}
+                style={{ flex: 1, padding: '9px 12px', borderRadius: 10, border: '1px solid var(--brand-border, rgba(0,0,0,.12))', background: 'var(--brand-bg, #fff)', color: 'var(--brand-text)', fontSize: 14 }}
+              />
+              <button type="submit" disabled={sending || !input.trim()} className="c-btn c-btn--primary" style={{ padding: '9px 12px' }} aria-label="Отправить">
+                {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              </button>
+            </form>
+          </div>
         ) : (
           <div style={{ color: 'var(--brand-muted)', fontSize: 13, textAlign: 'center' }}>Чтение чата.</div>
         )}
