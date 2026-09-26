@@ -14,6 +14,7 @@ type Item = {
   endsAt: string | null
   coverId: string
   coverUrl: string | null
+  isOpen: boolean
   minTierId: string
   minTierName: string | null
   chatEnabled: boolean
@@ -33,6 +34,7 @@ type Form = {
   endsAt: string // datetime-local
   coverId: string
   coverUrl: string | null
+  isOpen: boolean
   minTierId: string
   chatEnabled: boolean
   moderatorEmails: string // по одному email в строке
@@ -72,7 +74,7 @@ const fmt = (iso: string | null) =>
 
 const emptyForm: Form = {
   id: null, title: '', description: '', scheduledAt: '', endsAt: '', coverId: '', coverUrl: null,
-  minTierId: '', chatEnabled: true, moderatorEmails: '', saveRecording: false, playbackUrl: '',
+  isOpen: false, minTierId: '', chatEnabled: true, moderatorEmails: '', saveRecording: false, playbackUrl: '',
   ingestServer: '', ingestKey: '', recordingUrl: '',
 }
 
@@ -127,7 +129,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
     setFormError(null)
     setForm({
       id: it.id, title: it.title, description: it.description, scheduledAt: isoToLocal(it.scheduledAt), endsAt: isoToLocal(it.endsAt),
-      coverId: it.coverId, coverUrl: it.coverUrl, minTierId: it.minTierId, chatEnabled: it.chatEnabled,
+      coverId: it.coverId, coverUrl: it.coverUrl, isOpen: it.isOpen, minTierId: it.minTierId, chatEnabled: it.chatEnabled,
       moderatorEmails: (it.moderatorEmails || []).join('\n'),
       saveRecording: it.saveRecording, playbackUrl: it.playbackUrl, ingestServer: it.ingestServer,
       ingestKey: it.ingestKey, recordingUrl: it.recordingUrl,
@@ -155,6 +157,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
       description: form.description,
       scheduledAt: localToIso(form.scheduledAt),
       endsAt: localToIso(form.endsAt),
+      isOpen: form.isOpen,
       minTierId: form.minTierId,
       playbackUrl: form.playbackUrl,
       coverId: form.coverId || null,
@@ -191,7 +194,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 26, color: 'var(--st-text)', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
           <Radio size={22} /> Трансляции
         </h1>
@@ -220,8 +223,8 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
           {items.map((it) => {
             const st = statusOf(it)
             return (
-              <div key={it.id} className="studio-card" style={{ padding: 14, borderRadius: 14, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                <div style={{ width: 96, height: 54, borderRadius: 8, overflow: 'hidden', flex: 'none', background: 'color-mix(in srgb, var(--st-text) 8%, transparent)' }}>
+              <div key={it.id} className="studio-card st-strm-card" style={{ padding: 14, borderRadius: 14 }}>
+                <div className="st-strm-card__cover" style={{ borderRadius: 8, overflow: 'hidden', flex: 'none', background: 'color-mix(in srgb, var(--st-text) 8%, transparent)' }}>
                   {it.coverUrl && <img src={it.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -230,7 +233,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
                     <span style={{ fontSize: 12, fontWeight: 700, color: st.color }}>● {st.label}</span>
                   </div>
                   <div style={{ fontSize: 13, color: 'var(--st-text-muted)', marginTop: 3 }}>
-                    {fmt(it.scheduledAt)} — {fmt(it.endsAt)} · {it.minTierName || 'без уровня'}
+                    {fmt(it.scheduledAt)} — {fmt(it.endsAt)} · {it.isOpen ? 'открытая' : (it.minTierName || 'без уровня')}
                     {it.chatEnabled ? ' · чат' : ''}{it.saveRecording ? ' · запись' : ''}
                   </div>
                   {it.ingestServer || it.ingestKey ? (
@@ -256,7 +259,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
                     </a>
                   )}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 'none' }}>
+                <div className="st-strm-card__actions">
                   <button type="button" className="studio-btn studio-btn--ghost" onClick={() => openEdit(it)}>Редактировать</button>
                   <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setChatFor(it)}><MessageSquare size={14} /> Чат</button>
                   {confirmDel === it.id ? (
@@ -311,12 +314,17 @@ function StreamForm({
         {field('Окончание', <input type="datetime-local" className="studio-input" value={form.endsAt} onChange={(e) => onPatch({ endsAt: e.target.value })} />, 'После этого времени эфир считается завершённым.')}
       </div>
 
-      {field('Уровень доступа',
+      <label className="studio-field studio-field--check">
+        <input type="checkbox" checked={form.isOpen} onChange={(e) => onPatch({ isOpen: e.target.checked })} />
+        <span style={{ color: 'var(--st-text)' }}>Открытая трансляция — доступна всем без подписки</span>
+      </label>
+
+      {!form.isOpen && field('Уровень доступа',
         <select className="studio-input" value={form.minTierId} onChange={(e) => onPatch({ minTierId: e.target.value })}>
           <option value="">{tiers.length ? '— выберите уровень —' : 'Сначала создайте уровень подписки'}</option>
           {tiers.map((t) => <option key={t.id} value={t.id}>{t.name} и выше</option>)}
         </select>,
-        'Трансляция доступна только по подписке.')}
+        'Трансляция доступна только по подписке — от этого уровня и выше.')}
 
       {field('Обложка',
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

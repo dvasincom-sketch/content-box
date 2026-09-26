@@ -131,6 +131,7 @@ import * as migration_20260925_170000_chat_pin_ban from './20260925_170000_chat_
 import * as migration_20260925_180000_stream_description from './20260925_180000_stream_description';
 import * as migration_20260925_190000_stream_moderators from './20260925_190000_stream_moderators';
 import * as migration_20260926_100000_mask_phone_display_names from './20260926_100000_mask_phone_display_names';
+import * as migration_20260926_110000_stream_is_open from './20260926_110000_stream_is_open';
 
 export const migrations = [
   {
@@ -797,5 +798,10 @@ export const migrations = [
     up: migration_20260926_100000_mask_phone_display_names.up,
     down: migration_20260926_100000_mask_phone_display_names.down,
     name: '20260926_100000_mask_phone_display_names',
+  },
+  {
+    up: migration_20260926_110000_stream_is_open.up,
+    down: migration_20260926_110000_stream_is_open.down,
+    name: '20260926_110000_stream_is_open',
   },
 ];

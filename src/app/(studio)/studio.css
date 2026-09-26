@@ -562,6 +562,36 @@ body {
   .studio-page-head > .studio-btn { align-self: flex-start; }
 }
 
+/* Карточка трансляции (студия «Трансляции»). На мобильном — колонка,
+   кнопки действий уезжают вниз на всю ширину, обложка уменьшается. */
+.st-strm-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.st-strm-card__cover {
+  width: 96px;
+  height: 54px;
+}
+.st-strm-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+}
+@media (max-width: 560px) {
+  .st-strm-card { flex-wrap: wrap; gap: 12px; }
+  .st-strm-card__cover { width: 72px; height: 44px; }
+  .st-strm-card__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .st-strm-card__actions > .studio-btn { flex: 1 1 auto; justify-content: center; }
+  .st-strm-card__actions > div { width: 100%; display: flex; gap: 6px; }
+  .st-strm-card__actions > div > .studio-btn { flex: 1 1 auto; justify-content: center; }
+}
+
 .studio-back {
   display: inline-flex;
   align-items: center;

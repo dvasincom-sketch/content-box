@@ -76,12 +76,18 @@ export const Streams: CollectionConfig = {
     },
     { name: 'cover', type: 'upload', relationTo: 'media', label: 'Обложка' },
     {
+      name: 'isOpen',
+      type: 'checkbox',
+      defaultValue: false,
+      label: 'Открытая трансляция (без подписки)',
+      admin: { description: 'Если включено — эфир доступен всем, без подписки. Уровень доступа игнорируется.' },
+    },
+    {
       name: 'minTier',
       type: 'relationship',
       relationTo: 'subscription-tiers',
-      required: true,
       label: 'Уровень доступа',
-      admin: { description: 'Трансляция доступна только по подписке — от этого уровня и выше.' },
+      admin: { description: 'Трансляция доступна по подписке — от этого уровня и выше. Не нужен для открытой трансляции.' },
     },
     { name: 'chatEnabled', type: 'checkbox', defaultValue: true, label: 'Чат включён' },
     {

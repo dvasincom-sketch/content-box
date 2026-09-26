@@ -2,10 +2,27 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Send, EyeOff, Eye, Loader2, Pin, PinOff, Ban } from 'lucide-react'
+import { Send, EyeOff, Eye, Loader2, Pin, PinOff, Ban, Shield, Star } from 'lucide-react'
 
-type Msg = { id: number; name: string; text: string; at: string; hidden: boolean; mine: boolean; pinned?: boolean; sub?: number | null }
-type Pinned = { id: number; name: string; text: string }
+type Msg = { id: number; name: string; text: string; at: string; hidden: boolean; mine: boolean; pinned?: boolean; sub?: number | null; mod?: boolean; paid?: boolean }
+type Pinned = { id: number; name: string; text: string; mod?: boolean; paid?: boolean }
+
+/** Плашка модератора (жёлтая) / подписчика (акцент) рядом с именем. */
+function RoleBadge({ mod, paid }: { mod?: boolean; paid?: boolean }) {
+  if (mod)
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10.5, fontWeight: 800, color: '#7a5900', background: '#facc15', borderRadius: 5, padding: '1px 5px', verticalAlign: 'middle', marginRight: 5, lineHeight: 1.4 }}>
+        <Shield size={10} /> модер.
+      </span>
+    )
+  if (paid)
+    return (
+      <span title="Подписчик" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--brand-primary, #ea580c)', verticalAlign: 'middle', marginRight: 4 }}>
+        <Star size={12} fill="currentColor" />
+      </span>
+    )
+  return null
+}
 
 /**
  * Чат трансляции на поллинге. Читают подписчики с доступом (и владелец —
@@ -20,6 +37,7 @@ export function StreamChat({ streamId }: { streamId: string }) {
   const [canModerate, setCanModerate] = useState(false)
   const [needAccess, setNeedAccess] = useState(false)
   const [disabled, setDisabled] = useState(false)
+  const [closed, setClosed] = useState(false)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,6 +56,7 @@ export function StreamChat({ streamId }: { streamId: string }) {
       setCanModerate(!!j.canModerate)
       setNeedAccess(!!j.needAccess)
       setDisabled(!!j.disabled)
+      setClosed(!!j.closed)
       setPinned(j.pinned || null)
       if (Array.isArray(j.bannedSubscriberIds)) setBannedIds(j.bannedSubscriberIds)
       const incoming: Msg[] = Array.isArray(j.messages) ? j.messages : []
@@ -155,6 +174,7 @@ export function StreamChat({ streamId }: { streamId: string }) {
         <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--brand-border, rgba(0,0,0,.12))', background: 'color-mix(in srgb, var(--brand-primary, #ea580c) 10%, transparent)', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
           <Pin size={14} style={{ color: 'var(--brand-primary, #ea580c)', flex: 'none', marginTop: 2 }} />
           <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, lineHeight: 1.4 }}>
+            <RoleBadge mod={pinned.mod} paid={pinned.paid} />
             <span style={{ fontWeight: 700, color: 'var(--brand-text)' }}>{pinned.name}</span>
             <span style={{ color: 'var(--brand-text)' }}>: {pinned.text}</span>
           </div>
@@ -173,7 +193,17 @@ export function StreamChat({ streamId }: { streamId: string }) {
           msgs.map((m) => {
             const isBanned = m.sub != null && bannedIds.includes(m.sub)
             return (
-              <div key={m.id} style={{ fontSize: 14, lineHeight: 1.4, opacity: m.hidden ? 0.5 : 1 }}>
+              <div
+                key={m.id}
+                style={{
+                  fontSize: 14,
+                  lineHeight: 1.4,
+                  opacity: m.hidden ? 0.5 : 1,
+                  // Модератора выделяем жёлтой плашкой на всю строку.
+                  ...(m.mod ? { background: 'color-mix(in srgb, #facc15 16%, transparent)', borderLeft: '3px solid #facc15', borderRadius: 8, padding: '4px 8px' } : {}),
+                }}
+              >
+                <RoleBadge mod={m.mod} paid={m.paid} />
                 <span style={{ fontWeight: 700, color: m.mine ? 'var(--brand-primary, #ea580c)' : 'var(--brand-text)' }}>{m.name}</span>
                 <span style={{ color: 'var(--brand-text)' }}>: {m.text}</span>
                 {m.hidden && <span style={{ color: 'var(--brand-muted)', fontSize: 12 }}> · скрыто</span>}
@@ -196,6 +226,8 @@ export function StreamChat({ streamId }: { streamId: string }) {
       <div style={{ borderTop: '1px solid var(--brand-border, rgba(0,0,0,.12))', padding: 10 }}>
         {disabled ? (
           <div style={{ color: 'var(--brand-muted)', fontSize: 13, textAlign: 'center' }}>Чат для этой трансляции выключен.</div>
+        ) : closed ? (
+          <div style={{ color: 'var(--brand-muted)', fontSize: 13, textAlign: 'center' }}>Чат закрыт — эфир завершён.</div>
         ) : needAccess ? (
           <div style={{ color: 'var(--brand-muted)', fontSize: 13, textAlign: 'center' }}>
             Чат доступен по подписке. <Link href="/subscribe" style={{ color: 'var(--brand-primary, #ea580c)' }}>Оформить</Link>

@@ -46,8 +46,8 @@ export default async function StreamPage({ params }: { params: Promise<Params> }
   const cover = stream.cover && typeof stream.cover === 'object' ? stream.cover : null
   const coverUrl = cover?.sizes?.large?.url || cover?.url || null
 
-  // Доступ по тарифу — та же модель, что у публикаций/видео.
-  const access = await checkPublicationAccess(stream)
+  // Открытая трансляция — доступна всем; иначе доступ по тарифу (как у публикаций/видео).
+  const access = stream.isOpen ? ({ allowed: true, subscriber: null } as const) : await checkPublicationAccess(stream)
 
   const when = stream.scheduledAt
     ? new Date(stream.scheduledAt).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })

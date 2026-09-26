@@ -10,7 +10,8 @@ export type StreamInput = {
   description: string | null
   scheduledAt: string
   endsAt: string
-  minTier: number
+  isOpen: boolean
+  minTier: number | null
   playbackUrl: string
   coverId: number | null
   chatEnabled: boolean
@@ -52,14 +53,20 @@ export async function validateStreamInput(
   const playbackUrl = str(data.playbackUrl)
   if (!playbackUrl) return { error: 'Вставьте ссылку просмотра от Castr' }
 
-  if (data.minTierId == null || data.minTierId === '') {
-    return { error: 'Выберите уровень доступа — трансляция доступна только по подписке' }
+  const isOpen = bool(data.isOpen)
+  // Уровень доступа обязателен только для закрытой (подписочной) трансляции.
+  let minTier: number | null = null
+  if (!isOpen) {
+    if (data.minTierId == null || data.minTierId === '') {
+      return { error: 'Выберите уровень доступа или сделайте трансляцию открытой' }
+    }
+    const t: any = await payload
+      .findByID({ collection: 'subscription-tiers', id: data.minTierId, depth: 0, overrideAccess: true })
+      .catch(() => null)
+    const tt = t && (typeof t.tenant === 'object' ? t.tenant.id : t.tenant)
+    if (!t || Number(tt) !== Number(tenantId)) return { error: 'Уровень доступа не найден' }
+    minTier = Number(data.minTierId)
   }
-  const t: any = await payload
-    .findByID({ collection: 'subscription-tiers', id: data.minTierId, depth: 0, overrideAccess: true })
-    .catch(() => null)
-  const tt = t && (typeof t.tenant === 'object' ? t.tenant.id : t.tenant)
-  if (!t || Number(tt) !== Number(tenantId)) return { error: 'Уровень доступа не найден' }
 
   let coverId: number | null = null
   if (data.coverId != null && data.coverId !== '') {
@@ -76,7 +83,8 @@ export async function validateStreamInput(
       description: orNull(data.description),
       scheduledAt: new Date(scheduledAt).toISOString(),
       endsAt: new Date(endsAt).toISOString(),
-      minTier: Number(data.minTierId),
+      isOpen,
+      minTier,
       playbackUrl,
       coverId,
       chatEnabled: data.chatEnabled == null ? true : bool(data.chatEnabled),
@@ -96,6 +104,7 @@ export function toPayloadData(v: StreamInput) {
     description: v.description,
     scheduledAt: v.scheduledAt,
     endsAt: v.endsAt,
+    isOpen: v.isOpen,
     minTier: v.minTier,
     playbackUrl: v.playbackUrl,
     cover: v.coverId,
@@ -121,6 +130,7 @@ export function mapStream(d: any) {
     endsAt: d.endsAt || null,
     coverId: d.cover ? String(typeof d.cover === 'object' ? d.cover.id : d.cover) : '',
     coverUrl: cover?.sizes?.card?.url || cover?.url || null,
+    isOpen: Boolean(d.isOpen),
     minTierId: d.minTier ? String(typeof d.minTier === 'object' ? d.minTier.id : d.minTier) : '',
     minTierName: tier ? tier.name || tier.slug || null : null,
     chatEnabled: d.chatEnabled !== false,
