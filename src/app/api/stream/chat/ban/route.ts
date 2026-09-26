@@ -26,7 +26,7 @@ export async function POST(req: Request): Promise<Response> {
     body.stream != null && body.stream !== ''
       ? await payload.findByID({ collection: 'streams' as any, id: body.stream, depth: 0, overrideAccess: true }).catch(() => null)
       : null
-  const { canModerate } = await moderatorFor(tenantId, stream)
+  const { canModerate } = await moderatorFor(tenantId, stream, pc.settings?.streamModeratorIds)
   if (!canModerate) return NextResponse.json({ error: 'Недостаточно прав' }, { status: 403 })
 
   const sub: any = await payload

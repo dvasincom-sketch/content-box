@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { Loader2, Plus, Radio, Copy, Check, Trash2, Upload, X, ExternalLink, MessageSquare, Pin, PinOff, EyeOff, Eye, Ban } from 'lucide-react'
+import { Loader2, Plus, Radio, Copy, Check, Trash2, Upload, X, ExternalLink, MessageSquare, Pin, PinOff, EyeOff, Eye, Ban, Settings, Shield, Search } from 'lucide-react'
 
 type Tier = { id: string; name: string }
 
@@ -106,6 +106,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
   const [coverBusy, setCoverBusy] = useState(false)
   const [confirmDel, setConfirmDel] = useState<number | string | null>(null)
   const [chatFor, setChatFor] = useState<Item | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 
   async function refresh() {
@@ -198,7 +199,12 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
         <h1 style={{ fontSize: 26, color: 'var(--st-text)', margin: 0, display: 'inline-flex', alignItems: 'center', gap: 10 }}>
           <Radio size={22} /> Трансляции
         </h1>
-        {!form && <button type="button" className="studio-btn studio-btn--primary" onClick={openNew}><Plus size={16} /> Новая трансляция</button>}
+        {!form && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="studio-btn studio-btn--ghost" onClick={() => setSettingsOpen(true)}><Settings size={16} /> Настройки</button>
+            <button type="button" className="studio-btn studio-btn--primary" onClick={openNew}><Plus size={16} /> Новая трансляция</button>
+          </div>
+        )}
       </div>
 
       {tiers.length === 0 && (
@@ -278,6 +284,7 @@ export function StreamsManager({ tiers }: { tiers: Tier[] }) {
       )}
 
       {chatFor && <ChatLogModal stream={chatFor} onClose={() => setChatFor(null)} />}
+      {settingsOpen && <StreamSettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }
@@ -342,9 +349,11 @@ function StreamForm({
         <span style={{ color: 'var(--st-text)' }}>Чат включён</span>
       </label>
 
-      {form.chatEnabled && field('Модераторы чата (по одному email в строке)',
-        <textarea className="studio-input" rows={3} style={{ resize: 'vertical' }} placeholder="user@example.com" value={form.moderatorEmails} onChange={(e) => onPatch({ moderatorEmails: e.target.value })} />,
-        'Подписчики с этими email смогут закреплять, скрывать сообщения и банить в чате этой трансляции. При создании новой трансляции список подставляется из прошлой — как справочник.')}
+      {form.chatEnabled && (
+        <div className="studio-field__hint" style={{ fontSize: 12.5, color: 'var(--st-text-muted)' }}>
+          Модераторы чата теперь общие для всех трансляций — настраиваются кнопкой «Настройки» вверху списка.
+        </div>
+      )}
 
       {field('Ссылка просмотра (Embed URL от Castr)', <input className="studio-input" placeholder="https://player.castr.com/..." value={form.playbackUrl} onChange={(e) => onPatch({ playbackUrl: e.target.value })} />, 'Возьмите в Castr → раздел «Playback Setup» → Embed URL (или ссылку из iframe). Это НЕ ключ трансляции — по ней зрители смотрят эфир у нас.')}
 
@@ -469,6 +478,135 @@ function ChatLogModal({ stream, onClose }: { stream: Item; onClose: () => void }
               })}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+type SubLite = { id: number; name: string; displayName: string; email: string; paid: boolean; tierName: string | null }
+
+/** Сквозные настройки трансляций: общий список модераторов чата (по подписчикам). */
+function StreamSettingsModal({ onClose }: { onClose: () => void }) {
+  const [users, setUsers] = useState<SubLite[]>([])
+  const [modIds, setModIds] = useState<number[]>([])
+  const [q, setQ] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      setLoading(true); setErr(null)
+      try {
+        const [uRes, sRes] = await Promise.all([
+          fetch('/studio/api/subscribers-list', { credentials: 'include' }).then((r) => r.json()).catch(() => ({})),
+          fetch('/studio/api/streams/settings', { credentials: 'include' }).then((r) => r.json()).catch(() => ({})),
+        ])
+        if (!alive) return
+        setUsers(Array.isArray(uRes.users) ? uRes.users : [])
+        setModIds(Array.isArray(sRes.moderatorIds) ? sRes.moderatorIds.map(Number) : [])
+      } catch { if (alive) setErr('Не удалось загрузить') } finally { if (alive) setLoading(false) }
+    })()
+    return () => { alive = false }
+  }, [])
+
+  const byId = new Map(users.map((u) => [Number(u.id), u]))
+  const mods = modIds.map((id) => byId.get(id)).filter(Boolean) as SubLite[]
+  const needle = q.trim().toLowerCase()
+  const results = needle
+    ? users
+        .filter((u) => !modIds.includes(Number(u.id)))
+        .filter((u) => `${u.name} ${u.displayName} ${u.email}`.toLowerCase().includes(needle))
+        .slice(0, 12)
+    : []
+
+  const add = (id: number) => { setModIds((p) => (p.includes(id) ? p : [...p, id])); setSaved(false) }
+  const remove = (id: number) => { setModIds((p) => p.filter((x) => x !== id)); setSaved(false) }
+
+  async function save() {
+    setSaving(true); setErr(null)
+    try {
+      const res = await fetch('/studio/api/streams/settings', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ moderatorIds: modIds }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) { setErr(j.error || 'Не удалось сохранить'); setSaving(false); return }
+      if (Array.isArray(j.moderatorIds)) setModIds(j.moderatorIds.map(Number))
+      setSaved(true)
+    } catch { setErr('Ошибка соединения') } finally { setSaving(false) }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'grid', placeItems: 'center', zIndex: 1000, padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} className="studio-card" style={{ width: '100%', maxWidth: 620, maxHeight: '85vh', display: 'flex', flexDirection: 'column', padding: 0, borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '14px 18px', borderBottom: '1px solid var(--st-border, rgba(0,0,0,.1))' }}>
+          <div style={{ fontWeight: 700, color: 'var(--st-text)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <Settings size={18} /> Сквозные настройки трансляций
+          </div>
+          <button type="button" className="catmgr__icon-btn" onClick={onClose} aria-label="Закрыть"><X size={18} /></button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--st-text)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Shield size={15} /> Модераторы чата
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--st-text-muted)', marginTop: 4 }}>
+              Общий список для всех трансляций. Модераторы могут закреплять, скрывать сообщения и банить в чате. В чате они помечаются жёлтой плашкой.
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="uk-empty"><Loader2 size={18} className="spin" /> Загрузка…</div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {mods.length === 0 ? (
+                  <span style={{ fontSize: 13, color: 'var(--st-text-muted)' }}>Модераторы не назначены.</span>
+                ) : (
+                  mods.map((u) => (
+                    <span key={u.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'color-mix(in srgb, #facc15 20%, transparent)', border: '1px solid #facc15', borderRadius: 999, padding: '4px 10px', fontSize: 13, color: 'var(--st-text)' }}>
+                      <Shield size={13} style={{ color: '#a16207' }} /> {u.name}
+                      <button type="button" onClick={() => remove(u.id)} title="Убрать" style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--st-text-muted)', display: 'inline-flex', padding: 0 }}><X size={13} /></button>
+                    </span>
+                  ))
+                )}
+              </div>
+
+              <label className="studio-field" style={{ marginTop: 4 }}>
+                <span className="studio-field__label" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Search size={14} /> Добавить модератора</span>
+                <input className="studio-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Поиск по имени, телефону или email" />
+              </label>
+
+              {needle && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 260, overflowY: 'auto' }}>
+                  {results.length === 0 ? (
+                    <div style={{ fontSize: 13, color: 'var(--st-text-muted)', padding: '6px 2px' }}>Никого не найдено.</div>
+                  ) : (
+                    results.map((u) => (
+                      <button key={u.id} type="button" onClick={() => { add(u.id); setQ('') }} className="studio-btn studio-btn--ghost" style={{ justifyContent: 'space-between', width: '100%' }}>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}{u.paid ? ' · подписчик' : ''}</span>
+                        <Plus size={14} />
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </>
+          )}
+          {err && <div className="studio-login__error">{err}</div>}
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '12px 18px', borderTop: '1px solid var(--st-border, rgba(0,0,0,.1))' }}>
+          <button type="button" className="studio-btn studio-btn--primary" disabled={saving || loading} onClick={save}>
+            {saving ? <Loader2 size={16} className="spin" /> : null} Сохранить
+          </button>
+          <button type="button" className="studio-btn studio-btn--ghost" onClick={onClose}>Закрыть</button>
+          {saved && <span style={{ fontSize: 13, color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 4 }}><Check size={14} /> Сохранено</span>}
         </div>
       </div>
     </div>

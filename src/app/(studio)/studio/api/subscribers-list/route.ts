@@ -1,4 +1,5 @@
 import { withAuthor, apiError, apiOk, isContributor } from '@/app/(studio)/studio/api/_lib'
+import { publicSubscriberName } from '@/lib/phone'
 
 /**
  * Список пользователей (подписчиков) тенанта для дашборда — прозрачность данных.
@@ -22,6 +23,8 @@ export const GET = withAuthor(async ({ payload, tenantId, author }) => {
       id: u.id,
       email: u.email as string,
       displayName: (u.displayName as string) || '',
+      // Публичное имя (псевдоним или замаскированный телефон) — для списков/пикеров.
+      name: publicSubscriberName(u, (u.email as string) || 'Участник'),
       tierName: tier ? (tier.name || tier.slug || null) : null,
       paid,
       isBlocked: Boolean(u.isBlocked),

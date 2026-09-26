@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { resolvePayContext } from '@/lib/payContext'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
-import { moderatorFor, normModEmails } from './_mod'
+import { moderatorFor, normModEmails, normModIds } from './_mod'
 import { maskIfPhone, looksLikePhone, formatPhone } from '@/lib/phone'
 
 // Чат закрывается через час после окончания эфира.
@@ -46,6 +46,7 @@ export async function GET(req: Request): Promise<Response> {
   const pc = await resolvePayContext(req)
   if (!pc) return NextResponse.json({ error: 'Тенант не определён' }, { status: 400 })
   const { payload, tenantId } = pc
+  const globalModIds = normModIds(pc.settings?.streamModeratorIds)
 
   const url = new URL(req.url)
   const streamId = url.searchParams.get('stream')
@@ -57,7 +58,7 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   const access = await accessFor(stream, tenantId)
-  const mod = await moderatorFor(tenantId, stream)
+  const mod = await moderatorFor(tenantId, stream, globalModIds)
   const canMod = mod.canModerate
   const closed = chatClosed(stream)
   if (!access.allowed && !canMod) {
@@ -85,6 +86,8 @@ export async function GET(req: Request): Promise<Response> {
   const modEmails = normModEmails(stream.moderatorEmails)
   const modSubIds = new Set<number>()
   const paidSubIds = new Set<number>()
+  // Сквозные модераторы (по id) — сразу помечаем среди авторов.
+  for (const id of globalModIds) if (authorIds.includes(id)) modSubIds.add(id)
   if (authorIds.length) {
     const a = await payload
       .find({
