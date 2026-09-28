@@ -60,21 +60,31 @@ export default async function VideosAnalytics() {
           <>
             <section className="studio-card" style={{ marginBottom: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 14 }}>
-                {KPI.map((k) => (
-                  <div key={k.key} style={{ padding: '4px 2px' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, opacity: 0.7, marginBottom: 4 }}>
-                      {k.icon}
-                      {k.label}
+                {KPI.map((k) => {
+                  // Проигрывания и досмотр берутся из плеера сайта — для
+                  // встраиваемых видео (VK, YouTube и т.п.) их нет. Чтобы 0%
+                  // не выглядел ошибкой, показываем «—», когда запусков нет.
+                  const heatKey = k.key === 'starts' || k.key === 'avgWatch' || k.key === 'mid' || k.key === 'end'
+                  const noPlays = (stats!.starts || 0) === 0
+                  const display = heatKey && noPlays ? '—' : `${stats![k.key]}${k.suffix || ''}`
+                  return (
+                    <div key={k.key} style={{ padding: '4px 2px' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, opacity: 0.7, marginBottom: 4 }}>
+                        {k.icon}
+                        {k.label}
+                      </div>
+                      <div style={{ fontSize: 22, fontWeight: 700 }}>{display}</div>
                     </div>
-                    <div style={{ fontSize: 22, fontWeight: 700 }}>
-                      {stats![k.key]}
-                      {k.suffix || ''}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
               <div style={{ marginTop: 12, fontSize: 12.5, color: 'var(--st-text-muted)', lineHeight: 1.5 }}>
-                «Проигрываний» — сколько раз запускали видео (с повторами). «Ср. досмотр», «до середины» и «до конца» — какая доля запусков досмотрела до этой точки.
+                «Видео» — сколько роликов посмотрели, «Зрителей» — уникальных зрителей. «Проигрываний» — сколько раз запускали видео (с повторами); «Ср. досмотр», «до середины» и «до конца» — какая доля запусков досмотрела до этой точки.
+                {(stats!.starts || 0) === 0 && stats!.viewers > 0 && (
+                  <span style={{ display: 'block', marginTop: 6 }}>
+                    Проигрывания и досмотр доступны только для видео, <b>загруженных на сайт</b>. Для встраиваемых (VK, YouTube, Rutube и др.) считаются только зрители — поэтому здесь «—».
+                  </span>
+                )}
               </div>
             </section>
 

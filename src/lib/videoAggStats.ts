@@ -60,9 +60,12 @@ export async function getVideoAggStats(payload: Payload, tenantId: number | stri
       FROM video_heatmap h
       JOIN videos v ON v.id = h.video_id
       WHERE v.tenant_id = $1 AND COALESCE(v.provider, '') <> 'audio'`
-    // Зрители: distinct подписчик по всем видео + всего видео тенанта.
+    // Зрители: distinct подписчик по всем видео.
     const viewersSql = `SELECT COUNT(DISTINCT subscriber_id) AS uniq FROM views WHERE tenant_id = $1 AND target_type = 'video'`
-    const countSql = `SELECT COUNT(*) AS n FROM videos WHERE tenant_id = $1 AND COALESCE(provider, '') <> 'audio'`
+    // «Видео» = сколько роликов реально смотрели (distinct по просмотрам), а не
+    // размер библиотеки: иначе для встраиваемых видео (которых нет в коллекции
+    // videos) выходило «0 видео» при живых зрителях.
+    const countSql = `SELECT COUNT(DISTINCT video_id) AS n FROM views WHERE tenant_id = $1 AND target_type = 'video' AND video_id IS NOT NULL`
     // Разбивка по видео (топ по стартам).
     const rowsSql = `
       SELECT v.id, v.title,
