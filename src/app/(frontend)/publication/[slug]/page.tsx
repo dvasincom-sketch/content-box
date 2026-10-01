@@ -71,7 +71,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     //   dateCategorySlugs (напр. Weverse Live).
     const catSlug = category?.slug ? String(category.slug) : ''
     const withDate = brand.dateCategorySlugs.includes(catSlug)
-    const dateStr = withDate ? formatPublishedRu(pub.publishedAt) : ''
+    // Дата как на оранжевой плашке страницы: «Дата события» (eventDate), а для
+    // обычных материалов — дата публикации.
+    const dateStr = withDate ? formatPublishedRu(pub.eventDate || pub.publishedAt) : ''
     const computedTitle = composeBrandTitle([pub.title, dateStr, brand.suffix])
 
     return buildMetadata({
