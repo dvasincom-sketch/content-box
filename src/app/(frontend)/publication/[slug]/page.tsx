@@ -12,6 +12,7 @@ import { isPublished, publishedWhere } from '@/lib/published'
 import { BookmarkButton } from '@/components/social/BookmarkButton'
 import { ViewTracker } from '@/components/social/ViewTracker'
 import { buildMetadata } from '@/lib/seo'
+import { seoBrandForDomain, formatPublishedRu, composeBrandTitle } from '@/lib/seoBrand'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
@@ -60,6 +61,31 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!pub || !isPublished(pub)) notFound()
 
   const category = pub.category && typeof pub.category === 'object' ? pub.category : null
+  const brand = seoBrandForDomain(tenant.domain as string | null | undefined)
+
+  if (brand) {
+    // Заголовок страницы публикации строим из НАЗВАНИЯ публикации, а не из
+    // SEO-title категории (тот — «{раздел} | бренд», он для страницы раздела и
+    // не должен подменять заголовок конкретной публикации).
+    //   «{название} | {дата?} | {suffix}» — дата только для разделов из
+    //   dateCategorySlugs (напр. Weverse Live).
+    const catSlug = category?.slug ? String(category.slug) : ''
+    const withDate = brand.dateCategorySlugs.includes(catSlug)
+    const dateStr = withDate ? formatPublishedRu(pub.publishedAt) : ''
+    const computedTitle = composeBrandTitle([pub.title, dateStr, brand.suffix])
+
+    return buildMetadata({
+      // titleTemplate отключаем: суффикс бренда уже в computedTitle, иначе
+      // «%s — COCO JAMBO» из настроек навесит бренд повторно.
+      defaults: { ...settings?.seoDefaults, titleTemplate: null },
+      // Категорийный seo.title НЕ наследуем (обнуляем), но description/ogImage
+      // категории остаются доступны как фолбэк. Ручной seo.title публикации,
+      // если задан, перебьёт собранный заголовок.
+      levels: [category?.seo ? { ...category.seo, title: null } : null, pub.seo],
+      fallbackTitle: computedTitle,
+      brandName: tenant.name,
+    })
+  }
 
   return buildMetadata({
     defaults: settings?.seoDefaults,

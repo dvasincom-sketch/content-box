@@ -6,6 +6,7 @@ import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
+import { seoBrandForDomain, memberSeoForDomain, composeBrandTitle } from '@/lib/seoBrand'
 import type { Metadata } from 'next'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { ListPagination } from '@/components/ListPagination'
@@ -73,6 +74,45 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const payload = await getPayload({ config: payloadConfig })
   const category = await findCategory(payload, tenant.id as number, slug)
   if (!category) notFound()
+
+  const brand = seoBrandForDomain(tenant.domain as string | null | undefined)
+  if (brand) {
+    const catSlug = category.slug ? String(category.slug) : ''
+    // Целевые запросы раздела (meta keywords): ручной список из seo.targetKeywords.
+    const ownKeywords = Array.isArray(category.seo?.targetKeywords)
+      ? (category.seo!.targetKeywords as Array<{ keyword?: string | null }>)
+          .map((k) => String(k?.keyword || '').trim())
+          .filter(Boolean)
+      : []
+
+    // Раздел участника с заданными целевыми запросами (ТЗ §2): keyword-усиленный
+    // title/description + meta keywords. Перебивает авто-SEO раздела.
+    const member = memberSeoForDomain(tenant.domain as string | null | undefined, catSlug)
+    if (member) {
+      return buildMetadata({
+        defaults: { ...settings?.seoDefaults, titleTemplate: null },
+        levels: [{ ...category.seo, title: member.title, description: member.description }],
+        fallbackTitle: member.title,
+        brandName: tenant.name,
+        keywords: member.keywords,
+      })
+    }
+
+    // Прочие разделы: унифицируем суффикс бренда. Авто-SEO-title категорий
+    // оканчивается на «| COCO JAMBO» — меняем его на бренд-суффикс. Ручной
+    // seo.title без этого суффикса оставляем как есть.
+    const baked = typeof category.seo?.title === 'string' ? category.seo.title : ''
+    const retitled = baked
+      ? baked.replace(/\s*\|\s*COCO JAMBO\s*$/i, ` | ${brand.suffix}`)
+      : composeBrandTitle([category.title, brand.suffix])
+    return buildMetadata({
+      defaults: { ...settings?.seoDefaults, titleTemplate: null },
+      levels: [{ ...category.seo, title: retitled }],
+      fallbackTitle: retitled,
+      brandName: tenant.name,
+      keywords: ownKeywords,
+    })
+  }
 
   return buildMetadata({
     defaults: settings?.seoDefaults,

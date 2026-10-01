@@ -29,17 +29,20 @@ function imageUrl(img: SeoOverride extends null ? never : any): string | undefin
  * @param levels    оверрайды от общего к частному (напр. [category.seo, publication.seo])
  * @param fallbackTitle  заголовок записи, если SEO-title не задан (напр. publication.title)
  * @param brandName      имя тенанта — для шаблона и og:site_name
+ * @param keywords       список ключевых фраз (meta keywords); пусто — тег не выводится
  */
 export function buildMetadata({
   defaults,
   levels = [],
   fallbackTitle,
   brandName,
+  keywords,
 }: {
   defaults?: SeoDefaults
   levels?: SeoOverride[]
   fallbackTitle?: string | null
   brandName?: string | null
+  keywords?: string[] | null
 }): Metadata {
   // Собираем: каждый следующий уровень перебивает предыдущий, если поле заполнено.
   let title: string | null | undefined
@@ -64,9 +67,14 @@ export function buildMetadata({
   const finalTitle =
     template && title && template.includes('%s') ? template.replace('%s', title) : title
 
+  const cleanKeywords = Array.isArray(keywords)
+    ? keywords.map((k) => String(k || '').trim()).filter(Boolean)
+    : []
+
   const metadata: Metadata = {
     title: finalTitle,
     description: description ?? undefined,
+    keywords: cleanKeywords.length ? cleanKeywords : undefined,
     openGraph: {
       title: finalTitle ?? undefined,
       description: description ?? undefined,

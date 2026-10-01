@@ -18,6 +18,7 @@ import { CarouselBlock } from '@/blocks/CarouselBlock'
 import { PosterGridBlock } from '@/blocks/PosterGridBlock'
 import { PhotoShowcaseBlock } from '@/blocks/PhotoShowcaseBlock'
 import { buildMetadata } from '@/lib/seo'
+import { seoBrandForDomain } from '@/lib/seoBrand'
 import { categoryHref } from '@/lib/categoryHref'
 import { publishedWhere } from '@/lib/published'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
@@ -189,11 +190,13 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!ctx) return {}
   const { tenant, settings } = ctx
   const defaults = settings?.seoDefaults
+  const brand = seoBrandForDomain(tenant.domain as string | null | undefined)
 
   // На главной шаблон "%s — Бренд" не применяем, иначе выйдет "Бренд — Бренд".
+  // Для брендированного тенанта (btsrussia.ru) — заданный вручную заголовок.
   return buildMetadata({
     defaults: { ...defaults, titleTemplate: null },
-    fallbackTitle: tenant.name,
+    fallbackTitle: brand?.homeTitle || tenant.name,
     brandName: tenant.name,
   })
 }
