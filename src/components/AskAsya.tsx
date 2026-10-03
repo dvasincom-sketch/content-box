@@ -21,6 +21,42 @@ const CHIPS = [
   'Найди, где Чонгук и Чимин вместе',
 ]
 
+/**
+ * Лёгкий inline-markdown для ответов Аси: **жирный**, *курсив* / _курсив_,
+ * `код`, [текст](ссылка). Без dangerouslySetInnerHTML — только React-узлы, так
+ * что внедрение HTML невозможно. Переводы строк сохраняет контейнер (pre-wrap).
+ */
+function renderMd(text: string): React.ReactNode[] {
+  const out: React.ReactNode[] = []
+  // Курсив требует непробельных границ и не переходит на новую строку — иначе
+  // маркер списка «* пункт» или «_» внутри слова ложно превращались бы в курсив.
+  const re = /\*\*([^*]+?)\*\*|__([^_]+?)__|\*(?![\s*])([^*\n]+?)(?<![\s*])\*|(?<![\p{L}\p{N}_])_(?![\s_])([^_\n]+?)(?<![\s_])_(?![\p{L}\p{N}_])|\[([^\]]+?)\]\((https?:\/\/[^\s)]+)\)|`([^`]+?)`/gu
+  let last = 0
+  let m: RegExpExecArray | null
+  let k = 0
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index))
+    const key = `md-${k++}`
+    if (m[1] != null || m[2] != null) out.push(<strong key={key}>{m[1] ?? m[2]}</strong>)
+    else if (m[3] != null || m[4] != null) out.push(<em key={key}>{m[3] ?? m[4]}</em>)
+    else if (m[5] != null && m[6] != null)
+      out.push(
+        <a key={key} href={m[6]} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+          {m[5]}
+        </a>,
+      )
+    else if (m[7] != null)
+      out.push(
+        <code key={key} style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize: '.92em', background: 'rgba(0,0,0,.06)', borderRadius: 4, padding: '1px 4px' }}>
+          {m[7]}
+        </code>,
+      )
+    last = re.lastIndex
+  }
+  if (last < text.length) out.push(text.slice(last))
+  return out
+}
+
 export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: { subscribeHref?: string; loginHref?: string }) {
   const [open, setOpen] = useState(false)
   const [eligible, setEligible] = useState<boolean | null>(null)
@@ -206,7 +242,7 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
                   ...(m.role === 'me'
                     ? { background: 'var(--brand-primary, #e86a33)', color: '#fff', borderBottomRightRadius: 5 }
                     : { background: 'color-mix(in srgb, var(--brand-accent, #5b57c9) 7%, #f4f2f8)', color: 'var(--brand-text)', borderBottomLeftRadius: 5 }) }}>
-                  {m.text}
+                  {m.role === 'asya' ? renderMd(m.text) : m.text}
                 </div>
                 {m.matches && m.matches.filter((x) => x.url).length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
