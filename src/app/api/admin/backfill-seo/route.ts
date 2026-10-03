@@ -34,7 +34,12 @@ export async function POST(req: NextRequest) {
   const dry = body?.dry === true
   const force = body?.force === true
 
-  let tenantId = getUserTenantID(user)
+  // Тенант определяем так же, как SeoAuditView: сначала массив tenants[0].tenant
+  // (его добавляет multi-tenant плагин), иначе одиночное user.tenant.
+  const tenantRel = (user as any)?.tenants?.[0]?.tenant ?? (user as any)?.tenant
+  let tenantId: number | string | undefined =
+    tenantRel && typeof tenantRel === 'object' ? tenantRel.id : tenantRel
+  if (!tenantId) tenantId = getUserTenantID(user)
   if (isSuperAdmin(user) && body?.tenant) tenantId = Number(body.tenant)
   if (!tenantId) return NextResponse.json({ ok: false, error: 'no_tenant' }, { status: 400 })
 
