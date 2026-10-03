@@ -4,6 +4,7 @@ import { categoryHref } from '@/lib/categoryHref'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { checkVideoAccess } from '@/lib/videoAccess'
+import { brandPageTitle } from '@/lib/seoBrand'
 import { notFound } from 'next/navigation'
 import { Lock, ArrowRight } from 'lucide-react'
 import { VideoPlayer } from './VideoPlayer'
@@ -26,7 +27,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!ctx) return {}
   const access = await checkVideoAccess({ slug, tenantId: ctx.tenant.id })
   const title = access.video?.title
-  return title ? { title: `${title} — ${(ctx.tenant as any)?.name || ''}`.trim() } : {}
+  if (!title) return {}
+  const bt = brandPageTitle((ctx.tenant as any)?.domain, `${title} — смотреть на русском`)
+  return { title: bt || `${title} — ${(ctx.tenant as any)?.name || ''}`.trim() }
 }
 
 export default async function VideoPage({ params }: { params: Promise<Params> }) {

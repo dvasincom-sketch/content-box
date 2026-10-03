@@ -7,9 +7,14 @@ import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { publicSubscriberName } from '@/lib/phone'
 import { AccountSidebar } from './AccountSidebar'
+import type { Metadata } from 'next'
 
 /** Кабинет участника: боковое меню + контент (Профиль / Публикации / Настройки). */
 export const dynamic = 'force-dynamic'
+
+// Личный кабинет — приватный раздел, вне поискового индекса (применяется ко всем
+// вложенным страницам /account/*).
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
   const sub = await getCurrentSubscriber()

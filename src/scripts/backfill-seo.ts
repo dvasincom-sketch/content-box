@@ -18,6 +18,7 @@
  *   --force    перезаписать даже непустые seo-поля
  *   --only     categories | publications (по умолчанию обе)
  */
+import 'dotenv/config' // грузим .env (PAYLOAD_SECRET и пр.) — standalone-скрипт, не Next
 import { getPayload } from 'payload'
 import type { Where } from 'payload'
 import config from '../payload.config'
@@ -51,6 +52,16 @@ function relId(v: unknown): string | null {
 }
 
 async function main() {
+  // Защита от случайного подключения к локальной БД: без DATABASE_URL pg уходит
+  // на дефолты (БД по имени пользователя) и создаёт мусор. Требуем явный адрес.
+  if (!String(process.env.DATABASE_URL || '').trim()) {
+    console.error(
+      'DATABASE_URL не задан. Укажи строку подключения к прод-БД, напр.:\n' +
+        '  DATABASE_URL="postgres://user:pass@host:5432/dbname" npx tsx src/scripts/backfill-seo.ts --dry',
+    )
+    process.exit(1)
+  }
+
   const payload = await getPayload({ config })
 
   const where: Where = {}

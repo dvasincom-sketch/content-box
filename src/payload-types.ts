@@ -79,6 +79,8 @@ export interface Config {
     'subscription-tiers': SubscriptionTier;
     subscribers: Subscriber;
     videos: Video;
+    streams: Stream;
+    'stream-messages': StreamMessage;
     'video-folders': VideoFolder;
     'gallery-images': GalleryImage;
     'gallery-folders': GalleryFolder;
@@ -90,6 +92,7 @@ export interface Config {
     reactions: Reaction;
     'activity-events': ActivityEvent;
     'ai-usage': AiUsage;
+    'asya-questions': AsyaQuestion;
     'digest-issues': DigestIssue;
     'custom-themes': CustomTheme;
     'subscription-payments': SubscriptionPayment;
@@ -122,6 +125,8 @@ export interface Config {
     'subscription-tiers': SubscriptionTiersSelect<false> | SubscriptionTiersSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     videos: VideosSelect<false> | VideosSelect<true>;
+    streams: StreamsSelect<false> | StreamsSelect<true>;
+    'stream-messages': StreamMessagesSelect<false> | StreamMessagesSelect<true>;
     'video-folders': VideoFoldersSelect<false> | VideoFoldersSelect<true>;
     'gallery-images': GalleryImagesSelect<false> | GalleryImagesSelect<true>;
     'gallery-folders': GalleryFoldersSelect<false> | GalleryFoldersSelect<true>;
@@ -133,6 +138,7 @@ export interface Config {
     reactions: ReactionsSelect<false> | ReactionsSelect<true>;
     'activity-events': ActivityEventsSelect<false> | ActivityEventsSelect<true>;
     'ai-usage': AiUsageSelect<false> | AiUsageSelect<true>;
+    'asya-questions': AsyaQuestionsSelect<false> | AsyaQuestionsSelect<true>;
     'digest-issues': DigestIssuesSelect<false> | DigestIssuesSelect<true>;
     'custom-themes': CustomThemesSelect<false> | CustomThemesSelect<true>;
     'subscription-payments': SubscriptionPaymentsSelect<false> | SubscriptionPaymentsSelect<true>;
@@ -436,6 +442,18 @@ export interface SiteSetting {
    * Чипсы на странице поддержки: [{ amount, label }].
    */
   donatePresets?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Общий список модераторов для всех трансляций. Настраивается из раздела «Трансляции».
+   */
+  streamModeratorIds?:
     | {
         [k: string]: unknown;
       }
@@ -987,6 +1005,14 @@ export interface Subscriber {
   lastPaymentAt?: string | null;
   isBlocked?: boolean | null;
   /**
+   * Не может писать в чат трансляций (доступ к контенту сохраняется).
+   */
+  chatBanned?: boolean | null;
+  /**
+   * Не может оставлять комментарии (доступ к контенту сохраняется).
+   */
+  commentsBanned?: boolean | null;
+  /**
    * Момент последнего входа. Ставит сервер (afterLogin).
    */
   lastSeenAt?: string | null;
@@ -1395,6 +1421,91 @@ export interface MenuItem {
   createdAt: string;
 }
 /**
+ * Прямые трансляции (Castr): доступ по подписке, чат, Hero на главной.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "streams".
+ */
+export interface Stream {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  /**
+   * Студийный аккаунт, создавший запись. Ограниченный участник видит и правит только свои записи.
+   */
+  owner?: (number | null) | User;
+  title: string;
+  slug: string;
+  /**
+   * Короткий текст о трансляции — покажем на странице эфира.
+   */
+  description?: string | null;
+  scheduledAt: string;
+  /**
+   * Когда эфир считается завершённым. По времени: до начала — «Скоро», между началом и окончанием — «В эфире», после — «завершён».
+   */
+  endsAt: string;
+  cover?: (number | null) | Media;
+  /**
+   * Если включено — эфир доступен всем, без подписки. Уровень доступа игнорируется.
+   */
+  isOpen?: boolean | null;
+  /**
+   * Трансляция доступна по подписке — от этого уровня и выше. Не нужен для открытой трансляции.
+   */
+  minTier?: (number | null) | SubscriptionTier;
+  chatEnabled?: boolean | null;
+  /**
+   * Email подписчиков-модераторов (массив). Они могут закреплять, скрывать сообщения и банить в чате этой трансляции.
+   */
+  moderatorEmails?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Запись включается в самом Castr. После эфира вставьте ссылку на запись ниже, чтобы показать повтор.
+   */
+  saveRecording?: boolean | null;
+  /**
+   * Ссылка/embed от Castr, по которой зрители смотрят эфир у нас.
+   */
+  playbackUrl: string;
+  /**
+   * Из Castr. Копируется в OBS. Видно только в студии.
+   */
+  ingestServer?: string | null;
+  /**
+   * Из Castr. Секрет — копируется в OBS. Видно только в студии.
+   */
+  ingestKey?: string | null;
+  /**
+   * Заполните после эфира, если сохраняли запись — покажем повтор.
+   */
+  recordingUrl?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stream-messages".
+ */
+export interface StreamMessage {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  stream: number | Stream;
+  subscriber?: (number | null) | Subscriber;
+  name?: string | null;
+  text: string;
+  hidden?: boolean | null;
+  pinned?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Цифровые товары для скачивания по подписке (книги, PDF и др.).
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1673,6 +1784,34 @@ export interface AiUsage {
   ok?: boolean | null;
   actorType?: string | null;
   meta?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Журнал диалогов с Асей (служебное, только чтение).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "asya-questions".
+ */
+export interface AsyaQuestion {
+  id: number;
+  tenant?: (number | null) | Tenant;
+  question: string;
+  answer?: string | null;
+  matches?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  hadMatches?: boolean | null;
+  context?: string | null;
+  subscriber?: (number | null) | Subscriber;
+  rating?: ('up' | 'down') | null;
+  ratingComment?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2069,6 +2208,14 @@ export interface PayloadLockedDocument {
         value: number | Video;
       } | null)
     | ({
+        relationTo: 'streams';
+        value: number | Stream;
+      } | null)
+    | ({
+        relationTo: 'stream-messages';
+        value: number | StreamMessage;
+      } | null)
+    | ({
         relationTo: 'video-folders';
         value: number | VideoFolder;
       } | null)
@@ -2111,6 +2258,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ai-usage';
         value: number | AiUsage;
+      } | null)
+    | ({
+        relationTo: 'asya-questions';
+        value: number | AsyaQuestion;
       } | null)
     | ({
         relationTo: 'digest-issues';
@@ -2318,6 +2469,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
       };
   savedTemplates?: T;
   donatePresets?: T;
+  streamModeratorIds?: T;
   appliedTemplate?: T;
   theme?:
     | T
@@ -2655,6 +2807,8 @@ export interface SubscribersSelect<T extends boolean = true> {
   subscriptionSince?: T;
   lastPaymentAt?: T;
   isBlocked?: T;
+  chatBanned?: T;
+  commentsBanned?: T;
   lastSeenAt?: T;
   emailVerified?: T;
   emailVerifyToken?: T;
@@ -2721,6 +2875,46 @@ export interface VideosSelect<T extends boolean = true> {
         slug?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "streams_select".
+ */
+export interface StreamsSelect<T extends boolean = true> {
+  tenant?: T;
+  owner?: T;
+  title?: T;
+  slug?: T;
+  description?: T;
+  scheduledAt?: T;
+  endsAt?: T;
+  cover?: T;
+  isOpen?: T;
+  minTier?: T;
+  chatEnabled?: T;
+  moderatorEmails?: T;
+  saveRecording?: T;
+  playbackUrl?: T;
+  ingestServer?: T;
+  ingestKey?: T;
+  recordingUrl?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stream-messages_select".
+ */
+export interface StreamMessagesSelect<T extends boolean = true> {
+  tenant?: T;
+  stream?: T;
+  subscriber?: T;
+  name?: T;
+  text?: T;
+  hidden?: T;
+  pinned?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2959,6 +3153,23 @@ export interface AiUsageSelect<T extends boolean = true> {
   ok?: T;
   actorType?: T;
   meta?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "asya-questions_select".
+ */
+export interface AsyaQuestionsSelect<T extends boolean = true> {
+  tenant?: T;
+  question?: T;
+  answer?: T;
+  matches?: T;
+  hadMatches?: T;
+  context?: T;
+  subscriber?: T;
+  rating?: T;
+  ratingComment?: T;
   updatedAt?: T;
   createdAt?: T;
 }

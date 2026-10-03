@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
+import { brandPageTitle } from '@/lib/seoBrand'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { tierWeight } from '@/lib/tierWeight'
 import { RichText } from '@payloadcms/richtext-lexical/react'
@@ -35,7 +36,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const ctx = await getTenantFromHeaders()
   if (!ctx) return {}
   const book = await loadBook(slug, ctx.tenant.id)
-  return book?.title ? { title: `${book.title} — ${(ctx.tenant as any)?.name || ''}`.trim() } : {}
+  if (!book?.title) return {}
+  const bt = brandPageTitle((ctx.tenant as any)?.domain, `${book.title} — читать на русском`)
+  return { title: bt || `${book.title} — ${(ctx.tenant as any)?.name || ''}`.trim() }
 }
 
 export default async function BookPage({ params }: { params: Promise<{ slug: string }> }) {

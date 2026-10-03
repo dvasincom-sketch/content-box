@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
+import { seoBrandForDomain, clampBrandTitle } from '@/lib/seoBrand'
 import { publishedWhere } from '@/lib/published'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
 import { ListPagination } from '@/components/ListPagination'
@@ -30,11 +31,47 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const ctx = await getTenantFromHeaders()
   if (!ctx) return {}
   const { tenant, settings } = ctx
+  const brand = seoBrandForDomain(tenant.domain as string | null | undefined)
+  if (!brand) {
+    return buildMetadata({
+      defaults: settings?.seoDefaults,
+      levels: [],
+      fallbackTitle: `Тег: ${slug}`,
+      brandName: tenant.name,
+    })
+  }
+
+  // Человекочитаемую метку тега резолвим из любой публикации/видео с этим тегом.
+  const payload = await getPayload({ config: await config })
+  let label = slug
+  try {
+    const r = await payload.find({
+      collection: 'publications',
+      where: { and: [{ tenant: { equals: tenant.id } }, { 'tags.slug': { equals: slug } }] },
+      limit: 1, depth: 0, overrideAccess: true,
+    })
+    label = labelFor(r.docs as any[], slug)
+    if (label === slug) {
+      const rv = await payload.find({
+        collection: 'videos',
+        where: { and: [{ tenant: { equals: tenant.id } }, { 'tags.slug': { equals: slug } }] },
+        limit: 1, depth: 0, overrideAccess: true,
+      })
+      label = labelFor(rv.docs as any[], slug)
+    }
+  } catch {
+    /* метку не нашли — используем slug */
+  }
+
+  const title = clampBrandTitle(`${label} — видео и эфиры на русском`, brand.suffix)
+  const kw = label && label !== slug
+    ? [label, `${label} на русском`, `${label} BTS`, `${label} видео на русском`]
+    : []
   return buildMetadata({
-    defaults: settings?.seoDefaults,
-    levels: [],
-    fallbackTitle: `Тег: ${slug}`,
+    defaults: { ...settings?.seoDefaults, titleTemplate: null },
+    fallbackTitle: title,
     brandName: tenant.name,
+    keywords: kw,
   })
 }
 

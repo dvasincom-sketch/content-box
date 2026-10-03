@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
+import { brandPageTitle, seoBrandForDomain } from '@/lib/seoBrand'
 import type { Metadata } from 'next'
 import { RichText } from '@/components/RichText'
 import '../../styles.css'
@@ -61,16 +62,20 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     overrideAccess: true,
   })
 
+  const domain = (tenant as any)?.domain
+  const isBrand = !!seoBrandForDomain(domain)
+
   const page = res.docs[0] as any
   if (!page) {
     const stub = LEGAL_STUBS[slug]
-    return stub ? { title: stub.title } : {}
+    if (!stub) return {}
+    return { title: brandPageTitle(domain, stub.title) || stub.title }
   }
 
   return buildMetadata({
-    defaults: settings?.seoDefaults,
+    defaults: isBrand ? { ...settings?.seoDefaults, titleTemplate: null } : settings?.seoDefaults,
     levels: [page.seo],
-    fallbackTitle: page.title,
+    fallbackTitle: brandPageTitle(domain, page.title) || page.title,
     brandName: tenant.name,
   })
 }

@@ -6,6 +6,7 @@ import { getCurrentSubscriber } from '@/lib/currentSubscriber'
 import { readTrusted, TRUSTED_COOKIE } from '@/lib/trustedDevice'
 import { tenantIdByHost } from '@/lib/tenantByHost'
 import { LoginForm } from './LoginForm'
+import type { Metadata } from 'next'
 
 /**
  * Вход подписчика. Серверная обёртка: если сессия уже валидна, НЕ показываем
@@ -19,6 +20,9 @@ import { LoginForm } from './LoginForm'
  * без SMS (см. /api/auth/phone/continue).
  */
 export const dynamic = 'force-dynamic'
+
+// Страница входа — вне поискового индекса.
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 
 function safeRedirect(v: string | string[] | undefined): string {
   const s = typeof v === 'string' ? v : ''

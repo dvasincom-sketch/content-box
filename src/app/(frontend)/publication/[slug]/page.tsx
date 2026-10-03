@@ -12,7 +12,7 @@ import { isPublished, publishedWhere } from '@/lib/published'
 import { BookmarkButton } from '@/components/social/BookmarkButton'
 import { ViewTracker } from '@/components/social/ViewTracker'
 import { buildMetadata } from '@/lib/seo'
-import { seoBrandForDomain, formatPublishedRu, composeBrandTitle } from '@/lib/seoBrand'
+import { seoBrandForDomain, formatPublishedRu, composeBrandTitle, pubAutoDescription, presetSeoForDomain } from '@/lib/seoBrand'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { checkVideoAccess } from '@/lib/videoAccess'
 import { VideoPlayer } from '../../video/[slug]/VideoPlayer'
@@ -76,16 +76,24 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const dateStr = withDate ? formatPublishedRu(pub.eventDate || pub.publishedAt) : ''
     const computedTitle = composeBrandTitle([pub.title, dateStr, brand.suffix])
 
+    // Ключи — в description (title держим чистым): авто-описание по типу раздела
+    // как фолбэк, если нет ручного seo.description. Целевые запросы берём из
+    // keyword-пресета категории (раздел/участник).
+    const autoDesc = pubAutoDescription(tenant.domain as string | null | undefined, pub.title, catSlug)
+    const preset = presetSeoForDomain(tenant.domain as string | null | undefined, catSlug)
+
     return buildMetadata({
       // titleTemplate отключаем: суффикс бренда уже в computedTitle, иначе
-      // «%s — COCO JAMBO» из настроек навесит бренд повторно.
-      defaults: { ...settings?.seoDefaults, titleTemplate: null },
+      // «%s — COCO JAMBO» из настроек навесит бренд повторно. autoDesc —
+      // фолбэк описания (перебивается ручным seo.description уровня ниже).
+      defaults: { ...settings?.seoDefaults, titleTemplate: null, description: autoDesc || settings?.seoDefaults?.description },
       // Категорийный seo.title НЕ наследуем (обнуляем), но description/ogImage
       // категории остаются доступны как фолбэк. Ручной seo.title публикации,
       // если задан, перебьёт собранный заголовок.
       levels: [category?.seo ? { ...category.seo, title: null } : null, pub.seo],
       fallbackTitle: computedTitle,
       brandName: tenant.name,
+      keywords: preset?.keywords,
     })
   }
 

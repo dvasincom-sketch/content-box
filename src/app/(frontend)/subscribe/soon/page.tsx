@@ -3,7 +3,11 @@ import Link from 'next/link'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { Clock, ArrowLeft } from 'lucide-react'
+import type { Metadata } from 'next'
 import '../../styles.css'
+
+// Служебная заглушка чекаута — вне поискового индекса.
+export const metadata: Metadata = { robots: { index: false, follow: false } }
 
 /**
  * Заглушка оформления подписки. Платёжная система ещё не подключена — сюда ведут

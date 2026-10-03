@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const ctx = await getTenantFromHeaders()
   if (!ctx) return {}
   const { tenant, settings } = ctx
-  return buildMetadata({ defaults: settings?.seoDefaults, fallbackTitle: 'Подарить подписку', brandName: tenant.name })
+  return buildMetadata({ defaults: settings?.seoDefaults, fallbackTitle: 'Подарить подписку', brandName: tenant.name, robots: { index: false, follow: false } })
 }
 
 export default async function GiftPage() {

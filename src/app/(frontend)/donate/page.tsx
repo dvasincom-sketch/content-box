@@ -19,6 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
     defaults: settings?.seoDefaults,
     fallbackTitle: 'Поддержать проект',
     brandName: tenant.name,
+    robots: { index: false, follow: false },
   })
 }
 

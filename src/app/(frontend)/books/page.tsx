@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
+import { brandPageTitle } from '@/lib/seoBrand'
 import { BOOK_GENRES } from '@/lib/bookGenres'
 import { BookOpen } from 'lucide-react'
 import type { Metadata } from 'next'
@@ -19,7 +20,8 @@ const STATUS_FILTERS = [{ v: '', l: 'Любой статус' }, { v: 'ongoing',
 export async function generateMetadata(): Promise<Metadata> {
   const ctx = await getTenantFromHeaders()
   const name = (ctx?.tenant as any)?.name || ''
-  return { title: name ? `Библиотека — ${name}` : 'Библиотека' }
+  const bt = brandPageTitle((ctx?.tenant as any)?.domain, 'Книги и фанфики BTS — читать и слушать')
+  return { title: bt || (name ? `Библиотека — ${name}` : 'Библиотека') }
 }
 
 type SP = { type?: string; status?: string; genre?: string }

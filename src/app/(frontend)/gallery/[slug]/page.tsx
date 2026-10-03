@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
+import { brandPageTitle, seoBrandForDomain } from '@/lib/seoBrand'
 import type { Metadata } from 'next'
 import '../../styles.css'
 
@@ -39,9 +40,11 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!ctx) return {}
   const data = await loadFolder(ctx.tenant.id as number, slug)
   const title = data?.folder.title || 'Галерея'
+  const domain = (ctx.tenant as any)?.domain
+  const bt = brandPageTitle(domain, `${title} — фото на русском`)
   return buildMetadata({
-    defaults: ctx.settings?.seoDefaults,
-    fallbackTitle: title,
+    defaults: seoBrandForDomain(domain) ? { ...ctx.settings?.seoDefaults, titleTemplate: null } : ctx.settings?.seoDefaults,
+    fallbackTitle: bt || title,
     brandName: ctx.tenant.name,
   })
 }

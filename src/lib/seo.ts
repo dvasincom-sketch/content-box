@@ -37,12 +37,14 @@ export function buildMetadata({
   fallbackTitle,
   brandName,
   keywords,
+  robots,
 }: {
   defaults?: SeoDefaults
   levels?: SeoOverride[]
   fallbackTitle?: string | null
   brandName?: string | null
   keywords?: string[] | null
+  robots?: Metadata['robots']
 }): Metadata {
   // Собираем: каждый следующий уровень перебивает предыдущий, если поле заполнено.
   let title: string | null | undefined
@@ -75,6 +77,7 @@ export function buildMetadata({
     title: finalTitle,
     description: description ?? undefined,
     keywords: cleanKeywords.length ? cleanKeywords : undefined,
+    robots: robots ?? undefined,
     openGraph: {
       title: finalTitle ?? undefined,
       description: description ?? undefined,

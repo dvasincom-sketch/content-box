@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
+import { brandPageTitle } from '@/lib/seoBrand'
 import { checkPublicationAccess } from '@/lib/publicationAccess'
 import { StreamLive } from './StreamLive'
 import { StreamChat } from './StreamChat'
@@ -31,9 +32,12 @@ async function loadStream(slug: string) {
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params
+  const ctx = await getTenantFromHeaders()
   const data = await loadStream(slug)
   const desc = data?.stream?.description ? String(data.stream.description).slice(0, 300) : undefined
-  return { title: data?.stream?.title || 'Трансляция', description: desc }
+  const t = data?.stream?.title || 'Трансляция'
+  const bt = brandPageTitle((ctx?.tenant as any)?.domain, `${t} — прямой эфир на русском`)
+  return { title: bt || t, description: desc }
 }
 
 export default async function StreamPage({ params }: { params: Promise<Params> }) {

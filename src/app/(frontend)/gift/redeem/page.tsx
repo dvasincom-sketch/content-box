@@ -8,7 +8,7 @@ import '../../styles.css'
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: 'Активировать подарок' }
+  return { title: 'Активировать подарок', robots: { index: false, follow: false } }
 }
 
 export default async function GiftRedeemPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

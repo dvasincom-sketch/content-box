@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 export async function generateMetadata(): Promise<Metadata> {
   const ctx = await getTenantFromHeaders()
   const name = (ctx?.tenant as any)?.name || ''
-  return { title: name ? `Файлы — ${name}` : 'Файлы' }
+  return { title: name ? `Файлы — ${name}` : 'Файлы', robots: { index: false, follow: false } }
 }
 
 function formatBytes(n: number | null): string {
