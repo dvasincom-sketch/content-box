@@ -37,6 +37,7 @@ import { Comments } from './collections/Comments'
 import { Reactions } from './collections/Reactions'
 import { ActivityEvents } from './collections/ActivityEvents'
 import { AiUsage } from './collections/AiUsage'
+import { AsyaQuestions } from './collections/AsyaQuestions'
 import { DigestIssues } from './collections/DigestIssues'
 import { CustomThemes } from './collections/CustomThemes'
 import { SubscriptionPayments } from './collections/SubscriptionPayments'
@@ -176,6 +177,7 @@ export default buildConfig({
     Reactions,
     ActivityEvents,
     AiUsage,
+    AsyaQuestions,
     DigestIssues,
     CustomThemes,
     SubscriptionPayments,
@@ -357,6 +359,7 @@ export default buildConfig({
         reactions: { useTenantAccess: false },
         'activity-events': { useTenantAccess: false },
         'ai-usage': { useTenantAccess: false },
+        'asya-questions': { useTenantAccess: false },
         'digest-issues': { useTenantAccess: false },
         'custom-themes': { useTenantAccess: false },
         'subscription-payments': { useTenantAccess: false },

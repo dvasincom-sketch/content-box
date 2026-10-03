@@ -44,8 +44,28 @@ export async function POST(req: NextRequest) {
 
   try {
     const r = await askAsya(q)
+    // Сохраняем диалог (вопрос/ответ/видео) для обратной связи и возвращаем id,
+    // чтобы виджет мог прислать оценку 👍/👎. Учёт токенов — как раньше.
+    let logId: number | null = null
     try {
       const payload = await getPayload({ config: await config })
+      const hadMatches = Array.isArray(r.matches) && r.matches.some((m) => !!m.url)
+      try {
+        const doc = await payload.create({
+          collection: 'asya-questions',
+          data: {
+            tenant: tenantId,
+            question: q.slice(0, 2000),
+            answer: String(r.answer || '').slice(0, 8000),
+            matches: r.matches,
+            hadMatches,
+            context: String(body?.page || '').slice(0, 300) || undefined,
+            subscriber: (sub as any)?.id ?? undefined,
+          },
+          overrideAccess: true,
+        } as any)
+        logId = Number((doc as any)?.id) || null
+      } catch { /* журнал диалога вторичен */ }
       void logAiUsage(payload, {
         tenant: tenantId,
         surface: 'support',
@@ -55,7 +75,7 @@ export async function POST(req: NextRequest) {
         actorType: 'subscriber',
       })
     } catch { /* учёт вторичен */ }
-    return NextResponse.json({ ok: true, answer: r.answer, matches: r.matches })
+    return NextResponse.json({ ok: true, id: logId, answer: r.answer, matches: r.matches })
   } catch (e: unknown) {
     return NextResponse.json({ ok: false, error: errorMessage(e, 'ask_failed') }, { status: 500 })
   }

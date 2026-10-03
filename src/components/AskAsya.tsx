@@ -13,7 +13,7 @@ import { getAsyaVideo, subAsyaVideo, type AsyaVideo } from '@/lib/asyaVideo'
  * как тизер), а интерактивные вопросы — по подписке (/api/ask).
  */
 type Match = { title: string | null; url: string | null; source: string }
-type Msg = { role: 'me' | 'asya'; text: string; matches?: Match[] }
+type Msg = { role: 'me' | 'asya'; text: string; matches?: Match[]; id?: number | null; rating?: 'up' | 'down' | null }
 
 const CHIPS = [
   'Где момент про демобилизацию?',
@@ -120,19 +120,33 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
     setMsgs((m) => [...m, { role: 'me', text: query }])
     setLoading(true)
     try {
+      const page = typeof window !== 'undefined' ? window.location.pathname : undefined
       const r = await fetch('/api/ask', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ q: query }),
+        body: JSON.stringify({ q: query, page }),
       })
       if (r.status === 402) { setEligible(false); return }
       const j = await r.json().catch(() => null)
       if (!r.ok || !j?.ok) setMsgs((m) => [...m, { role: 'asya', text: 'Не получилось ответить сейчас — попробуйте ещё раз чуть позже.' }])
-      else setMsgs((m) => [...m, { role: 'asya', text: String(j.answer || ''), matches: Array.isArray(j.matches) ? j.matches : [] }])
+      else setMsgs((m) => [...m, { role: 'asya', text: String(j.answer || ''), matches: Array.isArray(j.matches) ? j.matches : [], id: typeof j.id === 'number' ? j.id : null, rating: null }])
     } catch {
       setMsgs((m) => [...m, { role: 'asya', text: 'Ошибка соединения.' }])
     } finally {
       setLoading(false)
     }
+  }
+
+  // Оценка ответа Аси: шлём на /api/ask/feedback, помечаем сообщение локально.
+  async function rate(index: number, rating: 'up' | 'down') {
+    const msg = msgs[index]
+    if (!msg || msg.role !== 'asya' || !msg.id || msg.rating) return
+    setMsgs((m) => m.map((x, i) => (i === index ? { ...x, rating } : x)))
+    try {
+      await fetch('/api/ask/feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ id: msg.id, rating }),
+      })
+    } catch { /* оценка best-effort */ }
   }
 
   const orb = (size: number, strong = false) => (
@@ -251,6 +265,19 @@ export function AskAsya({ subscribeHref = '/subscribe', loginHref = '/login' }: 
                     ))}
                   </div>
                 )}
+                {m.role === 'asya' && m.id ? (
+                  m.rating ? (
+                    <div style={{ marginTop: 6, fontSize: 12, color: 'var(--brand-muted, #888)' }}>
+                      {m.rating === 'up' ? 'Спасибо за отзыв! 👍' : 'Спасибо, учтём 👎'}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                      <span style={{ fontSize: 12, color: 'var(--brand-muted, #888)' }}>Помогло?</span>
+                      <button type="button" aria-label="Помогло" onClick={() => rate(i, 'up')} style={{ cursor: 'pointer', border: '1px solid var(--brand-border, rgba(0,0,0,.1))', background: 'transparent', borderRadius: 8, padding: '3px 8px', fontSize: 13 }}>👍</button>
+                      <button type="button" aria-label="Не помогло" onClick={() => rate(i, 'down')} style={{ cursor: 'pointer', border: '1px solid var(--brand-border, rgba(0,0,0,.1))', background: 'transparent', borderRadius: 8, padding: '3px 8px', fontSize: 13 }}>👎</button>
+                    </div>
+                  )
+                ) : null}
               </div>
             </div>
           ))}
