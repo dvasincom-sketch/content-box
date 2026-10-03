@@ -36,26 +36,43 @@ export function autoSeoDescription(opts: {
   const lead = String(opts.leadTitle || '').replace(/\s+/g, ' ').trim()
   const kw = (opts.keywords || []).map((k) => String(k || '').trim()).filter(Boolean)[0]
 
+  // Разбираем иерархию из fullTitle «Родитель > Подраздел > Лист»: лист — тема
+  // описания, верхний родитель даёт контекст («влоги», «биография» и т.п.).
+  const segs = lead.split('>').map((x) => x.trim()).filter(Boolean)
+  const leaf = segs.length ? segs[segs.length - 1] : lead
+  const parent = segs.length > 1 ? segs[0] : ''
+  const parentLow = parent ? parent.toLowerCase() : ''
+
   let s = ''
-  if (brand) {
-    if (opts.flavor === 'publication') {
-      const intent = String(opts.intent || '').trim()
-      s = intent
-        ? `${lead} — ${intent} на русском с переводом и озвучкой. Смотрите BTS на русском.`
-        : `${lead} — на русском с переводом и озвучкой. Смотрите BTS на русском.`
+  if (opts.flavor === 'publication') {
+    const intent = String(opts.intent || '').trim()
+    s = brand
+      ? intent
+        ? `${leaf} — ${intent} на русском с переводом и озвучкой. Смотрите BTS на русском.`
+        : `${leaf} — на русском с переводом и озвучкой. Смотрите BTS на русском.`
+      : `${leaf} — ${intent ? intent + ', ' : ''}видео и материалы на сайте.`
+  } else if (brand) {
+    // Раздел брендового сайта (btsrussia): естественное предложение с контекстом.
+    if (parentLow) {
+      s = `${leaf} — ${parentLow} BTS на русском с переводом и озвучкой. Смотрите на btsrussia.ru.`
+    } else if (kw) {
+      s = `${leaf} на русском — ${kw}, видео и материалы BTS с переводом и озвучкой.`
     } else {
-      s = `${lead} — BTS на русском: видео, эфиры и материалы с переводом и озвучкой.`
-      if (kw && !s.toLowerCase().includes(kw.toLowerCase())) {
-        const withKw = `${lead} на русском — ${kw}, эфиры и материалы BTS с переводом и озвучкой.`
-        if (withKw.length <= SEO_DESC_MAX) s = withKw
-      }
+      s = `${leaf} — BTS на русском: видео, публикации и материалы с переводом и озвучкой.`
     }
   } else {
-    // Небрендированный тенант: без спец-формулировок, просто из заголовка.
-    s = lead ? `${lead}.` : ''
+    // Небрендированный тенант: тоже полноценное описание, а не просто заголовок.
+    s = parentLow
+      ? `${leaf} — ${parentLow}: видео, публикации и материалы раздела на сайте.`
+      : `${leaf} — видео, публикации и материалы раздела на сайте проекта.`
   }
 
   s = s.replace(/\s+/g, ' ').trim()
+  // Страховка от слишком короткого описания (< SEO_DESC_MIN): добавляем хвост.
+  if (s && s.length < SEO_DESC_MIN) {
+    const tail = brand ? ' Смотрите на русском с переводом и озвучкой.' : ' Смотрите на сайте проекта.'
+    s = (s.replace(/\.*$/, '') + ' —' + tail).replace(/\s+/g, ' ').trim()
+  }
   if (s.length > SEO_DESC_MAX) s = truncateAtWord(s, SEO_DESC_MAX)
   return s
 }
