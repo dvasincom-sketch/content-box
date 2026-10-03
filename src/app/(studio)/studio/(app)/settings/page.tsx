@@ -20,8 +20,8 @@ import { normalizeHomeSections } from '@/lib/homeSections'
 import { SettingsView } from './SettingsView'
 import { getAiUsageStats, type AiUsageStats } from '@/lib/aiUsageStats'
 import { getMediaStats } from '@/lib/mediaStats'
-import { getCommerceStats } from '@/lib/commerceStats'
-import { computeTariff } from '@/lib/tariff'
+import { getCommerceStats, getMonthlyMrr } from '@/lib/commerceStats'
+import { computeTariff, COMMISSION_RATE } from '@/lib/tariff'
 import type { TariffPanelData } from './TariffPanel'
 
 /**
@@ -152,6 +152,7 @@ export default async function SettingsPage() {
   // проекта для триала — считаем расчётный платформенный сбор.
   let tariff: TariffPanelData | null = null
   let aiUsage: AiUsageStats | null = null
+  let commissionByMonth: Record<string, number> = {}
   const aiDeposit = Number((settings?.aiDepositRub as number) || 0)
   if (isOwner) {
     aiUsage = await getAiUsageStats(payload, author!.tenantId)
@@ -168,6 +169,15 @@ export default async function SettingsPage() {
         mrrRub,
       }
     }
+    // Комиссия 10% ретроспективно по месяцам: срез выручки на конец каждого
+    // месяца (раньше подписчиков меньше → и комиссия ниже), а не одна текущая.
+    const months = (aiUsage?.months ?? []).map((m) => m.month)
+    if (months.length) {
+      const monthlyMrr = await getMonthlyMrr(payload, author!.tenantId, months)
+      commissionByMonth = Object.fromEntries(
+        Object.entries(monthlyMrr).map(([ym, mrr]) => [ym, Math.round((Number(mrr) || 0) * COMMISSION_RATE)]),
+      )
+    }
   }
 
   const aiBilling = {
@@ -178,6 +188,7 @@ export default async function SettingsPage() {
     extrasRub: 0,
     usedGb: tariff?.tariff.usedGb ?? 0,
     mrrRub: tariff?.mrrRub ?? 0,
+    commissionByMonth,
   }
 
   return (

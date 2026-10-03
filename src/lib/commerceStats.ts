@@ -91,6 +91,56 @@ export async function getCommerceStats(payload: Payload, tenantId: number | stri
 }
 
 /**
+ * Выручка (MRR) ретроспективно по месяцам — срез активных платных подписок на
+ * КОНЕЦ каждого месяца (для текущего месяца — на «сейчас»). Нужна для честной
+ * помесячной комиссии в биллинге: раньше подписчиков было меньше → и комиссия
+ * за прошлые месяцы ниже.
+ *
+ * «Активна в срезе D» = есть платный тариф, подписка началась не позже D
+ * (`subscription_since`, иначе дата регистрации) и ещё не истекла на D
+ * (`subscription_until` NULL или > D). Цена берётся по текущему тарифу подписчика
+ * (историю смены тарифов не реконструируем — это оценка, как и весь биллинг).
+ *
+ * @param months список 'YYYY-MM'
+ * @returns карта { 'YYYY-MM': mrr_руб }
+ */
+export async function getMonthlyMrr(
+  payload: Payload,
+  tenantId: number | string,
+  months: string[],
+): Promise<Record<string, number>> {
+  const out: Record<string, number> = {}
+  const list = (months || []).filter((m) => /^\d{4}-\d{2}$/.test(m))
+  if (list.length === 0) return out
+  const pool = (payload.db as unknown as { pool?: PoolLike }).pool
+  if (!pool || typeof pool.query !== 'function') return out
+
+  const sql = `
+    WITH ref AS (
+      SELECT ym,
+             LEAST(date_trunc('month', to_date(ym, 'YYYY-MM')) + interval '1 month' - interval '1 second', now()) AS d
+      FROM unnest($2::text[]) AS ym
+    )
+    SELECT r.ym AS ym,
+           COALESCE(SUM(t.price_rub), 0)::int AS mrr
+    FROM ref r
+    LEFT JOIN subscribers s
+      ON s.tenant_id = $1
+     AND s.active_tier_id IS NOT NULL
+     AND COALESCE(s.subscription_since, s.created_at) <= r.d
+     AND (s.subscription_until IS NULL OR s.subscription_until > r.d)
+    LEFT JOIN subscription_tiers t ON t.id = s.active_tier_id
+    GROUP BY r.ym`
+  try {
+    const res = await pool.query(sql, [tenantId, list])
+    for (const row of res.rows) out[String(row.ym)] = Number(row.mrr) || 0
+  } catch {
+    /* нет таблиц/ошибка — вернём пустую карту, панель откатится на текущую оценку */
+  }
+  return out
+}
+
+/**
  * Формат выручки для узкой KPI-карточки: до 100 тыс. — точно с разделителями,
  * дальше сокращаем (999 999 ₽ влезает; миллионы — «1,2 млн ₽»), чтобы значение
  * не переносилось и не обрезалось в четверти ширины.

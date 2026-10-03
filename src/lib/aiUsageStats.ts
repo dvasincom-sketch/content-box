@@ -38,6 +38,9 @@ export interface AiBilling {
   extrasRub: number
   usedGb: number
   mrrRub: number
+  /** Комиссия 10% по месяцам (ретроспективно, срез выручки на конец месяца).
+   *  Ключ — 'YYYY-MM'. Нет месяца → откат на текущую оценку commissionRub. */
+  commissionByMonth?: Record<string, number>
 }
 
 type PoolLike = { query: (text: string, params: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }> }

@@ -68,6 +68,11 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
   const commission = ai.commissionRub
   const extras = ai.extrasRub
   const aiMonth = aiThisMonth
+  // Комиссия 10% — по каждому месяцу отдельно (срез выручки на конец месяца):
+  // раньше платных подписчиков было меньше → и комиссия ниже. Нет данных по
+  // месяцу → откат на текущую оценку commission.
+  const commByMonth = ai.commissionByMonth || {}
+  const commFor = (month: string) => (month in commByMonth ? commByMonth[month] : commission)
   // Модель: платформенный сбор за месяц = генерация (токены Аси) + 10% с выручки.
   // Стоимость хранилища входит в комиссию (не добавляется сверху). Пока есть
   // депозит — ВЕСЬ сбор списывается с депозита, а автор получает 100% выручки
@@ -77,14 +82,14 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
 
   // Деньги не списываются сразу, а резервируются и списываются 1-го числа
   // следующего месяца. Прошлые месяцы уже списаны, текущий (последний) — в резерве.
-  const reserved = months.length ? months[months.length - 1].costRub + extras + commission : 0
-  const charged = months.slice(0, -1).reduce((sum, m) => sum + (m.costRub + extras + commission), 0)
+  const reserved = months.length ? months[months.length - 1].costRub + extras + commFor(months[months.length - 1].month) : 0
+  const charged = months.slice(0, -1).reduce((sum, m) => sum + (m.costRub + extras + commFor(m.month)), 0)
   const spent = charged + reserved
   const balance = deposit - spent
 
   const rows = months.map((m, i) => {
-    const total = m.costRub + extras + commission
-    const cum = months.slice(0, i + 1).reduce((sum, x) => sum + (x.costRub + extras + commission), 0)
+    const total = m.costRub + extras + commFor(m.month)
+    const cum = months.slice(0, i + 1).reduce((sum, x) => sum + (x.costRub + extras + commFor(x.month)), 0)
     return { ...m, total, fromDeposit: total, balanceAfter: deposit - cum, isCurrent: i === months.length - 1 }
   })
   const rowsDesc = [...rows].reverse()
@@ -221,7 +226,7 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
                 <tr key={m.month}>
                   <td>{monthLabel(m.month)}{m.isCurrent && <span className="cp__resv">резерв</span>}</td>
                   <td>{rub(m.costRub)}</td>
-                  <td>{rub(commission)}</td>
+                  <td>{rub(commFor(m.month))}</td>
                   <td><b>{rub(m.fromDeposit)}</b></td>
                   <td className={m.balanceAfter < 0 ? 'cp__neg' : ''}>{rub(m.balanceAfter)}</td>
                 </tr>
@@ -230,7 +235,7 @@ export function CostsPanel({ tariff, ai }: { tariff: TariffPanelData | null; ai:
           </table>
         )}
         {reserved > 0 && <div className="cp__note"><Info size={13} /> Текущий месяц ({curMonth}) — {rub(reserved)} зарезервировано, спишется {chargeDate}. Прошлые месяцы уже списаны.</div>}
-        <div className="cp__note"><Info size={13} /> Токены и стоимость — оценка по длине текста; хранилище и комиссия — по текущему состоянию. Точное списание подключится вместе с биллингом.</div>
+        <div className="cp__note"><Info size={13} /> Токены — оценка по длине текста; комиссия {commissionPct}% — по выручке на конец каждого месяца; хранилище — по текущему состоянию. Точное списание подключится вместе с биллингом.</div>
       </section>
     </div>
   )
