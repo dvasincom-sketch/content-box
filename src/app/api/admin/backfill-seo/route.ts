@@ -34,17 +34,22 @@ export async function POST(req: NextRequest) {
   const dry = body?.dry === true
   const force = body?.force === true
 
-  // Тенант определяем так же, как SeoAuditView: сначала массив tenants[0].tenant
-  // (его добавляет multi-tenant плагин), иначе одиночное user.tenant.
-  const tenantRel = (user as any)?.tenants?.[0]?.tenant ?? (user as any)?.tenant
+  // Тенант определяем как SeoAuditView: user.tenant / tenants[0].tenant.
+  // У суперадмина тенанта НЕТ (platformRole=superadmin) — для него обрабатываем
+  // все тенанты (так же, как аудит показывает все категории без фильтра).
+  const tenantRel = (user as any)?.tenant ?? (user as any)?.tenants?.[0]?.tenant
   let tenantId: number | string | undefined =
     tenantRel && typeof tenantRel === 'object' ? tenantRel.id : tenantRel
-  if (!tenantId) tenantId = getUserTenantID(user)
-  if (isSuperAdmin(user) && body?.tenant) tenantId = Number(body.tenant)
-  if (!tenantId) return NextResponse.json({ ok: false, error: 'no_tenant' }, { status: 400 })
+  if (!tenantId) tenantId = getUserTenantID(user) || undefined
+  const superadmin = isSuperAdmin(user)
+  if (superadmin && body?.tenant) tenantId = Number(body.tenant)
+  if (!tenantId && !superadmin) {
+    return NextResponse.json({ ok: false, error: 'no_tenant' }, { status: 400 })
+  }
 
   try {
-    const r = await backfillSeoPage(payload, { collection, tenantId, page, limit: 50, dry, force })
+    // tenantId undefined у суперадмина → бэкфилл по всем тенантам.
+    const r = await backfillSeoPage(payload, { collection, tenantId: tenantId ?? null, page, limit: 50, dry, force })
     return NextResponse.json({ ok: true, ...r })
   } catch (e) {
     return NextResponse.json({ ok: false, error: (e as Error)?.message || 'backfill_failed' }, { status: 500 })

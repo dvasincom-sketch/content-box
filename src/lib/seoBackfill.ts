@@ -36,29 +36,41 @@ export async function backfillSeoPage(
   payload: Payload,
   opts: {
     collection: 'categories' | 'publications'
-    tenantId: number | string
+    /** Тенант. undefined — по ВСЕМ тенантам (для суперадмина без тенанта). */
+    tenantId?: number | string | null
     page: number
     limit?: number
     dry?: boolean
     force?: boolean
   },
 ): Promise<BackfillPageResult> {
-  const { collection, tenantId } = opts
+  const { collection } = opts
+  const tenantId = opts.tenantId ?? null
   const page = Math.max(1, Number(opts.page) || 1)
   const limit = Math.max(1, Math.min(100, opts.limit || 50))
   const dry = opts.dry === true
   const force = opts.force === true
 
-  // Домен тенанта — для брендовых формулировок описаний.
-  let domain: string | undefined
+  // Домены тенантов — для брендовых формулировок описаний. Для одного тенанта —
+  // один домен; для «всех» (суперадмин) — карта id→домен.
+  const domains = new Map<string, string>()
   try {
-    const t = (await payload.findByID({ collection: 'tenants', id: tenantId, depth: 0, overrideAccess: true })) as any
-    domain = t?.domain ? String(t.domain) : undefined
+    if (tenantId != null) {
+      const t = (await payload.findByID({ collection: 'tenants', id: tenantId, depth: 0, overrideAccess: true })) as any
+      if (t?.domain) domains.set(String(t.id), String(t.domain))
+    } else {
+      const ts = await payload.find({ collection: 'tenants', limit: 0, depth: 0, overrideAccess: true })
+      for (const t of ts.docs as any[]) domains.set(String(t.id), String(t.domain || ''))
+    }
   } catch { /* домен не критичен */ }
+  const domainFor = (doc: any): string | undefined => {
+    const tid = doc.tenant && typeof doc.tenant === 'object' ? doc.tenant.id : doc.tenant
+    return domains.get(String(tid)) || undefined
+  }
 
   const res = await payload.find({
     collection: collection as any,
-    where: { tenant: { equals: tenantId } },
+    where: tenantId != null ? { tenant: { equals: tenantId } } : {},
     limit,
     page,
     depth: collection === 'publications' ? 1 : 0,
@@ -82,7 +94,7 @@ export async function backfillSeoPage(
           ? (doc.seo.targetKeywords as any[]).map((k) => String(k?.keyword || '').trim()).filter(Boolean)
           : []
         const d = autoSeoDescription({
-          domain,
+          domain: domainFor(doc),
           bodyText: extractLexicalText(doc.description),
           leadTitle: doc.fullTitle || doc.title,
           keywords: kws,
@@ -96,7 +108,7 @@ export async function backfillSeoPage(
         const cat = doc.category && typeof doc.category === 'object' ? doc.category : null
         const intent = cat?.slug ? PUB_INTENT_BY_SLUG[String(cat.slug)] : undefined
         const d = autoSeoDescription({
-          domain,
+          domain: domainFor(doc),
           bodyText: extractLexicalText(doc.description),
           leadTitle: doc.title,
           flavor: 'publication',
