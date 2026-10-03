@@ -4,6 +4,7 @@ import { Gutter } from '@payloadcms/ui'
 import React from 'react'
 import { extractLexicalText, extractHeadings, wordCount } from '@/utils/lexicalText'
 import { categoryHref } from '@/lib/categoryHref'
+import SeoBackfillButton from '@/components/SeoBackfillButton'
 
 /**
  * SEO-аудит категорий (root-view /admin/seo-audit).
@@ -233,6 +234,8 @@ export default async function SeoAuditView(props: AdminViewServerProps) {
           Аудируется: {rows.length} · С проблемами: {problems.length} · В порядке: {clean} ·
           Скрыто пустых/навигационных: {hidden}
         </p>
+
+        <SeoBackfillButton />
 
         {problems.length === 0 ? (
           <p>Проблем не найдено — контентные категории заполнены корректно.</p>
