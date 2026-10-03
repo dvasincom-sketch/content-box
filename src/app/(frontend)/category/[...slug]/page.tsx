@@ -6,7 +6,9 @@ import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
-import { seoBrandForDomain, memberSeoForDomain, composeBrandTitle } from '@/lib/seoBrand'
+import { seoBrandForDomain, presetSeoForDomain, composeBrandTitle } from '@/lib/seoBrand'
+import { autoSeoDescription } from '@/lib/seoAutoDescription'
+import { extractLexicalText } from '@/utils/lexicalText'
 import type { Metadata } from 'next'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
 import { ListPagination } from '@/components/ListPagination'
@@ -85,16 +87,16 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
           .filter(Boolean)
       : []
 
-    // Раздел участника с заданными целевыми запросами (ТЗ §2): keyword-усиленный
-    // title/description + meta keywords. Перебивает авто-SEO раздела.
-    const member = memberSeoForDomain(tenant.domain as string | null | undefined, catSlug)
-    if (member) {
+    // Keyword-пресет раздела (участник или раздел «Смотреть»): готовый
+    // title/description + целевые запросы. Перебивает авто-SEO раздела.
+    const preset = presetSeoForDomain(tenant.domain as string | null | undefined, catSlug)
+    if (preset) {
       return buildMetadata({
         defaults: { ...settings?.seoDefaults, titleTemplate: null },
-        levels: [{ ...category.seo, title: member.title, description: member.description }],
-        fallbackTitle: member.title,
+        levels: [{ ...category.seo, title: preset.title, description: preset.description }],
+        fallbackTitle: preset.title,
         brandName: tenant.name,
-        keywords: member.keywords,
+        keywords: preset.keywords.length ? preset.keywords : ownKeywords,
       })
     }
 
@@ -105,8 +107,17 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const retitled = baked
       ? baked.replace(/\s*\|\s*COCO JAMBO\s*$/i, ` | ${brand.suffix}`)
       : composeBrandTitle([category.title, brand.suffix])
+    // Фолбэк описания из контекста страницы, если seo.description пуст: берём
+    // текст тела, иначе собираем из заголовка + ключей + бренда.
+    const autoDesc = autoSeoDescription({
+      domain: tenant.domain as string | null | undefined,
+      bodyText: extractLexicalText((category as { description?: unknown }).description),
+      leadTitle: (category as { fullTitle?: string | null }).fullTitle || category.title,
+      keywords: ownKeywords,
+      flavor: 'category',
+    })
     return buildMetadata({
-      defaults: { ...settings?.seoDefaults, titleTemplate: null },
+      defaults: { ...settings?.seoDefaults, titleTemplate: null, description: autoDesc || settings?.seoDefaults?.description },
       levels: [{ ...category.seo, title: retitled }],
       fallbackTitle: retitled,
       brandName: tenant.name,
