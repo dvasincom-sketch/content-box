@@ -1994,6 +1994,30 @@ function SelfUploadForm({
   const [mode, setMode] = useState<'file' | 'url'>('file')
   const [url, setUrl] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
+  // Своя обложка (media): можно задать сразу при загрузке. Если не задать —
+  // возьмём кадр из видео при транскоде.
+  const [coverId, setCoverId] = useState<number | null>(null)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [coverBusy, setCoverBusy] = useState(false)
+  const coverInput = useRef<HTMLInputElement>(null)
+
+  async function uploadCover(f: File) {
+    setCoverBusy(true)
+    setError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', f)
+      const res = await fetch('/studio/api/videos/cover', { method: 'POST', credentials: 'include', body: fd })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(j.error || 'Не удалось загрузить обложку'); return }
+      setCoverId(j.id ?? null)
+      setCoverUrl(j.url ?? null)
+    } catch {
+      setError('Ошибка загрузки обложки')
+    } finally {
+      setCoverBusy(false)
+    }
+  }
 
   function putWithProgress(url: string, f: File, contentType: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -2095,6 +2119,9 @@ function SelfUploadForm({
           // подтянется из имени файла на Диске.
           title: urls.length === 1 ? title.trim() : undefined,
           minTierId,
+          // Обложку привязываем только при одиночной ссылке (для списка она одна
+          // на всех не имеет смысла).
+          coverId: urls.length === 1 ? (coverId ?? null) : null,
           categoryId: categoryId || null,
           episode: episode.trim() || null,
           tags,
@@ -2153,6 +2180,7 @@ function SelfUploadForm({
           key,
           title: title.trim(),
           minTierId,
+          coverId: coverId ?? null,
           categoryId: categoryId || null,
           episode: episode.trim() || null,
           tags,
@@ -2265,6 +2293,34 @@ function SelfUploadForm({
             Своё видео доступно только по подписке — оно занимает наше хранилище и обработку.
           </div>
         </label>
+      </div>
+
+      <div className="studio-field">
+        <span className="studio-field__label">Обложка (необязательно)</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          {coverUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={coverUrl} alt="" style={{ width: 96, height: 54, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--st-border, rgba(0,0,0,.1))' }} />
+          )}
+          <button type="button" className="studio-btn studio-btn--ghost" onClick={() => coverInput.current?.click()} disabled={coverBusy || uploading}>
+            {coverBusy ? <Loader2 size={16} className="spin" /> : <ImagePlus size={16} />} {coverUrl ? 'Заменить обложку' : 'Загрузить обложку'}
+          </button>
+          {coverUrl && (
+            <button type="button" className="studio-btn studio-btn--ghost" onClick={() => { setCoverId(null); setCoverUrl(null) }} disabled={coverBusy || uploading} style={{ color: 'var(--st-danger, #c0392b)' }}>
+              Убрать
+            </button>
+          )}
+        </div>
+        <input
+          ref={coverInput}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCover(f); e.target.value = '' }}
+        />
+        <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+          Если не загрузить — возьмём кадр из видео автоматически{mode === 'url' ? ' (для списка ссылок обложка не применяется)' : ''}.
+        </div>
       </div>
 
       <VideoMetaFields

@@ -26,6 +26,7 @@ import { VideoSeriesBlock, type SeriesEpisode } from '@/blocks/VideoSeriesBlock'
 import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
 import { publicationNeighbors } from '@/lib/pubNav'
 import { CrossLinkCard, breadcrumbLabelPath } from '@/components/CrossLinkCard'
+import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { TagChips } from '@/components/TagChips'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
@@ -229,6 +230,10 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   }
 
   const category = pub.category && typeof pub.category === 'object' ? pub.category : null
+  // Хлебные крошки публикации: путь родительских разделов категории + сама
+  // публикация (текущая). Показываем ВЕЗДЕ, даже без категории (Главная › …).
+  const catCrumbs = ((category as { breadcrumbs?: { url?: string; label?: string }[] } | null)?.breadcrumbs ?? []) as { url?: string | null; label?: string | null }[]
+  const pubCrumbs: { url?: string | null; label?: string | null }[] = [...catCrumbs, { url: null, label: pub.title }]
   // Связка со «Смотреть» (depth:2 populate'ит объект с breadcrumbs для ссылки).
   const watchCat =
     pub.watchCategory && typeof pub.watchCategory === 'object' ? pub.watchCategory : null
@@ -407,6 +412,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
     return (
       <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-8">
+          <Breadcrumbs crumbs={pubCrumbs as any} lastIsCurrent className="mb-6" />
           <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} members={members} categoryRows={categoryRows} pubById={pubById} videoById={videoById} />
           {/* Реакции + комментарии и на страницах-профилях (в читабельной ширине,
               как у обычных публикаций). Гость видит тизер с приглашением. */}
@@ -432,9 +438,8 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Категория публикации показывается чипом ниже (в мете) — путь с
-            родительскими разделами намеренно НЕ выводим: для публикаций это
-            лишнее (правило для всех публикаций). */}
+        {/* Хлебные крошки: путь родительских разделов + сама публикация. */}
+        <Breadcrumbs crumbs={pubCrumbs as any} lastIsCurrent className="mb-6" />
         {/* Обложка: только при наличии фото (Ken Burns). Нет обложки — блок не
             выводим вообще, без градиента-заглушки. Заголовок идёт ниже. */}
         {!isVideoFirst && !(category as { posterLayout?: boolean } | null)?.posterLayout && pub.cover && typeof pub.cover === 'object' && pub.cover.url && (

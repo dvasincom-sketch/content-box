@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, authorCan, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { headObject } from '@/lib/s3'
 import { enqueueTranscode } from '@/lib/videoJobs'
@@ -43,6 +43,13 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
     return apiError(`Для видео нужен тариф от ${MIN_VIDEO_TIER_PRICE} ₽/мес — поднимите цену уровня или выберите подходящий.`)
   }
 
+  // Своя обложка (необязательно): автор может задать её сразу при загрузке.
+  // Проверяем, что media принадлежит тому же тенанту (защита от подделки id).
+  const coverId = numOrNull(data.coverId)
+  if (coverId != null && !(await belongsToTenant(payload, 'media', coverId, tenantId))) {
+    return apiError('Обложка не найдена', 404)
+  }
+
   // Убеждаемся, что файл реально залит в S3 (защита от подделки key).
   const head = await headObject(key)
   if (!head) return apiError('Файл не найден в хранилище — загрузка не завершилась', 404)
@@ -60,6 +67,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
         playbackId,
         originalKey: key,
         minTier: minTierId,
+        ...(coverId != null ? { cover: coverId } : {}),
         category: numOrNull(data.categoryId),
         episode: numOrNull(data.episode),
         durationSec: numOrNull(data.durationSec),

@@ -42,19 +42,22 @@ async function checkVkApi(owner: string, id: string): Promise<EmbedStatus> {
     }
     if (data.error) {
       const code = data.error.error_code
-      // 100 — неверный параметр (битый id), 15 — доступ запрещён, 204 — доступ к видео запрещён.
-      if (code === 100 || code === 15 || code === 204) return 'unavailable'
-      return 'unknown' // 5 (auth), 6/29 (rate limit) и прочее — не флагуем
+      // 100 — неверный/битый id (видео с таким id нет). ТОЛЬКО это флагуем.
+      // 15/204 («доступ запрещён») НЕ флагуем: это приватные/групповые видео,
+      // которым нужен access_key (у нас только embed-hash, не ключ API), — в
+      // эмбеде на сайте они проигрываются. 5 (auth), 6/29 (rate limit) и пр. —
+      // тоже не флагуем. Иначе выходили десятки ложных «недоступных».
+      if (code === 100) return 'unavailable'
+      return 'unknown'
     }
     const items = data.response?.items
     if (data.response && (data.response.count === 0 || (Array.isArray(items) && items.length === 0))) {
-      return 'unavailable' // видео нет в ответе → удалено
+      return 'unavailable' // пустой ответ без ошибки → видео удалено
     }
     if (Array.isArray(items) && items.length > 0) {
-      const it = items[0] as { content_restricted?: unknown; restriction?: { can_play?: number } | null }
-      // Ограничено для публики («только для авторизованных», регион/donut и т.п.):
-      // у посетителя без VK-сессии не проигрывается → для сайта это битое видео.
-      if (it.content_restricted || (it.restriction && it.restriction.can_play === 0)) return 'unavailable'
+      // Видео существует. Ограничения (18+/регион/«только для авторизованных»)
+      // НЕ считаем битым: эмбед VK проигрывает их с сессией зрителя. Раньше это
+      // давало массу ложных «недоступных» на рабочих видео.
       return 'ok'
     }
     return 'unknown'

@@ -1,4 +1,4 @@
-import { withAuthor, readJson, apiError, apiOk, authorCan } from '@/app/(studio)/studio/api/_lib'
+import { withAuthor, readJson, apiError, apiOk, authorCan, belongsToTenant } from '@/app/(studio)/studio/api/_lib'
 import { slugify } from '@/lib/slugify'
 import { enqueueTranscode } from '@/lib/videoJobs'
 import { isYandexDiskUrl, yandexPublicMeta } from '@/lib/yandexDisk'
@@ -60,6 +60,11 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   // Явное название учитываем только для одиночной ссылки; для пачки — из имени файла.
   const explicitTitle = urls.length === 1 ? String(data.title || '').trim() : ''
 
+  // Своя обложка — только для одиночной ссылки (на пачку одна обложка не
+  // имеет смысла). Проверяем принадлежность media тенанту.
+  let coverId = urls.length === 1 ? numOrNull(data.coverId) : null
+  if (coverId != null && !(await belongsToTenant(payload, 'media', coverId, tenantId))) coverId = null
+
   // Общие метаданные — применяются ко всем видео из списка.
   const episodeBase = numOrNull(data.episode)
   const categoryId = numOrNull(data.categoryId)
@@ -98,6 +103,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
           assetStatus: 'processing',
           playbackId,
           minTier: minTierId,
+          ...(coverId != null ? { cover: coverId } : {}),
           category: categoryId,
           episode: episodeBase != null ? episodeBase + i : null,
           ...(tagRows.length ? { tags: tagRows } : {}),
