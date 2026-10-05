@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Loader2, Eye, EyeOff, Pencil, Trash2, Check, X,
   FolderTree, FileText, Link2, AlertCircle, GripVertical,
-  Plus, FolderInput, FileEdit,
+  Plus, FolderInput, FileEdit, ChevronRight,
 } from 'lucide-react'
 import { StudioSelect } from '../_ui/StudioSelect'
 import { PageEditPanel } from './PageEditPanel'
@@ -590,6 +590,9 @@ function MenuRow({
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(node.label)
+  // Аккордеон: узел с детьми можно свернуть, чтобы не мешал при работе с меню.
+  const [collapsed, setCollapsed] = useState(false)
+  const hasChildren = node.children.length > 0
   const busy = busyKey === node.key
 
   const KindIcon =
@@ -622,6 +625,23 @@ function MenuRow({
           onDrop(node, parentKey, siblings)
         }}
       >
+        {hasChildren ? (
+          <button
+            type="button"
+            className="menubld__twisty"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-expanded={!collapsed}
+            title={collapsed ? 'Развернуть' : 'Свернуть'}
+          >
+            <ChevronRight
+              size={15}
+              style={{ transform: collapsed ? 'none' : 'rotate(90deg)', transition: 'transform .15s ease' }}
+            />
+          </button>
+        ) : (
+          <span className="menubld__twisty menubld__twisty--empty" aria-hidden />
+        )}
+
         <span
           className="menubld__grip"
           title="Перетащите для порядка"
@@ -674,6 +694,9 @@ function MenuRow({
         ) : (
           <>
             <span className="menubld__label">{node.label}</span>
+            {hasChildren && collapsed && (
+              <span className="menubld__count" title="Свёрнуто вложенных пунктов">{node.children.length}</span>
+            )}
             <span className="menubld__href" title={node.href}>
               {node.href}
             </span>
@@ -747,7 +770,7 @@ function MenuRow({
         )}
       </div>
 
-      {node.children.length > 0 && (
+      {hasChildren && !collapsed && (
         <ul className="menubld__children">
           {node.children.map((child) => (
             <MenuRow

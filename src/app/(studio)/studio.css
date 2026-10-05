@@ -4220,6 +4220,42 @@ select.studio-input {
   cursor: grabbing;
 }
 
+/* Аккордеон дерева меню: шеврон свернуть/развернуть + счётчик вложенных. */
+.menubld__twisty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--st-text-muted, #999);
+  cursor: pointer;
+}
+
+.menubld__twisty:hover {
+  background: var(--st-surface-2, rgba(127, 127, 127, 0.12));
+  color: var(--st-text, #111);
+}
+
+.menubld__twisty--empty {
+  cursor: default;
+  visibility: hidden;
+}
+
+.menubld__count {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--st-text-muted, #999);
+  background: var(--st-surface-2, rgba(127, 127, 127, 0.14));
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
 .menubld__row.is-dragging {
   opacity: 0.4;
 }
