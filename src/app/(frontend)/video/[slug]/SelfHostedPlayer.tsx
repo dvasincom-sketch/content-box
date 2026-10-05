@@ -86,6 +86,10 @@ export function SelfHostedPlayer({
   const hlsRef = useRef<{ currentLevel: number; destroy: () => void } | null>(null)
 
   const [playing, setPlaying] = useState(false)
+  // Видео уже запускали хотя бы раз. До первого старта показываем ТОЛЬКО большую
+  // центральную кнопку Play (без нижней панели) — иначе на мобильном видно сразу
+  // две кнопки play (центральная + в панели), что выглядит как сломанный плеер.
+  const [started, setStarted] = useState(false)
   const [current, setCurrent] = useState(0)
   const [duration, setDuration] = useState(0)
   const [buffered, setBuffered] = useState(0)
@@ -173,7 +177,7 @@ export function SelfHostedPlayer({
       }
     }
     const onDur = () => { setDuration(v.duration || 0); setReady(true) }
-    const onPlay = () => setPlaying(true)
+    const onPlay = () => { setPlaying(true); setStarted(true) }
     const onPause = () => setPlaying(false)
     const onVol = () => setMuted(v.muted)
     const onProgress = () => {
@@ -400,8 +404,9 @@ export function SelfHostedPlayer({
         ))}
       </video>
 
-      {/* Центральная кнопка Play при паузе */}
-      {ready && !playing && (
+      {/* Центральная кнопка Play при паузе. Прячем, когда видна нижняя панель
+          (там своя кнопка) — чтобы одновременно не было двух кнопок play. */}
+      {ready && !playing && !(controlsShown && started) && (
         <button
           type="button"
           aria-label="Смотреть"
@@ -427,8 +432,9 @@ export function SelfHostedPlayer({
         style={{
           position: 'absolute', left: 0, right: 0, bottom: 0, padding: '24px 12px 10px',
           background: 'linear-gradient(to top, rgba(0,0,0,.6), transparent)',
-          opacity: controlsShown ? 1 : 0, transition: 'opacity .2s ease',
-          pointerEvents: controlsShown ? 'auto' : 'none',
+          // До первого запуска панель скрыта — показываем только центральную Play.
+          opacity: controlsShown && started ? 1 : 0, transition: 'opacity .2s ease',
+          pointerEvents: controlsShown && started ? 'auto' : 'none',
         }}
       >
         {/* Дорожка + scrub-preview */}
