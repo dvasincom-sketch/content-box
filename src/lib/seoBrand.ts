@@ -317,6 +317,9 @@ export function pubAutoDescription(domain: string | null | undefined, title: str
     docs: 'документальное видео',
     backstage: 'видео за кадром',
     audiobooks: 'аудиокнига',
+    new: 'новинка',
+    'special-editions': 'спецвыпуск',
+    members: 'видео участника',
   }
   const intent = INTENT[(catSlug || '').trim()]
   const lead = intent ? `${t} — ${intent} на русском` : `${t} — на русском`
@@ -346,4 +349,42 @@ export function formatPublishedRu(value?: string | Date | null): string {
  */
 export function composeBrandTitle(parts: Array<string | null | undefined>): string {
   return parts.map((p) => (p || '').trim()).filter(Boolean).join(' | ')
+}
+
+/** Идентичность артиста для микроразметки хаба (Person / MusicGroup). */
+export interface ArtistIdentity {
+  type: 'person' | 'group'
+  /** Отображаемое имя (на русском). */
+  name: string
+  /** Альтернативные написания: латиница, корейское имя, транслит. */
+  alternateName: string[]
+  /** Авторитетные ссылки (Wikipedia и т.п.) — sameAs для однозначного опознания. */
+  sameAs: string[]
+  /** Роль в группе (jobTitle) — только для участника. */
+  roleName?: string
+}
+
+/**
+ * Карта «домен → slug категории участника → идентичность». Ключи slug'ов
+ * совпадают с ключами MEMBERS (категории /category/.../<slug>). Используется,
+ * чтобы на странице-категории участника отдать Person/MusicGroup-разметку.
+ */
+const ARTISTS: Record<string, Record<string, ArtistIdentity>> = {
+  'btsrussia.ru': {
+    'jung-kook': { type: 'person', name: 'Чонгук', alternateName: ['Jungkook', 'Jeon Jung-kook', 'Чон Чонгук', '전정국'], sameAs: ['https://en.wikipedia.org/wiki/Jungkook'], roleName: 'Вокалист BTS' },
+    v: { type: 'person', name: 'Ви (Тэхён)', alternateName: ['V', 'Kim Tae-hyung', 'Тэхён', 'Ким Тэхён', '김태형'], sameAs: ['https://en.wikipedia.org/wiki/V_(singer)'], roleName: 'Вокалист BTS' },
+    jimin: { type: 'person', name: 'Чимин', alternateName: ['Jimin', 'Park Ji-min', 'Пак Чимин', '박지민'], sameAs: ['https://en.wikipedia.org/wiki/Jimin'], roleName: 'Вокалист BTS' },
+    rm: { type: 'person', name: 'RM (Намджун)', alternateName: ['RM', 'Kim Nam-joon', 'Намджун', 'Ким Намджун', '김남준'], sameAs: ['https://en.wikipedia.org/wiki/RM_(musician)'], roleName: 'Лидер и рэпер BTS' },
+    jin: { type: 'person', name: 'Джин (Сокджин)', alternateName: ['Jin', 'Kim Seok-jin', 'Сокджин', 'Ким Сокджин', '김석진'], sameAs: ['https://en.wikipedia.org/wiki/Jin_(singer)'], roleName: 'Вокалист BTS' },
+    suga: { type: 'person', name: 'Шуга (Юнги)', alternateName: ['Suga', 'Agust D', 'Min Yoon-gi', 'Юнги', 'Мин Юнги', '민윤기'], sameAs: ['https://en.wikipedia.org/wiki/Suga_(rapper)'], roleName: 'Рэпер BTS' },
+    'j-hope': { type: 'person', name: 'Джей-Хоуп', alternateName: ['j-hope', 'Jung Ho-seok', 'Хосок', 'Чон Хосок', '정호석'], sameAs: ['https://en.wikipedia.org/wiki/J-Hope'], roleName: 'Рэпер и танцор BTS' },
+    bts: { type: 'group', name: 'BTS', alternateName: ['Bangtan Boys', 'Бантан Сонёндан', 'БТС', '방탄소년단'], sameAs: ['https://en.wikipedia.org/wiki/BTS'] },
+  },
+}
+
+/** Идентичность артиста по домену и slug категории (null — не артист-хаб). */
+export function artistIdentityForDomain(domain?: string | null, slug?: string | null): ArtistIdentity | null {
+  const byDomain = ARTISTS[normDomain(domain)]
+  if (!byDomain) return null
+  return byDomain[(slug || '').trim()] || null
 }

@@ -102,6 +102,44 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   })
   const profiles = profilesRes.docs as { handle?: string | null; updatedAt: string }[]
 
+  // Видео: publishedAt у видео НЕ заполняется (см. lib/published.ts), поэтому
+  // фильтруем не по дате, а по наличию slug и исключаем «мёртвые» эмбеды.
+  const videosRes = await payload.find({
+    collection: 'videos',
+    where: {
+      and: [
+        { tenant: { equals: tenantId } },
+        { slug: { exists: true } },
+        { or: [{ embedStatus: { not_equals: 'unavailable' } }, { embedStatus: { exists: false } }] },
+      ],
+    },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const videos = videosRes.docs as { slug?: string | null; updatedAt: string }[]
+
+  // Статические страницы (/page/[slug]).
+  const pagesRes = await payload.find({
+    collection: 'pages',
+    where: { and: [{ tenant: { equals: tenantId } }, { slug: { exists: true } }] },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const pages = pagesRes.docs as { slug?: string | null; updatedAt: string }[]
+
+  // Теги: собираем уникальные slug'и с опубликованных публикаций (/tag/[slug]).
+  const tagSlugs = new Set<string>()
+  for (const pub of pubs as unknown as { tags?: { slug?: string | null }[] }[]) {
+    if (Array.isArray(pub.tags)) {
+      for (const t of pub.tags) {
+        const sl = (t?.slug || '').trim()
+        if (sl) tagSlugs.add(sl)
+      }
+    }
+  }
+
   const catsWithPubs = new Set<string>()
   for (const pub of pubs) {
     const cat = pub.category
@@ -139,6 +177,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly' as const,
         priority: 0.5,
       })),
+    ...videos
+      .filter((v) => v.slug)
+      .map((v) => ({
+        url: `${base}/video/${v.slug}`,
+        lastModified: new Date(v.updatedAt),
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      })),
+    ...pages
+      .filter((pg) => pg.slug)
+      .map((pg) => ({
+        url: `${base}/page/${pg.slug}`,
+        lastModified: new Date(pg.updatedAt),
+        changeFrequency: 'monthly' as const,
+        priority: 0.4,
+      })),
+    ...Array.from(tagSlugs).map((slug) => ({
+      url: `${base}/tag/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.4,
+    })),
   ]
 
   return entries

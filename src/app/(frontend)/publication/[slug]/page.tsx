@@ -27,6 +27,8 @@ import { PostNavBlock, type PostNavItem } from '@/blocks/PostNavBlock'
 import { publicationNeighbors } from '@/lib/pubNav'
 import { CrossLinkCard, breadcrumbLabelPath } from '@/components/CrossLinkCard'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
+import { JsonLd } from '@/components/JsonLd'
+import { breadcrumbJsonLd, articleJsonLd } from '@/lib/jsonLd'
 import { TagChips } from '@/components/TagChips'
 import { LatestPublicationsBlock } from '@/blocks/LatestPublicationsBlock'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
@@ -234,6 +236,19 @@ export default async function PublicationPage({ params }: { params: Promise<Para
   // публикация (текущая). Показываем ВЕЗДЕ, даже без категории (Главная › …).
   const catCrumbs = ((category as { breadcrumbs?: { url?: string; label?: string }[] } | null)?.breadcrumbs ?? []) as { url?: string | null; label?: string | null }[]
   const pubCrumbs: { url?: string | null; label?: string | null }[] = [...catCrumbs, { url: null, label: pub.title }]
+  // Микроразметка публикации: хлебные крошки + Article/NewsArticle.
+  const isNews = /news|новост/i.test(String((category as any)?.slug || '')) ||
+    catCrumbs.some((c) => /news|новост/i.test(String(c.url || '') + String(c.label || '')))
+  const pubLogoUrl = settings?.logo && typeof settings.logo === 'object' ? (settings.logo as any).url : null
+  const pubCoverUrl = pub.cover && typeof pub.cover === 'object' ? (pub.cover as any).url : null
+  const pubJsonLd = [
+    breadcrumbJsonLd({ domain: (tenant as any)?.domain, crumbs: pubCrumbs }),
+    articleJsonLd({
+      domain: (tenant as any)?.domain, brandName: tenant?.name, logoUrl: pubLogoUrl,
+      slug: pub.slug, title: pub.title, imageUrl: pubCoverUrl,
+      publishedAt: pub.publishedAt || pub.eventDate, updatedAt: pub.updatedAt, isNews,
+    }),
+  ]
   // Связка со «Смотреть» (depth:2 populate'ит объект с breadcrumbs для ссылки).
   const watchCat =
     pub.watchCategory && typeof pub.watchCategory === 'object' ? pub.watchCategory : null
@@ -413,6 +428,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
       <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-8">
           <Breadcrumbs crumbs={pubCrumbs as any} lastIsCurrent className="mb-6" />
+          <JsonLd data={pubJsonLd} />
           <ProfileView data={pub.profile as any} title={pub.title} portraitUrl={portraitUrl} gallery={pfGallery} videos={pfVideos} members={members} categoryRows={categoryRows} pubById={pubById} videoById={videoById} />
           {/* Реакции + комментарии и на страницах-профилях (в читабельной ширине,
               как у обычных публикаций). Гость видит тизер с приглашением. */}
@@ -440,6 +456,7 @@ export default async function PublicationPage({ params }: { params: Promise<Para
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Хлебные крошки: путь родительских разделов + сама публикация. */}
         <Breadcrumbs crumbs={pubCrumbs as any} lastIsCurrent className="mb-6" />
+          <JsonLd data={pubJsonLd} />
         {/* Обложка: только при наличии фото (Ken Burns). Нет обложки — блок не
             выводим вообще, без градиента-заглушки. Заголовок идёт ниже. */}
         {!isVideoFirst && !(category as { posterLayout?: boolean } | null)?.posterLayout && pub.cover && typeof pub.cover === 'object' && pub.cover.url && (

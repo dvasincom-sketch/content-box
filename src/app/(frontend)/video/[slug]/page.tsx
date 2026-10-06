@@ -11,6 +11,8 @@ import { VideoPlayer } from './VideoPlayer'
 import { AsyaVideoBridge } from '@/components/AsyaVideoBridge'
 import { ASYA_MIN_TIER_PRICE } from '@/lib/asya'
 import { VpnVideoNotice } from '@/components/VpnVideoNotice'
+import { JsonLd } from '@/components/JsonLd'
+import { breadcrumbJsonLd, videoObjectJsonLd } from '@/lib/jsonLd'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCurrentSubscriber } from '@/lib/currentSubscriber'
@@ -65,9 +67,25 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
     ? new Date(video.publishedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
     : null
 
+  // Микроразметка видео: VideoObject + хлебные крошки.
+  const vCrumbs = [
+    ...(((category?.breadcrumbs ?? []) as { url?: string | null; label?: string | null }[])),
+    { url: null, label: video.title },
+  ]
+  const videoCoverUrl = (video as any).cover && typeof (video as any).cover === 'object' ? (video as any).cover.url : null
+  const videoJsonLd = [
+    breadcrumbJsonLd({ domain: (tenant as any)?.domain, crumbs: vCrumbs }),
+    videoObjectJsonLd({
+      domain: (tenant as any)?.domain, slug, title: video.title,
+      description: (video as any).description, thumbnailUrl: videoCoverUrl,
+      publishedAt: video.publishedAt, durationSec: (video as any).durationSec,
+    }),
+  ]
+
   return (
     <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
       <div className="max-w-3xl mx-auto px-4 py-8">
+        <JsonLd data={videoJsonLd} />
         {/* Хлебные крошки */}
         <nav className="text-sm mb-6 flex flex-wrap items-center gap-x-2 gap-y-1"
           style={{ color: 'var(--brand-muted)' }}

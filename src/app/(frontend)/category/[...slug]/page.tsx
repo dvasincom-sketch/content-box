@@ -3,10 +3,12 @@ import config from '@/payload.config'
 import { videoThumbUrl, videoGifUrl } from '@/lib/videoThumb'
 import { notFound, redirect } from 'next/navigation'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
+import { JsonLd } from '@/components/JsonLd'
+import { breadcrumbJsonLd, artistJsonLd } from '@/lib/jsonLd'
 import { getTenantFromHeaders } from '@/lib/tenant'
 import { brandVars } from '@/lib/brand'
 import { buildMetadata } from '@/lib/seo'
-import { seoBrandForDomain, presetSeoForDomain, composeBrandTitle } from '@/lib/seoBrand'
+import { seoBrandForDomain, presetSeoForDomain, composeBrandTitle, artistIdentityForDomain } from '@/lib/seoBrand'
 import { autoSeoDescription } from '@/lib/seoAutoDescription'
 import { extractLexicalText } from '@/utils/lexicalText'
 import type { Metadata } from 'next'
@@ -172,6 +174,19 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   })
   const linkedArticle = (linkedRes.docs as any[])[0] || null
 
+  // Хаб участника: если это категория-участник (slug совпадает), отдаём
+  // Person/MusicGroup-разметку с sameAs на авторитетный источник. Канонический
+  // хаб участника — именно эта категория, отдельного роута нет (без дублей).
+  const artistIdentity = artistIdentityForDomain(tenant.domain as string | null | undefined, category.slug as string | null | undefined)
+  const artistLd = artistIdentity
+    ? artistJsonLd({
+        domain: tenant.domain as string | null | undefined,
+        slug: String(category.slug || ''),
+        pageUrl: `https://${String(tenant.domain || '')}${categoryHref(category)}`,
+        identity: artistIdentity,
+      })
+    : null
+
   // Категория-контейнер (posterLayout): её дочерние категории выводятся афишами
   // (постерами 2:3). Публикации ветки тоже входят в общий список, но карточками
   // афиш. Для остальных обычных разделов — единый смешанный список.
@@ -248,6 +263,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
         <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
           <div className="max-w-6xl mx-auto px-4 py-8">
             <Breadcrumbs crumbs={bcrumbs as any} lastIsCurrent className="mb-6" />
+            <JsonLd data={[breadcrumbJsonLd({ domain: (tenant as any)?.domain, crumbs: bcrumbs }), artistLd]} />
             <ProfileView data={bpub.profile} title={bpub.title} portraitUrl={portraitUrl} gallery={pfGallery as any} videos={pfVideos as any} members={members} categoryRows={categoryRows} pubById={pubById} videoById={videoById} />
             <div className="max-w-3xl mx-auto">
               <PostNavBlock prev={memberNav.prev} next={memberNav.next} />
@@ -267,6 +283,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       <main className="page-canvas" style={{ ...brandVars(settings), minHeight: '100vh' }}>
         <div className="max-w-6xl mx-auto px-4 py-8">
           <Breadcrumbs crumbs={bcrumbs as any} lastIsCurrent className="mb-6" />
+            <JsonLd data={[breadcrumbJsonLd({ domain: (tenant as any)?.domain, crumbs: bcrumbs }), artistLd]} />
           <h1 className="text-3xl lg:text-5xl font-extrabold" style={{ color: 'var(--brand-text)' }}>{category.title}</h1>
           <p style={{ color: 'var(--brand-muted)', marginTop: 16 }}>Для раздела-«страницы» пока нет привязанной публикации. Привяжите к разделу «{category.title}» публикацию — укажите его как основную или дополнительную категорию публикации.</p>
         </div>
@@ -456,6 +473,7 @@ export default async function CategoryPage({ params, searchParams }: { params: P
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Хлебные крошки */}
         <Breadcrumbs crumbs={crumbs as any} lastIsCurrent className="mb-6" />
+            <JsonLd data={[breadcrumbJsonLd({ domain: (tenant as any)?.domain, crumbs: crumbs }), artistLd]} />
 
         <div className="evhead">
           <h1 className="text-3xl lg:text-5xl font-extrabold" style={{ color: 'var(--brand-text)' }}>

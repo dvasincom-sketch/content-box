@@ -19,6 +19,8 @@ import { PosterGridBlock } from '@/blocks/PosterGridBlock'
 import { PhotoShowcaseBlock } from '@/blocks/PhotoShowcaseBlock'
 import { buildMetadata } from '@/lib/seo'
 import { seoBrandForDomain } from '@/lib/seoBrand'
+import { JsonLd } from '@/components/JsonLd'
+import { organizationJsonLd, webSiteJsonLd } from '@/lib/jsonLd'
 import { categoryHref } from '@/lib/categoryHref'
 import { publishedWhere } from '@/lib/published'
 import { getPublicationCardStats } from '@/lib/publicationCardStats'
@@ -474,6 +476,11 @@ export default async function HomePage() {
 
   return (
     <main className="page-canvas page-canvas--home" style={{ ...brandVars(settings), minHeight: '100vh' }}>
+      {/* Микроразметка: организация + сайт с поисковой строкой (sitelinks searchbox) */}
+      <JsonLd data={[
+        organizationJsonLd({ domain: (tenant as any)?.domain, name: tenant?.name, logoUrl: (settings?.logo && typeof settings.logo === 'object' ? (settings.logo as any).url : null) }),
+        webSiteJsonLd({ domain: (tenant as any)?.domain, name: tenant?.name }),
+      ]} />
       <div className={`max-w-6xl mx-auto px-4 ${flushTop ? 'pb-8' : 'py-8'}`}>
         {streamBanner && streamBanner.slug && (
           <div className={flushTop ? 'pt-6' : undefined}>
