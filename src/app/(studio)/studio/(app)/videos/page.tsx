@@ -52,7 +52,11 @@ export default async function VideosPage() {
       collection: 'videos',
       where: baseWhere,
       sort: '-createdAt',
-      limit: 500,
+      // Поиск в студии — клиентский (фильтрует уже загруженный массив), поэтому
+      // грузим ВСЮ библиотеку, иначе старые видео (за пределами лимита) не
+      // находятся, хотя на сайте есть. 5000 — запас над текущими ~830.
+      // TODO: при росте библиотеки перевести поиск на серверный (endpoint + debounce).
+      limit: 5000,
       depth: 1,
       overrideAccess: true,
     }),
