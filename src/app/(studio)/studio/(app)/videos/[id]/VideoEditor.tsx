@@ -45,6 +45,7 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
   const [title, setTitle] = useState(video.title)
   const [minTierId, setMinTierId] = useState<string>(video.minTierId || '')
   const [episode, setEpisode] = useState<string>(video.episode != null ? String(video.episode) : '')
+  const [description, setDescription] = useState<string>(video.description || '')
   const [categoryId, setCategoryId] = useState<string>(video.categoryId || '')
   const [tags, setTags] = useState<string[]>(video.tags || [])
   const [embedUrl, setEmbedUrl] = useState('')
@@ -111,6 +112,7 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
           minTierId: minTierId || null,
           coverId: coverId ?? null,
           episode: episode.trim() === '' ? null : Number(episode),
+          description,
           categoryId: categoryId || null,
           tags,
           ...(isEmbed && embedUrl.trim() ? { embedUrl: embedUrl.trim() } : {}),
@@ -301,6 +303,21 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
             <div className="studio-field">
               <span className="studio-field__label">Теги</span>
               <TagInput value={tags} onChange={setTags} placeholder="Тег и Enter" />
+            </div>
+
+            <div className="studio-field">
+              <span className="studio-field__label">Описание</span>
+              <textarea
+                className="studio-input"
+                rows={5}
+                placeholder="Текст под видео: о чём выпуск, участники, что переведено/озвучено. Обычный текст без форматирования."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                style={{ resize: 'vertical', minHeight: 110, lineHeight: 1.5 }}
+              />
+              <div className="studio-field__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+                Показывается под плеером на странице видео и идёт в SEO-описание страницы.
+              </div>
             </div>
 
             <div className="videdit__used">

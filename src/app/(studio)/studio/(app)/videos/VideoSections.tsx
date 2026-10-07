@@ -19,6 +19,7 @@ export type EditableVideo = {
   coverId?: number | null
   coverUrl?: string | null
   episode: number | null
+  description?: string
   categoryId: string
   tags: string[]
   usedIn: { id: number | string; title: string }[]

@@ -63,6 +63,7 @@ export default async function VideoEditorPage({ params }: { params: Promise<{ id
     coverId: v.cover ? Number(typeof v.cover === 'object' ? v.cover.id : v.cover) : null,
     coverUrl: videoThumbUrl(v),
     episode: v.episode ?? null,
+    description: (v.description as string) || '',
     categoryId: v.category ? String(typeof v.category === 'object' ? v.category.id : v.category) : '',
     tags: Array.isArray(v.tags)
       ? (v.tags as any[]).map((t) => t?.label).filter((l): l is string => typeof l === 'string' && l.length > 0)

@@ -60,6 +60,7 @@ export const POST = withAuthor(async ({ req, payload, tenantId, author }) => {
   }
   const patch: any = { title, minTier }
   if ('episode' in data) patch.episode = numOrNull(data.episode)
+  if ('description' in data) patch.description = typeof data.description === 'string' ? data.description.trim() : null
   // Бесплатное превью: открыто всем, перебивает уровень (для вступительных глав).
   if ('isPreview' in data) patch.isPreview = Boolean(data.isPreview)
 

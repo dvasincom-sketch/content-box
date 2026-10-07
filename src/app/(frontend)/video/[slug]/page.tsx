@@ -31,7 +31,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const title = access.video?.title
   if (!title) return {}
   const bt = brandPageTitle((ctx.tenant as any)?.domain, `${title} — смотреть на русском`)
-  return { title: bt || `${title} — ${(ctx.tenant as any)?.name || ''}`.trim() }
+  // Описание видео (если заполнено в студии) → meta description, с обрезкой.
+  const rawDesc = typeof access.video?.description === 'string' ? access.video.description.trim() : ''
+  const desc = rawDesc ? (rawDesc.length > 300 ? rawDesc.slice(0, 299).trimEnd() + '…' : rawDesc) : undefined
+  return {
+    title: bt || `${title} — ${(ctx.tenant as any)?.name || ''}`.trim(),
+    ...(desc ? { description: desc } : {}),
+  }
 }
 
 export default async function VideoPage({ params }: { params: Promise<Params> }) {
