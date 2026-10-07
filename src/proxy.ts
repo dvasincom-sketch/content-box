@@ -24,6 +24,13 @@ import { PLATFORM_ROOT, stripPort, subdomainFromHost } from '@/lib/subdomain'
 // Пути мимо резолвинга тенанта (служебные + панели, они скоупятся по логину).
 const BYPASS_PREFIXES = ['/admin', '/studio', '/api', '/_next', '/favicon.ico']
 
+// Домены-алиасы → канонический домен тенанта (301). Ключ — хост без порта.
+const CANONICAL_REDIRECTS: Record<string, string> = {
+  'bts-russia.ru': 'btsrussia.ru',
+  'www.bts-russia.ru': 'btsrussia.ru',
+  'www.btsrussia.ru': 'btsrussia.ru',
+}
+
 // Платформенные хосты: тут лендинг + студия + админка, а НЕ клиентский сайт.
 const PLATFORM_HOSTS = new Set([PLATFORM_ROOT, `www.${PLATFORM_ROOT}`])
 function isPlatformHost(host: string): boolean {
@@ -141,6 +148,18 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.hostname,
   )
   if (proxiedHosts.has(rawHost)) return passthrough()
+
+  // Алиасы канонического домена: 301 на основной адрес, чтобы не плодить дубли
+  // контента для поисковиков. Стоит ДО BYPASS_PREFIXES, иначе /api, /studio и
+  // /admin на домене-алиасе отдавались бы как есть. Сами алиасы тенантами в БД
+  // не заводятся, поэтому резолвер до них не дойдёт.
+  const canonicalHost = CANONICAL_REDIRECTS[rawHost]
+  if (canonicalHost) {
+    return NextResponse.redirect(
+      new URL(request.nextUrl.pathname + request.nextUrl.search, `https://${canonicalHost}`),
+      301,
+    )
+  }
 
   if (BYPASS_PREFIXES.some((p) => pathname.startsWith(p))) {
     return passthrough()
