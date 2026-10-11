@@ -44,6 +44,8 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
   // — Основные поля («Обзор») —
   const [title, setTitle] = useState(video.title)
   const [minTierId, setMinTierId] = useState<string>(video.minTierId || '')
+  // «Бесплатно для всех» — для своего видео выбирает автор (для embed сервер форсит true).
+  const [isFree, setIsFree] = useState<boolean>(Boolean(video.isPreview))
   const [episode, setEpisode] = useState<string>(video.episode != null ? String(video.episode) : '')
   const [description, setDescription] = useState<string>(video.description || '')
   const [categoryId, setCategoryId] = useState<string>(video.categoryId || '')
@@ -96,8 +98,8 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
   async function save() {
     setError(null); setSavedOk(false)
     if (!title.trim()) { setError('Название не может быть пустым'); return }
-    if (!isEmbed && !minTierId) {
-      setError('Выберите уровень доступа — своё видео доступно только по подписке')
+    if (!isEmbed && !isFree && !minTierId) {
+      setError('Выберите уровень доступа или включите «Бесплатно для всех»')
       return
     }
     setSaving(true)
@@ -109,7 +111,8 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
         body: JSON.stringify({
           videoId: video.id,
           title: title.trim(),
-          minTierId: minTierId || null,
+          minTierId: isFree ? null : (minTierId || null),
+          isPreview: isFree,
           coverId: coverId ?? null,
           episode: episode.trim() === '' ? null : Number(episode),
           description,
@@ -262,17 +265,25 @@ export function VideoEditor({ video, tiers }: { video: EditableVideo; tiers: Tie
             ) : (
               <div className="studio-field">
                 <span className="studio-field__label">Уровень доступа</span>
-                <StudioSelect
-                  value={minTierId}
-                  onChange={setMinTierId}
-                  options={[
-                    { value: '', label: tiers.length ? '— выберите уровень —' : 'Сначала создайте уровень подписки' },
-                    ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
-                  ]}
-                  ariaLabel="Уровень доступа"
-                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={isFree} onChange={(e) => setIsFree(e.target.checked)} />
+                  <span>Бесплатно для всех (без входа и подписки)</span>
+                </label>
+                {!isFree && (
+                  <StudioSelect
+                    value={minTierId}
+                    onChange={setMinTierId}
+                    options={[
+                      { value: '', label: tiers.length ? '— выберите уровень —' : 'Сначала создайте уровень подписки' },
+                      ...tiers.map((t) => ({ value: String(t.id), label: `${t.name} и выше` })),
+                    ]}
+                    ariaLabel="Уровень доступа"
+                  />
+                )}
                 <div className="videdit__hint" style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-                  Своё видео доступно только по подписке.
+                  {isFree
+                    ? 'Видео смотрят все, включая гостей. Просмотр расходует трафик платформы.'
+                    : 'Без галочки своё видео доступно только по подписке.'}
                 </div>
               </div>
             )}

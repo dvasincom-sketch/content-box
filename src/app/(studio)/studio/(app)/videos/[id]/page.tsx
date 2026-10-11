@@ -60,6 +60,7 @@ export default async function VideoEditorPage({ params }: { params: Promise<{ id
     embedProvider: (v.embedProvider as string) || null,
     embedSrc: (v.embedSrc as string) || null,
     minTierId: v.minTier ? String(typeof v.minTier === 'object' ? v.minTier.id : v.minTier) : '',
+    isPreview: Boolean(v.isPreview),
     coverId: v.cover ? Number(typeof v.cover === 'object' ? v.cover.id : v.cover) : null,
     coverUrl: videoThumbUrl(v),
     episode: v.episode ?? null,
