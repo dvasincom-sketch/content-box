@@ -27,6 +27,10 @@ export function ManualPubPicker({
   const [q, setQ] = useState('')
   const [results, setResults] = useState<PickItem[]>([])
   const [searching, setSearching] = useState(false)
+  // Постраничная подгрузка: эндпоинт отдаёт по 20, дальше — «Показать ещё».
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const reqSeq = useRef(0)
 
@@ -57,29 +61,66 @@ export function ManualPubPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value.join(',')])
 
+  function remember(items: PickItem[]) {
+    setMeta((m) => {
+      const next = new Map(m)
+      items.forEach((x) => next.set(x.id, x))
+      return next
+    })
+  }
+
+  const pickUrl = (query: string, p: number) =>
+    `/studio/api/publications-pick?q=${encodeURIComponent(query.trim())}&page=${p}`
+
   // Поиск по названию с задержкой 300 мс; пустой запрос — последние публикации.
+  // Новый запрос сбрасывает список на первую страницу.
   useEffect(() => {
     const seq = ++reqSeq.current
     setSearching(true)
     const t = setTimeout(() => {
-      fetch(`/studio/api/publications-pick?q=${encodeURIComponent(q.trim())}`, { credentials: 'include' })
+      fetch(pickUrl(q, 1), { credentials: 'include' })
         .then((r) => r.json())
         .then((res) => {
           if (seq !== reqSeq.current) return
           const items = (Array.isArray(res?.items) ? res.items : []).map(mapItem)
           setResults(items)
-          setMeta((m) => {
-            const next = new Map(m)
-            items.forEach((x: PickItem) => next.set(x.id, x))
-            return next
-          })
+          setPage(1)
+          setHasMore(Boolean(res?.hasMore))
+          remember(items)
         })
-        .catch(() => seq === reqSeq.current && setResults([]))
+        .catch(() => {
+          if (seq !== reqSeq.current) return
+          setResults([])
+          setHasMore(false)
+        })
         .finally(() => seq === reqSeq.current && setSearching(false))
     }, 300)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q])
+
+  // Следующая страница того же запроса — дописываем в конец (без дублей).
+  function loadMore() {
+    if (loadingMore || !hasMore) return
+    const seq = reqSeq.current
+    const nextPage = page + 1
+    setLoadingMore(true)
+    fetch(pickUrl(q, nextPage), { credentials: 'include' })
+      .then((r) => r.json())
+      .then((res) => {
+        if (seq !== reqSeq.current) return
+        const items: PickItem[] = (Array.isArray(res?.items) ? res.items : []).map(mapItem)
+        setResults((prev) => {
+          const seen = new Set(prev.map((x) => x.id))
+          return [...prev, ...items.filter((x) => !seen.has(x.id))]
+        })
+        setPage(nextPage)
+        setHasMore(Boolean(res?.hasMore))
+        remember(items)
+      })
+      .catch(() => {})
+      .finally(() => setLoadingMore(false))
+  }
 
   const selected = new Set(value)
   const full = value.length >= MANUAL_PICK_MAX
@@ -210,7 +251,8 @@ export function ManualPubPicker({
         ) : results.length === 0 ? (
           <span className="settings__hint">Ничего не найдено.</span>
         ) : (
-          results.map((it) => {
+          <>
+          {results.map((it) => {
             const isSel = selected.has(it.id)
             return (
               <div key={it.id} style={rowStyle}>
@@ -229,7 +271,20 @@ export function ManualPubPicker({
                 </button>
               </div>
             )
-          })
+          })}
+          {hasMore && (
+            <button
+              type="button"
+              className="studio-btn studio-btn--ghost"
+              onClick={loadMore}
+              disabled={loadingMore}
+              style={{ justifySelf: 'center', marginTop: 4 }}
+            >
+              {loadingMore ? <Loader2 size={14} className="spin" /> : null}
+              Показать ещё
+            </button>
+          )}
+          </>
         )}
       </div>
       <span style={{ fontSize: 12, color: 'var(--st-text-muted)' }}>
