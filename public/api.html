@@ -137,7 +137,7 @@
         <div class="sec__tag">Быстрый старт</div>
         <h2>За три шага</h2>
         <ul>
-          <li>Откройте <b>Студия → Настройки → Доступ</b>, блок «Внешний API», и нажмите «Сгенерировать ключ». Скопируйте его — значение показывается один раз.</li>
+          <li>Откройте <b>Студия → Настройки → Доступ</b>, блок «Внешний API», и нажмите «Сгенерировать ключ» (блок виден только владельцу проекта). Скопируйте его — значение показывается один раз.</li>
           <li>Передавайте ключ в заголовке <code class="inline">X-API-KEY</code>. По ключу определяется ваш проект — домен указывать не нужно.</li>
           <li>Отправьте <code class="inline">POST</code> на эндпоинт ниже. В ответ придёт ID и ссылки на пост.</li>
         </ul>
@@ -166,17 +166,17 @@ accept: application/json</code></pre>
           <thead><tr><th>Поле</th><th>Тип</th><th>Описание</th></tr></thead>
           <tbody>
             <tr><td>title <span class="req">обяз.</span></td><td>string</td><td>Заголовок, 4–256 символов.</td></tr>
-            <tr><td>text</td><td>string</td><td>Тело поста.</td></tr>
+            <tr><td>text</td><td>string</td><td>Тело поста. В markdown поддерживаются заголовки (<code class="inline">#</code>, <code class="inline">##</code>, <code class="inline">###</code>), списки, <b>жирный</b>, <i>курсив</i> и ссылки <code class="inline">[текст](url)</code>. Картинки внутри текста, цитаты и блоки кода пока не поддерживаются: картинку передавайте через <code class="inline">coverUrl</code>.</td></tr>
             <tr><td>format</td><td>string</td><td><code class="inline">markdown</code> (по умолчанию) или <code class="inline">plain</code>. HTML — позже.</td></tr>
-            <tr><td>publishedAt</td><td>string</td><td>Дата публикации в ISO 8601 (напр. <code class="inline">2026-06-17</code>). Пусто — текущий момент.</td></tr>
+            <tr><td>publishedAt</td><td>string</td><td>Дата публикации в ISO 8601 (напр. <code class="inline">2026-06-17</code>). Пусто или нераспознанная дата — текущий момент.</td></tr>
             <tr><td>categorySlug</td><td>string</td><td>Slug раздела, куда попадёт публикация. Или <code class="inline">categoryId</code>.</td></tr>
-            <tr><td>extraCategorySlugs</td><td>string[]</td><td>Дополнительные разделы.</td></tr>
-            <tr><td>access</td><td>string</td><td><code class="inline">all</code> — бесплатно; <code class="inline">tier</code> — по подписке (см. minTierSlug).</td></tr>
+            <tr><td>extraCategorySlugs</td><td>string[]</td><td>Дополнительные разделы. Несуществующие slug молча пропускаются.</td></tr>
+            <tr><td>access</td><td>string</td><td><code class="inline">all</code> — бесплатно (по умолчанию); <code class="inline">tier</code> — по подписке (см. minTierSlug).</td></tr>
             <tr><td>minTierSlug</td><td>string</td><td>Уровень при <code class="inline">access=tier</code>. Пусто — низший платный уровень проекта.</td></tr>
-            <tr><td>coverUrl</td><td>string</td><td>Ссылка на обложку — скачаем и положим в наше хранилище.</td></tr>
+            <tr><td>coverUrl</td><td>string</td><td>Ссылка на обложку — скачаем и положим в наше хранилище. Картинка до 8 МБ, ответ сервера с <code class="inline">Content-Type: image/*</code>, таймаут 12 с. Если скачать не удалось, публикация всё равно создаётся, но без обложки.</td></tr>
             <tr><td>tags</td><td>string[]</td><td>Теги публикации.</td></tr>
             <tr><td>featured</td><td>boolean</td><td>Закрепить/выделить.</td></tr>
-            <tr><td>isNews</td><td>boolean</td><td>Пометить как новость.</td></tr>
+            <tr><td>isNews</td><td>boolean</td><td>Пометить как новость: публикация попадёт в блок «Новости» на главной странице проекта.</td></tr>
             <tr><td>seoTitle</td><td>string</td><td>SEO-заголовок страницы.</td></tr>
             <tr><td>seoDescription</td><td>string</td><td>SEO-описание.</td></tr>
             <tr><td>externalRef</td><td>string</td><td>Ваш ID поста на прежней платформе (напр. <code class="inline">ext:51753</code>). Дедуп: повторный импорт не создаст дубль.</td></tr>
@@ -207,11 +207,39 @@ accept: application/json</code></pre>
     "editor": "https://ваш-домен/studio/posts/123"
   }
 }</code></pre>
+        <p>Если публикация с таким же <code class="inline">externalRef</code> уже есть, вернутся её данные с флагом <code class="inline">"deduped": true</code>. Новая публикация в этом случае не создаётся, существующая не меняется.</p>
 
         <h3>Ошибки</h3>
         <pre><code>{ "message": "Неверный или отсутствующий X-API-KEY", "statusCode": 401 }
 { "message": "title должен быть 4..256 символов", "statusCode": 400 }
-{ "message": "Категория не найдена: weverse-live", "statusCode": 400 }</code></pre>
+{ "message": "Категория не найдена: weverse-live", "statusCode": 400 }
+{ "message": "Уровень подписки не найден: vip", "statusCode": 400 }
+{ "message": "Некорректное тело запроса (ожидается JSON)", "statusCode": 400 }
+{ "message": "Не удалось создать публикацию", "statusCode": 500 }</code></pre>
+      </section>
+
+      <section class="sec">
+        <div class="sec__tag">Новости</div>
+        <h2>Публикация новостей из приложения</h2>
+        <p>Новость создаётся тем же запросом. Чтобы она появилась в блоке «Новости» на главной, передайте <code class="inline">"isNews": true</code>. Дату можно не указывать: новость выйдет сразу.</p>
+        <pre><code>curl -X POST 'https://contentbox.site/api/ext/v1/publications' \
+  -H 'X-API-KEY: cbx_ваш_ключ' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "Анонс нового выпуска",
+    "text": "Коротко о главном.\n\n- первый пункт\n- второй пункт\n\nПодробнее [на сайте](https://example.com).",
+    "isNews": true,
+    "access": "all",
+    "categorySlug": "news",
+    "coverUrl": "https://example.com/cover.jpg",
+    "externalRef": "app:2026-10-13-001"
+  }'</code></pre>
+        <ul>
+          <li><b>Раздел.</b> <code class="inline">categorySlug</code> должен уже существовать в вашем проекте, иначе придёт ошибка 400. Slug раздела виден в Студии в настройках раздела. Раздел можно не указывать вовсе.</li>
+          <li><b>Без дублей.</b> Если приложение может повторить запрос (например, при обрыве сети), передавайте уникальный <code class="inline">externalRef</code> для каждой новости. Повтор вернёт уже созданную публикацию.</li>
+          <li><b>Ключ — только на сервере.</b> Не встраивайте ключ в мобильное приложение или код сайта: его можно извлечь. Отправляйте запрос со своего бэкенда.</li>
+          <li><b>Правка и удаление.</b> Через API публикацию можно только создать. Исправить или удалить её можно в Студии, ссылка на редактор приходит в поле <code class="inline">editor</code> ответа.</li>
+        </ul>
       </section>
 
       <section class="sec">
@@ -247,6 +275,7 @@ done</code></pre>
         <ul>
           <li><b>Доступ.</b> <code class="inline">all</code> — публикация бесплатна и видна всем. <code class="inline">tier</code> без <code class="inline">minTierSlug</code> — доступ по любой активной подписке (низший платный уровень).</li>
           <li><b>Даты.</b> <code class="inline">publishedAt</code> сохраняется как есть — оригинальная хронология при переезде не теряется. Дата в будущем = отложенная публикация.</li>
+          <li><b>Изменения.</b> Методов обновления и удаления пока нет. Повторная отправка с тем же <code class="inline">externalRef</code> не обновит текст, правки вносятся в Студии.</li>
           <li><b>Повторный импорт.</b> С <code class="inline">externalRef</code> повторный запуск вернёт уже созданную публикацию, а не создаст дубль — можно гонять миграцию несколько раз безопасно.</li>
           <li><b>Обложки.</b> <code class="inline">coverUrl</code> скачивается один раз в наше хранилище — на вашей стороне картинка может исчезнуть, у нас останется.</li>
         </ul>
