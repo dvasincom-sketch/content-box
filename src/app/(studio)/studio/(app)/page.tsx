@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, CreditCard, TrendingUp, Wallet, BarChart3, Music, Video as VideoIcon, HandCoins } from 'lucide-react'
+import { Plus, FolderTree, FileText, FileEdit, ArrowRight, HardDrive, Image as ImageIcon, Images, FileDown, TrendingUp, Wallet, BarChart3, Music, Video as VideoIcon, HandCoins } from 'lucide-react'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { requireAuthor } from '@/lib/currentAuthor'
@@ -15,6 +15,7 @@ import { getUmamiDashKpis } from '@/lib/umamiStats'
 import { metrikaEnabled, getMetrikaVisitors } from '@/lib/yandexMetrika'
 import { DashChart } from './DashChart'
 import { UsersKpiCard } from './UsersKpiCard'
+import { PaidKpiCard } from './PaidKpiCard'
 import { LaunchChecklist } from './LaunchChecklist'
 
 /**
@@ -202,13 +203,7 @@ export default async function StudioDashboard() {
         <>
           <div className="dash__kpis">
             <UsersKpiCard registered={commerce.registered} registered7d={commerce.registered7d} />
-            <div className="dash__kpi">
-              <div className="dash__kpi-icon"><CreditCard size={16} /></div>
-              <div className="dash__kpi-body">
-                <div className="dash__kpi-value">{commerce.paid}</div>
-                <div className="dash__kpi-label">Платных</div>
-              </div>
-            </div>
+            <PaidKpiCard paid={commerce.paid} />
             <div className="dash__kpi">
               <div className="dash__kpi-icon"><TrendingUp size={16} /></div>
               <div className="dash__kpi-body">
