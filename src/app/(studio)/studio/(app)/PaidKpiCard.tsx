@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { CreditCard, X, Loader2, Crown, UserMinus, UserPlus, Clock } from 'lucide-react'
+import { CreditCard, X, Loader2, Crown, UserMinus, UserPlus, Clock, Mail, Check } from 'lucide-react'
 
 type Row = {
   subscriberId: number | null
@@ -49,6 +49,28 @@ export function PaidKpiCard({ paid }: { paid: number }) {
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  // Тестовые письма об окончании подписки — на почту владельца.
+  const [testState, setTestState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
+  const [testMsg, setTestMsg] = useState<string | null>(null)
+  async function sendTest() {
+    setTestState('sending')
+    setTestMsg(null)
+    try {
+      const res = await fetch('/studio/api/subscription-notice-test', { method: 'POST', credentials: 'include' })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setTestState('error')
+        setTestMsg(j.error || 'Не удалось отправить')
+      } else {
+        setTestState('done')
+        setTestMsg(`Отправлено на ${j.to}: «через 3 дня» и «закончилась». Проверьте и папку «Спам».`)
+      }
+    } catch {
+      setTestState('error')
+      setTestMsg('Ошибка соединения')
+    }
+  }
 
   async function load(d: number) {
     setLoading(true)
@@ -214,6 +236,34 @@ export function PaidKpiCard({ paid }: { paid: number }) {
                   Новые оформления считаются по журналу событий подписок — он ведётся с его запуска.
                 </p>
               )}
+
+              {/* Письма подписчикам об окончании — пояснение + тест на себя */}
+              <div style={{ marginTop: 16, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--st-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+                  <Mail size={14} /> Письма об окончании подписки
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--st-text-muted)', margin: '0 0 10px' }}>
+                  Подписчики автоматически получают письмо за 3 дня до конца подписки и в день окончания —
+                  с кнопкой «Продлить». Посмотрите, как они выглядят:
+                </p>
+                <button
+                  type="button"
+                  className="studio-btn studio-btn--ghost"
+                  onClick={sendTest}
+                  disabled={testState === 'sending'}
+                >
+                  {testState === 'sending' ? <Loader2 size={14} className="spin" /> : testState === 'done' ? <Check size={14} /> : <Mail size={14} />}
+                  Прислать мне тестовые письма
+                </button>
+                {testMsg && (
+                  <div
+                    className={testState === 'error' ? 'settings__err' : undefined}
+                    style={{ fontSize: 12, marginTop: 8, color: testState === 'error' ? undefined : 'var(--st-text-muted)' }}
+                  >
+                    {testMsg}
+                  </div>
+                )}
+              </div>
             </div>
           ) : null}
         </div>

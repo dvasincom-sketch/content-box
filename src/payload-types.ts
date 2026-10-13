@@ -1003,6 +1003,14 @@ export interface Subscriber {
   cardLabel?: string | null;
   subscriptionSince?: string | null;
   lastPaymentAt?: string | null;
+  /**
+   * Служебное: для какой даты окончания уже ушло напоминание.
+   */
+  expiryReminderFor?: string | null;
+  /**
+   * Служебное: для какой даты окончания уже ушло письмо об окончании.
+   */
+  expiryNoticeFor?: string | null;
   isBlocked?: boolean | null;
   /**
    * Не может писать в чат трансляций (доступ к контенту сохраняется).
@@ -1104,11 +1112,11 @@ export interface Video {
    */
   folder?: (number | null) | VideoFolder;
   /**
-   * От этого уровня и выше. Для СВОЕГО видео пусто ≠ бесплатно: без уровня оно требует любую активную подписку. Для внешней вставки уровень игнорируется — она всегда бесплатна.
+   * От этого уровня и выше. Для СВОЕГО видео пусто ≠ бесплатно: без уровня оно требует любую активную подписку, если не включено «Бесплатно для всех». Для внешней вставки уровень игнорируется — она всегда бесплатна.
    */
   minTier?: (number | null) | SubscriptionTier;
   /**
-   * Открыто всем, даже без подписки. Устанавливается автоматически: внешняя вставка — всегда бесплатна, своё видео (наше хранилище) — никогда (нагружает наши диски и транскодинг). См. хук enforceAccessPolicy.
+   * Открыто всем, даже без входа и подписки. Внешняя вставка — всегда бесплатна (выставляется автоматически). Для своего видео (наше хранилище) флаг выбирает автор; по умолчанию выключен. Учтите: бесплатный просмотр расходует наш трафик и диски. См. хук enforceAccessPolicy.
    */
   isPreview?: boolean | null;
   /**
@@ -2806,6 +2814,8 @@ export interface SubscribersSelect<T extends boolean = true> {
   cardLabel?: T;
   subscriptionSince?: T;
   lastPaymentAt?: T;
+  expiryReminderFor?: T;
+  expiryNoticeFor?: T;
   isBlocked?: T;
   chatBanned?: T;
   commentsBanned?: T;
