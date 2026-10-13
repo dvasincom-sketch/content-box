@@ -79,10 +79,35 @@ export function buildSubscriptionMail(
 }
 
 /**
- * Тест: оба письма («через 3 дня» и «закончилась») на указанный адрес с первым
- * активным тарифом тенанта. Возвращает темы отправленных писем.
+ * Какой почтовый транспорт видит приложение (та же логика, что в payload.config):
+ * 'none' — payload.sendEmail МОЛЧА ничего не отправит.
  */
-export async function sendSubscriptionNoticeTest(payload: Payload, tenantId: number, to: string): Promise<string[]> {
+export function emailTransport(): 'smtp' | 'rusender-api' | 'none' {
+  if ((process.env.SMTP_HOST || '').trim()) return 'smtp'
+  if ((process.env.RUSENDER_API_TOKEN || '').trim()) return 'rusender-api'
+  return 'none'
+}
+
+/** Результат отправки одного письма — что ответил почтовый сервер. */
+export type TestSendResult = {
+  subject: string
+  messageId: string | null
+  accepted: string[]
+  rejected: string[]
+  response: string | null
+}
+
+/**
+ * Тест: оба письма («через 3 дня» и «закончилась») на указанный адрес с первым
+ * активным тарифом тенанта. Возвращает ответ почтового сервера по каждому письму.
+ * Бросает, если транспорт не настроен (иначе был бы ложный «успех»).
+ */
+export async function sendSubscriptionNoticeTest(payload: Payload, tenantId: number, to: string): Promise<TestSendResult[]> {
+  if (emailTransport() === 'none') {
+    throw new Error(
+      'Отправка писем на сервере не настроена: нет SMTP_HOST и RUSENDER_API_TOKEN в переменных Timeweb. Письма никуда не уходят.',
+    )
+  }
   const ctx = await loadTenantNoticeCtx(payload, tenantId)
   if (!ctx) throw new Error('У проекта не задан домен')
   const tier = (
@@ -103,11 +128,20 @@ export async function sendSubscriptionNoticeTest(payload: Payload, tenantId: num
   }
   const soon = new Date(Date.now() + REMIND_DAYS * 86_400_000).toISOString()
   const past = new Date(Date.now() - 3_600_000).toISOString()
-  const sent: string[] = []
+  const results: TestSendResult[] = []
+  const list = (v: unknown) => (Array.isArray(v) ? v.map((x) => String(typeof x === 'object' && x ? (x as any).address ?? x : x)) : [])
   for (const [kind, until] of [['reminder', soon], ['expired', past]] as const) {
     const mail = buildSubscriptionMail(ctx, kind, { ...base, until })
-    await payload.sendEmail({ to, subject: `[ТЕСТ] ${mail.subject}`, html: mail.html })
-    sent.push(mail.subject)
+    // nodemailer возвращает info { messageId, accepted, rejected, response } — отдаём в UI
+    // как есть, чтобы было видно, принял ли SMTP-сервер письмо.
+    const info = (await payload.sendEmail({ to, subject: `[ТЕСТ] ${mail.subject}`, html: mail.html })) as any
+    results.push({
+      subject: mail.subject,
+      messageId: info?.messageId ? String(info.messageId) : null,
+      accepted: list(info?.accepted),
+      rejected: list(info?.rejected),
+      response: info?.response ? String(info.response) : null,
+    })
   }
-  return sent
+  return results
 }

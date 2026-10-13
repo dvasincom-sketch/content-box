@@ -53,19 +53,43 @@ export function PaidKpiCard({ paid }: { paid: number }) {
   // Тестовые письма об окончании подписки — на почту владельца.
   const [testState, setTestState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
   const [testMsg, setTestMsg] = useState<string | null>(null)
+  const [testTo, setTestTo] = useState('')
+  // Диагностика: что ответил почтовый сервер по каждому письму.
+  const [testDiag, setTestDiag] = useState<string[] | null>(null)
   async function sendTest() {
     setTestState('sending')
     setTestMsg(null)
+    setTestDiag(null)
     try {
-      const res = await fetch('/studio/api/subscription-notice-test', { method: 'POST', credentials: 'include' })
+      const res = await fetch('/studio/api/subscription-notice-test', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testTo.trim() ? { to: testTo.trim() } : {}),
+      })
       const j = await res.json().catch(() => ({}))
       if (!res.ok) {
         setTestState('error')
         setTestMsg(j.error || 'Не удалось отправить')
-      } else {
-        setTestState('done')
-        setTestMsg(`Отправлено на ${j.to}: «через 3 дня» и «закончилась». Проверьте и папку «Спам».`)
+        return
       }
+      const results: Array<{ subject: string; messageId: string | null; accepted: string[]; rejected: string[]; response: string | null }> =
+        Array.isArray(j.results) ? j.results : []
+      const anyRejected = results.some((r) => r.rejected.length > 0)
+      setTestState(anyRejected ? 'error' : 'done')
+      setTestMsg(
+        anyRejected
+          ? `Почтовый сервер отклонил адрес ${j.to}.`
+          : `Передано почтовому серверу для ${j.to}. Если не пришло за 5 минут — проверьте «Спам» и попробуйте другой адрес (напр. @ya.ru).`,
+      )
+      setTestDiag([
+        `Транспорт: ${j.transport} · от: ${j.from}`,
+        ...results.map(
+          (r) =>
+            `«${r.subject}» — ${r.response || (r.messageId ? `id ${r.messageId}` : 'сервер не вернул ответ')}` +
+            (r.rejected.length ? ` · отклонено: ${r.rejected.join(', ')}` : ''),
+        ),
+      ])
     } catch {
       setTestState('error')
       setTestMsg('Ошибка соединения')
@@ -246,6 +270,14 @@ export function PaidKpiCard({ paid }: { paid: number }) {
                   Подписчики автоматически получают письмо за 3 дня до конца подписки и в день окончания —
                   с кнопкой «Продлить». Посмотрите, как они выглядят:
                 </p>
+                <input
+                  className="studio-input"
+                  type="email"
+                  value={testTo}
+                  onChange={(e) => setTestTo(e.target.value)}
+                  placeholder="Куда отправить (пусто — на email аккаунта)"
+                  style={{ marginBottom: 8 }}
+                />
                 <button
                   type="button"
                   className="studio-btn studio-btn--ghost"
@@ -261,6 +293,25 @@ export function PaidKpiCard({ paid }: { paid: number }) {
                     style={{ fontSize: 12, marginTop: 8, color: testState === 'error' ? undefined : 'var(--st-text-muted)' }}
                   >
                     {testMsg}
+                  </div>
+                )}
+                {testDiag && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      background: 'var(--st-surface)',
+                      fontFamily: 'ui-monospace, monospace',
+                      fontSize: 11,
+                      lineHeight: 1.5,
+                      color: 'var(--st-text-muted)',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {testDiag.map((line, i) => (
+                      <div key={i}>{line}</div>
+                    ))}
                   </div>
                 )}
               </div>
