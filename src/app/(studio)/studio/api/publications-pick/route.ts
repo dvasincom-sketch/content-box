@@ -3,7 +3,8 @@ import { withAuthor, apiOk } from '@/app/(studio)/studio/api/_lib'
 /**
  * Поиск/резолв публикаций для блока «Публикации» конструктора.
  * GET ?q=текст → до 20 совпадений по названию; ?ids=1,2,3 → эти публикации.
- * Только свой тенант. { items: [{ id, slug, title, posterUrl }] }
+ * Только свой тенант. { items: [{ id, slug, title, posterUrl, published }] }
+ * published — есть ли дата публикации (черновики пикер главной помечает).
  */
 export const runtime = 'nodejs'
 
@@ -26,7 +27,7 @@ export const GET = withAuthor(async ({ req, payload, tenantId }) => {
     .catch(() => ({ docs: [] as any[] }))
   const items = (res.docs as any[]).map((p) => {
     const c = p.cover && typeof p.cover === 'object' ? p.cover : null
-    return { id: p.id, slug: String(p.slug || ''), title: String(p.title || ''), posterUrl: c?.sizes?.card?.url || c?.sizes?.poster?.url || c?.url || null }
+    return { id: p.id, slug: String(p.slug || ''), title: String(p.title || ''), posterUrl: c?.sizes?.card?.url || c?.sizes?.poster?.url || c?.url || null, published: Boolean(p.publishedAt) }
   })
   return apiOk({ items })
 })

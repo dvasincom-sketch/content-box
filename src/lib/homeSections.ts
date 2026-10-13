@@ -136,7 +136,8 @@ export function sanitizeSectionConfig(raw: unknown): HomeSectionSettings | undef
       const tag = Number(src.tagId)
       if (Number.isFinite(tag) && tag > 0) source.tagId = tag
       if (Array.isArray(src.manualIds)) {
-        const ids = src.manualIds.map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0)
+        // без дублей, порядок сохраняем, не больше 50 (синхронно с MANUAL_PICK_MAX в студии)
+        const ids = [...new Set(src.manualIds.map((x) => Number(x)).filter((x) => Number.isFinite(x) && x > 0))].slice(0, 50)
         if (ids.length) source.manualIds = ids
       }
       const lim = Number(src.limit)

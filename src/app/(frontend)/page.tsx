@@ -235,7 +235,12 @@ async function resolveListItems(
     const lim = source?.limit && source.limit > 0 ? Math.min(source.limit, 50) : null
     return lim ? fallback.slice(0, lim) : fallback
   }
-  const limit = source.limit && source.limit > 0 ? Math.min(source.limit, 50) : 12
+  // Ручная подборка: показываем все выбранные (поле «Сколько показывать» для неё
+  // в студии скрыто и игнорируется), потолок 50. Остальные источники — limit или 12.
+  const limit =
+    source.kind === 'manual'
+      ? Math.min(source.manualIds?.length || 12, 50)
+      : Math.min(source.limit && source.limit > 0 ? source.limit : 12, 50)
   let where: any = null
   if (source.kind === 'category' && source.categoryId) {
     where = { or: [{ category: { equals: source.categoryId } }, { extraCategories: { in: [source.categoryId] } }] }

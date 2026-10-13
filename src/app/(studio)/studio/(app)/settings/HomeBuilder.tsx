@@ -17,6 +17,7 @@ import { BannerEditPanel } from './BannerEditPanel'
 import { SocialsEditPanel } from './SocialsEditPanel'
 import { WhyUsEditPanel } from './WhyUsEditPanel'
 import { SectionLibrary } from './SectionLibrary'
+import { ManualPubPicker } from './ManualPubPicker'
 import type { CatItem } from './CategoryMultiPicker'
 
 /** type → человекочитаемый лейбл (из единого источника). */
@@ -70,6 +71,7 @@ const DUPLICABLE = new Set<HomeSectionType>(['news', 'latest', 'popular', 'discu
 const SOURCE_KIND_LABELS: { value: HomeSourceKind; label: string }[] = [
   { value: 'auto', label: 'Авто (лента по умолчанию)' },
   { value: 'category', label: 'По категории' },
+  { value: 'manual', label: 'Выбрать вручную' },
 ]
 
 /**
@@ -269,7 +271,8 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
       <p className="settings__hint">
         Перетаскивайте секции за ручку, чтобы задать порядок. Тумблер справа включает или
         выключает секцию. Кнопка с ползунками открывает настройки секции: свой заголовок и
-        источник контента (лента по умолчанию или конкретная категория). Списочные секции можно
+        источник контента (лента по умолчанию, конкретная категория или публикации, выбранные
+        вручную). Списочные секции можно
         добавлять несколько раз — например, две ленты из разных разделов. Секции, зависящие от
         данных (участники, категории), скрываются автоматически при отсутствии данных.
       </p>
@@ -432,6 +435,17 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
                         </div>
                       </label>
 
+                      {kind === 'manual' && (
+                        <ManualPubPicker
+                          value={src?.manualIds ?? []}
+                          onChange={(ids) =>
+                            patchConfig(row._uid, {
+                              source: { ...src, kind: 'manual', manualIds: ids },
+                            })
+                          }
+                        />
+                      )}
+
                       {kind === 'category' && (
                         <label className="studio-field">
                           <span className="studio-field__label">Категория</span>
@@ -481,6 +495,8 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
                         </label>
                       )}
 
+                      {/* Для ручной подборки количество = число выбранных, поле не нужно */}
+                      {kind !== 'manual' && (
                       <label className="studio-field">
                         <span className="studio-field__label">Сколько показывать</span>
                         <input
@@ -499,6 +515,7 @@ export function HomeBuilder({ initial }: { initial: HomeSectionConfig[] }) {
                           style={{ maxWidth: 160 }}
                         />
                       </label>
+                      )}
                     </>
                   )}
                 </div>
