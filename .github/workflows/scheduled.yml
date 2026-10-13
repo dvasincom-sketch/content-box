@@ -4,13 +4,14 @@ on:
   schedule:
     - cron: '0 4 * * *'   # ежедневно — валидатор доступности внешних видео
     - cron: '0 10 * * 1'  # по понедельникам — дайджест новинок подписчикам
+    - cron: '17 * * * *'  # ежечасно — письма «подписка заканчивается / закончилась»
   workflow_dispatch:
     inputs:
       task:
         description: Что запустить вручную
         type: choice
         default: both
-        options: [validate-videos, digest, both]
+        options: [validate-videos, digest, both, subscription-expiry]
 
 jobs:
   validate-videos:
@@ -39,4 +40,18 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           curl -fsS --max-time 300 -X POST "$BASE/api/notifications/digest" \
+            -H "Authorization: Bearer $CRON_SECRET"
+
+  subscription-expiry:
+    if: >-
+      github.event.schedule == '17 * * * *' ||
+      (github.event_name == 'workflow_dispatch' && inputs.task == 'subscription-expiry')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Письма об окончании подписки
+        env:
+          BASE: ${{ vars.BASE_URL || 'https://contentbox.site' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -fsS --max-time 300 -X POST "$BASE/api/notifications/subscription-expiry" \
             -H "Authorization: Bearer $CRON_SECRET"

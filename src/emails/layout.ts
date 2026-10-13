@@ -56,6 +56,9 @@ export type LayoutParams = {
   cta?: EmailButton | null
   /** Доп. строка футера (например, про уведомления/отписку). */
   footerNote?: string | null
+  /** Не рисовать стандартный H1 (слева) — шаблон рисует свой (напр. по центру).
+   *  heading при этом всё равно идёт в <title>. */
+  hideHeading?: boolean
 }
 
 /** Bulletproof-кнопка на таблице (работает в Outlook). */
@@ -80,6 +83,7 @@ export function renderLayout({
   bodyHtml,
   cta,
   footerNote,
+  hideHeading,
 }: LayoutParams): string {
   const accent = brand.color || '#7C3AED'
   const brandName = esc(brand.name)
@@ -116,7 +120,7 @@ export function renderLayout({
           <!-- card -->
           <tr>
             <td style="background:#ffffff; border:1px solid #e4e4e7; border-radius:16px; padding: 32px 32px 28px;">
-              <h1 style="margin:0 0 16px; font-family: Arial, Helvetica, sans-serif; font-size:22px; line-height:1.3; font-weight:700; color:#18181b;">${esc(heading)}</h1>
+              ${hideHeading ? '' : `<h1 style="margin:0 0 16px; font-family: Arial, Helvetica, sans-serif; font-size:22px; line-height:1.3; font-weight:700; color:#18181b;">${esc(heading)}</h1>`}
               <div style="font-family: Arial, Helvetica, sans-serif; font-size:15px; line-height:1.6; color:#3f3f46;">
                 ${bodyHtml}
               </div>

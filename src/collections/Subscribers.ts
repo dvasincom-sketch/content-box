@@ -275,6 +275,23 @@ export const Subscribers: CollectionConfig = {
       access: { create: superAdminFieldAccess, update: superAdminFieldAccess },
       admin: { readOnly: true },
     },
+    // ── Письма об окончании подписки (пишет только крон) ─────────────────
+    // Храним ЗНАЧЕНИЕ subscriptionUntil, про которое уже написали. Продлили →
+    // дата окончания стала другой → при следующем окончании письма уйдут снова.
+    {
+      name: 'expiryReminderFor',
+      type: 'date',
+      label: 'Напоминание «через 3 дня» отправлено для срока',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Служебное: для какой даты окончания уже ушло напоминание.' },
+    },
+    {
+      name: 'expiryNoticeFor',
+      type: 'date',
+      label: 'Письмо «подписка закончилась» отправлено для срока',
+      access: { create: () => false, update: () => false },
+      admin: { readOnly: true, description: 'Служебное: для какой даты окончания уже ушло письмо об окончании.' },
+    },
     {
       name: 'isBlocked',
       type: 'checkbox',
